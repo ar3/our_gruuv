@@ -36,8 +36,8 @@ RSpec.describe TerminologyHelper, type: :helper do
   end
 
   describe '1:1 labels' do
-    it 'returns Weekly 1:1 without check-in' do
-      expect(helper.weekly_1_1_label).to eq('Weekly 1:1')
+    it 'returns Weekly areas of focus without check-in' do
+      expect(helper.weekly_1_1_label).to eq('Weekly areas of focus')
       expect(helper.weekly_1_1_label).not_to include('check-in')
     end
   end

@@ -111,14 +111,37 @@ module Digest
       about_me_thread_payload
     end
 
+    ONE_ON_ONE_DIGEST_UTM = {
+      utm_source: 'slack',
+      utm_medium: 'weekly_one_on_one_digest',
+      utm_campaign: 'one_on_one'
+    }.freeze
+
+    NEXT_ACTION_PREFIX = 'OG says the answer is yes, so what you should do next is:'.freeze
+
     def one_on_one_main_payload
-      summary_intro = I18n.t('terminology.weekly_1_1_intro')
       subject_name = slack_escape(@teammate.person.display_name)
-      one_on_one_hub_url = slack_app_url(:organization_company_teammate_one_on_one_link_url, @organization, @teammate)
+      one_on_one_hub_url = with_one_on_one_digest_utm(
+        slack_app_url(:organization_company_teammate_one_on_one_link_url, @organization, @teammate),
+        content: 'hub_header'
+      )
       weekly_linked = "<#{one_on_one_hub_url}|#{I18n.t('terminology.weekly_1_1')}>"
 
       header_lines = ["*#{weekly_linked} for #{subject_name}*", ""]
-      header_lines.concat(top_one_thing_slack_focus_lines)
+      header_lines.concat(top_one_thing_slack_question_lines)
+
+      action = top_one_thing_primary_action
+      if action
+        cta_line = if action[:slack_url].present?
+          tracked = with_one_on_one_digest_utm(slack_absolute_url(action[:slack_url]), content: 'primary_action_link')
+          "#{NEXT_ACTION_PREFIX} <#{tracked}|#{slack_escape(action[:label])}>"
+        else
+          "#{NEXT_ACTION_PREFIX} #{slack_escape(action[:label])}"
+        end
+        header_lines << ""
+        header_lines << cta_line
+      end
+
       header_text = truncate_for_slack_section(header_lines.join("\n"))
       header_block = {
         type: 'section',
@@ -134,48 +157,88 @@ module Digest
       end
 
       blocks = [header_block]
+
+      if action && action[:slack_url].present?
+        button_url = with_one_on_one_digest_utm(slack_absolute_url(action[:slack_url]), content: 'primary_action_button')
+        blocks << {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: slack_button_label(action[:label]),
+                emoji: true
+              },
+              style: 'primary',
+              url: button_url
+            }
+          ]
+        }
+      end
+
       bullets_text = top_one_thing_slack_action_items_text
       if bullets_text.present?
         blocks << { type: 'divider' }
         blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(bullets_text) } }
       end
 
-      blocks << { type: 'divider' }
-      blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(summary_intro) } }
-
-      main_text = "#{weekly_linked} for #{subject_name}\n#{summary_intro}"
+      main_text = "#{I18n.t('terminology.weekly_1_1')} for #{subject_name}"
+      main_text = "#{main_text}\n#{NEXT_ACTION_PREFIX} #{action[:label]}" if action
       { blocks: blocks, text: main_text }
     end
 
     def one_on_one_thread_payload
+      blocks = []
+      fallback_parts = []
+
+      why_text = top_one_thing_why_context_text
+      if why_text.present?
+        blocks << {
+          type: 'context',
+          elements: [{ type: 'mrkdwn', text: truncate_for_slack_context(why_text) }]
+        }
+        fallback_parts << why_text
+      end
+
+      configure_text = one_on_one_configure_day_text
+      blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(configure_text) } }
+      fallback_parts << configure_text
+
       priorities = one_thing_priorities_needing_attention
       total_count = one_thing_carousel_data[:total_count].to_i
       total_count = 13 if total_count.zero?
-
-      if priorities.empty?
-        text = "All clear — nothing in the #{total_count}-priority queue needs action right now."
-        return { blocks: [{ type: 'section', text: { type: 'mrkdwn', text: text } }], text: text }
-      end
-
       one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
       follow_on = priorities.drop(1).take(2)
-      intro = "*#{priorities.size} of #{total_count} priorities need attention*"
-      blocks = [{ type: 'section', text: { type: 'mrkdwn', text: intro } }]
 
-      follow_on.each do |priority|
+      if follow_on.any?
+        intro = "*#{priorities.size} of #{total_count} priorities need attention*"
         blocks << { type: 'divider' }
-        blocks << {
-          type: 'section',
-          text: { type: 'mrkdwn', text: truncate_for_slack_section(priority_slack_summary_lines(priority, one_on_one_link).join("\n")) }
-        }
+        blocks << { type: 'section', text: { type: 'mrkdwn', text: intro } }
+        fallback_parts << intro
+
+        follow_on.each do |priority|
+          summary_lines = priority_slack_summary_lines(priority, one_on_one_link, include_explanation: false)
+          summary = summary_lines.join("\n")
+          blocks << { type: 'divider' }
+          blocks << {
+            type: 'section',
+            text: { type: 'mrkdwn', text: truncate_for_slack_section(summary) }
+          }
+          fallback_parts << summary
+
+          why_text = follow_on_priority_why_context_text(priority)
+          next if why_text.blank?
+
+          blocks << {
+            type: 'context',
+            elements: [{ type: 'mrkdwn', text: truncate_for_slack_context(why_text) }]
+          }
+          fallback_parts << why_text
+        end
       end
 
-      if follow_on.empty?
-        text = intro
-      else
-        text = ([intro] + follow_on.map { |p| priority_slack_summary_lines(p, one_on_one_link).join("\n") }).join("\n---\n")
-      end
-      { blocks: blocks, text: truncate_for_slack_section(text) }
+      { blocks: blocks, text: truncate_for_slack_section(fallback_parts.join("\n---\n")) }
     end
 
     def about_me_main_payload
@@ -268,20 +331,82 @@ module Digest
 
     # Slack section block text is limited to 3000 chars; exceeding causes invalid_blocks.
     SLACK_SECTION_TEXT_LIMIT = 3000
+    # Slack context mrkdwn elements are limited to 2000 chars.
+    SLACK_CONTEXT_TEXT_LIMIT = 2000
+    SLACK_BUTTON_TEXT_LIMIT = 75
 
     def slack_app_url(helper_name, *args)
       slack_absolute_url(Rails.application.routes.url_helpers.public_send(helper_name, *args, slack_url_options))
     end
 
     def truncate_for_slack_section(text)
+      truncate_for_slack_limit(text, SLACK_SECTION_TEXT_LIMIT)
+    end
+
+    def truncate_for_slack_context(text)
+      truncate_for_slack_limit(text, SLACK_CONTEXT_TEXT_LIMIT)
+    end
+
+    def truncate_for_slack_limit(text, limit)
       s = text.to_s
-      return s if s.blank? || s.length <= SLACK_SECTION_TEXT_LIMIT
-      "#{s[0, SLACK_SECTION_TEXT_LIMIT - 3]}..."
+      return s if s.blank? || s.length <= limit
+
+      "#{s[0, limit - 3]}..."
+    end
+
+    def slack_button_label(label)
+      truncate_for_slack_limit(label.to_s, SLACK_BUTTON_TEXT_LIMIT)
+    end
+
+    def with_one_on_one_digest_utm(url, content:)
+      absolute = slack_absolute_url(url)
+      return absolute if absolute.blank?
+
+      uri = URI.parse(absolute)
+      params = URI.decode_www_form(uri.query.to_s).to_h
+      params.merge!(
+        ONE_ON_ONE_DIGEST_UTM.transform_keys(&:to_s).merge('utm_content' => content.to_s)
+      )
+      uri.query = URI.encode_www_form(params)
+      uri.to_s
+    rescue URI::InvalidURIError
+      absolute
     end
 
     def digest_config_url_for_organization
       url = slack_app_url(:organization_company_teammate_notifications_url, @organization, @teammate)
       "<#{url}|Notification settings>"
+    end
+
+    def one_on_one_notifications_url
+      with_one_on_one_digest_utm(
+        slack_app_url(:organization_company_teammate_notifications_url, @organization, @teammate),
+        content: 'configure_day'
+      )
+    end
+
+    def one_on_one_configure_day_text
+      day_value = UserPreference.for_person(@teammate.person).preference(:about_me_weekly_day).presence || 'off'
+      day_label = DigestHelper::WEEKLY_DIGEST_DAY_LABELS[day_value.to_s] || 'the scheduled day'
+      day_phrase = day_value.to_s == 'off' ? 'when weekly reminders are enabled' : day_label
+      "OG sent this to you all on #{day_phrase}. If you'd like to change the day, you can <#{one_on_one_notifications_url}|configure your notifications>."
+    end
+
+    def top_one_thing_why_context_text
+      priority = top_one_thing_priority
+      return nil if priority.blank?
+
+      explanation = priority_renderer_for(priority).explanation_plain.to_s.strip
+      return nil if explanation.blank?
+
+      "We want to keep the initial message clean and clear... but why was that important: #{slack_escape(explanation)}"
+    end
+
+    def follow_on_priority_why_context_text(priority)
+      explanation = priority_renderer_for(priority).explanation_plain.to_s.strip
+      return nil if explanation.blank?
+
+      "Why this is important: #{slack_escape(explanation)}"
     end
 
     # Formats one section for the About Me thread: link (and optional explanation). Check-in sections use ":" before explanation; others use ". ".
@@ -331,12 +456,19 @@ module Digest
       one_thing_priorities_needing_attention.first
     end
 
-    def top_one_thing_slack_focus_lines
+    def top_one_thing_slack_question_lines
       priority = top_one_thing_priority
-      return ["*Top 1:1 focus:* All clear — nothing in the 13-priority queue needs action right now."] if priority.blank?
+      return ["*How we get more clear this week:* All clear — nothing in the 13-priority queue needs action right now."] if priority.blank?
 
       one_on_one_link = @teammate.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
-      priority_slack_summary_lines(priority, one_on_one_link, heading: "*Top 1:1 focus:*")
+      ["*How we get more clear this week:* #{priority_title_display(priority, one_on_one_link)}"]
+    end
+
+    def top_one_thing_primary_action
+      priority = top_one_thing_priority
+      return nil if priority.blank?
+
+      priority_renderer_for(priority).primary_action
     end
 
     def top_one_thing_slack_action_items_text
@@ -348,26 +480,33 @@ module Digest
       lines.join("\n") if lines.any?
     end
 
-    def priority_slack_summary_lines(priority, one_on_one_link, heading: nil)
-      renderer = priority_renderer_for(priority)
+    def priority_title_display(priority, one_on_one_link)
       asana_title = OneOnOne::PriorityCarouselBuilder::ASANA_URGENT_TASKS_TITLE
-      title_display =
-        if priority[:title] == asana_title && one_on_one_link.url.present?
-          "<#{one_on_one_link.url}|#{slack_escape(asana_title)}>"
-        else
-          slack_escape(priority[:title])
-        end
+      if priority[:title] == asana_title && one_on_one_link.url.present?
+        tracked = with_one_on_one_digest_utm(one_on_one_link.url, content: 'asana_priority_title')
+        "<#{tracked}|#{slack_escape(asana_title)}>"
+      else
+        slack_escape(priority[:title])
+      end
+    end
+
+    def priority_slack_summary_lines(priority, one_on_one_link, heading: nil, include_explanation: true)
+      renderer = priority_renderer_for(priority)
+      title_display = priority_title_display(priority, one_on_one_link)
 
       lines = []
       lines << "#{heading} #{title_display}" if heading.present?
       lines << "*#{title_display}*" unless heading.present?
 
-      explanation = renderer.explanation_plain
-      lines << slack_escape(explanation) if explanation.present?
+      if include_explanation
+        explanation = renderer.explanation_plain
+        lines << slack_escape(explanation) if explanation.present?
+      end
 
       action = renderer.primary_action
       if action && action[:slack_url].present?
-        lines << "*Primary action:* <#{slack_absolute_url(action[:slack_url])}|#{slack_escape(action[:label])}>"
+        tracked = with_one_on_one_digest_utm(slack_absolute_url(action[:slack_url]), content: 'follow_on_primary_action')
+        lines << "*Primary action:* <#{tracked}|#{slack_escape(action[:label])}>"
       elsif action
         lines << "*Primary action:* #{slack_escape(action[:label])}"
       end

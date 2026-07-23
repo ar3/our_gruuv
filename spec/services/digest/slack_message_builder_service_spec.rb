@@ -149,23 +149,23 @@ RSpec.describe Digest::SlackMessageBuilderService do
       expect(header_text).to match(
         /\d+ <https?:\/\/[^|]+\|About #{Regexp.escape(person.casual_name)}> sections are healthy/
       )
-      expect(header_text).not_to include('Top 1:1 focus')
-      expect(header_text).not_to include('Weekly 1:1 check-in')
+      expect(header_text).not_to include('How we get more clear this week:')
+      expect(header_text).not_to include('Weekly areas of focus')
       expect(result[:text]).to include('healthy')
       expect(result[:text]).not_to include('It is time for your weekly 1:1.')
     end
   end
 
   describe '#one_on_one_main_payload' do
-    it 'includes weekly 1:1 header with top focus and check-in line' do
+    it 'keeps the question, next-action CTA + button, and omits why/intro from the parent' do
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
         {
           priorities: [
             {
               needs_attention: true,
-              title: 'Example priority',
-              reason: 'Example reason.',
-              cta_kind: :bulk_goals,
+              title: 'Example priority?',
+              reason: 'Example reason that explains why.',
+              cta_kind: :my_growth_goals,
               cta_label: 'Create goals'
             }
           ],
@@ -179,25 +179,47 @@ RSpec.describe Digest::SlackMessageBuilderService do
       result = builder.one_on_one_main_payload
 
       header_text = result[:blocks].first.dig(:text, :text)
-      expect(header_text).to match(/\|Weekly 1:1> for /)
-      expect(header_text).not_to include('Weekly 1:1 check-in')
-      expect(header_text).to include('Top 1:1 focus')
-      expect(header_text).to include('Example priority')
-      expect(result[:text]).to include('It is time for your weekly 1:1.')
+      expect(header_text).to match(/\|Weekly areas of focus> for /)
+      expect(header_text).to include('utm_campaign=one_on_one')
+      expect(header_text).to include('utm_content=hub_header')
+      expect(header_text).to include('How we get more clear this week:')
+      expect(header_text).to include('Example priority?')
+      expect(header_text).to include('OG says the answer is yes')
+      expect(header_text).to include('what you should do next is:')
+      expect(header_text).to include('Create goals')
+      expect(header_text).to include('utm_content=primary_action_link')
+      expect(header_text).not_to include('Example reason that explains why')
+      expect(header_text).not_to include('Primary action')
+      expect(header_text).not_to include('Top 1:1 focus')
+
+      button_block = result[:blocks].find { |b| b[:type] == 'actions' }
+      expect(button_block).to be_present
+      button = button_block.dig(:elements, 0)
+      expect(button[:type]).to eq('button')
+      expect(button[:style]).to eq('primary')
+      expect(button.dig(:text, :text)).to eq('Create goals')
+      expect(button[:url]).to include('utm_content=primary_action_button')
+
+      all_text = result[:blocks].map { |b| b.dig(:text, :text) }.compact.join("\n")
+      expect(all_text).not_to include('It is time for your weekly 1:1.')
+      expect(result[:text]).not_to include('It is time for your weekly 1:1.')
       expect(result[:text]).not_to include('sections are healthy')
     end
   end
 
   describe '#one_on_one_thread_payload' do
-    it 'shows count and only 2nd and 3rd priorities' do
+    it 'puts why in a context block, configure-day note, then 2nd and 3rd priorities' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('about_me_weekly_day', '2')
+
       allow(OneOnOne::PriorityCarouselBuilder).to receive(:call).and_return(
         {
           priorities: [
             {
               needs_attention: true,
-              title: 'First priority',
+              title: 'First priority?',
               reason: 'First explanation.',
-              cta_kind: :bulk_goals,
+              cta_kind: :my_growth_goals,
               cta_label: 'Create goals'
             },
             {
@@ -224,10 +246,29 @@ RSpec.describe Digest::SlackMessageBuilderService do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.one_on_one_thread_payload
 
+      context_blocks = result[:blocks].select { |b| b[:type] == 'context' }
+      expect(context_blocks.size).to eq(3)
+
+      top_why = context_blocks[0].dig(:elements, 0, :text)
+      expect(top_why).to include('keep the initial message clean and clear')
+      expect(top_why).to include('why was that important')
+      expect(top_why).to include('First explanation.')
+
+      follow_on_whys = context_blocks.drop(1).map { |b| b.dig(:elements, 0, :text) }
+      expect(follow_on_whys.join).to include('Why this is important: Second explanation.')
+      expect(follow_on_whys.join).to include('Why this is important: Third explanation.')
+
+      section_texts = result[:blocks].select { |b| b[:type] == 'section' }.map { |b| b.dig(:text, :text) }.join("\n")
+      expect(section_texts).not_to include('Second explanation.')
+      expect(section_texts).not_to include('Third explanation.')
+
+      expect(result[:text]).to include('Tuesday')
+      expect(result[:text]).to include('configure your notifications')
+      expect(result[:text]).to include('utm_content=configure_day')
       expect(result[:text]).to include('3 of 13 priorities need attention')
       expect(result[:text]).to include('Second priority')
       expect(result[:text]).to include('Third priority')
-      expect(result[:text]).not_to include('First priority')
+      expect(result[:text]).not_to include('First priority?')
     end
   end
 
