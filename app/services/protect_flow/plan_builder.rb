@@ -368,5 +368,11 @@ module ProtectFlow
         end
       end
     end
+
+    # Protect Flow is always a manager viewing reports — use possessive, not "My".
+    def one_thing_label_for_teammate(teammate)
+      casual = teammate.person&.casual_name.to_s.presence || "Their"
+      "#{casual}'s One Thing"
+    end
   end
 end

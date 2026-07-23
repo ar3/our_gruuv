@@ -13,7 +13,7 @@ module Digest
       [:goals, 'Active Goals'],
       [:prompts, 'Prompts/Reflections'],
       [:stories, 'Stories'],
-      [:one_on_one, '1:1 Area'],
+      [:one_on_one, 'My One Thing'],
       [:abilities, 'Abilities/Skills/Knowledge']
     ].freeze
 

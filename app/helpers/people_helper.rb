@@ -173,7 +173,7 @@ module PeopleHelper
     end
 
     if controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
-      return one_on_one_hub_label
+      return @teammate ? one_thing_label_for(@teammate) : one_on_one_hub_label
     end
 
     if controller_path == 'organizations/company_teammates/maap_teammate_growth' && action_name == 'show'

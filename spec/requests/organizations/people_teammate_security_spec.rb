@@ -32,7 +32,7 @@ RSpec.describe 'Teammate View Security', type: :request do
         get internal_organization_company_teammate_path(organization, person_teammate)
         expect(response.body).to include("Views for #{person.casual_name}")
         expect(response.body).to include('internal-teammate-views-nav')
-        expect(response.body).to include('next most important thing')
+        expect(response.body).to include('One Thing')
         expect(response.body).to include('1:1, about &amp; growth')
         expect(response.body).to include('Clarity check-ins')
         expect(response.body).to include('Public view')

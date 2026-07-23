@@ -31,7 +31,7 @@ RSpec.describe Digest::AboutMeContentService do
       service = described_class.new(teammate: teammate, organization: organization)
       names = service.sections.map { |s| s[:section_name] }
 
-      expect(names).to include('Aspirational Values Check-In', 'Position/Overall', 'Active Goals', 'Stories', '1:1 Area')
+      expect(names).to include('Aspirational Values Check-In', 'Position/Overall', 'Active Goals', 'Stories', 'My One Thing')
     end
 
     it 'returns explanation_sentence for non-green sections' do

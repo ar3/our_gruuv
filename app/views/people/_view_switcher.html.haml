@@ -138,12 +138,12 @@
       - if one_on_one_active
         .dropdown-item.text-muted
           %i.bi.bi-link-45deg.me-2
-          = "#{one_on_one_hub_label} (Active)"
+          = "#{one_thing_label_for(@teammate)} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(one_on_one_link).show?
         = link_to organization_company_teammate_one_on_one_link_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-link-45deg.me-2
-          = one_on_one_hub_label
+          = one_thing_label_for(@teammate)
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-link-45deg.me-2

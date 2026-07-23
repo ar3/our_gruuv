@@ -540,7 +540,7 @@ module Digest
       when :stories
         ['Observations (OGOs)', helpers.organization_observations_url(@organization, { involving_teammate_id: @teammate.id }.merge(opts))]
       when :one_on_one
-        ['1:1 Area', helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate, opts)]
+        ['My One Thing', helpers.organization_company_teammate_one_on_one_link_url(@organization, @teammate, opts)]
       when :abilities
         current_position = EmploymentTenure.where(company_teammate: @teammate, ended_at: nil).first&.position
         if current_position

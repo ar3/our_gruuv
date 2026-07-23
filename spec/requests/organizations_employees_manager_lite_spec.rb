@@ -84,7 +84,7 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
       get organization_employees_path(organization, spotlight: 'manager_lite', view: 'managers_view', manager_teammate_id: manager_teammate.id)
 
       expect(response.body).to include("Alice A.")
-      expect(response.body).to include("Top Action")
+      expect(response.body).to include("One Thing")
       expect(response.body).to include("View About")
       expect(response.body).to include("Explore")
       expect(response.body).to include("Growth")

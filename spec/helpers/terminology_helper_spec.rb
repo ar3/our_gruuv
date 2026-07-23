@@ -46,6 +46,20 @@ RSpec.describe TerminologyHelper, type: :helper do
       expect(helper.open_one_on_one_hub_label).to eq('Open My One Thing')
       expect(helper.back_to_one_on_one_hub_label).to eq('Back to My One Thing')
     end
+
+    it "uses My One Thing for self and {casual}'s One Thing for others" do
+      org = create(:organization)
+      self_person = create(:person, first_name: 'Self')
+      other_person = create(:person, first_name: 'Alex')
+      viewer = create(:company_teammate, person: self_person, organization: org)
+      other = create(:company_teammate, person: other_person, organization: org)
+      other_label = "#{other_person.casual_name}'s One Thing"
+
+      expect(helper.one_thing_label_for(viewer, viewer: viewer)).to eq('My One Thing')
+      expect(helper.one_thing_label_for(other, viewer: viewer)).to eq(other_label)
+      expect(helper.open_one_thing_label_for(other, viewer: viewer)).to eq("Open #{other_label}")
+      expect(helper.back_to_one_thing_label_for(other, viewer: viewer)).to eq("Back to #{other_label}")
+    end
   end
 
   describe '#terminology' do

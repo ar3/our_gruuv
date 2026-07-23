@@ -311,7 +311,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
           organization,
           assignment,
           return_url: routes.organization_company_teammate_one_on_one_link_path(organization, wtm_teammate),
-          return_text: "Back to My One Thing",
+          return_text: "Back to #{wtm_teammate.person.casual_name}'s One Thing",
           for_company_teammate_id: wtm_teammate.id
         )
       )
@@ -324,7 +324,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
           organization,
           aspiration,
           return_url: routes.organization_company_teammate_one_on_one_link_path(organization, wtm_teammate),
-          return_text: "Back to My One Thing",
+          return_text: "Back to #{wtm_teammate.person.casual_name}'s One Thing",
           for_company_teammate_id: wtm_teammate.id
         )
       )
