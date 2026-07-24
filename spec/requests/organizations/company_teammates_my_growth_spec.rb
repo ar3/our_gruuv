@@ -396,6 +396,11 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       it 'allows GET my_growth/position_change' do
         get my_growth_position_change_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
+
+        current_position = employee_teammate.employment_tenures.active.first.position
+        expect(response.body).to include(organization_position_path(organization, current_position))
+        expect(response.body).to include('Current Position')
+        expect(response.body).not_to include('Current role')
       end
     end
 

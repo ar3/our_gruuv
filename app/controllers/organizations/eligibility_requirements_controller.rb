@@ -134,6 +134,11 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     @seat_occupant_by_seat_id = filled_seat_ids.any? ? EmploymentTenure.active.where(seat_id: filled_seat_ids).includes(:company_teammate).index_by(&:seat_id) : {}
     @business_need_eligible = @teammate_in_seat_for_position.present? || @open_seats_for_position.any?
 
+    # Hide business-need UI when teammate already holds a seat with this title (logic above unchanged).
+    active_seat = @teammate.employment_tenures.active.where(company: organization).includes(seat: :title).first&.seat
+    @show_business_need_criterion = active_seat.nil? || active_seat.title_id != @position.title_id
+    @irrelevant_eligibility_criteria = build_irrelevant_eligibility_criteria(active_seat)
+
     # Section (8): Position check-in requirements — monthly status (one row) and eligibility result
     pos_check = @eligibility_report[:checks].find { |c| c[:key] == :position_check_in_requirements }
     if pos_check.present? && pos_check[:status] != :not_configured
@@ -143,6 +148,19 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
       @position_check_in_monthly_status_by_row_id = nil
       @position_check_in_eligibility_result = nil
     end
+  end
+
+  # Criteria hidden from the main checklist for this analysis (shown in a collapsed footer).
+  # Returns array of { label:, reason: }.
+  def build_irrelevant_eligibility_criteria(active_seat)
+    return [] if @show_business_need_criterion
+
+    casual = @teammate.person.casual_name.presence || @teammate.person.display_name
+    title_name = active_seat.title.display_name
+    [{
+      label: "There has to be a business need",
+      reason: "Not shown because #{casual} already holds a seat with this title (#{title_name}). Business need applies when considering a different title."
+    }]
   end
 
   # Array of sentence strings for each configured eligibility check (for collapsible summary).

@@ -44,7 +44,7 @@
   .col-12
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section1Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 (1) Non-OurGruuv-related eligibility requirements…
+        %h3.mb-0 Non-OurGruuv-related eligibility requirements…
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -73,68 +73,69 @@
   .col-12
     %hr.mb-5.mt-5{ style: "border-width: 5px;" }
 
-.row.mb-4
-  .col-12
-    .card
-      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section2Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        .d-flex.flex-column
-          %h3.mb-0 (2) There has to be a business need…
-          .small.text-muted.mt-1= eligibility_criterion_business_need_sentence
-        .d-flex.align-items-center.small.text-muted
-          %span.expand-detail-label.d-inline-flex.align-items-center
-            Expand for details
-            %i.bi.bi-chevron-down.ms-1
-          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
-            Show less detail
-            %i.bi.bi-chevron-up.ms-1
-      .card-body.collapse.eligibility-section-collapse-body.py-2{ id: "section2Body" }
-        - casual_name = @teammate.person.casual_name.presence || "This teammate"
-        - if @open_seats_for_position.any?
-          - open_seat = @open_seats_for_position.first
-          %p.mb-0
-            = link_to open_seat.display_name, organization_seat_path(@organization, open_seat), class: "text-decoration-none"
-            is an open seat that could be filled by 
-            %strong= "✅ #{casual_name}"
-            = " if they meet the other eligibility requirements"
-        - elsif @teammate_in_seat_for_position.present?
-          - seat = @teammate_in_seat_for_position
-          %p.mb-0
-            %strong= "✅ #{casual_name} is already sitting in the seat "
-            = link_to seat.display_name, organization_seat_path(@organization, seat), class: "text-decoration-none"
-            that is associated with 
-            = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
-            = "."
-        - elsif @seats_for_position.any?
-          - filled_with_occupants = @seats_for_position.select(&:filled?).map { |s| { seat: s, occupant: @seat_occupant_by_seat_id[s.id]&.company_teammate } }.reject { |h| h[:occupant].nil? }
-          - occupant_links = filled_with_occupants.map { |h| link_to(h[:occupant].person.casual_name.presence || h[:occupant].person.display_name, internal_organization_company_teammate_path(@organization, h[:occupant]), class: "text-decoration-none") }
-          - seat_links = filled_with_occupants.map { |h| link_to(h[:seat].display_name, organization_seat_path(@organization, h[:seat]), class: "text-decoration-none") }
-          %p.mb-0
-            %strong= "🚧 #{casual_name} will have to wait for a seat to open up. "
-            = safe_join(occupant_links, ", ")
-            are currently sitting in the available seats
-            = safe_join(seat_links, ", ")
-            = "."
-        - else
-          %p.text-muted.mb-0
-            🚧 
-            = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
-            = " has no available seats at "
-            = @organization.name
-            = ". We must wait until there is a business need for this position."
-        .alert.alert-info.mb-0.mt-4.small
-          Title-growth is not the only way to grow. 
-          %strong Experience
-          (taking on Assignments that help with your professional goals) and 
-          %strong Acknowledgement
-          of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
-      .card-footer.fw-semibold.small.py-2{class: @business_need_eligible ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
-        .d-flex.justify-content-end.align-items-center.h2.mb-3.mt-3
-          - if @business_need_eligible
-            %i.bi.bi-star-fill.text-success.fs-2.align-middle
-            %span.ms-1 Eligible
+- if @show_business_need_criterion
+  .row.mb-4
+    .col-12
+      .card
+        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section2Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+          .d-flex.flex-column
+            %h3.mb-0 There has to be a business need…
+            .small.text-muted.mt-1= eligibility_criterion_business_need_sentence
+          .d-flex.align-items-center.small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+        .card-body.collapse.eligibility-section-collapse-body.py-2{ id: "section2Body" }
+          - casual_name = @teammate.person.casual_name.presence || "This teammate"
+          - if @open_seats_for_position.any?
+            - open_seat = @open_seats_for_position.first
+            %p.mb-0
+              = link_to open_seat.display_name, organization_seat_path(@organization, open_seat), class: "text-decoration-none"
+              is an open seat that could be filled by 
+              %strong= "✅ #{casual_name}"
+              = " if they meet the other eligibility requirements"
+          - elsif @teammate_in_seat_for_position.present?
+            - seat = @teammate_in_seat_for_position
+            %p.mb-0
+              %strong= "✅ #{casual_name} is already sitting in the seat "
+              = link_to seat.display_name, organization_seat_path(@organization, seat), class: "text-decoration-none"
+              that is associated with 
+              = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
+              = "."
+          - elsif @seats_for_position.any?
+            - filled_with_occupants = @seats_for_position.select(&:filled?).map { |s| { seat: s, occupant: @seat_occupant_by_seat_id[s.id]&.company_teammate } }.reject { |h| h[:occupant].nil? }
+            - occupant_links = filled_with_occupants.map { |h| link_to(h[:occupant].person.casual_name.presence || h[:occupant].person.display_name, internal_organization_company_teammate_path(@organization, h[:occupant]), class: "text-decoration-none") }
+            - seat_links = filled_with_occupants.map { |h| link_to(h[:seat].display_name, organization_seat_path(@organization, h[:seat]), class: "text-decoration-none") }
+            %p.mb-0
+              %strong= "🚧 #{casual_name} will have to wait for a seat to open up. "
+              = safe_join(occupant_links, ", ")
+              are currently sitting in the available seats
+              = safe_join(seat_links, ", ")
+              = "."
           - else
-            %i.bi.bi-x-circle.fs-2.align-middle
-            %span.ms-1 No Current Business Need
+            %p.text-muted.mb-0
+              🚧 
+              = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
+              = " has no available seats at "
+              = @organization.name
+              = ". We must wait until there is a business need for this position."
+          .alert.alert-info.mb-0.mt-4.small
+            Title-growth is not the only way to grow. 
+            %strong Experience
+            (taking on Assignments that help with your professional goals) and 
+            %strong Acknowledgement
+            of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
+        .card-footer.fw-semibold.small.py-2{class: @business_need_eligible ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
+          .d-flex.justify-content-end.align-items-center.h2.mb-3.mt-3
+            - if @business_need_eligible
+              %i.bi.bi-star-fill.text-success.fs-2.align-middle
+              %span.ms-1 Eligible
+            - else
+              %i.bi.bi-x-circle.fs-2.align-middle
+              %span.ms-1 No Current Business Need
 
 .row.mb-4
   .col-12
@@ -145,7 +146,7 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section3Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 (3) Criteria for exemplifying our Aspirational Values…
+          %h3.mb-0 Criteria for exemplifying our Aspirational Values…
           - section3_caption = format_eligibility_check_sentence(company_asp_check)
           - if section3_caption.present?
             .small.text-muted.mt-1= section3_caption
@@ -175,7 +176,7 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section4Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 (4) Criteria for Required Assignments…
+          %h3.mb-0 Criteria for Required Assignments…
           - section4_caption = format_eligibility_check_sentence(required_check)
           - if section4_caption.present?
             .small.text-muted.mt-1= section4_caption
@@ -204,7 +205,7 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 (5) Criteria for Unique-to-You Assignments (if applicable)…
+          %h3.mb-0 Criteria for Unique-to-You Assignments (if applicable)…
           - section5_caption = format_eligibility_check_sentence(unique_check)
           - if section5_caption.present?
             .small.text-muted.mt-1= section5_caption
@@ -253,7 +254,7 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section6Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 (6) Criteria for Required Milestones…
+          %h3.mb-0 Criteria for Required Milestones…
           - section6_caption = format_eligibility_check_sentence(milestones_check)
           - if section6_caption.present?
             .small.text-muted.mt-1= section6_caption
@@ -342,7 +343,7 @@
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section8Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
           .d-flex.flex-column
-            %h3.mb-0 (8) Required Overall position ratings…
+            %h3.mb-0 Required Overall position ratings…
             - position_check_in_check = @eligibility_report[:checks]&.find { |c| c[:key] == :position_check_in_requirements }
             - section8_caption = position_check_in_check && format_eligibility_check_sentence(position_check_in_check)
             - if section8_caption.present?
@@ -369,3 +370,17 @@
 .row
   .col-12
     = render "shared/eligibility_requirements_summary", eligibility_requirements_sentences: @eligibility_requirements_sentences, ability_milestone_requirements: @ability_milestone_requirements
+
+- if @irrelevant_eligibility_criteria.present?
+  .row.mb-4
+    .col-12
+      %a.small.text-muted.text-decoration-none.d-inline-flex.align-items-center.gap-1{ "data-bs-toggle" => "collapse", "data-bs-target" => "#irrelevantEligibilityCriteria", "aria-expanded" => "false", "aria-controls" => "irrelevantEligibilityCriteria", href: "#irrelevantEligibilityCriteria", role: "button" }
+        %i.bi.bi-chevron-down
+        %span Irrelevant criteria
+      .collapse.mt-2#irrelevantEligibilityCriteria
+        %ul.list-unstyled.small.text-muted.mb-0
+          - @irrelevant_eligibility_criteria.each do |item|
+            %li.mb-2
+              %span.fw-semibold= item[:label]
+              = " — "
+              = item[:reason]

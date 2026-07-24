@@ -23,8 +23,9 @@
     .row.g-3.align-items-center
       .col-lg-5
         - if @current_employment&.position
-          %h4.mb-1= @current_employment.position.display_name
-          %p.small.text-muted.mb-0 Current role
+          %h4.mb-1
+            = link_to @current_employment.position.display_name, organization_position_path(organization, @current_employment.position), class: 'text-decoration-none'
+          %p.small.text-muted.mb-0 Current Position
         - else
           %p.text-muted.mb-0 No active employment / position in this organization.
       .col-lg-7

@@ -9,7 +9,7 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "##{section_body_id}", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 (7) Required Milestone Mileage…
+          %h3.mb-0 Required Milestone Mileage…
           - section7_caption = format_eligibility_check_sentence(mileage_check)
           - if section7_caption.present?
             .small.text-muted.mt-1= section7_caption
