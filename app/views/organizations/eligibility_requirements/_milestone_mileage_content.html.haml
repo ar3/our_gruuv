@@ -17,13 +17,13 @@
       .d-flex.flex-column.gap-1.w-100
         - if earned[:addends].any?
           - earned[:addends].each do |a|
-            - earned_label = "#{milestone_level_display(a[:levels].max)} #{a[:ability_name]} – Milestone #{milestone_levels_sentence(a[:levels])}"
+            - earned_label = "#{milestone_level_display(a[:levels].max)} #{a[:ability_name]} – Ability Milestone #{milestone_levels_sentence(a[:levels])}"
             - earned_display = a[:ability_id].present? ? link_to(earned_label, organization_teammate_ability_path(organization, teammate, a[:ability_id]), class: "text-decoration-none") : earned_label
             = render partial: "organizations/eligibility_requirements/mileage_card",
               locals: { display_label: earned_display, points: a[:points], is_total: false }
         - else
           .mileage-card.d-flex.align-items-center.px-2.py-1{ style: "min-height: 4rem; border: 1px solid #e9ecef; border-radius: 2px;" }
-            .small.text-muted No milestones earned yet
+            .small.text-muted No Ability Milestones earned yet
     .col-6.mileage-column.border-start.border-4{ style: "border-color: #dee2e6 !important;" }
       %p.small.text-muted.mb-2.fw-semibold
         What you need for
@@ -36,7 +36,7 @@
       .d-flex.flex-column.gap-1.w-100
         - if required[:addends].any?
           - required[:addends].each do |a|
-            - required_label = "#{milestone_level_display(a[:levels].max)} #{a[:ability_name]} – Milestone #{milestone_levels_sentence(a[:levels])}"
+            - required_label = "#{milestone_level_display(a[:levels].max)} #{a[:ability_name]} – Ability Milestone #{milestone_levels_sentence(a[:levels])}"
             - required_display = a[:ability_id].present? ? link_to(required_label, organization_teammate_ability_path(organization, teammate, a[:ability_id]), class: "text-decoration-none") : required_label
             = render partial: "organizations/eligibility_requirements/mileage_card",
               locals: { display_label: required_display, points: a[:points], is_total: false }
@@ -56,4 +56,4 @@
           locals: { display_label: "Total", points: minimum_miles, is_total: true }
 
 - else
-  %p.text-muted.mb-0 Milestone mileage is not configured for this position.
+  %p.text-muted.mb-0 Ability Milestone mileage is not configured for this position.

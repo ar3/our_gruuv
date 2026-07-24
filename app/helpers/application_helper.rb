@@ -233,9 +233,28 @@ module ApplicationHelper
     end
   end
 
-  # Returns a single sentence describing the eligibility check (for use in the collapsible summary).
+  # Returns a full eligibility criterion sentence including position + person context.
   # check: { key:, label:, status:, details: }
-  def format_eligibility_check_sentence(check)
+  # Optional position/teammate personalize the "In order to be eligible for…" framing.
+  def format_eligibility_check_sentence(check, position: nil, teammate: nil)
+    return nil if check.blank? || check[:status] == :not_configured
+
+    must_clause = eligibility_check_must_clause(check)
+    return nil if must_clause.blank?
+
+    position_name = position&.display_name.presence || "this position"
+    person_name = eligibility_sentence_person_name(teammate)
+    "In order to be eligible for #{position_name}, #{person_name} must #{must_clause}"
+  end
+
+  def eligibility_sentence_person_name(teammate)
+    return "a teammate" if teammate.blank?
+
+    teammate.person.casual_name.presence || teammate.person.display_name.presence || "a teammate"
+  end
+
+  # Lowercase clause after "must …" for one eligibility check (includes trailing period).
+  def eligibility_check_must_clause(check)
     return nil if check.blank? || check[:status] == :not_configured
 
     details = check[:details] || {}
@@ -243,55 +262,58 @@ module ApplicationHelper
 
     case check[:key]
     when :milestone_requirements
-      eligibility_ability_milestones_intro_sentence
+      "earn the required Ability Milestone for each ability listed below."
     when :mileage_requirements
-      if details[:threshold_type] == 'percentage' || details['threshold_type'] == 'percentage'
-        pct = details[:threshold_value] || details['threshold_value']
-        base = details[:minimum_required_from_milestones] || details['minimum_required_from_milestones']
-        if pct.present? && base.present?
-          "At least #{pct}% more than required milestone mileage (#{base} points)."
-        elsif pct.present?
-          "At least #{pct}% more than required milestone mileage."
-        end
-      else
-        pts = details[:minimum_mileage_points] || details['minimum_mileage_points'] || details[:threshold_value] || details['threshold_value']
-        pts.present? ? "At least #{pts} mileage points." : nil
-      end
+      mileage_must_clause(details)
     when :position_check_in_requirements
       months = details[:minimum_months_at_or_above_rating_criteria] || details['minimum_months_at_or_above_rating_criteria']
       rating = details[:minimum_rating] || details['minimum_rating']
       if months.present? && rating.present?
         rating_val = rating.to_i
         rating_label = EmploymentTenure::POSITION_RATINGS[rating_val] ? position_rating_display(rating_val) : "rating #{rating}"
-        "At least #{months} months at or above #{rating_label}."
-      else
-        nil
+        "have at least #{months} months at or above #{rating_label}."
       end
     when :required_assignment_check_in_requirements
-      format_assignments_requirement(details)
+      clause = format_assignments_requirement(details)
+      clause.present? ? "meet #{clause.sub(/\AAt least /i, 'at least ').sub(/\.\z/, '')} on required assignments." : nil
     when :unique_to_you_assignment_check_in_requirements
-      format_assignments_requirement(details, assignment_label: "unique-to-you assignments")
+      clause = format_assignments_requirement(details, assignment_label: "unique-to-you assignments")
+      clause.present? ? "meet #{clause.sub(/\AAt least /i, 'at least ').sub(/\.\z/, '')} on unique-to-you assignments." : nil
     when :company_aspirational_values_check_in_requirements
-      format_aspirational_values_requirement(details)
+      clause = format_aspirational_values_requirement(details)
+      clause.present? ? "meet #{clause.sub(/\AAt least /i, 'at least ').sub(/\.\z/, '')} on company aspirational values." : nil
     else
-      label.present? ? "#{label} (see details above)." : nil
+      label.present? ? "satisfy #{label.downcase} (see details above)." : nil
+    end
+  end
+
+  def mileage_must_clause(details)
+    if details[:threshold_type] == 'percentage' || details['threshold_type'] == 'percentage'
+      pct = details[:threshold_value] || details['threshold_value']
+      base = details[:minimum_required_from_milestones] || details['minimum_required_from_milestones']
+      if pct.present? && base.present?
+        "earn at least #{pct}% more than required Ability Milestone mileage (#{base} points)."
+      elsif pct.present?
+        "earn at least #{pct}% more than required Ability Milestone mileage."
+      end
+    else
+      pts = details[:minimum_mileage_points] || details['minimum_mileage_points'] || details[:threshold_value] || details['threshold_value']
+      pts.present? ? "earn at least #{pts} Ability Milestone Miles." : nil
     end
   end
 
   # Short summary sentence for one section on defaults pages.
   def eligibility_requirement_section_summary(key, details)
     format_eligibility_check_sentence(
-      key: key.to_sym,
-      status: :passed,
-      details: details || {}
+      { key: key.to_sym, status: :passed, details: details || {} }
     ) || "Configured."
   end
 
   # Display label for each eligibility check (used on position show page where there is no section title).
   def eligibility_check_label(key)
     case key.to_sym
-    when :milestone_requirements then "Required ability milestones"
-    when :mileage_requirements then "Milestone mileage"
+    when :milestone_requirements then "Required Ability Milestones"
+    when :mileage_requirements then "Ability Milestone mileage"
     when :position_check_in_requirements then "Position check-ins"
     when :required_assignment_check_in_requirements then "Required assignments"
     when :unique_to_you_assignment_check_in_requirements then "Unique-to-you assignments"
@@ -317,34 +339,97 @@ module ApplicationHelper
       details = details.to_h if details.respond_to?(:to_h)
       configured = details.present? && details.respond_to?(:values) && details.values.any?(&:present?)
       check = { key: key.to_sym, details: details || {}, status: configured ? :passed : :not_configured }
-      sentence = format_eligibility_check_sentence(check)
+      sentence = format_eligibility_check_sentence(check, position: position)
       next unless sentence.present?
       "#{eligibility_check_label(key)}: #{sentence}"
     end
     # Add milestone sentence if position has ability requirements but no explicit milestone config
-    if sentences.none? { |s| s.include?("Required ability milestones") } && ability_milestone_requirements_for_position(position).any?
-      sentences << "Required ability milestones: #{eligibility_ability_milestones_intro_sentence}"
+    if sentences.none? { |s| s.include?("Required Ability Milestones") } && ability_milestone_requirements_for_position(position).any?
+      milestone_sentence = format_eligibility_check_sentence(
+        { key: :milestone_requirements, status: :passed, details: {} },
+        position: position
+      )
+      sentences << "Required Ability Milestones: #{milestone_sentence}" if milestone_sentence.present?
     end
     sentences
   end
 
-  # Reusable sentence for the business need criterion (criterion 2). Used in eligibility requirements
-  # page header and can be used in position show summary if that list is extended.
-  def eligibility_criterion_business_need_sentence
-    "There must be an open seat for this position, or you must already be in the seat associated with this position."
+  # Reusable sentence for the business need criterion. Used in eligibility requirements page header.
+  def eligibility_criterion_business_need_sentence(position: nil, teammate: nil)
+    position_name = position&.display_name.presence || "this position"
+    person_name = eligibility_sentence_person_name(teammate)
+    "In order to be eligible for #{position_name}, #{person_name} must have an open seat for this position, or already sit in a seat associated with this position."
   end
 
   # Reusable intro sentence for the ability milestones requirement (no object prefix; caller adds title on position show).
   def eligibility_ability_milestones_intro_sentence
-    "Meet the required Milestone for each ability listed below."
+    "Meet the required Ability Milestone for each ability listed below."
   end
 
-  # Reusable sentence for one ability milestone requirement. Uses "Milestone" and the alternative wording (e.g. Advanced, Expert).
-  # Example: "Communication: Milestone 2 (Advanced)"
+  # Popover HTML for an eligibility requirements section help icon.
+  def eligibility_section_help_content(section_key)
+    measures, how_to_read = eligibility_section_help_copy(section_key)
+    return "" if measures.blank?
+
+    parts = []
+    parts << "<p class=\"mb-2\"><strong>What it measures</strong><br>#{ERB::Util.html_escape(measures)}</p>"
+    parts << "<p class=\"mb-0\"><strong>How to read</strong><br>#{ERB::Util.html_escape(how_to_read)}</p>" if how_to_read.present?
+    parts.join
+  end
+
+  def eligibility_section_help_copy(section_key)
+    case section_key.to_sym
+    when :non_ourgruuv
+      [
+        "Human judgment and context that OurGruuv cannot fully encode — conversations, team needs, and other subjective factors around seat changes.",
+        "Expand for the explanation and the managerial hierarchy links who should stay aligned on eligibility."
+      ]
+    when :business_need
+      [
+        "Whether the organization currently needs someone in this position: an open seat exists, or the teammate already holds a seat for this title.",
+        "Expand for seat details. The footer shows Eligible when a seat is open or already held; otherwise No Current Business Need."
+      ]
+    when :aspirational_values
+      [
+        "Whether the teammate’s company aspirational-values check-ins meet the position’s meeting/exceeding thresholds over the required months.",
+        "Each row is one value. Colored blocks are the last 12 months (green = exceeding, blue = meeting, orange = working to meet, grey = none). The right column and footer summarize eligibility for this criterion."
+      ]
+    when :required_assignments
+      [
+        "Whether check-ins on the position’s required assignments meet the meeting/exceeding thresholds over the required months.",
+        "Each row is one required assignment. Month blocks and the Position Requirement column show status; the footer totals whether this criterion is met."
+      ]
+    when :unique_to_you
+      [
+        "Whether unique-to-you (non-required) assignments meet this position’s expectations — or, when not required, the teammate’s active unique-to-you work as a growth signal.",
+        "When shown as a requirement, read it like required assignments. When shown only because the teammate already has unique-to-you work, the note explains it’s growth-oriented rather than a hard gate for this position."
+      ]
+    when :milestones
+      [
+        "Whether the teammate has earned the required Ability Milestone level for each ability this position (and its required assignments) expect.",
+        "Each row is an ability. Filled circles are earned levels; Pass / Working to meet shows whether that ability’s requirement is met. The footer summarizes overall Ability Milestone eligibility."
+      ]
+    when :mileage
+      [
+        "Whether the teammate’s total Ability Milestone Miles meet the position’s mileage threshold (absolute points, or a percentage more than the miles from required Ability Milestones).",
+        "Expand for the earned vs required mileage equation. The footer compares total miles earned to the minimum required for this criterion."
+      ]
+    when :position_ratings
+      [
+        "Whether overall position check-in ratings meet the minimum rating for enough months in the lookback window.",
+        "The single row shows month-by-month position ratings. The footer summarizes whether this criterion is met."
+      ]
+    else
+      [nil, nil]
+    end
+  end
+
+  # Reusable sentence for one ability milestone requirement. Uses "Ability Milestone" and the alternative wording (e.g. Advanced, Expert).
+  # Example: "Communication: Ability Milestone 2 (Advanced)"
   def eligibility_ability_milestone_requirement_sentence(ability, minimum_milestone_level)
     return nil if ability.blank? || minimum_milestone_level.blank?
     word = milestone_level_display(minimum_milestone_level.to_i)
-    "#{ability.name}: Milestone #{minimum_milestone_level} (#{word})"
+    "#{ability.name}: Ability Milestone #{minimum_milestone_level} (#{word})"
   end
 
   # Array of { ability:, minimum_milestone_level: } from position direct + required assignments (max per ability).

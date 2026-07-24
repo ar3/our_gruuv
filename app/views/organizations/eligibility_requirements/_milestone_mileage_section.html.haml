@@ -9,8 +9,10 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "##{section_body_id}", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 Required Milestone Mileage…
-          - section7_caption = format_eligibility_check_sentence(mileage_check)
+          .d-flex.align-items-center.gap-2
+            %h3.mb-0 Required Ability Milestone Mileage…
+            = render "organizations/eligibility_requirements/section_help_popover", section_key: :mileage
+          - section7_caption = format_eligibility_check_sentence(mileage_check, position: @position, teammate: teammate)
           - if section7_caption.present?
             .small.text-muted.mt-1= section7_caption
         .d-flex.align-items-center.small.text-muted
@@ -39,9 +41,9 @@
               .eligibility-footer-detail-left
                 - if mileage_percentage
                   .small.text-muted.mb-1
-                    Required: #{mileage_details[:threshold_value]}% more than required milestone total (#{mileage_details[:minimum_required_from_milestones]} points) = #{minimum_miles} points
+                    Required: #{mileage_details[:threshold_value]}% more than required Ability Milestone total (#{mileage_details[:minimum_required_from_milestones]} points) = #{minimum_miles} points
                 %div
-                  Total: #{earned[:total]} Milestone Miles earned vs #{minimum_miles} required
+                  Total: #{earned[:total]} Ability Milestone Miles earned vs #{minimum_miles} required
               .eligibility-footer-expand-collapsed
                 %a.text-decoration-none.small{ href: "##{section_body_id}", data: { bs_toggle: "collapse", bs_target: "##{section_body_id}" } }
                   Expand for details

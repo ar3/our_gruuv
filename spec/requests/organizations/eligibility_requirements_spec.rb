@@ -58,6 +58,22 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include(internal_organization_company_teammate_path(organization, teammate))
     end
 
+    it 'personalizes criterion captions and includes section help popovers' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      casual = teammate.person.casual_name.presence || teammate.person.display_name
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("In order to be eligible for #{position.display_name}, #{casual} must")
+      expect(response.body).to include('bi-question-circle')
+      expect(response.body).to include('What it measures')
+      expect(response.body).to include('How to read')
+      expect(response.body).to include('eligibility-section-help')
+    end
+
     it 'includes the selected teammate Growth Position Change crumb in breadcrumbs' do
       get organization_eligibility_requirement_path(
         organization,
@@ -385,7 +401,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('Unknown')
     end
 
-    it 'renders Required Milestones and Milestone Mileage as cards' do
+    it 'renders Required Ability Milestones and Ability Milestone Mileage as cards' do
       get organization_eligibility_requirement_path(
         organization,
         position,
@@ -393,8 +409,8 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Criteria for Required Milestones')
-      expect(response.body).to include('Required Milestone Mileage')
+      expect(response.body).to include('Criteria for Required Ability Milestones')
+      expect(response.body).to include('Required Ability Milestone Mileage')
       expect(response.body).not_to include('(6) Criteria for Required Milestones')
       expect(response.body).not_to include('(7) Required Milestone Mileage')
       expect(response.body).to include('section6Body')
@@ -402,7 +418,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(true)
     end
 
-    it 'hides Milestone Mileage when configured as 0% more than required' do
+    it 'hides Ability Milestone Mileage when configured as 0% more than required' do
       h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
         'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 0 }
       )
@@ -417,14 +433,14 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).not_to include('section7Body')
       expect(response.body).to include('id="irrelevantEligibilityCriteria"')
-      expect(response.body).to include('equals the miles from Required Milestones')
+      expect(response.body).to include('equals the miles from Required Ability Milestones')
       expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(false)
       mileage_check = controller.instance_variable_get(:@eligibility_report)[:checks].find { |c| c[:key] == :mileage_requirements }
       expect(mileage_check).to be_present
       expect(mileage_check[:status]).not_to eq(:not_configured)
     end
 
-    it 'shows Milestone Mileage when percentage more than required is greater than zero' do
+    it 'shows Ability Milestone Mileage when percentage more than required is greater than zero' do
       h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
         'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 20 }
       )
@@ -437,9 +453,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       )
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Required Milestone Mileage')
+      expect(response.body).to include('Required Ability Milestone Mileage')
       expect(response.body).to include('section7Body')
-      expect(response.body).not_to include('equals the miles from Required Milestones')
+      expect(response.body).not_to include('equals the miles from Required Ability Milestones')
       expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(true)
     end
 
@@ -470,7 +486,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).not_to include('section7Body')
       expect(response.body).to include('id="irrelevantEligibilityCriteria"')
       expect(response.body).to include('already holds a seat with this title')
-      expect(response.body).to include('equals the miles from Required Milestones')
+      expect(response.body).to include('equals the miles from Required Ability Milestones')
       expect(controller.instance_variable_get(:@show_business_need_criterion)).to eq(false)
       expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(false)
     end

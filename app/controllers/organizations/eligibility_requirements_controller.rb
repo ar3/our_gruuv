@@ -177,8 +177,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     unless @show_mileage_criterion
       items << {
-        label: "Required Milestone Mileage",
-        reason: "Not shown because the mileage requirement equals the miles from Required Milestones for this position. A separate mileage criterion applies when the threshold is higher (for example, a percentage more than required)."
+        label: "Required Ability Milestone Mileage",
+        reason: "Not shown because the mileage requirement equals the miles from Required Ability Milestones for this position. A separate mileage criterion applies when the threshold is higher (for example, a percentage more than required)."
       }
     end
 
@@ -220,7 +220,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     return [] unless @eligibility_report && @eligibility_report[:checks]
 
     @eligibility_report[:checks].filter_map do |check|
-      helpers.format_eligibility_check_sentence(check)
+      helpers.format_eligibility_check_sentence(check, position: @position, teammate: @teammate)
     end
   end
 

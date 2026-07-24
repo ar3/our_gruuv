@@ -1,0 +1,16 @@
+-# Locals: section_key (Symbol/String)
+- section_key = local_assigns.fetch(:section_key)
+- help_html = eligibility_section_help_content(section_key)
+- return if help_html.blank?
+%button.btn.btn-link.btn-sm.p-0.align-baseline.text-muted.eligibility-section-help{
+  type: "button",
+  "aria-label": "Help for this eligibility section",
+  "data-bs-toggle": "popover",
+  "data-bs-trigger": "hover focus click",
+  "data-bs-placement": "right",
+  "data-bs-html": "true",
+  "data-bs-content": help_html,
+  onclick: "event.stopPropagation();",
+  onmousedown: "event.stopPropagation();"
+}
+  %i.bi.bi-question-circle

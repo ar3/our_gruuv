@@ -28,7 +28,7 @@
             - sentences.each do |sentence|
               %li.mb-1= sentence
         - if ability_milestone_requirements.present?
-          %p.fw-semibold.mb-2 Abilities and required milestones
+          %p.fw-semibold.mb-2 Abilities and required Ability Milestones
           %ul.mb-0
             - ability_milestone_requirements.each do |item|
               %li= eligibility_ability_milestone_requirement_sentence(item[:ability], item[:minimum_milestone_level])
@@ -42,7 +42,7 @@
             - sentences.each do |sentence|
               %li.mb-1= sentence
         - if ability_milestone_requirements.present?
-          %p.fw-semibold.mb-2 Abilities and required milestones
+          %p.fw-semibold.mb-2 Abilities and required Ability Milestones
           %ul.mb-0
             - ability_milestone_requirements.each do |item|
               %li= eligibility_ability_milestone_requirement_sentence(item[:ability], item[:minimum_milestone_level])

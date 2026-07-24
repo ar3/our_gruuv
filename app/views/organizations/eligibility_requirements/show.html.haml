@@ -44,7 +44,9 @@
   .col-12
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section1Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        %h3.mb-0 Non-OurGruuv-related eligibility requirements…
+        .d-flex.align-items-center.gap-2
+          %h3.mb-0 Non-OurGruuv-related eligibility requirements…
+          = render "organizations/eligibility_requirements/section_help_popover", section_key: :non_ourgruuv
         .d-flex.align-items-center.small.text-muted
           %span.expand-detail-label.d-inline-flex.align-items-center
             Expand for details
@@ -79,8 +81,10 @@
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section2Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
           .d-flex.flex-column
-            %h3.mb-0 There has to be a business need…
-            .small.text-muted.mt-1= eligibility_criterion_business_need_sentence
+            .d-flex.align-items-center.gap-2
+              %h3.mb-0 There has to be a business need…
+              = render "organizations/eligibility_requirements/section_help_popover", section_key: :business_need
+            .small.text-muted.mt-1= eligibility_criterion_business_need_sentence(position: @position, teammate: @teammate)
           .d-flex.align-items-center.small.text-muted
             %span.expand-detail-label.d-inline-flex.align-items-center
               Expand for details
@@ -127,7 +131,7 @@
             %strong Experience
             (taking on Assignments that help with your professional goals) and 
             %strong Acknowledgement
-            of Skills/Knowledge (by demonstrating and then getting certified in Milestones).
+            of Skills/Knowledge (by demonstrating and then getting certified in Ability Milestones).
         .card-footer.fw-semibold.small.py-2{class: @business_need_eligible ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
           .d-flex.justify-content-end.align-items-center.h2.mb-3.mt-3
             - if @business_need_eligible
@@ -146,8 +150,10 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section3Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 Criteria for exemplifying our Aspirational Values…
-          - section3_caption = format_eligibility_check_sentence(company_asp_check)
+          .d-flex.align-items-center.gap-2
+            %h3.mb-0 Criteria for exemplifying our Aspirational Values…
+            = render "organizations/eligibility_requirements/section_help_popover", section_key: :aspirational_values
+          - section3_caption = format_eligibility_check_sentence(company_asp_check, position: @position, teammate: @teammate)
           - if section3_caption.present?
             .small.text-muted.mt-1= section3_caption
         .d-flex.align-items-center.small.text-muted
@@ -160,7 +166,7 @@
       .card-body.collapse.eligibility-section-collapse-body.py-2{ id: "section3Body" }
         = render "organizations/eligibility_requirements/check_in_requirements_section",
           section_title: "Company Aspirational Values Check-In Requirements",
-          requirement_sentence: (company_asp_check && company_asp_check[:details].present?) ? format_aspirational_values_requirement(company_asp_check[:details]) : nil,
+          requirement_sentence: nil,
           rows: @aspirational_values_table_rows.select { |r| r[:section] == 'company' }.map { |r| { name: r[:aspiration].name, id: r[:aspiration].id, path: organization_teammate_aspiration_path(@organization, @teammate, r[:aspiration]) } },
           monthly_status_by_id: @aspirational_values_monthly_status,
           eligibility_result: company_asp_result,
@@ -176,8 +182,10 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section4Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 Criteria for Required Assignments…
-          - section4_caption = format_eligibility_check_sentence(required_check)
+          .d-flex.align-items-center.gap-2
+            %h3.mb-0 Criteria for Required Assignments…
+            = render "organizations/eligibility_requirements/section_help_popover", section_key: :required_assignments
+          - section4_caption = format_eligibility_check_sentence(required_check, position: @position, teammate: @teammate)
           - if section4_caption.present?
             .small.text-muted.mt-1= section4_caption
         .d-flex.align-items-center.small.text-muted
@@ -190,7 +198,7 @@
       .card-body.collapse.eligibility-section-collapse-body.py-2{ id: "section4Body" }
         = render "organizations/eligibility_requirements/check_in_requirements_section",
           section_title: "Required Assignment Check-In Requirements",
-          requirement_sentence: (required_check && required_check[:details].present?) ? format_assignments_requirement(required_check[:details]) : nil,
+          requirement_sentence: nil,
           rows: @required_assignments.map { |a| { name: a.title, id: a.id, path: organization_teammate_assignment_path(@organization, @teammate, a) } },
           monthly_status_by_id: @required_assignments_monthly_status,
           eligibility_result: @required_assignments_eligibility_result,
@@ -206,10 +214,13 @@
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
           .d-flex.flex-column
-            %h3.mb-0 Criteria for Unique-to-You Assignments (if applicable)…
-            - section5_caption = format_eligibility_check_sentence(unique_check)
-            - if section5_caption.present?
-              .small.text-muted.mt-1= section5_caption
+            .d-flex.align-items-center.gap-2
+              %h3.mb-0 Criteria for Unique-to-You Assignments (if applicable)…
+              = render "organizations/eligibility_requirements/section_help_popover", section_key: :unique_to_you
+            - unless @show_unique_to_you_growth_note
+              - section5_caption = format_eligibility_check_sentence(unique_check, position: @position, teammate: @teammate)
+              - if section5_caption.present?
+                .small.text-muted.mt-1= section5_caption
             - if @show_unique_to_you_growth_note
               .small.text-muted.mt-1
                 This position doesn’t require unique-to-you assignments for eligibility, but many positions do — and taking them on is a great form of growth.
@@ -228,7 +239,7 @@
           - elsif @unique_assignments.present?
             = render "organizations/eligibility_requirements/check_in_requirements_section",
               section_title: "Unique-to-You Assignment Check-In Requirements",
-              requirement_sentence: (unique_check && unique_check[:details].present?) ? format_assignments_requirement(unique_check[:details], assignment_label: "unique-to-you assignments") : nil,
+              requirement_sentence: nil,
               rows: @unique_assignments.map { |a| { name: a.title, id: a.id, path: organization_teammate_assignment_path(@organization, @teammate, a) } },
               monthly_status_by_id: @unique_assignments_monthly_status || {},
               eligibility_result: @unique_assignments_eligibility_result,
@@ -259,8 +270,10 @@
     .card
       .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section6Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
         .d-flex.flex-column
-          %h3.mb-0 Criteria for Required Milestones…
-          - section6_caption = format_eligibility_check_sentence(milestones_check)
+          .d-flex.align-items-center.gap-2
+            %h3.mb-0 Criteria for Required Ability Milestones…
+            = render "organizations/eligibility_requirements/section_help_popover", section_key: :milestones
+          - section6_caption = format_eligibility_check_sentence(milestones_check, position: @position, teammate: @teammate)
           - if section6_caption.present?
             .small.text-muted.mt-1= section6_caption
         .d-flex.align-items-center.small.text-muted
@@ -277,7 +290,7 @@
             %thead
               %tr
                 %th{ style: "width: 40%;" } Requirement
-                %th{ style: "width: 30%;" }= "#{casual_name}'s earned Milestones"
+                %th{ style: "width: 30%;" }= "#{casual_name}'s earned Ability Milestones"
                 %th{ style: "width: 30%;" }
             %tbody
               - @milestone_table_rows.each do |row|
@@ -286,20 +299,20 @@
                     = link_to row[:ability].name, organization_teammate_ability_path(@organization, @teammate, row[:ability]), class: "text-decoration-none fw-semibold"
                     - row[:requirement_lines].each do |line|
                       %div.small.text-muted.mt-1
-                        = "#{line[:source_name]} requires #{milestone_level_display(line[:milestone_level])} #{row[:ability].name} (Milestone #{line[:milestone_level]})."
+                        = "#{line[:source_name]} requires #{milestone_level_display(line[:milestone_level])} #{row[:ability].name} (Ability Milestone #{line[:milestone_level]})."
                   %td
-                    %span.d-inline-flex.gap-1.align-items-center{ role: "img", "aria-label": "Milestone levels 1–5: filled = earned" }
+                    %span.d-inline-flex.gap-1.align-items-center{ role: "img", "aria-label": "Ability Milestone levels 1–5: filled = earned" }
                       - (1..5).each do |level|
                         - filled = row[:attained_levels].include?(level)
                         - circle_class = filled ? "bg-success" : ""
                         - circle_style = filled ? "width: 20px; height: 20px; min-width: 20px;" : "width: 20px; height: 20px; min-width: 20px; background-color: #e9ecef;"
-                        - tooltip_text = "#{milestone_level_display(level)} #{row[:ability].name} (Milestone #{level})#{filled ? ' · earned' : ''}"
+                        - tooltip_text = "#{milestone_level_display(level)} #{row[:ability].name} (Ability Milestone #{level})#{filled ? ' · earned' : ''}"
                         %span.rounded-circle.d-inline-flex.align-items-center.justify-content-center{ class: circle_class, style: circle_style, data: { bs_toggle: "tooltip", bs_title: tooltip_text } }
                           - if filled
                             %i.bi.bi-check.text-white{ style: "font-size: 10px; line-height: 1;" }
                     - if row[:teammate_milestone]
                       %div.small.text-muted.mt-1
-                        = "#{milestone_level_display(row[:teammate_milestone].milestone_level)} (Milestone #{row[:teammate_milestone].milestone_level})"
+                        = "#{milestone_level_display(row[:teammate_milestone].milestone_level)} (Ability Milestone #{row[:teammate_milestone].milestone_level})"
                         = " · "
                         = row[:teammate_milestone].attained_at.strftime("%B %d, %Y")
                     - elsif row[:attained_levels].empty?
@@ -314,7 +327,7 @@
                         %i.bi.bi-tools.me-1
                         Working to meet
         - else
-          %p.text-muted.mb-0 No milestone requirements configured for this position.
+          %p.text-muted.mb-0 No Ability Milestone requirements configured for this position.
       .card-footer.fw-semibold.small.py-2{class: milestone_passed ? "bg-success bg-opacity-25" : "bg-warning bg-opacity-25"}
         .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
           - if @milestone_table_rows.present?
@@ -323,7 +336,7 @@
             - casual_name = @teammate.person.casual_name.presence || "Teammate"
             .me-2
               .eligibility-footer-detail-left
-                #{total_abilities} total Milestones needed across #{total_abilities} Abilities… and #{casual_name} has earned #{earned_count} of the requisite Milestones
+                #{total_abilities} total Ability Milestones needed across #{total_abilities} Abilities… and #{casual_name} has earned #{earned_count} of the requisite Ability Milestones
               .eligibility-footer-expand-collapsed
                 %a.text-decoration-none.small{ href: "#section6Body", data: { bs_toggle: "collapse", bs_target: "#section6Body" } }
                   Expand for details
@@ -349,9 +362,11 @@
       .card
         .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section8Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
           .d-flex.flex-column
-            %h3.mb-0 Required Overall position ratings…
+            .d-flex.align-items-center.gap-2
+              %h3.mb-0 Required Overall position ratings…
+              = render "organizations/eligibility_requirements/section_help_popover", section_key: :position_ratings
             - position_check_in_check = @eligibility_report[:checks]&.find { |c| c[:key] == :position_check_in_requirements }
-            - section8_caption = position_check_in_check && format_eligibility_check_sentence(position_check_in_check)
+            - section8_caption = position_check_in_check && format_eligibility_check_sentence(position_check_in_check, position: @position, teammate: @teammate)
             - if section8_caption.present?
               .small.text-muted.mt-1= section8_caption
           .d-flex.align-items-center.small.text-muted
