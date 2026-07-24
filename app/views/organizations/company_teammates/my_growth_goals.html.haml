@@ -55,11 +55,9 @@
       %i.bi.bi-box-arrow-up-right.me-2
       = "Go review #{my_growth_goals_casual}'s #{pluralize(my_growth_draft_goals_count, 'draft goal')}"
 
-.mb-4
-  .btn-group{role: "group"}
-    = link_to "Last 90 days", my_growth_goals_organization_company_teammate_path(organization, @teammate, timeframe: '90_days'), class: "btn #{@timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "Last Year", my_growth_goals_organization_company_teammate_path(organization, @teammate, timeframe: 'year'), class: "btn #{@timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "All-Time", my_growth_goals_organization_company_teammate_path(organization, @teammate, timeframe: 'all_time'), class: "btn #{@timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
+= render 'organizations/company_teammates/my_growth/goals_timeframe_toggle',
+  teammate: @teammate,
+  timeframe: @timeframe
 
 = render 'shared/goals_weekly_charts',
   chart_title_period: @chart_title_period,
@@ -80,3 +78,9 @@
   teammate: @teammate,
   bulk_check_in_goals: @bulk_check_in_goals,
   bulk_check_in_hierarchy: @bulk_check_in_hierarchy
+
+= render 'organizations/company_teammates/my_growth/completed_goals_section',
+  completed_goals_journey: @completed_goals_journey,
+  chart_title_period: @completed_goals_chart_title_period,
+  teammate: @teammate,
+  timeframe: @timeframe

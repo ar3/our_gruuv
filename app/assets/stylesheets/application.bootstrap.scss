@@ -1373,6 +1373,17 @@ body:has(.vertical-nav.open) .floating-toggle {
   opacity: 1;
 }
 
+// My Growth — completed goals journey (milestone path + list)
+.completed-goals-journey__learnings {
+  color: var(--bs-body-color);
+  line-height: 1.45;
+}
+
+.completed-goals-journey__list .list-group-item {
+  border-left: 0;
+  border-right: 0;
+}
+
 // My Growth — abilities: mileage total in card corner (Bootstrap popover on hover/focus)
 .my-growth-ability-miles {
   cursor: help;

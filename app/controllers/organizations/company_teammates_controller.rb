@@ -189,11 +189,19 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     range = my_growth_date_range_for(@timeframe)
     chart_range = range || (52.weeks.ago..Time.current)
     @chart_title_period = my_growth_chart_title_period(@timeframe)
+    @completed_goals_timeframe = my_growth_parse_completed_goals_timeframe(params[:completed_goals_timeframe])
+    completed_range = my_growth_completed_goals_date_range_for(@completed_goals_timeframe)
+    @completed_goals_chart_title_period = my_growth_completed_goals_title_period(@completed_goals_timeframe)
     goals_scope = GoalsChartSeries.goals_base_scope(company).where(owner: @teammate)
     @goals_chart_data = GoalsChartSeries.stacked_series(chart_range, goals_scope)
     graph_goal_ids = goals_scope.active.pluck(:id)
     @goals_for_network_graph = graph_goal_ids.any? ? Goal.where(id: graph_goal_ids).includes(:owner, :creator).order(:title) : []
     @goal_links_for_network_graph = graph_goal_ids.any? ? GoalLink.where(parent_id: graph_goal_ids, child_id: graph_goal_ids).includes(:parent, :child) : []
+    @completed_goals_journey = MyGrowth::CompletedGoalsJourney.build(
+      organization: organization,
+      teammate: @teammate,
+      completed_in: completed_range
+    )
     load_bulk_confidence_check_goals
   end
 
@@ -1331,6 +1339,29 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     when :year then 'Last Year'
     when :all_time then 'Last 52 Weeks'
     else 'Last 90 Days'
+    end
+  end
+
+  def my_growth_parse_completed_goals_timeframe(param)
+    case param.to_s
+    when 'all_time' then :all_time
+    else :year
+    end
+  end
+
+  def my_growth_completed_goals_date_range_for(timeframe)
+    case timeframe
+    when :all_time
+      nil
+    else
+      12.months.ago..Time.current
+    end
+  end
+
+  def my_growth_completed_goals_title_period(timeframe)
+    case timeframe
+    when :all_time then 'All-Time'
+    else 'Last 12 Months'
     end
   end
 

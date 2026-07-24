@@ -337,6 +337,72 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include('draft goals')
         expect(response.body).to include('Weekly goal confidence check (in bulk)')
         expect(response.body).to include('No active goals')
+        expect(response.body).to include('Completed goals')
+        expect(response.body).to include('No completed goals in this timeframe yet')
+      end
+
+      context 'completed goals journey' do
+        let!(:hit_goal) do
+          goal = create(
+            :goal,
+            creator: employee_teammate,
+            owner: employee_teammate,
+            company: organization,
+            title: 'Ship the launch',
+            started_at: 3.weeks.ago,
+            completed_at: 5.days.ago,
+            most_likely_target_date: Date.current + 1.week
+          )
+          create(
+            :goal_check_in,
+            goal: goal,
+            confidence_reporter: employee,
+            check_in_week_start: 5.days.ago.to_date.beginning_of_week(:monday),
+            confidence_percentage: 100,
+            confidence_reason: 'Launched with the team'
+          )
+          goal
+        end
+
+        let!(:learning_goal) do
+          goal = create(
+            :goal,
+            creator: employee_teammate,
+            owner: employee_teammate,
+            company: organization,
+            title: 'Try the stretch bet',
+            started_at: 4.weeks.ago,
+            completed_at: 2.days.ago,
+            most_likely_target_date: Date.current + 1.week
+          )
+          create(
+            :goal_check_in,
+            goal: goal,
+            confidence_reporter: employee,
+            check_in_week_start: 2.days.ago.to_date.beginning_of_week(:monday),
+            confidence_percentage: 0,
+            confidence_reason: 'Learned what not to do next time'
+          )
+          goal
+        end
+
+        it 'shows the milestone chart and celebratory list rows' do
+          get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('Completed goals')
+          expect(response.body).to include('my-growth-completed-goals-path-chart')
+          expect(response.body).to include('Ship the launch')
+          expect(response.body).to include('Try the stretch bet')
+          expect(response.body).to include('>Hit<')
+          expect(response.body).to include('>Learning<')
+          expect(response.body).to include('Learned what not to do next time')
+          expect(response.body).not_to include('>Missed<')
+          expect(response.body).to include(organization_goal_path(organization, hit_goal))
+          expect(response.body).to include(organization_goal_path(organization, learning_goal))
+          expect(response.body).to include('id="completed-goals"')
+          expect(response.body.scan(/Last 90 days/).size).to be >= 2
+          expect(response.body).to include('#completed-goals')
+        end
       end
 
       context 'bulk confidence check section' do

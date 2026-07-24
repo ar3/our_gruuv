@@ -1,0 +1,152 @@
+- journey = local_assigns.fetch(:completed_goals_journey)
+- chart_title_period = local_assigns.fetch(:chart_title_period)
+- teammate = local_assigns.fetch(:teammate)
+- timeframe = local_assigns.fetch(:timeframe)
+- entries = journey[:entries]
+- chart_data = journey[:chart_data]
+
+%hr.my-5
+
+%section#completed-goals.completed-goals-journey.mb-4{aria: { labelledby: 'completed-goals-heading' }}
+  .card.border-0.shadow-sm
+    .card-header.bg-light
+      .d-flex.flex-wrap.align-items-start.justify-content-between.gap-3
+        %div
+          %h4#completed-goals-heading.mb-0
+            %i.bi.bi-flag-fill.me-2.text-success
+            Completed goals
+          %p.text-muted.small.mb-0.mt-1
+            A trail of finishes
+            - if chart_title_period.present?
+              = " (#{chart_title_period})"
+            — hits and learnings both count as progress.
+        = render 'organizations/company_teammates/my_growth/goals_timeframe_toggle',
+          teammate: teammate,
+          timeframe: timeframe,
+          anchor: 'completed-goals',
+          wrap_class: 'mb-0'
+    .card-body
+      - if journey[:empty]
+        .alert.alert-light.border.mb-0
+          %p.mb-0
+            No completed goals in this timeframe yet. Every finish will land here as a milestone on the journey.
+      - else
+        #my-growth-completed-goals-path-chart.completed-goals-journey__chart{style: "height: 280px;"}
+
+        %h5.mt-4.mb-3
+          %i.bi.bi-list-stars.me-2
+          Finished goals
+        %ul.list-group.list-group-flush.completed-goals-journey__list
+          - entries.each do |entry|
+            %li.list-group-item.px-0
+              .d-flex.flex-wrap.align-items-start.justify-content-between.gap-2
+                .flex-grow-1.min-w-0
+                  = link_to entry.title, entry.path, class: 'fw-semibold text-decoration-none'
+                  .small.text-muted.mt-1
+                    = format_date_in_user_timezone(entry.completed_at)
+                    - if entry.outcome.present?
+                      %span.badge.ms-2{class: entry.badge_class}= entry.label
+                  - if entry.learnings.present?
+                    %p.mb-0.mt-2.small.completed-goals-journey__learnings
+                      %span.text-muted Learning:
+                      = truncate(entry.learnings, length: 160)
+                .flex-shrink-0
+                  = link_to entry.path, class: 'btn btn-sm btn-outline-primary', aria: { label: "Open #{entry.title}" } do
+                    %i.bi.bi-box-arrow-up-right
+                    %span.visually-hidden Open goal
+
+- unless journey[:empty]
+  :javascript
+    (function() {
+      var chartData = #{chart_data.to_json};
+      var chartId = 'my-growth-completed-goals-path-chart';
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function chartOptions() {
+        return {
+          chart: { type: 'scatter', backgroundColor: 'transparent', height: 280 },
+          title: { text: null },
+          credits: { enabled: false },
+          accessibility: { enabled: false },
+          xAxis: {
+            type: 'datetime',
+            title: { text: null },
+            gridLineWidth: 0,
+            lineColor: '#dee2e6',
+            tickColor: '#dee2e6'
+          },
+          yAxis: {
+            title: { text: null },
+            labels: { enabled: false },
+            gridLineWidth: 0,
+            min: 0.4,
+            max: 1.6
+          },
+          legend: {
+            align: 'center',
+            verticalAlign: 'bottom',
+            symbolHeight: 10,
+            symbolWidth: 10
+          },
+          tooltip: {
+            useHTML: true,
+            headerFormat: '',
+            pointFormatter: function() {
+              var html = '<b>' + escapeHtml(this.title) + '</b><br/>' + escapeHtml(this.outcomeLabel || '');
+              if (this.learnings) {
+                var text = this.learnings.length > 120 ? this.learnings.slice(0, 117) + '…' : this.learnings;
+                html += '<br/><em>' + escapeHtml(text) + '</em>';
+              }
+              html += '<br/><span style="opacity:0.7">Click to open</span>';
+              return html;
+            }
+          },
+          plotOptions: {
+            series: {
+              cursor: 'pointer',
+              states: { hover: { lineWidthPlus: 0 } },
+              point: {
+                events: {
+                  click: function() {
+                    if (this.url) { window.location = this.url; }
+                  }
+                }
+              }
+            },
+            spline: { stickyTracking: false },
+            scatter: { stickyTracking: false }
+          },
+          series: chartData.series || []
+        };
+      }
+
+      function initializeChart() {
+        if (typeof Highcharts === 'undefined') return;
+        if (!document.getElementById(chartId)) return;
+        if (!chartData.series || !chartData.series.length) return;
+        Highcharts.chart(chartId, chartOptions());
+      }
+
+      var attempts = 0;
+      function waitForHighcharts() {
+        if (typeof Highcharts !== 'undefined') {
+          initializeChart();
+        } else if (attempts < 100) {
+          attempts++;
+          setTimeout(waitForHighcharts, 100);
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', waitForHighcharts);
+      } else {
+        waitForHighcharts();
+      }
+    })();

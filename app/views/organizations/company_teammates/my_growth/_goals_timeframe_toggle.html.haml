@@ -1,0 +1,16 @@
+- teammate = local_assigns.fetch(:teammate)
+- timeframe = local_assigns.fetch(:timeframe)
+- anchor = local_assigns[:anchor]
+- wrap_class = local_assigns.fetch(:wrap_class, 'mb-4')
+
+%div{class: wrap_class}
+  .btn-group{role: "group", "aria-label": "Goals timeframe"}
+    = link_to "Last 90 days",
+      my_growth_goals_organization_company_teammate_path(organization, teammate, timeframe: '90_days', anchor: anchor),
+      class: "btn #{timeframe == :'90_days' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Last Year",
+      my_growth_goals_organization_company_teammate_path(organization, teammate, timeframe: 'year', anchor: anchor),
+      class: "btn #{timeframe == :year ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "All-Time",
+      my_growth_goals_organization_company_teammate_path(organization, teammate, timeframe: 'all_time', anchor: anchor),
+      class: "btn #{timeframe == :all_time ? 'btn-primary' : 'btn-outline-primary'}"
