@@ -208,7 +208,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
   end
 
   describe '#one_on_one_thread_payload' do
-    it 'puts configure-day note, then 2nd and 3rd priorities without why copy' do
+    it 'puts configure-day in context, then 2nd and 3rd priorities without why copy' do
       prefs = UserPreference.for_person(person)
       prefs.update_preference('about_me_weekly_day', '2')
 
@@ -246,17 +246,20 @@ RSpec.describe Digest::SlackMessageBuilderService do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.one_on_one_thread_payload
 
-      expect(result[:blocks].none? { |b| b[:type] == 'context' }).to be(true)
+      context_block = result[:blocks].find { |b| b[:type] == 'context' }
+      expect(context_block).to be_present
+      expect(context_block.dig(:elements, 0, :text)).to include('configure your notifications')
+      expect(context_block.dig(:elements, 0, :text)).to include('Tuesday')
+
       expect(result[:text]).not_to include('why was that important')
       expect(result[:text]).not_to include('Why this is important')
       expect(result[:text]).not_to include('First explanation.')
       expect(result[:text]).not_to include('Second explanation.')
       expect(result[:text]).not_to include('Third explanation.')
 
-      expect(result[:text]).to include('Tuesday')
-      expect(result[:text]).to include('configure your notifications')
       expect(result[:text]).to include('utm_content=configure_day')
       expect(result[:text]).to include('3 of 13 priorities need attention')
+      expect(result[:text]).to include('and here are the next two most important priorities to consider')
       expect(result[:text]).to include('Second priority')
       expect(result[:text]).to include('Third priority')
       expect(result[:text]).not_to include('First priority?')

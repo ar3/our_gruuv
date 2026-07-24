@@ -193,7 +193,10 @@ module Digest
       fallback_parts = []
 
       configure_text = one_on_one_configure_day_text
-      blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(configure_text) } }
+      blocks << {
+        type: 'context',
+        elements: [{ type: 'mrkdwn', text: truncate_for_slack_context(configure_text) }]
+      }
       fallback_parts << configure_text
 
       priorities = one_thing_priorities_needing_attention
@@ -203,7 +206,7 @@ module Digest
       follow_on = priorities.drop(1).take(2)
 
       if follow_on.any?
-        intro = "*#{priorities.size} of #{total_count} priorities need attention*"
+        intro = "*#{priorities.size} of #{total_count} priorities need attention*... and here are the next two most important priorities to consider"
         blocks << { type: 'divider' }
         blocks << { type: 'section', text: { type: 'mrkdwn', text: intro } }
         fallback_parts << intro
@@ -313,6 +316,8 @@ module Digest
 
     # Slack section block text is limited to 3000 chars; exceeding causes invalid_blocks.
     SLACK_SECTION_TEXT_LIMIT = 3000
+    # Slack context mrkdwn elements are limited to 2000 chars.
+    SLACK_CONTEXT_TEXT_LIMIT = 2000
     SLACK_BUTTON_TEXT_LIMIT = 75
 
     def slack_app_url(helper_name, *args)
@@ -321,6 +326,10 @@ module Digest
 
     def truncate_for_slack_section(text)
       truncate_for_slack_limit(text, SLACK_SECTION_TEXT_LIMIT)
+    end
+
+    def truncate_for_slack_context(text)
+      truncate_for_slack_limit(text, SLACK_CONTEXT_TEXT_LIMIT)
     end
 
     def truncate_for_slack_limit(text, limit)
