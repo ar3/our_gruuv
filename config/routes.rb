@@ -176,6 +176,10 @@ Rails.application.routes.draw do
     get :check_ins_health_employee_summary_export, to: 'organizations/check_ins_health#export_employee_summary'
     post :check_ins_health_refresh, to: 'organizations/check_ins_health#refresh', as: :check_ins_health_refresh
     post :check_ins_health_refresh_all, to: 'organizations/check_ins_health#refresh_all', as: :check_ins_health_refresh_all
+    resource :goal_impact_scanner,
+             only: [:show],
+             controller: "organizations/goal_impact_scanner"
+
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'

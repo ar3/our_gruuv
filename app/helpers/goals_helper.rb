@@ -1195,5 +1195,19 @@ module GoalsHelper
       "Objective #{obj_num}#{suf}\n#{kr_block}"
     end.join("\n\n")
   end
+
+  def goal_show_section_nav_links(show_observations:)
+    links = [
+      { id: "what-is-this-goal", label: "What is this goal?", icon: "bi-info-circle", primary: true },
+      { id: "relationships", label: "Parent & child", icon: "bi-diagram-3", primary: true }
+    ]
+    if show_observations
+      links << { id: "observations", label: "Observations", icon: "bi-eye", primary: true }
+    end
+    links + [
+      { id: "descendant-impact", label: "Descendant confidence", icon: "bi-diagram-2", primary: true },
+      { id: "check-in", label: goal_confidence_checks_label, icon: "bi-calendar-check", primary: true }
+    ]
+  end
 end
 

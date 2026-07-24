@@ -322,11 +322,45 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get organization_goal_path(organization, goal)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('goal-observations')
+      expect(response.body).to include('id="observations"')
       expect(response.body).to include('Observations')
       expect(response.body).to include(new_quick_note_organization_observations_path(organization, goal_id: goal.id))
       expect(response.body).to include("goal_id=#{goal.id}")
       expect(response.body).to include('view=large_list')
+    end
+
+    it 'renders sticky in-page section navigation and descendant confidence section' do
+      child = create(
+        :goal,
+        :everyone_in_company,
+        creator: teammate,
+        owner: teammate,
+        title: 'Child for rollup',
+        started_at: 1.week.ago,
+        most_likely_target_date: Date.today + 30.days
+      )
+      create(:goal_link, parent: goal, child: child)
+      create(
+        :goal_check_in,
+        goal: child,
+        confidence_percentage: 90,
+        confidence_reporter: person,
+        check_in_week_start: Date.current.beginning_of_week(:monday)
+      )
+
+      get organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="in-page-section-nav"')
+      expect(response.body).to include('id="what-is-this-goal"')
+      expect(response.body).to include('id="relationships"')
+      expect(response.body).to include('id="descendant-impact"')
+      expect(response.body).to include('Descendant Confidence')
+      expect(response.body).to include('Child for rollup')
+      expect(response.body).to include('Descendant latest confidence')
+      expect(response.body).to include('1 ≥80%')
+      expect(response.body).to include('id="check-in"')
+      expect(response.body).not_to include('observations_and_goal_confidence_checks')
     end
 
     it 'can access show page for completed goal' do
@@ -474,7 +508,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, started_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Observations and goal confidence checks')
+        expect(response.body).to include('Goal confidence checks')
+        expect(response.body).to include('id="check-in"')
         expect(response.body).to include(organization_goal_path(organization, started_goal, anchor: 'check-in'))
         expect(response.body).to include('btn-primary')
         expect(response.body).not_to include('aria-disabled="true"')
@@ -488,7 +523,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, other_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Observations and goal confidence checks')
+        expect(response.body).to include('Goal confidence checks')
         expect(response.body).to include('Other Goal')
         expect(response.body).to include('Current week confidence check')
       end

@@ -267,13 +267,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
 
     @parent_hierarchy_goals = Goal.where(id: parent_hierarchy_goal_ids).where(deleted_at: nil)
-    
+
     # Load prompt and MAAP associations for display
     @prompt_goals = @goal.prompt_goals.includes(:prompt, prompt: :prompt_template).order(created_at: :desc)
     @goal_associations = @goal.goal_associations.includes(:associable).order(created_at: :desc)
 
     # Progress chart data for Progress card (only when started and has target date; chart shown only when also has check-in)
     @progress_chart_data = Goals::ProgressChartDataBuilder.call(goal: @goal) if @goal.started_at.present? && (@goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?)
+
+    load_descendant_impact_for_show!
 
     @show_goal_observations_section = false
     @goal_observations = []
@@ -897,6 +899,57 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
 
     all_ids.uniq
+  end
+
+  def descendant_hierarchy_ids_for(goal)
+    all_ids = []
+    frontier = goal.outgoing_links.pluck(:child_id).compact
+
+    while frontier.any?
+      batch_ids = frontier - all_ids
+      break if batch_ids.empty?
+
+      all_ids.concat(batch_ids)
+      frontier = GoalLink.where(parent_id: batch_ids).pluck(:child_id).compact
+    end
+
+    all_ids.uniq
+  end
+
+  def load_descendant_impact_for_show!
+    descendant_ids = descendant_hierarchy_ids_for(@goal)
+    subtree_ids = ([@goal.id] + descendant_ids).uniq
+    visible_goals = policy_scope(Goal)
+      .where(id: subtree_ids, deleted_at: nil, completed_at: nil)
+      .includes(:creator, :owner, :goal_check_ins)
+      .to_a
+
+    # Always include the current goal as the tree root even if completed/archived filters excluded it.
+    unless visible_goals.any? { |g| g.id == @goal.id }
+      visible_goals = [@goal] + visible_goals
+    end
+
+    @descendant_impact = Goals::ImpactScannerQuery.new(
+      goals: visible_goals,
+      current_person: current_person,
+      organization: @organization
+    ).call
+
+    root = @descendant_impact[:root_goals].find { |node| node[:goal].id == @goal.id }
+    @descendant_impact_root = root || {
+      goal: @goal,
+      children: [],
+      direct_children_count: 0,
+      total_descendants_count: 0,
+      most_recent_check_in: @all_check_ins&.last,
+      current_week_check_in: @current_check_in,
+      confidence_rollup: Goals::ImpactScannerQuery::Rollup.new(
+        bands: Goals::ImpactScannerQuery::BandCounts.new(high: 0, mid: 0, low: 0, no_check_in: 0),
+        average_confidence: nil,
+        descendant_count: 0,
+        checked_in_count: 0
+      )
+    }
   end
   
   # Condition for the "My relevant goals" filter: company-wide (everyone_in_company)

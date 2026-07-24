@@ -1,0 +1,106 @@
+- rollup = @descendant_impact_root[:confidence_rollup]
+- has_descendants = @descendant_impact_root[:total_descendants_count].to_i.positive?
+
+%p.text-muted.mb-3
+  Advisory view of linked child goals and how confident they are lately. This does not set this goal's confidence check.
+
+- if has_descendants && rollup.present?
+  .d-flex.flex-wrap.align-items-center.gap-2.mb-3
+    %span.small.text-muted Descendant latest confidence:
+    - [:high, :mid, :low, :no_check_in].each do |band|
+      - count = rollup.bands.public_send(band)
+      - next if count.zero?
+      %span.badge{class: goal_impact_latest_band_badge_class(band)}
+        #{count} #{goal_impact_latest_band_label(band)}
+    - if rollup.average_confidence.present?
+      %span.badge.bg-light.text-dark.border
+        Avg #{rollup.average_confidence}%
+        %span.text-muted (advisory)
+    .ms-auto.d-flex.gap-2
+      %button.btn.btn-outline-secondary.btn-sm#expand-all-goal-show-impact{type: "button"}
+        %i.bi.bi-arrows-expand.me-1
+        Expand All
+      %button.btn.btn-outline-secondary.btn-sm#collapse-all-goal-show-impact{type: "button"}
+        %i.bi.bi-arrows-collapse.me-1
+        Collapse All
+
+  .goal-show-impact-tree
+    = render "organizations/goal_impact_scanner/node", node: @descendant_impact_root, depth: 0
+- else
+  .alert.alert-light.border.mb-0
+    %p.mb-2 No visible child goals to roll up yet.
+    - if policy(@goal).update?
+      = link_to choose_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: "stepping_stone_activity", return_url: request.url, return_text: "Goal"), class: "btn btn-sm btn-outline-primary" do
+        %i.bi.bi-node-plus-fill.me-1
+        Add a child goal
+
+:javascript
+  function initializeGoalShowImpactControls() {
+    const tree = document.querySelector('.goal-show-impact-tree');
+    if (!tree) return;
+
+    tree.querySelectorAll('.toggle-children').forEach(function(button) {
+      if (button.dataset.goalShowImpactBound === 'true') return;
+      const targetId = button.getAttribute('data-bs-target');
+      const target = document.querySelector(targetId);
+      const icon = button.querySelector('.toggle-icon');
+      if (!target || !icon) return;
+
+      if (target.classList.contains('show')) {
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+      } else {
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+      }
+
+      target.addEventListener('show.bs.collapse', function() {
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+      });
+      target.addEventListener('hide.bs.collapse', function() {
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+      });
+      button.dataset.goalShowImpactBound = 'true';
+    });
+
+    const expandAllBtn = document.getElementById('expand-all-goal-show-impact');
+    if (expandAllBtn && expandAllBtn.dataset.goalShowImpactBound !== 'true') {
+      expandAllBtn.addEventListener('click', function() {
+        tree.querySelectorAll('.collapse').forEach(function(el) {
+          el.classList.add('show');
+          const button = document.querySelector('[data-bs-target="#' + el.id + '"]');
+          if (button) {
+            const icon = button.querySelector('.toggle-icon');
+            if (icon) {
+              icon.classList.remove('bi-chevron-down');
+              icon.classList.add('bi-chevron-up');
+            }
+          }
+        });
+      });
+      expandAllBtn.dataset.goalShowImpactBound = 'true';
+    }
+
+    const collapseAllBtn = document.getElementById('collapse-all-goal-show-impact');
+    if (collapseAllBtn && collapseAllBtn.dataset.goalShowImpactBound !== 'true') {
+      collapseAllBtn.addEventListener('click', function() {
+        tree.querySelectorAll('.collapse.show').forEach(function(el) {
+          el.classList.remove('show');
+          const button = document.querySelector('[data-bs-target="#' + el.id + '"]');
+          if (button) {
+            const icon = button.querySelector('.toggle-icon');
+            if (icon) {
+              icon.classList.remove('bi-chevron-up');
+              icon.classList.add('bi-chevron-down');
+            }
+          }
+        });
+      });
+      collapseAllBtn.dataset.goalShowImpactBound = 'true';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeGoalShowImpactControls);
+  document.addEventListener('turbo:load', initializeGoalShowImpactControls);

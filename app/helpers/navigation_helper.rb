@@ -568,6 +568,13 @@ module NavigationHelper
             path: organization_assignment_survey_path(current_organization),
             policy_check: -> { current_company_teammate&.employed? && policy(current_company).show? },
             coming_soon: false
+          },
+          {
+            label: 'Goal Impact Scanner',
+            icon: 'bi-diagram-3',
+            path: organization_goal_impact_scanner_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? },
+            coming_soon: false
           }
         ]
       },

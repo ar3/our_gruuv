@@ -1,0 +1,51 @@
+- goal = node[:goal]
+- children = node[:children] || []
+- has_children = children.any?
+- rollup = node[:confidence_rollup]
+- most_recent_check_in = node[:most_recent_check_in]
+- node_id = "impact-goal-#{goal.id}"
+- children_id = "impact-goal-children-#{goal.id}"
+
+.goal-impact-node{id: node_id, style: "margin-left: #{depth * 28}px; margin-bottom: 8px;"}
+  .d-flex.align-items-start
+    - if depth > 0
+      %i.bi.bi-arrow-return-right.me-2.flex-shrink-0.text-muted{style: "margin-top: 10px;"}
+    .card.flex-grow-1.min-w-0.border-0.shadow-sm
+      .card-body.py-2.px-3
+        .d-flex.align-items-start.gap-2
+          .flex-shrink-0
+            = goal_owner_image(goal, size: 40)
+          .flex-grow-1.min-w-0
+            .d-flex.align-items-center.flex-wrap.gap-2.mb-1
+              - if has_children
+                %button.btn.btn-sm.btn-link.p-0.toggle-children.flex-shrink-0{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666;"}
+                  %i.bi.bi-chevron-up.toggle-icon
+                %span.badge.bg-light.text-dark
+                  #{node[:direct_children_count]}/#{node[:total_descendants_count]}
+              = link_to goal.title, organization_goal_path(@organization, goal), class: "fw-semibold text-decoration-none text-truncate"
+              %span.badge.rounded-pill{style: "#{goal_impact_designation_pill_style(goal)} cursor: help;", tabindex: "0", role: "button", "aria-label": "#{goal_impact_designation_pill_text(goal)}. Hover for Commit, Stretch, and Transform explanation.", "data-bs-toggle": "popover", "data-bs-trigger": "hover focus", "data-bs-html": "true", "data-bs-placement": "top", "data-bs-custom-class": "goal-impact-designation-popover", title: goal_impact_designation_popover_title, "data-bs-content": goal_impact_designation_popover_content(goal)}
+                = goal_impact_designation_pill_text(goal)
+            .small.text-muted.mb-1
+              Owned by #{goal_owner_display_name(goal)}
+              %span.mx-1 ·
+              = goal_impact_confidence_display(most_recent_check_in)
+              - if most_recent_check_in.present?
+                = render "shared/on_track_pill", status: goal.on_track_status_for_check_in(most_recent_check_in)
+            - if has_children && rollup.present?
+              .d-flex.flex-wrap.align-items-center.gap-1.mt-1
+                %span.small.text-muted.me-1{title: "Advisory from all linked descendants' latest confidence checks. Does not set this goal's confidence."}
+                  Descendant confidence:
+                - [:high, :mid, :low, :no_check_in].each do |band|
+                  - count = rollup.bands.public_send(band)
+                  - next if count.zero?
+                  %span.badge{class: goal_impact_latest_band_badge_class(band)}
+                    #{count} #{goal_impact_latest_band_label(band)}
+                - if rollup.average_confidence.present?
+                  %span.badge.bg-light.text-dark.border
+                    Avg #{rollup.average_confidence}%
+                    %span.text-muted (advisory)
+
+- if has_children
+  .collapse.show{id: children_id}
+    - children.each do |child_node|
+      = render "organizations/goal_impact_scanner/node", node: child_node, depth: depth + 1

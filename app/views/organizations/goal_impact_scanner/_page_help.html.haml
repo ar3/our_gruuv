@@ -1,0 +1,42 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Scan company-visible goals and their linked contributors so you can judge how confident to be
+    in higher-level goals—without using a spreadsheet as the source of truth.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Goals can link as parents and children (GoalLinks). Confidence checks on child goals are a signal
+    for how the work under a company or team goal is going. A goal's
+    %strong Commit / Stretch / Transform
+    label is its
+    %em initial
+    confidence designation—set when the goal starts—not a live status color.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you see
+  %ul.mb-3
+    %li
+      Only goals with visibility
+      %strong everyone in company
+    %li Expand/collapse the full linked descendant tree
+    %li
+      Next to each title, a subtle pill shows
+      %strong initial confidence – goal type
+      (hover for Commit / Stretch / Transform meaning)
+    %li Each row shows that goal's latest confidence check
+    %li
+      Parents with children show an
+      %strong advisory
+      distribution of descendant
+      %em latest
+      confidence (≥80% / 50–79% / &lt;50% / no check-in), plus an optional average
+
+  %h5.fw-semibold.mb-2 How to read the rollup
+  %ul.mb-0
+    %li Rollup chips summarize latest check-ins on linked descendants—not Commit/Stretch/Transform designations
+    %li The average is secondary context only—it does not set the parent's confidence check
+    %li
+      Create and edit goals on the main
+      = link_to "Goals", organization_goals_path(@organization, owner_id: "everyone_in_company")
+      page

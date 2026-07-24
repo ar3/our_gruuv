@@ -1,0 +1,119 @@
+- page_help_id = "goalImpactScannerPageHelp"
+
+- content_for :title, "Goal Impact Scanner"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: organization_goals_path(@organization, owner_id: "everyone_in_company") }, { label: "Impact Scanner", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-diagram-3.me-1
+      Goal Impact Scanner
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "See how company-visible goals hang together and how confident descendants are. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/goal_impact_scanner/page_help"
+
+%p.text-muted.mb-3
+  Company-visible goals only. Expand a goal to see linked contributors. Descendant confidence chips are
+  %em advisory
+  — they help you judge parent confidence; they do not set it.
+
+.d-flex.justify-content-end.gap-2.mb-3
+  %button.btn.btn-outline-secondary.btn-sm#expand-all-impact-goals{type: "button"}
+    %i.bi.bi-arrows-expand.me-1
+    Expand All
+  %button.btn.btn-outline-secondary.btn-sm#collapse-all-impact-goals{type: "button"}
+    %i.bi.bi-arrows-collapse.me-1
+    Collapse All
+
+- if @goals.empty?
+  .alert.alert-info
+    %h6.mb-2 No company-visible goals yet
+    %p.mb-0
+      Create goals with visibility
+      %strong everyone in company
+      , or open
+      = link_to "Goals", organization_goals_path(@organization, owner_id: "everyone_in_company")
+      to manage them.
+- elsif @root_goals.empty?
+  .alert.alert-info
+    No hierarchy roots to display.
+- else
+  .goal-impact-tree{style: "padding: 10px 0;"}
+    - @root_goals.each do |root_node|
+      = render "organizations/goal_impact_scanner/node", node: root_node, depth: 0
+
+:javascript
+  function initializeGoalImpactScannerControls() {
+    document.querySelectorAll('.goal-impact-tree .toggle-children').forEach(function(button) {
+      if (button.dataset.impactBound === 'true') return;
+      const targetId = button.getAttribute('data-bs-target');
+      const target = document.querySelector(targetId);
+      const icon = button.querySelector('.toggle-icon');
+      if (!target || !icon) return;
+
+      if (target.classList.contains('show')) {
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+      } else {
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+      }
+
+      target.addEventListener('show.bs.collapse', function() {
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+      });
+      target.addEventListener('hide.bs.collapse', function() {
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+      });
+      button.dataset.impactBound = 'true';
+    });
+
+    const expandAllBtn = document.getElementById('expand-all-impact-goals');
+    if (expandAllBtn && expandAllBtn.dataset.impactBound !== 'true') {
+      expandAllBtn.addEventListener('click', function() {
+        document.querySelectorAll('.goal-impact-tree .collapse').forEach(function(el) {
+          el.classList.add('show');
+          const button = document.querySelector('[data-bs-target="#' + el.id + '"]');
+          if (button) {
+            const icon = button.querySelector('.toggle-icon');
+            if (icon) {
+              icon.classList.remove('bi-chevron-down');
+              icon.classList.add('bi-chevron-up');
+            }
+          }
+        });
+      });
+      expandAllBtn.dataset.impactBound = 'true';
+    }
+
+    const collapseAllBtn = document.getElementById('collapse-all-impact-goals');
+    if (collapseAllBtn && collapseAllBtn.dataset.impactBound !== 'true') {
+      collapseAllBtn.addEventListener('click', function() {
+        document.querySelectorAll('.goal-impact-tree .collapse.show').forEach(function(el) {
+          el.classList.remove('show');
+          const button = document.querySelector('[data-bs-target="#' + el.id + '"]');
+          if (button) {
+            const icon = button.querySelector('.toggle-icon');
+            if (icon) {
+              icon.classList.remove('bi-chevron-up');
+              icon.classList.add('bi-chevron-down');
+            }
+          }
+        });
+      });
+      collapseAllBtn.dataset.impactBound = 'true';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeGoalImpactScannerControls);
+  document.addEventListener('turbo:load', initializeGoalImpactScannerControls);

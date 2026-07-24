@@ -113,25 +113,22 @@ FactoryBot.define do
     trait :draft do
       started_at { nil }
       completed_at { nil }
-      cancelled_at { nil }
     end
     
     trait :active do
       started_at { 1.day.ago }
       completed_at { nil }
-      cancelled_at { nil }
     end
     
     trait :completed do
       started_at { 1.week.ago }
       completed_at { 1.day.ago }
-      cancelled_at { nil }
     end
     
     trait :cancelled do
       started_at { 1.week.ago }
       completed_at { nil }
-      cancelled_at { 1.day.ago }
+      deleted_at { 1.day.ago }
     end
     
     trait :top_priority do

@@ -560,7 +560,11 @@ module OrganizationSitemap
           beta_page(:assignment_experience_survey, "Assignment Experience Survey", "bi-clipboard2-check", :organization_assignment_survey_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).assignment_survey? },
             goal: "Rate whether your assignments are understandable, possible, and relevant.",
-            synonyms: %w[assignment experience survey clarity possible relevant])
+            synonyms: %w[assignment experience survey clarity possible relevant]),
+          beta_page(:goal_impact_scanner, "Goal Impact Scanner", "bi-diagram-3", :organization_goal_impact_scanner_path,
+            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
+            goal: "Scan company-visible goals and descendant confidence to judge higher-level impact.",
+            synonyms: %w[goal impact scanner company goals hierarchy confidence rollup rocks])
         ]
       }
     end

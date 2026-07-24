@@ -1,0 +1,134 @@
+.timeline-view
+  .checkins-content
+    - if @goal.started_at.present?
+      .timeline-item.mb-4
+        .card.border-primary
+          .card-body
+            .d-flex.align-items-center
+              .timeline-marker.bg-primary.text-white.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 40px; height: 40px; min-width: 40px;"}
+                %i.bi.bi-play-circle
+              .flex-grow-1
+                %h5.mb-1 Goal Started
+                %p.mb-0.text-muted= format_time_in_user_timezone(@goal.started_at)
+
+    - if @all_check_ins.any?
+      .timeline-item.mb-4
+        %h5.mb-3= confidence_check_history_label
+        - @all_check_ins.each do |check_in|
+          .card.mb-3
+            .card-body
+              .d-flex.align-items-start
+                .timeline-marker.bg-info.text-white.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 40px; height: 40px; min-width: 40px;"}
+                  %i.bi.bi-calendar-check
+                .flex-grow-1
+                  %h6.mb-2
+                    Week of #{check_in.check_in_week_start.strftime('%B %d')} - #{check_in.check_in_week_start.end_of_week(:sunday).strftime('%B %d, %Y')}
+                  %p.mb-1
+                    = render 'organizations/goals/goal_check_in_sentence', check_in: check_in, goal: @goal
+                    = render 'shared/on_track_pill', status: @goal.on_track_status_for_check_in(check_in)
+                  - if check_in.confidence_reason.present?
+                    %p.mb-1
+                      %strong Notes:
+                      = simple_format(check_in.confidence_reason)
+
+    .timeline-item.mb-4
+      .card.border-success
+        .card-header.bg-success.text-white
+          %h5.mb-0
+            %i.bi.bi-calendar-event.me-2
+            = current_week_confidence_check_label
+        .card-body
+          - if !goal_is_completed?(@goal) && @goal.deleted_at.nil? && (@goal.started_at.present? || @goal.check_in_eligible?)
+            - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
+            - current_week_end = current_week_start.end_of_week(:sunday)
+            - if @goal.started_at.nil?
+              %p.small.text-muted.mb-3
+                = checking_in_starts_goal_label
+            %p.small.text-muted.mb-3
+              Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
+            - can_save_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
+            - can_update_goal = policy(@goal).update?
+            - show_complete_rail = can_update_goal
+            - check_in_return_url = organization_goal_path(@organization, @goal)
+            .goal-check-in-inline-layout{class: ('goal-check-in-inline-layout--triple-column' if show_complete_rail)}
+              .goal-check-in-inline-layout__main
+                = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: check_in_return_url, return_text: 'Goal'), method: :post, local: true do |f|
+                  .mb-3
+                    %p.mb-2
+                      As of
+                      %strong= current_week_start.strftime('%B %d, %Y')
+                      ,
+                      %strong= current_person.display_name
+                      reports a
+                      = f.select :confidence_percentage,
+                          options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
+                          { include_blank: 'Select confidence...' },
+                          { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', disabled: !can_save_check_in }
+                      confidence we will achieve
+                      %strong= @goal.title
+                      by
+                      - if can_update_goal
+                        = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', disabled: !can_save_check_in
+                      - else
+                        %span.mx-1= @goal.most_likely_target_date.present? ? @goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
+                  .mb-3
+                    = f.label :confidence_reason, "Notes", class: "form-label"
+                    = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...', disabled: !can_save_check_in
+                  - if can_save_check_in
+                    .d-grid
+                      = f.submit save_confidence_check_label, class: "btn btn-primary"
+                  - else
+                    .d-flex.align-items-center.gap-2
+                      .flex-grow-1
+                        %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
+                          = save_confidence_check_label
+                      %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal), tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+              - if show_complete_rail
+                .goal-check-in-inline-layout__rail-or
+                  %span.small.text-muted or
+                .goal-check-in-inline-layout__done-btn
+                  = render 'organizations/goals/goal_mark_complete_link',
+                      goal: @goal,
+                      organization: @organization,
+                      return_url: check_in_return_url,
+                      return_text: 'Goal',
+                      button_class: 'btn btn-success btn-lg w-100',
+                      label: 'Complete',
+                      stacked: true
+          - elsif goal_is_completed?(@goal)
+            .alert.alert-info.mb-0= goal_completed_confidence_checks_readonly_label
+          - else
+            .alert.alert-info.mb-0= start_goal_to_add_confidence_checks_label
+
+    .timeline-item.mb-4
+      .card.border-secondary
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-calendar-range.me-2
+            Target Dates
+        .card-body
+          - calculated_date = @goal.calculated_target_date
+          %dl.row.mb-0
+            - if @goal.earliest_target_date.present?
+              %dt.col-sm-4 Earliest:
+              %dd.col-sm-8= @goal.earliest_target_date.strftime("%B %d, %Y")
+            - if @goal.most_likely_target_date.present?
+              %dt.col-sm-4 Most Likely:
+              %dd.col-sm-8= @goal.most_likely_target_date.strftime("%B %d, %Y")
+            - if @goal.latest_target_date.present?
+              %dt.col-sm-4 Latest:
+              %dd.col-sm-8= @goal.latest_target_date.strftime("%B %d, %Y")
+            - if calculated_date.nil?
+              %dt.col-sm-4 Calculated Target:
+              %dd.col-sm-8
+                %em.text-muted No target date calculated (all dates are nil)
+
+    - if @progress_chart_data.present?
+      .timeline-item.mb-4
+        .card.border-secondary
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-graph-up.me-2
+              Confidence vs. On-Track Thresholds
+          .card-body
+            = render 'organizations/goals/progress_confidence_chart', progress_chart_data: @progress_chart_data
