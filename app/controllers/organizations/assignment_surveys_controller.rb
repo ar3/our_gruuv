@@ -62,6 +62,21 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
     render :show, status: :unprocessable_entity
   end
 
+  def destroy
+    authorize @organization, :assignment_survey?
+    draft = current_company_teammate.assignment_survey_submissions
+      .where(organization: @organization)
+      .draft
+      .first
+
+    if draft
+      draft.destroy!
+      redirect_to organization_assignment_survey_path(@organization), notice: "Draft deleted."
+    else
+      redirect_to organization_assignment_survey_path(@organization), alert: "No draft to delete."
+    end
+  end
+
   def results
     authorize @organization, :assignment_survey_results?
     @results = AssignmentSurveys::Results.new(organization: @organization, teammates: visible_teammates)
@@ -101,6 +116,9 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
       .where(organization: @organization)
       .finalized
       .latest_first
+    @latest_finalized = @finalized_submissions.first
+    @recent_finalized = @latest_finalized&.finalized_at.present? &&
+      @latest_finalized.finalized_at > 30.days.ago
   end
 
   def visible_teammates

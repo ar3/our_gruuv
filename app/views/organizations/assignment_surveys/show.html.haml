@@ -22,7 +22,13 @@
           %h2.h4.mb-1 Survey in progress
           %p.text-muted.mb-0
             #{@draft.complete_response_count} of #{@draft.responses.size} assignments fully rated
-        %span.badge.text-bg-warning Draft
+        .d-flex.align-items-center.gap-2
+          %span.badge.text-bg-warning Draft
+          = button_to "Delete draft",
+            organization_assignment_survey_path(organization),
+            method: :delete,
+            class: "btn btn-sm btn-outline-danger",
+            form: { data: { turbo_confirm: "Delete this draft? Your answers will be lost." } }
       %progress.assignment-survey-completion-progress.w-100.mt-3{value: @draft.progress_percentage,
         max: 100,
         "aria-label": "Survey completion"} #{@draft.progress_percentage}%
@@ -104,10 +110,17 @@
       %h2.h4.mt-3= @finalized_submissions.any? ? "Ready for another perspective?" : "Share your assignment experience"
       %p.text-muted.mx-auto.assignment-survey-intro
         A new survey captures the active assignments you hold and the assignments required by your current position. Suggested assignments are excluded.
-      = button_to "Start a new survey",
-        organization_assignment_survey_path(organization),
-        method: :post,
-        class: "btn btn-primary"
+      - if @recent_finalized
+        = button_to "Start a new survey",
+          organization_assignment_survey_path(organization),
+          method: :post,
+          class: "btn btn-primary",
+          form: { data: { turbo_confirm: "You finalized a survey on #{l(@latest_finalized.finalized_at.to_date, format: :long)}, less than 30 days ago. Start another one anyway?" } }
+      - else
+        = button_to "Start a new survey",
+          organization_assignment_survey_path(organization),
+          method: :post,
+          class: "btn btn-primary"
 
 - if @finalized_submissions.any?
   %h2.h4 Previous finalized surveys

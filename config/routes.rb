@@ -192,7 +192,7 @@ Rails.application.routes.draw do
     resource :assignment_survey,
              path: "assignment-experience-survey",
              controller: "organizations/assignment_surveys",
-             only: [:show, :create, :update] do
+             only: [:show, :create, :update, :destroy] do
       get :results
       get :export
       get "submissions/:submission_id", action: :submission, as: :submission

@@ -85,6 +85,51 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     expect(teammate.assignment_survey_submissions.draft).to exist
   end
 
+  it "deletes a draft" do
+    AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
+
+    delete organization_assignment_survey_path(organization)
+
+    expect(response).to redirect_to(organization_assignment_survey_path(organization))
+    expect(teammate.assignment_survey_submissions.draft).not_to exist
+  end
+
+  it "asks for confirmation before starting another survey within 30 days" do
+    submission = AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
+    submission.responses.each do |survey_response|
+      survey_response.update!(
+        understandable_rating: 5,
+        possible_rating: 4,
+        relevant_rating: 6
+      )
+    end
+    submission.finalize!
+
+    get organization_assignment_survey_path(organization)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include("less than 30 days ago")
+    expect(response.body).to include("Start another one anyway?")
+  end
+
+  it "does not ask for confirmation when the latest survey is older than 30 days" do
+    submission = AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
+    submission.responses.each do |survey_response|
+      survey_response.update!(
+        understandable_rating: 5,
+        possible_rating: 4,
+        relevant_rating: 6
+      )
+    end
+    submission.finalize!
+    submission.update_columns(finalized_at: 31.days.ago)
+
+    get organization_assignment_survey_path(organization)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).not_to include("less than 30 days ago")
+  end
+
   it "shows results and exports CSV" do
     submission = AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
     submission.responses.each do |survey_response|
