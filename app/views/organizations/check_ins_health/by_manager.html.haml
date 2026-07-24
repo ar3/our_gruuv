@@ -23,7 +23,7 @@
         %span.me-2.fw-medium Sort by
         .btn-group{role: "group"}
           = link_to "Name", organization_check_ins_health_by_manager_path(@organization, sort: "name"), class: "btn btn-sm #{@sort_by == 'name' ? 'btn-primary' : 'btn-outline-primary'}"
-          = link_to "% employees are healthy", organization_check_ins_health_by_manager_path(@organization, sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
+          = link_to "% clear", organization_check_ins_health_by_manager_path(@organization, sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
       .table-responsive
         %table.table.table-hover.table-layout-fixed
           %colgroup
@@ -49,7 +49,7 @@
                   %br
                   %small.text-muted
                     #{row[:direct_report_count]} direct report#{'s' if row[:direct_report_count] != 1}
-                    · #{row[:completion_rate]}% healthy
+                    · #{row[:completion_rate]}% clear
                 %td
                   - if segments_asp.any?
                     - total = segments_asp.sum { |s| s[:count] }

@@ -147,10 +147,7 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
       assignment_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(assignment_items),
       position_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(position_items),
       direct_report_count: direct_report_ids.size,
-      completion_rate: EngagementHealth::ClarityMetrics.average_healthy_percentage_for_teammates(
-        records_by_teammate_id,
-        direct_report_ids
-      )
+      completion_rate: EngagementHealth::ClarityActionMetrics.breakdown_for_items(all_items).ok_percentage
     }
   end
 

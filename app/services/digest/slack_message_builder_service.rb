@@ -192,15 +192,6 @@ module Digest
       blocks = []
       fallback_parts = []
 
-      why_text = top_one_thing_why_context_text
-      if why_text.present?
-        blocks << {
-          type: 'context',
-          elements: [{ type: 'mrkdwn', text: truncate_for_slack_context(why_text) }]
-        }
-        fallback_parts << why_text
-      end
-
       configure_text = one_on_one_configure_day_text
       blocks << { type: 'section', text: { type: 'mrkdwn', text: truncate_for_slack_section(configure_text) } }
       fallback_parts << configure_text
@@ -226,15 +217,6 @@ module Digest
             text: { type: 'mrkdwn', text: truncate_for_slack_section(summary) }
           }
           fallback_parts << summary
-
-          why_text = follow_on_priority_why_context_text(priority)
-          next if why_text.blank?
-
-          blocks << {
-            type: 'context',
-            elements: [{ type: 'mrkdwn', text: truncate_for_slack_context(why_text) }]
-          }
-          fallback_parts << why_text
         end
       end
 
@@ -331,8 +313,6 @@ module Digest
 
     # Slack section block text is limited to 3000 chars; exceeding causes invalid_blocks.
     SLACK_SECTION_TEXT_LIMIT = 3000
-    # Slack context mrkdwn elements are limited to 2000 chars.
-    SLACK_CONTEXT_TEXT_LIMIT = 2000
     SLACK_BUTTON_TEXT_LIMIT = 75
 
     def slack_app_url(helper_name, *args)
@@ -341,10 +321,6 @@ module Digest
 
     def truncate_for_slack_section(text)
       truncate_for_slack_limit(text, SLACK_SECTION_TEXT_LIMIT)
-    end
-
-    def truncate_for_slack_context(text)
-      truncate_for_slack_limit(text, SLACK_CONTEXT_TEXT_LIMIT)
     end
 
     def truncate_for_slack_limit(text, limit)
@@ -390,23 +366,6 @@ module Digest
       day_label = DigestHelper::WEEKLY_DIGEST_DAY_LABELS[day_value.to_s] || 'the scheduled day'
       day_phrase = day_value.to_s == 'off' ? 'when weekly reminders are enabled' : day_label
       "OG sent this to you all on #{day_phrase}. If you'd like to change the day, you can <#{one_on_one_notifications_url}|configure your notifications>."
-    end
-
-    def top_one_thing_why_context_text
-      priority = top_one_thing_priority
-      return nil if priority.blank?
-
-      explanation = priority_renderer_for(priority).explanation_plain.to_s.strip
-      return nil if explanation.blank?
-
-      "We want to keep the initial message clean and clear... but why was that important: #{slack_escape(explanation)}"
-    end
-
-    def follow_on_priority_why_context_text(priority)
-      explanation = priority_renderer_for(priority).explanation_plain.to_s.strip
-      return nil if explanation.blank?
-
-      "Why this is important: #{slack_escape(explanation)}"
     end
 
     # Formats one section for the About Me thread: link (and optional explanation). Check-in sections use ":" before explanation; others use ". ".

@@ -123,6 +123,7 @@ RSpec.describe 'Check-ins Health', type: :request do
         has_table = response.body.include?('Aspirations')
         has_empty_state = response.body.include?('No managers with direct reports')
         expect(has_table || has_empty_state).to be true
+        expect(response.body).to include('% clear') if has_table
       end
     end
 

@@ -208,7 +208,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
   end
 
   describe '#one_on_one_thread_payload' do
-    it 'puts why in a context block, configure-day note, then 2nd and 3rd priorities' do
+    it 'puts configure-day note, then 2nd and 3rd priorities without why copy' do
       prefs = UserPreference.for_person(person)
       prefs.update_preference('about_me_weekly_day', '2')
 
@@ -246,21 +246,12 @@ RSpec.describe Digest::SlackMessageBuilderService do
       builder = described_class.new(teammate: teammate, organization: organization)
       result = builder.one_on_one_thread_payload
 
-      context_blocks = result[:blocks].select { |b| b[:type] == 'context' }
-      expect(context_blocks.size).to eq(3)
-
-      top_why = context_blocks[0].dig(:elements, 0, :text)
-      expect(top_why).to include('keep the initial message clean and clear')
-      expect(top_why).to include('why was that important')
-      expect(top_why).to include('First explanation.')
-
-      follow_on_whys = context_blocks.drop(1).map { |b| b.dig(:elements, 0, :text) }
-      expect(follow_on_whys.join).to include('Why this is important: Second explanation.')
-      expect(follow_on_whys.join).to include('Why this is important: Third explanation.')
-
-      section_texts = result[:blocks].select { |b| b[:type] == 'section' }.map { |b| b.dig(:text, :text) }.join("\n")
-      expect(section_texts).not_to include('Second explanation.')
-      expect(section_texts).not_to include('Third explanation.')
+      expect(result[:blocks].none? { |b| b[:type] == 'context' }).to be(true)
+      expect(result[:text]).not_to include('why was that important')
+      expect(result[:text]).not_to include('Why this is important')
+      expect(result[:text]).not_to include('First explanation.')
+      expect(result[:text]).not_to include('Second explanation.')
+      expect(result[:text]).not_to include('Third explanation.')
 
       expect(result[:text]).to include('Tuesday')
       expect(result[:text]).to include('configure your notifications')
