@@ -1,8 +1,16 @@
+- eligibility_page_help_id = "eligibilityRequirementsPageHelp"
+- casual_name = @teammate.person.casual_name.presence || @teammate.person.display_name
+
 - content_for :header do
-  %h1 Eligibility Requirements
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0 Eligibility Requirements
+    = render "shared/page_help/header_info_button",
+             collapse_id: eligibility_page_help_id,
+             tooltip: "How eligibility criteria work for #{casual_name} and this position. Click for details."
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Eligibility selection", url: organization_eligibility_requirements_path(@organization) }, { label: "Requirements", url: nil }])
+  - growth_crumb_label = "#{casual_name}'s Growth : Position Change"
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: growth_crumb_label, url: my_growth_position_change_organization_company_teammate_path(@organization, @teammate) }, { label: "Requirements", url: nil }])
 
 %style
   :plain
@@ -14,11 +22,14 @@
     .eligibility-section-collapse-body:not(.show) ~ .card-footer .eligibility-footer-detail-left { display: none !important; }
     .eligibility-section-collapse-body:not(.show) ~ .card-footer .eligibility-footer-expand-collapsed { display: block !important; }
 
+.collapse.mb-4{id: eligibility_page_help_id}
+  = render "organizations/eligibility_requirements/page_help", teammate: @teammate, position: @position
+
 .row.mb-4
   .col-12
     %h2.mb-0
       In order for
-      = link_to (@teammate.person.casual_name.presence || "this teammate"), internal_organization_company_teammate_path(@organization, @teammate), class: "text-decoration-none"
+      = link_to casual_name, internal_organization_company_teammate_path(@organization, @teammate), class: "text-decoration-none"
       to be eligible for consideration of
       = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
       …
@@ -28,13 +39,6 @@
         %strong= @eligibility_config_source_label
         = "."
         = link_to @eligibility_config_source_link_text, @eligibility_config_source_path, class: "ms-1"
-
-.row.mb-4
-  .col-12
-    - overall_class = @eligibility_report[:overall_eligible] ? "bg-success" : "bg-warning"
-    .alert.text-dark{class: overall_class}
-      %strong Overall Eligibility:
-      = @eligibility_report[:overall_eligible] ? "Meeting requirements" : "Working to meet requirements"
 
 .row.mb-4
   .col-12

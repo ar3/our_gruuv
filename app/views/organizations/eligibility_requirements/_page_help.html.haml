@@ -1,0 +1,52 @@
+-# Locals: teammate, position
+- teammate = local_assigns.fetch(:teammate)
+- position = local_assigns.fetch(:position)
+- casual_name = teammate.person.casual_name.presence || teammate.person.display_name
+- position_name = position.display_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    See, criterion by criterion, what it would take for
+    %strong= casual_name
+    to be eligible for consideration of
+    %strong= position_name
+    — and where they already meet, are on track, or still need work.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %h5.fw-semibold.mb-2 Position / Title Change
+  %p.mb-3
+    This page is the detailed eligibility breakdown behind Grow by Position Change. Use it after choosing a current or target position to understand readiness with the same rules that drive the high-level Eligible / Not eligible yet signals.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 How to read this page
+  %ul.mb-3
+    %li
+      Each numbered card is one eligibility criterion (business need, aspirational values, assignments, milestones, mileage, position ratings, and so on).
+    %li
+      Cards start collapsed. Use
+      %em Expand for details
+      to see the month-by-month or requirement table; the footer still shows the criterion’s outcome when collapsed.
+    %li
+      Requirements may come from the position itself, department defaults, or organization defaults — the caption under the intro sentence tells you which.
+
+  %h5.fw-semibold.mb-2 Example
+  .border.rounded.p-3.bg-white.mb-3
+    %p.mb-1.fw-semibold (4) Criteria for Required Assignments…
+    %p.small.text-muted.mb-2 Meeting on at least 80% of required assignments over the last 12 months.
+    %p.small.mb-0
+      %span.badge.text-bg-warning.me-1 Working to meet requirements
+      Footer totals show Exceeding / Meeting / Miss counts so you can see what still needs attention.
+
+  %h5.fw-semibold.mb-2 Status legend
+  %ul.list-unstyled.mb-0
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2{class: "bg-success", style: "width:0.65rem;height:0.65rem;"}
+      Eligible / Meeting eligibility — this criterion is met
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2{class: "bg-info", style: "width:0.65rem;height:0.65rem;"}
+      On track to being eligible — not there yet, but trajectory looks good
+    %li.mb-0
+      %span.d-inline-block.rounded-circle.me-2{class: "bg-warning", style: "width:0.65rem;height:0.65rem;"}
+      Working to meet requirements / No current business need — more progress or an open seat is still needed

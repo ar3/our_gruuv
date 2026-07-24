@@ -58,6 +58,35 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include(internal_organization_company_teammate_path(organization, teammate))
     end
 
+    it 'includes the selected teammate Growth Position Change crumb in breadcrumbs' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      casual = teammate.person.casual_name.presence || teammate.person.display_name
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(ERB::Util.html_escape("#{casual}'s Growth : Position Change"))
+      expect(response.body).to include(
+        my_growth_position_change_organization_company_teammate_path(organization, teammate)
+      )
+    end
+
+    it 'includes page help for eligibility requirements' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('eligibilityRequirementsPageHelp')
+      expect(response.body).to include('Goal of this page')
+      expect(response.body).to include('What is MAAP?')
+      expect(response.body).not_to include('Overall Eligibility:')
+    end
+
     it 'renders section (1) managerial hierarchy and section (2) business need cards' do
       get organization_eligibility_requirement_path(
         organization,
