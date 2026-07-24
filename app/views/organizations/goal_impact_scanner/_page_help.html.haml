@@ -28,14 +28,13 @@
     %li
       Parents with children show an
       %strong advisory
-      distribution of descendant
-      %em latest
-      confidence (≥80% / 50–79% / &lt;50% / no check-in), plus an optional average
+      line:
+      %em N descendant goals, and their latest confidence, averages Y%
 
   %h5.fw-semibold.mb-2 How to read the rollup
   %ul.mb-0
-    %li Rollup chips summarize latest check-ins on linked descendants—not Commit/Stretch/Transform designations
-    %li The average is secondary context only—it does not set the parent's confidence check
+    %li The average is from latest check-ins on linked descendants—not Commit/Stretch/Transform designations
+    %li It is secondary context only—it does not set the parent's confidence check
     %li
       Create and edit goals on the main
       = link_to "Goals", organization_goals_path(@organization, owner_id: "everyone_in_company")

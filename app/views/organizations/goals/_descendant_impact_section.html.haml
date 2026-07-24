@@ -6,15 +6,10 @@
 
 - if has_descendants && rollup.present?
   .d-flex.flex-wrap.align-items-center.gap-2.mb-3
-    %span.small.text-muted Descendant latest confidence:
-    - [:high, :mid, :low, :no_check_in].each do |band|
-      - count = rollup.bands.public_send(band)
-      - next if count.zero?
-      %span.badge{class: goal_impact_latest_band_badge_class(band)}
-        #{count} #{goal_impact_latest_band_label(band)}
-    - if rollup.average_confidence.present?
-      %span.badge.bg-light.text-dark.border
-        Avg #{rollup.average_confidence}%
+    - summary = goal_impact_rollup_summary(rollup)
+    - if summary.present?
+      %span.small.text-muted{title: "Advisory from all linked descendants' latest confidence checks. Does not set this goal's confidence."}
+        = summary
         %span.text-muted (advisory)
     .ms-auto.d-flex.gap-2
       %button.btn.btn-outline-secondary.btn-sm#expand-all-goal-show-impact{type: "button"}

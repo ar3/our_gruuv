@@ -32,18 +32,11 @@
               - if most_recent_check_in.present?
                 = render "shared/on_track_pill", status: goal.on_track_status_for_check_in(most_recent_check_in)
             - if has_children && rollup.present?
-              .d-flex.flex-wrap.align-items-center.gap-1.mt-1
-                %span.small.text-muted.me-1{title: "Advisory from all linked descendants' latest confidence checks. Does not set this goal's confidence."}
-                  Descendant confidence:
-                - [:high, :mid, :low, :no_check_in].each do |band|
-                  - count = rollup.bands.public_send(band)
-                  - next if count.zero?
-                  %span.badge{class: goal_impact_latest_band_badge_class(band)}
-                    #{count} #{goal_impact_latest_band_label(band)}
-                - if rollup.average_confidence.present?
-                  %span.badge.bg-light.text-dark.border
-                    Avg #{rollup.average_confidence}%
-                    %span.text-muted (advisory)
+              - summary = goal_impact_rollup_summary(rollup)
+              - if summary.present?
+                %p.small.text-muted.mb-0.mt-1{title: "Advisory from all linked descendants' latest confidence checks. Does not set this goal's confidence."}
+                  = summary
+                  %span.text-muted (advisory)
 
 - if has_children
   .collapse.show{id: children_id}

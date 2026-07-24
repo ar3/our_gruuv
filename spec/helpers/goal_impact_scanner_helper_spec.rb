@@ -34,7 +34,7 @@ RSpec.describe GoalImpactScannerHelper, type: :helper do
   end
 
   describe "#goal_impact_rollup_summary" do
-    it "formats non-zero latest-confidence bands without CST labels" do
+    it "summarizes descendant count and average latest confidence" do
       bands = Goals::ImpactScannerQuery::BandCounts.new(high: 2, mid: 1, low: 0, no_check_in: 1)
       rollup = Goals::ImpactScannerQuery::Rollup.new(
         bands: bands,
@@ -43,7 +43,34 @@ RSpec.describe GoalImpactScannerHelper, type: :helper do
         checked_in_count: 3
       )
 
-      expect(helper.goal_impact_rollup_summary(rollup)).to eq("2 ≥80% · 1 50–79% · 1 no check-in")
+      expect(helper.goal_impact_rollup_summary(rollup))
+        .to eq("4 descendant goals, and their latest confidence, averages 70.0%")
+    end
+
+    it "uses singular wording for one descendant" do
+      bands = Goals::ImpactScannerQuery::BandCounts.new(high: 1, mid: 0, low: 0, no_check_in: 0)
+      rollup = Goals::ImpactScannerQuery::Rollup.new(
+        bands: bands,
+        average_confidence: 90.0,
+        descendant_count: 1,
+        checked_in_count: 1
+      )
+
+      expect(helper.goal_impact_rollup_summary(rollup))
+        .to eq("1 descendant goal, and its latest confidence, averages 90.0%")
+    end
+
+    it "notes when descendants have no latest confidence" do
+      bands = Goals::ImpactScannerQuery::BandCounts.new(high: 0, mid: 0, low: 0, no_check_in: 2)
+      rollup = Goals::ImpactScannerQuery::Rollup.new(
+        bands: bands,
+        average_confidence: nil,
+        descendant_count: 2,
+        checked_in_count: 0
+      )
+
+      expect(helper.goal_impact_rollup_summary(rollup))
+        .to eq("2 descendant goals; none have a latest confidence check yet")
     end
 
     it "returns nil when there are no descendants" do

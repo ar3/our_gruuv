@@ -21,13 +21,6 @@ module GoalImpactScannerHelper
     }
   }.freeze
 
-  LATEST_CONFIDENCE_BAND_META = {
-    high: { label: "≥80%", badge_class: "bg-light text-dark border" },
-    mid: { label: "50–79%", badge_class: "bg-light text-dark border" },
-    low: { label: "<50%", badge_class: "bg-light text-dark border" },
-    no_check_in: { label: "No check-in", badge_class: "bg-light text-muted border" }
-  }.freeze
-
   def goal_impact_initial_confidence_key(goal)
     (goal.initial_confidence.presence || "stretch").to_sym
   end
@@ -73,24 +66,18 @@ module GoalImpactScannerHelper
     HTML
   end
 
-  def goal_impact_latest_band_label(band)
-    LATEST_CONFIDENCE_BAND_META.fetch(band.to_sym)[:label]
-  end
-
-  def goal_impact_latest_band_badge_class(band)
-    LATEST_CONFIDENCE_BAND_META.fetch(band.to_sym)[:badge_class]
-  end
-
   def goal_impact_rollup_summary(rollup)
     return nil if rollup.blank? || rollup.descendant_count.zero?
 
-    bands = rollup.bands
-    parts = []
-    parts << "#{bands.high} ≥80%" if bands.high.positive?
-    parts << "#{bands.mid} 50–79%" if bands.mid.positive?
-    parts << "#{bands.low} <50%" if bands.low.positive?
-    parts << "#{bands.no_check_in} no check-in" if bands.no_check_in.positive?
-    parts.join(" · ")
+    count = rollup.descendant_count
+    goals_phrase = "#{count} #{'descendant goal'.pluralize(count)}"
+
+    if rollup.average_confidence.present?
+      possessive = count == 1 ? "its" : "their"
+      "#{goals_phrase}, and #{possessive} latest confidence, averages #{rollup.average_confidence}%"
+    else
+      "#{goals_phrase}; none have a latest confidence check yet"
+    end
   end
 
   def goal_impact_confidence_display(check_in)

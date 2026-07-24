@@ -71,10 +71,9 @@ RSpec.describe "Goal Impact Scanner", type: :request do
       expect(response.body).not_to include("Private Goal")
       expect(response.body).to include("Commit – Inspirational objective")
       expect(response.body).to include("Stretch – Quantitative key result")
-      expect(response.body).to include("Descendant confidence")
-      expect(response.body).to include("1 ≥80%")
-      expect(response.body).to include("Avg 90.0%")
+      expect(response.body).to include("1 descendant goal, and its latest confidence, averages 90.0%")
       expect(response.body).to include("(advisory)")
+      expect(response.body).not_to include("1 ≥80%")
       expect(response.body).not_to include("Bands:")
       expect(private_goal.title).to eq("Private Goal")
     end

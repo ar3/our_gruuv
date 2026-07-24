@@ -357,8 +357,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('id="descendant-impact"')
       expect(response.body).to include('Descendant Confidence')
       expect(response.body).to include('Child for rollup')
-      expect(response.body).to include('Descendant latest confidence')
-      expect(response.body).to include('1 ≥80%')
+      expect(response.body).to include('1 descendant goal, and its latest confidence, averages 90.0%')
+      expect(response.body).to include('(advisory)')
       expect(response.body).to include('id="check-in"')
       expect(response.body).not_to include('observations_and_goal_confidence_checks')
     end
