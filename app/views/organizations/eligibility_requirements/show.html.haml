@@ -199,53 +199,58 @@
         eligibility_result: @required_assignments_eligibility_result,
         collapse_body_id: "section4Body"
 
-.row.mb-4
-  .col-12
-    - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
-    .card
-      .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
-        .d-flex.flex-column
-          %h3.mb-0 Criteria for Unique-to-You Assignments (if applicable)…
-          - section5_caption = format_eligibility_check_sentence(unique_check)
-          - if section5_caption.present?
-            .small.text-muted.mt-1= section5_caption
-        .d-flex.align-items-center.small.text-muted
-          %span.expand-detail-label.d-inline-flex.align-items-center
-            Expand for details
-            %i.bi.bi-chevron-down.ms-1
-          %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
-            Show less detail
-            %i.bi.bi-chevron-up.ms-1
-      .card-body.collapse.eligibility-section-collapse-body.py-2{ id: "section5Body" }
-        - if unique_check && (unique_check[:status] == :not_applicable || unique_check[:status] == :not_configured)
-          .alert.alert-info.mb-0
-            Not applicable — there is no minimum meeting expectation for unique-to-you assignments for this position.
+- if @show_unique_to_you_criterion
+  .row.mb-4
+    .col-12
+      - unique_check = @eligibility_report[:checks].find { |c| c[:key] == :unique_to_you_assignment_check_in_requirements }
+      .card
+        .card-header.eligibility-section-header.d-flex.align-items-center.justify-content-between.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "#section5Body", role: "button", tabindex: "0", style: "cursor: pointer;" }
+          .d-flex.flex-column
+            %h3.mb-0 Criteria for Unique-to-You Assignments (if applicable)…
+            - section5_caption = format_eligibility_check_sentence(unique_check)
+            - if section5_caption.present?
+              .small.text-muted.mt-1= section5_caption
+            - if @show_unique_to_you_growth_note
+              .small.text-muted.mt-1
+                This position doesn’t require unique-to-you assignments for eligibility, but many positions do — and taking them on is a great form of growth.
+                = link_to "Explore in Grow by Experiences", my_growth_experiences_organization_company_teammate_path(@organization, @teammate), class: "text-decoration-none"
+          .d-flex.align-items-center.small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+        .card-body.collapse.eligibility-section-collapse-body.py-2{ id: "section5Body" }
+          - if unique_check && (unique_check[:status] == :not_applicable || unique_check[:status] == :not_configured) && @unique_assignments.blank?
+            .alert.alert-info.mb-0
+              Not applicable — there is no minimum meeting expectation for unique-to-you assignments for this position.
+          - elsif @unique_assignments.present?
+            = render "organizations/eligibility_requirements/check_in_requirements_section",
+              section_title: "Unique-to-You Assignment Check-In Requirements",
+              requirement_sentence: (unique_check && unique_check[:details].present?) ? format_assignments_requirement(unique_check[:details], assignment_label: "unique-to-you assignments") : nil,
+              rows: @unique_assignments.map { |a| { name: a.title, id: a.id, path: organization_teammate_assignment_path(@organization, @teammate, a) } },
+              monthly_status_by_id: @unique_assignments_monthly_status || {},
+              eligibility_result: @unique_assignments_eligibility_result,
+              show_totals_in_body: false
+          - else
+            - min_meeting_pct = unique_check&.dig(:details, :minimum_percentage_meeting) || unique_check&.dig(:details, "minimum_percentage_meeting")
+            - casual_name = @teammate.person.casual_name.presence || "this teammate"
+            .alert.alert-warning.mb-0
+              This position expects #{casual_name} to take on at least one unique-to-you assignment and be meeting expectations of at least #{min_meeting_pct.present? ? "#{min_meeting_pct.to_i}%" : "the required percentage"} of them. #{casual_name.capitalize} currently has no unique-to-you assignments.
+        - if unique_check && (unique_check[:status] == :not_applicable || unique_check[:status] == :not_configured) && @unique_assignments.blank?
+          .card-footer.fw-semibold.small.py-2.bg-info.bg-opacity-25
+            .d-flex.align-items-center.justify-content-end
+              %span Not applicable
         - elsif @unique_assignments.present?
-          = render "organizations/eligibility_requirements/check_in_requirements_section",
-            section_title: "Unique-to-You Assignment Check-In Requirements",
-            requirement_sentence: (unique_check && unique_check[:details].present?) ? format_assignments_requirement(unique_check[:details], assignment_label: "unique-to-you assignments") : nil,
-            rows: @unique_assignments.map { |a| { name: a.title, id: a.id, path: organization_teammate_assignment_path(@organization, @teammate, a) } },
-            monthly_status_by_id: @unique_assignments_monthly_status || {},
+          = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
             eligibility_result: @unique_assignments_eligibility_result,
-            show_totals_in_body: false
+            collapse_body_id: "section5Body"
         - else
-          - min_meeting_pct = unique_check&.dig(:details, :minimum_percentage_meeting) || unique_check&.dig(:details, "minimum_percentage_meeting")
-          - casual_name = @teammate.person.casual_name.presence || "this teammate"
-          .alert.alert-warning.mb-0
-            This position expects #{casual_name} to take on at least one unique-to-you assignment and be meeting expectations of at least #{min_meeting_pct.present? ? "#{min_meeting_pct.to_i}%" : "the required percentage"} of them. #{casual_name.capitalize} currently has no unique-to-you assignments.
-      - if unique_check && (unique_check[:status] == :not_applicable || unique_check[:status] == :not_configured)
-        .card-footer.fw-semibold.small.py-2.bg-info.bg-opacity-25
-          .d-flex.align-items-center.justify-content-end
-            %span Not applicable
-      - elsif @unique_assignments.present?
-        = render "organizations/eligibility_requirements/check_in_requirements_totals_footer",
-          eligibility_result: @unique_assignments_eligibility_result,
-          collapse_body_id: "section5Body"
-      - else
-        .card-footer.fw-semibold.small.py-2.bg-warning.bg-opacity-25
-          .d-flex.align-items-center.justify-content-end.h2
-            %i.bi.bi-tools.fs-2.align-middle
-            %span.ms-1 Working to meet requirements
+          .card-footer.fw-semibold.small.py-2.bg-warning.bg-opacity-25
+            .d-flex.align-items-center.justify-content-end.h2
+              %i.bi.bi-tools.fs-2.align-middle
+              %span.ms-1 Working to meet requirements
 
 .row.mb-4
   .col-12
@@ -330,12 +335,13 @@
               %i.bi.bi-tools.fs-2.align-middle
               %span.ms-1 Working to meet requirements
 
-= render "organizations/eligibility_requirements/milestone_mileage_section",
-  teammate: @teammate,
-  eligibility_report: @eligibility_report,
-  mileage_earned_addends: @mileage_earned_addends,
-  mileage_required_addends: @mileage_required_addends,
-  section_body_id: "section7Body"
+- if @show_mileage_criterion
+  = render "organizations/eligibility_requirements/milestone_mileage_section",
+    teammate: @teammate,
+    eligibility_report: @eligibility_report,
+    mileage_earned_addends: @mileage_earned_addends,
+    mileage_required_addends: @mileage_required_addends,
+    section_body_id: "section7Body"
 
 - if @position_check_in_eligibility_result
   .row.mb-4

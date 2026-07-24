@@ -102,7 +102,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('There has to be a business need')
       expect(response.body).not_to include('(2) There has to be a business need')
       expect(response.body).to include('business need')
-      expect(response.body).not_to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('no unique-to-you expectations')
+      expect(response.body).not_to include('already holds a seat with this title')
     end
 
     it 'hides business need and lists it under Irrelevant criteria when teammate already holds this title' do
@@ -157,7 +159,9 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('There has to be a business need')
       expect(response.body).to include('section2Body')
       expect(response.body).to include('No Current Business Need')
-      expect(response.body).not_to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('no unique-to-you expectations')
+      expect(response.body).not_to include('already holds a seat with this title')
       expect(controller.instance_variable_get(:@show_business_need_criterion)).to eq(true)
       expect(controller.instance_variable_get(:@business_need_eligible)).to eq(false)
     end
@@ -191,7 +195,7 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).to include('Teammate Status')
     end
 
-    it 'renders aspirational values, required assignments, and unique-to-you as cards with collapsed body' do
+    it 'renders aspirational values and required assignments as cards with collapsed body' do
       get organization_eligibility_requirement_path(
         organization,
         position,
@@ -201,14 +205,36 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Criteria for exemplifying our Aspirational Values')
       expect(response.body).to include('Criteria for Required Assignments')
-      expect(response.body).to include('Criteria for Unique-to-You Assignments')
       expect(response.body).not_to include('(3) Criteria for exemplifying')
       expect(response.body).to include('section3Body')
       expect(response.body).to include('section4Body')
-      expect(response.body).to include('section5Body')
     end
 
-    it 'always shows Unique-to-You Assignments; shows Not applicable when no minimum meeting expectation' do
+    it 'hides Unique-to-You Assignments when position has no UTY expectation and teammate has none' do
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('section5Body')
+      expect(response.body).to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('no unique-to-you expectations')
+      expect(controller.instance_variable_get(:@show_unique_to_you_criterion)).to eq(false)
+      expect(controller.instance_variable_get(:@show_unique_to_you_growth_note)).to eq(false)
+    end
+
+    it 'shows Unique-to-You Assignments when position has a meeting expectation above zero' do
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'unique_to_you_assignment_check_in_requirements' => {
+          'minimum_months_at_or_above_rating_criteria' => 3,
+          'minimum_percentage_of_assignments_meeting' => 80,
+          'minimum_percentage_of_assignments_exceeding' => 0
+        }
+      )
+      assign_position_eligibility_from_hash!(position, h)
+
       get organization_eligibility_requirement_path(
         organization,
         position,
@@ -217,9 +243,57 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Criteria for Unique-to-You Assignments')
-      # With no unique-to-you requirements configured (or 0% expectation) and no assignments, show Not applicable
-      expect(response.body).to include('Not applicable')
-      expect(response.body).to include('bg-info')
+      expect(response.body).to include('section5Body')
+      expect(response.body).not_to include('Explore in Grow by Experiences')
+      expect(controller.instance_variable_get(:@show_unique_to_you_criterion)).to eq(true)
+      expect(controller.instance_variable_get(:@show_unique_to_you_growth_note)).to eq(false)
+      expect(controller.instance_variable_get(:@position_has_unique_to_you_expectation)).to eq(true)
+    end
+
+    it 'shows Unique-to-You with growth note when teammate has UTY assignments but position has no expectation' do
+      uty_assignment = create(:assignment, company: organization, title: 'Side Project')
+      create(:assignment_tenure, teammate: teammate, assignment: uty_assignment, ended_at: nil)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Criteria for Unique-to-You Assignments')
+      expect(response.body).to include('section5Body')
+      expect(response.body).to include('Side Project')
+      expect(response.body).to include('great form of growth')
+      expect(response.body).to include('Explore in Grow by Experiences')
+      expect(response.body).to include(my_growth_experiences_organization_company_teammate_path(organization, teammate))
+      expect(controller.instance_variable_get(:@show_unique_to_you_criterion)).to eq(true)
+      expect(controller.instance_variable_get(:@show_unique_to_you_growth_note)).to eq(true)
+    end
+
+    it 'shows Unique-to-You without growth note when position requires UTY and teammate has assignments' do
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'unique_to_you_assignment_check_in_requirements' => {
+          'minimum_months_at_or_above_rating_criteria' => 3,
+          'minimum_percentage_of_assignments_meeting' => 80,
+          'minimum_percentage_of_assignments_exceeding' => 0
+        }
+      )
+      assign_position_eligibility_from_hash!(position, h)
+      uty_assignment = create(:assignment, company: organization, title: 'Passion Project')
+      create(:assignment_tenure, teammate: teammate, assignment: uty_assignment, ended_at: nil)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Passion Project')
+      expect(response.body).to include('section5Body')
+      expect(response.body).not_to include('Explore in Grow by Experiences')
+      expect(controller.instance_variable_get(:@show_unique_to_you_growth_note)).to eq(false)
     end
 
     it 'renders 12 status blocks per aspirational value row when aspirations exist' do
@@ -325,6 +399,80 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response.body).not_to include('(7) Required Milestone Mileage')
       expect(response.body).to include('section6Body')
       expect(response.body).to include('section7Body')
+      expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(true)
+    end
+
+    it 'hides Milestone Mileage when configured as 0% more than required' do
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 0 }
+      )
+      assign_position_eligibility_from_hash!(position, h)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('section7Body')
+      expect(response.body).to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('equals the miles from Required Milestones')
+      expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(false)
+      mileage_check = controller.instance_variable_get(:@eligibility_report)[:checks].find { |c| c[:key] == :mileage_requirements }
+      expect(mileage_check).to be_present
+      expect(mileage_check[:status]).not_to eq(:not_configured)
+    end
+
+    it 'shows Milestone Mileage when percentage more than required is greater than zero' do
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 20 }
+      )
+      assign_position_eligibility_from_hash!(position, h)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Required Milestone Mileage')
+      expect(response.body).to include('section7Body')
+      expect(response.body).not_to include('equals the miles from Required Milestones')
+      expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(true)
+    end
+
+    it 'lists both business need and mileage under Irrelevant criteria when both are hidden' do
+      title_for_position = position.title
+      seat = create(:seat, title: title_for_position, seat_needed_by: 1.month.from_now, state: :filled)
+      EmploymentTenure.create!(
+        company_teammate: teammate,
+        company: organization,
+        position: position,
+        seat: seat,
+        started_at: 1.month.ago,
+        ended_at: nil
+      )
+      h = position.reload.position_eligibility_requirement.to_eligibility_service_hash.merge(
+        'mileage_requirements' => { 'threshold_type' => 'percentage', 'threshold_value' => 0 }
+      )
+      assign_position_eligibility_from_hash!(position, h)
+
+      get organization_eligibility_requirement_path(
+        organization,
+        position,
+        teammate_id: teammate.id
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('section2Body')
+      expect(response.body).not_to include('section7Body')
+      expect(response.body).to include('id="irrelevantEligibilityCriteria"')
+      expect(response.body).to include('already holds a seat with this title')
+      expect(response.body).to include('equals the miles from Required Milestones')
+      expect(controller.instance_variable_get(:@show_business_need_criterion)).to eq(false)
+      expect(controller.instance_variable_get(:@show_mileage_criterion)).to eq(false)
     end
 
     it 'groups required milestone mileage by ability (cumulative points through highest required level), sorted by ability name' do

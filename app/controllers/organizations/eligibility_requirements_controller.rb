@@ -137,6 +137,17 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     # Hide business-need UI when teammate already holds a seat with this title (logic above unchanged).
     active_seat = @teammate.employment_tenures.active.where(company: organization).includes(seat: :title).first&.seat
     @show_business_need_criterion = active_seat.nil? || active_seat.title_id != @position.title_id
+
+    # Hide mileage UI when configured as 0% more than required milestones (computation unchanged).
+    mileage_check = @eligibility_report[:checks].find { |c| c[:key] == :mileage_requirements }
+    @show_mileage_criterion = !mileage_requirement_is_zero_percent_more?(mileage_check)
+
+    # Unique-to-you: show if position has >0% meeting/exceeding expectation OR teammate has active UTY assignments.
+    uty_requirements = unique_to_you_requirements_hash
+    @position_has_unique_to_you_expectation = position_has_unique_to_you_expectation?(uty_requirements)
+    @show_unique_to_you_criterion = @position_has_unique_to_you_expectation || @unique_assignments.present?
+    @show_unique_to_you_growth_note = !@position_has_unique_to_you_expectation && @unique_assignments.present?
+
     @irrelevant_eligibility_criteria = build_irrelevant_eligibility_criteria(active_seat)
 
     # Section (8): Position check-in requirements — monthly status (one row) and eligibility result
@@ -153,14 +164,55 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
   # Criteria hidden from the main checklist for this analysis (shown in a collapsed footer).
   # Returns array of { label:, reason: }.
   def build_irrelevant_eligibility_criteria(active_seat)
-    return [] if @show_business_need_criterion
+    items = []
 
-    casual = @teammate.person.casual_name.presence || @teammate.person.display_name
-    title_name = active_seat.title.display_name
-    [{
-      label: "There has to be a business need",
-      reason: "Not shown because #{casual} already holds a seat with this title (#{title_name}). Business need applies when considering a different title."
-    }]
+    unless @show_business_need_criterion
+      casual = @teammate.person.casual_name.presence || @teammate.person.display_name
+      title_name = active_seat.title.display_name
+      items << {
+        label: "There has to be a business need",
+        reason: "Not shown because #{casual} already holds a seat with this title (#{title_name}). Business need applies when considering a different title."
+      }
+    end
+
+    unless @show_mileage_criterion
+      items << {
+        label: "Required Milestone Mileage",
+        reason: "Not shown because the mileage requirement equals the miles from Required Milestones for this position. A separate mileage criterion applies when the threshold is higher (for example, a percentage more than required)."
+      }
+    end
+
+    unless @show_unique_to_you_criterion
+      casual = @teammate.person.casual_name.presence || @teammate.person.display_name
+      items << {
+        label: "Criteria for Unique-to-You Assignments",
+        reason: "Not shown because this position has no unique-to-you expectations, and #{casual} has no active unique-to-you assignments."
+      }
+    end
+
+    items
+  end
+
+  def unique_to_you_requirements_hash
+    record = PositionEligibilityResolver.resolve(@position).record
+    return {} unless record
+
+    record.to_eligibility_service_hash['unique_to_you_assignment_check_in_requirements'] || {}
+  end
+
+  def position_has_unique_to_you_expectation?(requirements)
+    meeting = requirements['minimum_percentage_of_assignments_meeting'] || requirements[:minimum_percentage_of_assignments_meeting]
+    exceeding = requirements['minimum_percentage_of_assignments_exceeding'] || requirements[:minimum_percentage_of_assignments_exceeding]
+    meeting.to_f.positive? || exceeding.to_f.positive?
+  end
+
+  def mileage_requirement_is_zero_percent_more?(mileage_check)
+    return false if mileage_check.blank? || mileage_check[:status] == :not_configured
+
+    details = mileage_check[:details] || {}
+    threshold_type = details[:threshold_type] || details['threshold_type']
+    threshold_value = details[:threshold_value] || details['threshold_value']
+    threshold_type.to_s == 'percentage' && !threshold_value.nil? && threshold_value.to_i == 0
   end
 
   # Array of sentence strings for each configured eligibility check (for collapsible summary).
