@@ -289,6 +289,20 @@ RSpec.describe GoalsHelper, type: :helper do
         expect(result).to include('bg-secondary')
         expect(result).to include('48px')
       end
+
+      it 'uses the company logo when attached' do
+        company.logo.attach(
+          io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+          filename: 'logo.png',
+          content_type: 'image/png'
+        )
+        goal = create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company')
+        result = helper.goal_owner_image_content(goal, size: 48)
+
+        expect(result).to include('img')
+        expect(result).to include('rounded-circle')
+        expect(result).not_to include('bg-secondary')
+      end
     end
 
     context 'with Department owner' do
@@ -305,6 +319,22 @@ RSpec.describe GoalsHelper, type: :helper do
         expect(result).not_to include('E>')
         expect(result).not_to include('EP')
       end
+
+      it 'uses the department profile image when attached' do
+        department = create(:department, company: company, name: 'Platform Squad')
+        department.profile_image.attach(
+          io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+          filename: 'dept.png',
+          content_type: 'image/png'
+        )
+        goal = create(:goal, creator: creator_teammate, owner: department, company: company,
+                      privacy_level: 'everyone_in_company')
+
+        result = helper.goal_owner_image_content(goal, size: 48)
+
+        expect(result).to include('img')
+        expect(result).not_to include('PS')
+      end
     end
 
     context 'with Team owner' do
@@ -317,6 +347,22 @@ RSpec.describe GoalsHelper, type: :helper do
         result = helper.goal_owner_image_content(goal, size: 48)
 
         expect(result).to include('AT')
+      end
+
+      it 'uses the team profile image when attached' do
+        team = create(:team, company: company, name: 'Alpha Team')
+        team.profile_image.attach(
+          io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+          filename: 'team.png',
+          content_type: 'image/png'
+        )
+        goal = create(:goal, creator: creator_teammate, owner: team, company: company,
+                      privacy_level: 'everyone_in_company')
+
+        result = helper.goal_owner_image_content(goal, size: 48)
+
+        expect(result).to include('img')
+        expect(result).not_to include('AT')
       end
     end
 

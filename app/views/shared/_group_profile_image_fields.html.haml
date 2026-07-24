@@ -1,0 +1,13 @@
+-# locals: form:, record:, noun: ("department" / "team")
+- noun = local_assigns.fetch(:noun, 'group')
+.mb-3
+  = form.label :profile_image, 'Profile picture', class: 'form-label'
+  - if record.persisted? && record.profile_image.attached?
+    .mb-2.d-flex.align-items-center.gap-3
+      = group_avatar(record, size: 64)
+      .form-check
+        = check_box_tag "#{form.object_name}[remove_profile_image]", '1', false, class: 'form-check-input', id: "#{form.object_name}_remove_profile_image"
+        = label_tag "#{form.object_name}_remove_profile_image", 'Remove current picture', class: 'form-check-label'
+  = form.file_field :profile_image, accept: 'image/png,image/jpeg,image/jpg,image/webp,image/gif', class: 'form-control'
+  %small.form-text.text-muted
+    Optional. Shown in circular avatars for this #{noun} (goals and elsewhere). PNG, JPEG, WebP, or GIF, up to 5 MB.

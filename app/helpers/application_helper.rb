@@ -7,6 +7,7 @@ module ApplicationHelper
   include CompanyLabelHelper
   include PositionsHelper
   include GoalsHelper
+  include GroupAvatarHelper
   include AssociableGoalsHelper
 
   # For +*_organization_company_teammate_path(organization, teammate)+ — pass this as the teammate

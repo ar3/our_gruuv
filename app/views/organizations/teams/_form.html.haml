@@ -33,6 +33,8 @@
     .form-text.text-muted
       Huddle start and summary notifications will be posted to this channel. Channels already used by other teams are disabled.
 
+  = render 'shared/group_profile_image_fields', form: form, record: team, noun: 'team'
+
   .d-flex.gap-2
     = form.submit team.persisted? ? 'Update Team' : 'Create Team', class: "btn btn-primary"
     = link_to 'Cancel', team.persisted? ? organization_team_path(@organization, team) : organization_teams_path(@organization), class: "btn btn-outline-secondary"

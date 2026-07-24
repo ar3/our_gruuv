@@ -29,14 +29,14 @@
         .card.mb-4
           .card-header.bg-primary.text-white
             %h5.mb-0.d-flex.align-items-center.justify-content-between
-              .d-flex.align-items-center
+              .d-flex.align-items-center.gap-2
                 - if department
-                  %i.bi.bi-building.me-2
+                  = group_avatar(department, size: 28)
                   = department.display_name
                   = link_to organization_department_path(@organization, department), class: "text-white ms-2", title: "View department" do
                     %i.bi.bi-link-45deg
                 - else
-                  %i.bi.bi-question-circle.me-2
+                  %i.bi.bi-question-circle
                   No Department
               .d-flex.align-items-center.gap-2
                 %span.badge.bg-light.text-dark
@@ -57,9 +57,9 @@
                     %tr
                       %td
                         .d-flex.flex-column
-                          = link_to organization_team_path(@organization, team), class: "text-decoration-none" do
-                            %i.bi.bi-people.me-2
-                            = team.name
+                          = link_to organization_team_path(@organization, team), class: "text-decoration-none d-flex align-items-center gap-2" do
+                            = group_avatar(team, size: 28)
+                            %span= team.name
                           - member_teammates = team.team_members.first(10).map(&:company_teammate)
                           - member_count = team.team_members.count
                           .d-flex.align-items-center.mt-1.flex-wrap

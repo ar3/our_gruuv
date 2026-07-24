@@ -262,6 +262,7 @@ RSpec.describe 'Organizations::Departments', type: :request do
       expect(response).to be_successful
       expect(response.body).to include(department.name)
       expect(response.body).to include('Edit')
+      expect(response.body).to include('Profile picture')
     end
 
     it 'displays available parent organizations' do
@@ -339,6 +340,32 @@ RSpec.describe 'Organizations::Departments', type: :request do
       
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.body).to include('error')
+    end
+
+    it 'attaches a profile picture' do
+      image = fixture_file_upload('logo.png', 'image/png')
+      expect {
+        patch organization_department_path(organization, department), params: {
+          department: { name: department.name, profile_image: image }
+        }
+      }.to change { department.reload.profile_image.attached? }.from(false).to(true)
+      expect(response).to redirect_to(organization_department_path(organization, department))
+    end
+
+    it 'removes a profile picture when remove_profile_image is set' do
+      department.profile_image.attach(
+        io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+        filename: 'logo.png',
+        content_type: 'image/png'
+      )
+      expect(department.profile_image.attached?).to eq(true)
+
+      patch organization_department_path(organization, department), params: {
+        department: { name: department.name, remove_profile_image: '1' }
+      }
+
+      expect(response).to redirect_to(organization_department_path(organization, department))
+      expect(department.reload.profile_image.attached?).to eq(false)
     end
   end
 end

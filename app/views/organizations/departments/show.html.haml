@@ -4,9 +4,11 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Departments", url: organization_departments_path(@organization) }, { label: @department.name, url: nil }])
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-diagram-3.me-2
-    = @department.name
+  %h1.mb-0.d-flex.align-items-center.gap-2
+    = group_avatar(@department, size: 40)
+    %span
+      %i.bi.bi-diagram-3.me-2
+      = @department.name
 
 .row.justify-content-center
   .col-lg-12

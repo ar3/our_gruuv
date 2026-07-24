@@ -26,6 +26,25 @@ RSpec.describe Department, type: :model do
       expect(department).not_to be_valid
       expect(department.errors[:parent_department]).to include('must belong to the same company')
     end
+
+    it 'rejects a non-image profile picture' do
+      department.profile_image.attach(
+        io: StringIO.new('not an image'),
+        filename: 'notes.txt',
+        content_type: 'text/plain'
+      )
+      expect(department).not_to be_valid
+      expect(department.errors[:profile_image]).to include('must be a PNG, JPEG, WebP, or GIF')
+    end
+
+    it 'accepts a valid profile picture' do
+      department.profile_image.attach(
+        io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+        filename: 'logo.png',
+        content_type: 'image/png'
+      )
+      expect(department).to be_valid
+    end
   end
 
   describe 'scopes' do

@@ -2,7 +2,8 @@
   %td{style: "padding-left: #{20 + (item[:level] * 20)}px;"}
     - if item[:level] > 0
       %i.bi.bi-arrow-return-right.me-2.text-muted
-    = link_to organization_department_path(@organization, item[:organization]), class: "text-decoration-none" do
+    = link_to organization_department_path(@organization, item[:organization]), class: "text-decoration-none d-inline-flex align-items-center gap-2" do
+      = group_avatar(item[:organization], size: 28)
       %strong= item[:organization].name
   %td
     %span.badge.bg-primary
@@ -20,9 +21,6 @@
       - if policy(item[:organization]).update?
         = link_to edit_organization_department_path(@organization, item[:organization]), class: "btn btn-outline-secondary" do
           %i.bi.bi-pencil
-      - if policy(item[:organization]).archive?
-        = link_to archive_organization_department_path(@organization, item[:organization]), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this department?" } do
-          %i.bi.bi-archive
 
 - item[:children].each do |child_item|
   = render 'organizations/departments/hierarchy_row', item: child_item

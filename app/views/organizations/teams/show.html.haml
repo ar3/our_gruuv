@@ -5,7 +5,8 @@
 
 - content_for :header do
   .d-flex.align-items-center.justify-content-between
-    .d-flex.align-items-center
+    .d-flex.align-items-center.gap-2
+      = group_avatar(@team, size: 40)
       %h1.mb-0.me-2
         %i.bi.bi-people.me-2
         = @team.name

@@ -34,6 +34,7 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       expect(response.body).to include(team.name)
       expect(response.body).to include('Update Team')
       expect(response.body).to include(organization_team_path(organization, team))
+      expect(response.body).to include('Profile picture')
     end
 
     it 'includes department select when organization has departments' do
@@ -247,6 +248,33 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       get organization_team_path(organization, team)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('No department')
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/teams/:id' do
+    it 'attaches a profile picture' do
+      image = fixture_file_upload('logo.png', 'image/png')
+      expect {
+        patch organization_team_path(organization, team), params: {
+          team: { name: team.name, profile_image: image }
+        }
+      }.to change { team.reload.profile_image.attached? }.from(false).to(true)
+      expect(response).to redirect_to(organization_team_path(organization, team))
+    end
+
+    it 'removes a profile picture when remove_profile_image is set' do
+      team.profile_image.attach(
+        io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+        filename: 'logo.png',
+        content_type: 'image/png'
+      )
+
+      patch organization_team_path(organization, team), params: {
+        team: { name: team.name, remove_profile_image: '1' }
+      }
+
+      expect(response).to redirect_to(organization_team_path(organization, team))
+      expect(team.reload.profile_image.attached?).to eq(false)
     end
   end
 

@@ -2,6 +2,7 @@ module GoalsHelper
   include TerminologyHelper
   include AssociableGoalsHelper
   include MermaidFlowchartEscaping
+  include GroupAvatarHelper
 
   # Build Mermaid flowchart DSL for goal parent-child links.
   # Node IDs are safe (g_<id>); labels are escaped for Mermaid (quotes, backslashes).
@@ -797,26 +798,11 @@ module GoalsHelper
     return organization_initials_circle('?', size: size) unless goal.owner
 
     if goal.owner_type == 'CompanyTeammate'
-      teammate = goal.owner
-      teammate_profile_image(teammate, size: size)
-    elsif goal.owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
-      org = goal.owner
-      # Initials from the object's own title only (not hierarchical display_name like "Parent > Child")
-      name = org.try(:name).presence || org.try(:short_display_name).presence || org.try(:display_name).presence || 'Org'
-      initials = name.split(/\s+/).map(&:first).take(2).join.upcase
-      initials = 'O' if initials.blank?
-      organization_initials_circle(initials, size: size)
+      teammate_profile_image(goal.owner, size: size)
+    elsif goal.owner_type.in?(%w[Company Department Team Organization])
+      group_avatar(goal.owner, size: size)
     else
       organization_initials_circle('?', size: size)
-    end
-  end
-  
-  # Helper to render organization initials in a colored circle
-  def organization_initials_circle(initials, size: 48)
-    content_tag :div,
-                class: "bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white",
-                style: "width: #{size}px; height: #{size}px;" do
-      content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
     end
   end
 

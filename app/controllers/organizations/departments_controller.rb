@@ -1,4 +1,6 @@
 class Organizations::DepartmentsController < Organizations::OrganizationNamespaceBaseController
+  include ProfileImageParams
+
   before_action :require_authentication
   before_action :set_department, only: [
     :show, :edit, :update, :archive,
@@ -60,7 +62,7 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
   end
 
   def create
-    @department = Department.new(department_params)
+    @department = Department.new(department_params.except(:remove_profile_image))
     @department.company = company
     authorize @department, :create?
     
@@ -93,6 +95,8 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
         update_params.delete(:parent_department_id)
       end
     end
+
+    apply_profile_image_param!(@department, update_params)
     
     if @department.update(update_params)
       redirect_to organization_department_path(@organization, @department), notice: 'Department was successfully updated.'
@@ -195,7 +199,7 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
   end
 
   def department_params
-    params.require(:department).permit(:name, :parent_department_id)
+    params.require(:department).permit(:name, :parent_department_id, :profile_image, :remove_profile_image)
   end
 
   def set_available_parents
@@ -212,14 +216,14 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
 
   def build_department_hierarchy
     # Build a tree structure for display
-    root_departments = Department.for_company(company).root_departments.active.ordered
+    root_departments = Department.for_company(company).root_departments.active.ordered.with_attached_profile_image
     root_departments.map { |dept| build_node(dept) }
   end
 
   def build_node(department)
     {
       department: department,
-      children: department.child_departments.active.ordered.map { |child| build_node(child) },
+      children: department.child_departments.active.ordered.with_attached_profile_image.map { |child| build_node(child) },
       departments_count: count_descendants(department, type: :department),
       depth: department.ancestry_depth
     }

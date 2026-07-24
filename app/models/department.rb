@@ -1,5 +1,7 @@
 class Department < ApplicationRecord
   has_paper_trail
+  include HasProfileImage
+
   # Associations
   belongs_to :company, class_name: 'Organization'
   belongs_to :minor_1_position_eligibility_requirement, class_name: 'PositionEligibilityRequirement', optional: true

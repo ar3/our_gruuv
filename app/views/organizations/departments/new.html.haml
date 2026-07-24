@@ -34,6 +34,8 @@
             = form.label :parent_department_id, "Parent Department (Optional)", class: "form-label"
             = form.select :parent_department_id, options_from_collection_for_select(@available_parents, :id, :display_name, @department.parent_department_id), { include_blank: "None (Root Department)" }, { class: "form-select" }
             %small.form-text.text-muted Leave blank to create a root-level department.
+
+          = render 'shared/group_profile_image_fields', form: form, record: @department, noun: 'department'
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_departments_path(@organization), class: "btn btn-secondary"

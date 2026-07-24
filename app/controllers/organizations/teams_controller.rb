@@ -1,4 +1,6 @@
 class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseController
+  include ProfileImageParams
+
   before_action :require_authentication
   before_action :set_team, only: [:show, :edit, :update, :archive, :manage_members, :update_members]
 
@@ -6,7 +8,9 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
 
   def index
     authorize @organization, :show?
-    @teams = Team.for_company(@organization).active.ordered.includes(:department, :team_members, :company_teammates, :huddles)
+    @teams = Team.for_company(@organization).active.ordered
+      .includes(:team_members, :company_teammates, :huddles, department: { profile_image_attachment: :blob })
+      .with_attached_profile_image
     if params[:member_of] == 'me' && current_company_teammate
       @teams = @teams.joins(:team_members).where(team_members: { company_teammate_id: current_company_teammate.id }).distinct
       @my_teams_filter = true
@@ -50,7 +54,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def create
-    @team = Team.new(team_params)
+    @team = Team.new(team_params.except(:remove_profile_image))
     @team.company = @organization
     authorize @team, :create?
 
@@ -71,7 +75,10 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   def update
     authorize @team, :update?
 
-    if @team.update(team_params)
+    update_params = team_params.dup
+    apply_profile_image_param!(@team, update_params)
+
+    if @team.update(update_params)
       redirect_to organization_team_path(@organization, @team), notice: 'Team was successfully updated.'
     else
       @departments = Department.for_company(@organization).active.ordered.sort_by(&:display_name)
@@ -156,7 +163,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def team_params
-    params.require(:team).permit(:name, :huddle_channel_id, :department_id)
+    params.require(:team).permit(:name, :huddle_channel_id, :department_id, :profile_image, :remove_profile_image)
   end
 
   def load_slack_channels_for_team_edit

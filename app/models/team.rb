@@ -1,4 +1,6 @@
 class Team < ApplicationRecord
+  include HasProfileImage
+
   # Associations
   belongs_to :company, class_name: 'Organization'
   belongs_to :department, class_name: 'Department', optional: true

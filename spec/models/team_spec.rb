@@ -13,6 +13,17 @@ RSpec.describe Team, type: :model do
   describe 'validations' do
     it { should validate_presence_of(:name) }
     it { should validate_presence_of(:company) }
+
+    it 'rejects a non-image profile picture' do
+      team = build(:team)
+      team.profile_image.attach(
+        io: StringIO.new('not an image'),
+        filename: 'notes.txt',
+        content_type: 'text/plain'
+      )
+      expect(team).not_to be_valid
+      expect(team.errors[:profile_image]).to include('must be a PNG, JPEG, WebP, or GIF')
+    end
   end
 
   describe 'scopes' do
