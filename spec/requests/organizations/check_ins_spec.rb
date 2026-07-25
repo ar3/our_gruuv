@@ -635,7 +635,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include('Start a clarity check-in on any single assignment, value, or position one at a time')
       expect(response.body).to include('Go to the Bulk clarity check-in page')
       expect(response.body).to include('complete a clarity check-in on just one item or all of them at once')
-      expect(response.body).to include('Clarity Check-Ins (Active)')
+      expect(response.body).to include('Clarity Check-ins (Active)')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
       expect(response.body).to include(organization_teammate_aspiration_path(organization, employee_teammate, aspiration))
@@ -703,7 +703,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(" - Clarity Check-Ins")
-      expect(response.body).to include("Clarity Check-Ins (Active)")
+      expect(response.body).to include("Clarity Check-ins (Active)")
       expect(response.body).to include("Goal of this page")
       expect(response.body).to include("Five ways to check in")
       expect(response.body).to include("Five ways to check in below")
@@ -737,7 +737,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(" - Clarity Check-ins... Up Next")
-      expect(response.body).to include("Clarity Check-Ins (Active)")
+      expect(response.body).to include("Clarity Check-ins (Active)")
       expect(response.body).to include("Goal of this page")
       expect(response.body).to include("Gruuv Health pill on each item")
       expect(response.body).to include("#{employee_person.casual_name} perspective")

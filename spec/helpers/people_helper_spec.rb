@@ -15,14 +15,14 @@ RSpec.describe PeopleHelper, type: :helper do
         expect(helper.people_current_view_name).to eq('Profile Settings')
       end
       
-      it 'returns Clarity Check-Ins for check_ins controller' do
+      it 'returns Clarity Check-ins for check_ins controller' do
         allow(helper).to receive(:controller_name).and_return('check_ins')
-        expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+        expect(helper.people_current_view_name).to eq('Clarity Check-ins')
       end
       
-      it 'returns Clarity Check-Ins for finalizations controller' do
+      it 'returns Clarity Check-ins for finalizations controller' do
         allow(helper).to receive(:controller_name).and_return('finalizations')
-        expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+        expect(helper.people_current_view_name).to eq('Clarity Check-ins')
       end
       
       it 'returns Seat Management for position controller' do
@@ -37,10 +37,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Set Assignments')
     end
 
-    it 'returns Clarity Check-Ins for check_ins review_most_recent action' do
+    it 'returns Clarity Check-ins for check_ins review_most_recent action' do
       allow(helper).to receive(:action_name).and_return('review_most_recent')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
     it 'returns Clarity Check-ins for check_ins hub action' do
@@ -49,10 +49,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
-    it 'returns Clarity Check-Ins for check_ins up_next action' do
+    it 'returns Clarity Check-ins for check_ins up_next action' do
       allow(helper).to receive(:action_name).and_return('up_next')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
     it 'reports clarity check-ins view active for up_next' do
@@ -114,10 +114,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq("Alex's Growth")
     end
 
-    it 'returns Clarity Check-Ins for audit action' do
+    it 'returns Clarity Check-ins for audit action' do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
     it 'returns Kudos Points for kudos_points action' do
