@@ -219,7 +219,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   private
 
   def set_seat
-    @seat = Seat.includes(:title, :reports_to_seat, :reporting_seats, employment_tenures: { company_teammate: :person }).find(params[:id])
+    @seat = Seat.includes(:title, :titles, :reports_to_seat, :reporting_seats, employment_tenures: { company_teammate: :person }).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     flash[:error] = "Seat not found"
     redirect_to organization_seats_path(organization)
@@ -233,7 +233,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     
     # Load seats with their active employment tenures and teammates
     all_seats = Seat.for_organization(organization)
-                    .includes(:title, employment_tenures: { company_teammate: :person })
+                    .includes(:title, :titles, employment_tenures: { company_teammate: :person })
                     .order('titles.external_title ASC, seats.seat_needed_by ASC')
     
     # Exclude current seat if editing (can't report to itself)
@@ -263,7 +263,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def seat_params
-    params.require(:seat).permit(
+    permitted_params = params.require(:seat).permit(
       :title_id,
       :seat_needed_by,
       :job_classification,
@@ -279,8 +279,17 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       :why_needed,
       :why_now,
       :costs_risks,
-      :state
+      :state,
+      title_ids: []
     )
+
+    normalized_title_ids = Array(permitted_params[:title_ids]).reject(&:blank?).map(&:to_i).uniq
+    if normalized_title_ids.present?
+      permitted_params[:title_ids] = normalized_title_ids
+      permitted_params[:title_id] = normalized_title_ids.first
+    end
+
+    permitted_params
   end
 
   def calculate_spotlight_stats
@@ -299,8 +308,8 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate title seat statistics
     titles = organization.titles.includes(:seats)
-    titles_with_seats = titles.select { |title| title.seats.exists? }.count
-    titles_without_seats = titles.select { |title| !title.seats.exists? }.count
+    titles_with_seats = titles.select { |title| Seat.left_joins(:seat_titles).where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title.id).exists? }.count
+    titles_without_seats = titles.count - titles_with_seats
     total_titles = titles.count
     
     {

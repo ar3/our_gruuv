@@ -33,6 +33,10 @@
 .row.justify-content-center
   .col-12
     %p
+      %strong Titles:
+      = @seat.title_label.presence || '--Not selected--'
+
+    %p
       %strong Department:
       = @seat.title&.department&.display_name || '--Not selected--'
 
@@ -132,7 +136,7 @@
   .col-12
 
     %h2.mb-3
-      %strong= @seat.title.external_title
+      %strong= @seat.title_label
       ='- Job Description'
 
     %h4.mb-3

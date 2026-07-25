@@ -11,7 +11,7 @@ module Seats
         titles = @organization.titles.includes(:seats)
         
         titles.each do |title|
-          next if title.seats.exists?
+          next if seat_exists_for_title?(title.id)
           
           create_seat_for_title(title)
         end
@@ -37,10 +37,11 @@ module Seats
       seat_needed_by = Date.current
       
       # Check if a seat already exists for this title and date
-      existing_seat = Seat.find_by(
-        title: title,
-        seat_needed_by: seat_needed_by
-      )
+      existing_seat = Seat.left_joins(:seat_titles)
+                          .where(seat_needed_by: seat_needed_by)
+                          .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title.id)
+                          .distinct
+                          .first
       
       if existing_seat
         # Seat already exists, nothing to do
@@ -61,6 +62,12 @@ module Seats
       end
     rescue => e
       @errors << "Error creating seat for title #{title.id}: #{e.message}"
+    end
+
+    def seat_exists_for_title?(title_id)
+      Seat.left_joins(:seat_titles)
+          .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title_id)
+          .exists?
     end
   end
 end

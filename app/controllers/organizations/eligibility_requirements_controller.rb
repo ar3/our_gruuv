@@ -127,16 +127,26 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     @managerial_hierarchy_for_display = build_managerial_hierarchy_for_display
 
     # Section (2): Business need — seats for this position's title, occupants, and whether teammate is in one or open exists
-    @seats_for_position = @position.title.seats.active.ordered
+    @seats_for_position = Seat.active
+                              .left_joins(:seat_titles)
+                              .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: @position.title_id)
+                              .distinct
+                              .ordered
     @open_seats_for_position = @seats_for_position.select(&:open?)
-    @teammate_in_seat_for_position = @teammate.employment_tenures.active.joins(:seat).where(seats: { title_id: @position.title_id }).first&.seat
+    @teammate_in_seat_for_position = @teammate.employment_tenures
+                                              .active
+                                              .left_joins(seat: :seat_titles)
+                                              .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: @position.title_id)
+                                              .distinct
+                                              .first
+                                              &.seat
     filled_seat_ids = @seats_for_position.select(&:filled?).map(&:id)
     @seat_occupant_by_seat_id = filled_seat_ids.any? ? EmploymentTenure.active.where(seat_id: filled_seat_ids).includes(:company_teammate).index_by(&:seat_id) : {}
     @business_need_eligible = @teammate_in_seat_for_position.present? || @open_seats_for_position.any?
 
     # Hide business-need UI when teammate already holds a seat with this title (logic above unchanged).
-    active_seat = @teammate.employment_tenures.active.where(company: organization).includes(seat: :title).first&.seat
-    @show_business_need_criterion = active_seat.nil? || active_seat.title_id != @position.title_id
+    active_seat = @teammate.employment_tenures.active.where(company: organization).includes(seat: [:title, :seat_titles]).first&.seat
+    @show_business_need_criterion = active_seat.nil? || !active_seat.includes_title_id?(@position.title_id)
 
     # Hide mileage UI when configured as 0% more than required milestones (computation unchanged).
     mileage_check = @eligibility_report[:checks].find { |c| c[:key] == :mileage_requirements }
@@ -168,7 +178,7 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
 
     unless @show_business_need_criterion
       casual = @teammate.person.casual_name.presence || @teammate.person.display_name
-      title_name = active_seat.title.display_name
+      title_name = active_seat.title_label
       items << {
         label: "There has to be a business need",
         reason: "Not shown because #{casual} already holds a seat with this title (#{title_name}). Business need applies when considering a different title."

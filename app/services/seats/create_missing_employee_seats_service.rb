@@ -47,10 +47,11 @@ module Seats
       title = Title.find(title_id)
       
       # Check if a seat already exists for this title and date
-      existing_seat = Seat.find_by(
-        title_id: title_id,
-        seat_needed_by: seat_needed_by
-      )
+      existing_seat = Seat.left_joins(:seat_titles)
+                          .where(seat_needed_by: seat_needed_by)
+                          .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title_id)
+                          .distinct
+                          .first
       
       seat = existing_seat
       

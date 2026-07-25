@@ -445,7 +445,15 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         position_summary = position.position_summary || ''
         
         # Seats: newline-separated list of seat display names for this position's title
-        seats_list = position.title&.seats&.map(&:display_name)&.join("\n") || ''
+        seats_list = if position.title
+          Seat.left_joins(:seat_titles)
+              .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: position.title.id)
+              .distinct
+              .map(&:display_name)
+              .join("\n")
+        else
+          ''
+        end
         
         # Department
         department_name = position.title&.department&.display_name || ''
@@ -505,7 +513,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         csv << [
           seat.id,
           seat.display_name,
-          seat.title.external_title,
+          seat.title_label,
           seat.title.company.display_name,
           seat.title&.department&.display_name || '',
           seat.team&.display_name || '',
@@ -539,7 +547,10 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         positions_count = title.positions.count
         
         # Count seats
-        seats_count = title.seats.count
+        seats_count = Seat.left_joins(:seat_titles)
+                          .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title.id)
+                          .distinct
+                          .count
         
         # Count active employment tenures through positions
         active_tenures_count = EmploymentTenure.active

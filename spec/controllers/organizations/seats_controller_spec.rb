@@ -393,6 +393,24 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         expect(created_seat.team).to be_nil
         expect(created_seat.reports_to_seat).to be_nil
       end
+
+      it 'creates a seat with multiple titles' do
+        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Engineering Manager")
+
+        expect {
+          post :create, params: {
+            organization_id: company.id,
+            seat: {
+              title_ids: [title.id, second_title.id],
+              seat_needed_by: Date.current + 3.months
+            }
+          }
+        }.to change { Seat.count }.by(1)
+
+        created_seat = Seat.last
+        expect(created_seat.title_id).to eq(title.id)
+        expect(created_seat.associated_titles.map(&:id)).to include(title.id, second_title.id)
+      end
     end
   end
 
@@ -446,6 +464,21 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         # Department comes from title, so it should still be set
         expect(seat.department).to be_a(Department)
         expect(seat.department.id).to eq(department.id)
+      end
+
+      it 'updates a seat with multiple titles' do
+        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Staff Engineer")
+
+        patch :update, params: {
+          organization_id: company.id,
+          id: seat.id,
+          seat: {
+            title_ids: [seat.title_id, second_title.id]
+          }
+        }
+
+        seat.reload
+        expect(seat.associated_titles.map(&:id)).to include(seat.title_id, second_title.id)
       end
     end
   end

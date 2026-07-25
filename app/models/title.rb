@@ -8,6 +8,8 @@ class Title < ApplicationRecord
   belongs_to :department, optional: true
   has_many :positions, dependent: :destroy
   has_many :seats, dependent: :destroy
+  has_many :seat_titles, dependent: :destroy
+  has_many :associated_seats, through: :seat_titles, source: :seat
   has_many :comments, as: :commentable, dependent: :destroy
   has_one :published_external_reference, -> { where(reference_type: 'published') },
           class_name: 'ExternalReference', as: :referable, dependent: :destroy

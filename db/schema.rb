@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_20_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_25_130500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1446,6 +1446,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_120000) do
     t.index ["prompt_template_id"], name: "index_prompts_on_prompt_template_id"
   end
 
+  create_table "seat_titles", force: :cascade do |t|
+    t.bigint "seat_id", null: false
+    t.bigint "title_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["seat_id", "title_id"], name: "index_seat_titles_on_seat_id_and_title_id", unique: true
+    t.index ["seat_id"], name: "index_seat_titles_on_seat_id"
+    t.index ["title_id"], name: "index_seat_titles_on_title_id"
+  end
+
   create_table "seats", force: :cascade do |t|
     t.bigint "title_id", null: false
     t.date "seat_needed_by", null: false
@@ -1968,6 +1978,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_120000) do
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
+  add_foreign_key "seat_titles", "seats"
+  add_foreign_key "seat_titles", "titles"
   add_foreign_key "seats", "seats", column: "reports_to_seat_id"
   add_foreign_key "seats", "teams"
   add_foreign_key "seats", "titles"

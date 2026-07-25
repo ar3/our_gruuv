@@ -112,7 +112,7 @@
                     %td
                       = link_to organization_seat_path(@organization, seat), class: "text-decoration-none" do
                         = seat.display_name
-                    %td= seat.title.external_title
+                    %td= seat.title_label
                     %td= seat.seat_needed_by.strftime('%B %d, %Y')
                     %td
                       %span.badge{class: seat_state_badge_class(seat.state)}

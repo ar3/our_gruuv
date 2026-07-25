@@ -34,6 +34,23 @@ RSpec.describe EmploymentTenure, type: :model do
         expect(tenure).to be_valid
       end
     end
+
+    describe 'seat title matching validation' do
+      it 'allows a seat that includes the position title in associated titles' do
+        company = create(:organization, :company)
+        teammate = create(:company_teammate, organization: company)
+        primary_title = create(:title, company: company)
+        secondary_title = create(:title, company: company)
+        position_level = create(:position_level, position_major_level: secondary_title.position_major_level)
+        secondary_position = create(:position, title: secondary_title, position_level: position_level)
+        seat = create(:seat, title: primary_title, seat_needed_by: Date.current + 2.months)
+        seat.update!(title_ids: [primary_title.id, secondary_title.id])
+
+        tenure = build(:employment_tenure, company_teammate: teammate, company: company, position: secondary_position, seat: seat, ended_at: nil)
+
+        expect(tenure).to be_valid
+      end
+    end
   end
 
   describe '#scheduled?' do
