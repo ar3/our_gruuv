@@ -60,7 +60,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'sets manager spotlight type when manager filter is active' do
       get organization_employees_path(organization, manager_teammate_id: manager_teammate.id, display: 'check_in_status')
-      expect(assigns(:current_spotlight)).to eq('manager_lite')
+      expect(assigns(:current_spotlight)).to eq('employee_health_overview')
     end
 
     it 'sets teammates spotlight type when no manager filter' do

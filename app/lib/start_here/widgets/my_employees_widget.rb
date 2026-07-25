@@ -13,7 +13,7 @@ class StartHere::Widgets::MyEmployeesWidget < StartHere::Widget::Base
         c.organization,
         manager_teammate_id: c.company_teammate&.id,
         view: "managers_view",
-        spotlight: "manager_lite"
+        spotlight: "employee_health_overview"
       )
     },
     description: "View and support the people who report to you.",

@@ -182,6 +182,9 @@
             = radio_button_tag 'spotlight', 'manager_distribution', @current_spotlight == 'manager_distribution', class: 'form-check-input', id: 'spotlight_manager_distribution'
             = label_tag 'spotlight_manager_distribution', 'Manager Distribution', class: 'form-check-label'
           .form-check
+            = radio_button_tag 'spotlight', 'employee_health_overview', @current_spotlight == 'employee_health_overview', class: 'form-check-input', id: 'spotlight_employee_health_overview'
+            = label_tag 'spotlight_employee_health_overview', 'Employee Health Overview', class: 'form-check-label'
+          .form-check
             = radio_button_tag 'spotlight', 'manager_lite', @current_spotlight == 'manager_lite', class: 'form-check-input', id: 'spotlight_manager_lite'
             = label_tag 'spotlight_manager_lite', 'Manager Lite', class: 'form-check-label'
   .row

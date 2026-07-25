@@ -549,8 +549,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         return params[:spotlight]
       end
       
-      # Auto-select manager_lite if manager filter is active
-      return 'manager_lite' if params[:manager_teammate_id].present?
+      # Auto-select employee health overview when viewing a manager's employees
+      return 'employee_health_overview' if params[:manager_teammate_id].present?
       
       # Default to teammates_overview (matches CompanyTeammatesQuery default)
       'teammates_overview'
@@ -594,6 +594,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         calculate_manager_distribution_stats(teammates, teammates_for_joins)
       when 'manager_lite'
         calculate_manager_lite_stats(teammates, teammates_for_joins)
+      when 'employee_health_overview'
+        calculate_employee_health_overview_stats
       else # 'teammates_overview' or default
         calculate_teammates_overview_stats(teammates, teammates_for_joins)
       end
@@ -854,6 +856,17 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         teammates_given_observation: teammates_given_observation,
         teammates_received_observation: teammates_received_observation
       }
+    end
+
+    def calculate_employee_health_overview_stats
+      manage_employment = policy(@organization).manage_employment?
+      EmployeeHealthOverviewSpotlightService.new(
+        organization: @organization,
+        current_person: current_person,
+        current_company_teammate: current_company_teammate,
+        manage_employment: manage_employment,
+        manager_teammate_id: params[:manager_teammate_id]
+      ).stats
     end
 
   def filter_hierarchy_tree(hierarchy_tree, filtered_person_ids)

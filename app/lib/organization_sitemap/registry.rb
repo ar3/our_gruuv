@@ -265,7 +265,7 @@ module OrganizationSitemap
                 ctx.organization,
                 manager_teammate_id: ctx.teammate&.id,
                 view: "managers_view",
-                spotlight: "manager_lite"
+                spotlight: "employee_health_overview"
               )
             },
             policy: ->(ctx) {

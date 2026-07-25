@@ -279,10 +279,10 @@ RSpec.describe 'Organizations::Employees#index with manager_lite spotlight', typ
       expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(organization, direct_report1_teammate))
     end
 
-    it 'defaults to manager_lite spotlight when manager_teammate_id is present and no spotlight is specified' do
+    it 'defaults to employee_health_overview spotlight when manager_teammate_id is present and no spotlight is specified' do
       get organization_employees_path(organization, view: 'managers_view', manager_teammate_id: manager_teammate.id)
       
-      expect(assigns(:current_spotlight)).to eq('manager_lite')
+      expect(assigns(:current_spotlight)).to eq('employee_health_overview')
     end
 
     it 'handles empty direct reports gracefully' do
