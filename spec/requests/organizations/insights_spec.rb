@@ -229,7 +229,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('check-ins-by-department-chart')
       expect(response.body).to include('Check-ins by department')
       expect(response.body).to include('Department leaderboard')
-      expect(response.body).to include('Aggregated check-in health by department')
+      expect(response.body).to include('Aggregated Gruuv Health Required Clarity by department')
+      expect(response.body).to include('% clear')
     end
 
     it 'renders department leaderboard section (sort links when rows present, else empty state)' do
@@ -253,7 +254,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'shows department leaderboard section (table or empty state)' do
       get organization_insights_check_ins_progress_path(organization)
       expect(response.body).to include('Department leaderboard')
-      expect(response.body).to include('Aggregated check-in health by department')
+      expect(response.body).to include('Aggregated Gruuv Health Required Clarity by department')
+      expect(response.body).to include('% clear')
       expect(response).to have_http_status(:success)
     end
 
