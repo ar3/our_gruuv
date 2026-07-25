@@ -34,9 +34,10 @@ RSpec.describe 'Kudos Points Mode', type: :request do
       expect(response.body).to include('Transaction History')
     end
 
-    it 'shows Kudos Points Mode in view switcher when on page' do
+    it 'shows Kudos Points in view switcher when on page' do
       get kudos_points_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to include('Kudos Points Mode')
+      expect(response.body).to include('Kudos Points')
+      expect(response.body).not_to include('Kudos Points Mode')
     end
 
     it 'shows Kudos Points Mode as an enabled link when viewing own About Me page' do

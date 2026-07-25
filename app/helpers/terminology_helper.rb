@@ -506,6 +506,49 @@ module TerminologyHelper
     end
   end
 
+  # View switcher labels: "{casual}'s …" using the viewed teammate's casual name.
+  def teammate_view_label_for(teammate)
+    casual_possessive_label_for(teammate, "Teammate view")
+  end
+
+  def active_job_label_for(teammate)
+    casual_possessive_label_for(teammate, "Active Job")
+  end
+
+  def growth_label_for(teammate)
+    casual_possessive_label_for(teammate, "Growth")
+  end
+
+  def public_profile_label_for(teammate)
+    casual_possessive_label_for(teammate, "Public Profile")
+  end
+
+  def goals_label_for(teammate)
+    casual_possessive_label_for(teammate, "Goals")
+  end
+
+  def ogos_label_for(teammate)
+    return "OGOs" if teammate.blank?
+
+    "#{teammate.person.casual_name}'s OGOs"
+  end
+
+  def about_me_classic_label
+    "About Me (classic)"
+  end
+
+  def profile_settings_label
+    "Profile Settings"
+  end
+
+  def seat_management_label
+    "Seat Management"
+  end
+
+  def clarity_check_ins_view_switcher_label
+    "Clarity Check-ins"
+  end
+
   def open_one_on_one_hub_label
     "Open #{one_on_one_hub_label}"
   end
@@ -578,5 +621,14 @@ module TerminologyHelper
 
   def position_check_in_from_clarity_hub_label
     terminology(:position_check_in_from_clarity_hub)
+  end
+
+  private
+
+  def casual_possessive_label_for(teammate, suffix)
+    return suffix if teammate.blank?
+
+    casual = teammate.person&.casual_name.to_s.presence || "Their"
+    "#{casual}'s #{suffix}"
   end
 end
