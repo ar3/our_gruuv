@@ -85,7 +85,13 @@ class Organizations::PositionComparisonsController < Organizations::Organization
   def seat_snapshot_for(position)
     return nil unless position
 
-    seats = position.title.seats.active.ordered.includes(:title).to_a
+    seats = Seat.active
+                .left_joins(:seat_titles)
+                .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: position.title_id)
+                .includes(:title, :titles)
+                .distinct
+                .ordered
+                .to_a
     filled_seat_ids = seats.select(&:filled?).map(&:id)
     occupant_by_seat_id = if filled_seat_ids.any?
       EmploymentTenure.active

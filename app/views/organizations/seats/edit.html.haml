@@ -24,10 +24,14 @@
           .row
             .col-md-6
               .mb-3
-                = f.label :title_id, "Title", class: "form-label"
-                = f.collection_select :title_id, @organization.titles, :id, :external_title, { prompt: "Select a title" }, { class: "form-select", required: true }
+                - selected_title_ids = @seat.associated_titles.map(&:id)
+                = f.label :title_ids, "Titles", class: "form-label"
+                = f.collection_select :title_ids, @organization.titles.ordered, :id, :external_title, { selected: selected_title_ids }, { class: "form-select", multiple: true, size: 8, required: true }
+                %small.form-text.text-muted Select one or more titles for this seat.
                 - if @seat.errors[:title_id].any?
                   .invalid-feedback.d-block= @seat.errors[:title_id].join(", ")
+                - if @seat.errors[:titles].any?
+                  .invalid-feedback.d-block= @seat.errors[:titles].join(", ")
 
               .mb-3
                 = f.label :seat_needed_by, "Needed By Date", class: "form-label"

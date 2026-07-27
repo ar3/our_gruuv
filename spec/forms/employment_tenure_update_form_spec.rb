@@ -151,6 +151,19 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         
         expect(form).to be_valid
       end
+
+      it 'allows a seat when the position title is an associated seat title' do
+        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: 'Cross Functional Seat Title')
+        second_position_level = create(:position_level, position_major_level: position_major_level)
+        second_position = create(:position, title: second_title, position_level: second_position_level)
+        seat.update!(title_ids: [seat.title_id, second_title.id])
+
+        form.position_id = second_position.id
+        form.seat_id = seat.id
+        form.employment_type = 'full_time'
+
+        expect(form).to be_valid
+      end
     end
 
     describe 'employment_type validation' do

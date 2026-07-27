@@ -60,7 +60,7 @@
 
             .mb-0
               %h6.text-muted.mb-1 Seats
-              - active_seats = @title.seats.active.ordered
+              - active_seats = Seat.active.left_joins(:seat_titles).where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: @title.id).includes(:title, :titles).distinct.ordered
               - if active_seats.any?
                 - active_seats.each do |seat|
                   .mb-2

@@ -7,6 +7,8 @@ RSpec.describe Seat, type: :model do
 
   describe 'associations' do
     it { should belong_to(:title) }
+    it { should have_many(:seat_titles).dependent(:destroy) }
+    it { should have_many(:titles).through(:seat_titles) }
     it { should have_many(:employment_tenures).dependent(:nullify) }
     it { should belong_to(:team).optional }
     it { should belong_to(:reports_to_seat).optional }
@@ -84,6 +86,27 @@ RSpec.describe Seat, type: :model do
   describe '#display_name' do
     it 'returns position type title with date' do
       expect(seat.display_name).to eq("#{title.external_title} - #{seat.seat_needed_by.strftime('%B %Y')}")
+    end
+  end
+
+  describe '#title_label' do
+    it 'returns all associated titles as a comma-separated list' do
+      second_title = create(:title, company: organization)
+      seat.update!(title_ids: [title.id, second_title.id])
+
+      expect(seat.reload.title_label).to include(title.external_title)
+      expect(seat.reload.title_label).to include(second_title.external_title)
+    end
+  end
+
+  describe '#includes_title_id?' do
+    it 'returns true when the title is associated to the seat' do
+      second_title = create(:title, company: organization)
+      seat.update!(title_ids: [title.id, second_title.id])
+
+      expect(seat.includes_title_id?(second_title.id)).to be true
+      expect(seat.includes_title_id?(title.id)).to be true
+      expect(seat.includes_title_id?(0)).to be false
     end
   end
 

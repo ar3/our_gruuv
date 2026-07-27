@@ -103,8 +103,7 @@ class EmploymentTenure < ApplicationRecord
   def seat_title_matches_position
     return unless seat && position
     
-    # Compare IDs to avoid object identity issues
-    unless seat.title_id == position.title_id
+    unless seat.includes_title_id?(position.title_id)
       errors.add(:seat, "must match the title of the selected position")
     end
   end

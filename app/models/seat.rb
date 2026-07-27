@@ -1,6 +1,8 @@
 class Seat < ApplicationRecord
   # Associations
   belongs_to :title
+  has_many :seat_titles, dependent: :destroy
+  has_many :titles, -> { distinct }, through: :seat_titles
   has_many :employment_tenures, dependent: :nullify
   belongs_to :team, optional: true
   belongs_to :reports_to_seat, class_name: 'Seat', optional: true
@@ -10,6 +12,10 @@ class Seat < ApplicationRecord
   validates :seat_needed_by, presence: true
   validates :title, presence: true
   validates :seat_needed_by, uniqueness: { scope: :title_id }
+  validate :at_least_one_title_selected
+  validate :all_titles_belong_to_same_company
+
+  after_commit :ensure_primary_title_associated, on: [:create, :update]
 
   # Enums
   enum :state, {
@@ -28,7 +34,7 @@ class Seat < ApplicationRecord
 
   # Instance methods
   def display_name
-    "#{title.external_title} - #{seat_needed_by.strftime('%B %Y')}"
+    "#{title_label} - #{seat_needed_by.strftime('%B %Y')}"
   end
 
   def to_s
@@ -37,6 +43,29 @@ class Seat < ApplicationRecord
 
   def summary
     title.position_summary
+  end
+
+  def title_label
+    associated_titles.map(&:external_title).uniq.join(', ')
+  end
+
+  def associated_titles
+    loaded_titles = titles.to_a
+    loaded_titles << title if title.present?
+    loaded_titles.compact.uniq(&:id)
+  end
+
+  def includes_title_id?(candidate_title_id)
+    candidate_id = candidate_title_id.to_i
+    return false if candidate_id.zero?
+
+    return true if title_id == candidate_id
+
+    if association(:seat_titles).loaded?
+      seat_titles.any? { |seat_title| seat_title.title_id == candidate_id }
+    else
+      seat_titles.where(title_id: candidate_id).exists?
+    end
   end
 
   # Assignment inheritance methods
@@ -142,5 +171,35 @@ class Seat < ApplicationRecord
 
   def department_id
     title&.department_id
+  end
+
+  def title_ids=(ids)
+    normalized_ids = Array(ids).reject(&:blank?).map(&:to_i).uniq
+    self.title_id = normalized_ids.first if normalized_ids.present?
+    super(normalized_ids)
+  end
+
+  private
+
+  def at_least_one_title_selected
+    return if title_id.present?
+    return if titles.any?
+
+    errors.add(:titles, 'must include at least one title')
+  end
+
+  def all_titles_belong_to_same_company
+    return unless title.present?
+
+    invalid_titles = titles.reject { |associated_title| associated_title.company_id == title.company_id }
+    return if invalid_titles.empty?
+
+    errors.add(:titles, 'must belong to the same company as the seat')
+  end
+
+  def ensure_primary_title_associated
+    return if title_id.blank?
+
+    seat_titles.find_or_create_by(title_id: title_id)
   end
 end

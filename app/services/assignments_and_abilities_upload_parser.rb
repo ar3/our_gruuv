@@ -417,7 +417,10 @@ class AssignmentsAndAbilitiesUploadParser
         will_create_position = position.nil?
         
         # Get all seats for this title
-        seats = Seat.where(title: title).includes(title: :department)
+        seats = Seat.left_joins(:seat_titles)
+                    .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title.id)
+                    .distinct
+                    .includes(title: :department, :titles)
         seats_data = seats.map do |seat|
           {
             'id' => seat.id,

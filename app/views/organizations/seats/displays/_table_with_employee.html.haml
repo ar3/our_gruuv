@@ -50,7 +50,7 @@
                   %tbody
                     - title_seats.each do |seat|
                       %tr
-                        %td= seat.title&.external_title || 'No Title'
+                        %td= seat.title_label.presence || 'No Title'
                         %td= seat.seat_needed_by&.strftime('%B %d, %Y') || 'N/A'
                         %td
                           %span.badge{class: seat_state_badge_class(seat.state)}
@@ -89,7 +89,7 @@
       %tbody
         - @filtered_seats.each do |seat|
           %tr
-            %td= seat.title.external_title
+            %td= seat.title_label
             %td= seat.seat_needed_by.strftime('%B %d, %Y')
             %td
               %span.badge{class: seat_state_badge_class(seat.state)}
