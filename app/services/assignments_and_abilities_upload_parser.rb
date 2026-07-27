@@ -420,7 +420,7 @@ class AssignmentsAndAbilitiesUploadParser
         seats = Seat.left_joins(:seat_titles)
                     .where('seats.title_id = :title_id OR seat_titles.title_id = :title_id', title_id: title.id)
                     .distinct
-                    .includes(title: :department, :titles)
+                    .includes(:titles, title: :department)
         seats_data = seats.map do |seat|
           {
             'id' => seat.id,
