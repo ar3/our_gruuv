@@ -1,0 +1,14 @@
+%footer.marketing-footer
+  .container
+    .d-flex.flex-wrap.justify-content-between.gap-3
+      %p.mb-0
+        &copy;
+        = "2018–#{Time.current.year} OurGruuv"
+      %p.mb-0
+        = link_to "About", about_path
+        %span.mx-2 ·
+        = link_to "New Us", new_us_path
+        %span.mx-2 ·
+        = link_to "Pricing", pricing_path
+        %span.mx-2 ·
+        = link_to "Start Free", start_free_path

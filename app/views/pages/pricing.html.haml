@@ -1,0 +1,84 @@
+- content_for :title, "Pricing ... OurGruuv"
+
+%section.marketing-hero
+  .container
+    %p.marketing-kicker Pricing
+    %h1.mb-3 Pay for value, not empty seats.
+    %p.lead.mb-4
+      Metered outcomes, capped per active teammate per month ... no minimums. If value isn’t delivered, you don’t pay.
+
+%section.marketing-section.marketing-section-alt
+  .container
+    %p.marketing-kicker Built for People Team partners
+    %h2.h3.mb-3 We put our money where our mouth is
+    %p.text-muted.mb-4
+      Old school HR software charges for seats whether anyone got value. OurGruuv meters
+      %strong value events
+      (the outcomes that actually move clarity and growth), then caps what you pay per
+      %strong active teammate
+      per month. No minimum seat count. No minimum monthly spend. No annual commit required to start.
+
+    .row.g-4.mb-5
+      .col-md-4
+        .marketing-tier
+          %p.marketing-kicker Tier
+          %p.marketing-tier-price.mb-1
+            $3
+            %small PEPM
+          %p.text-muted.mb-0 Light usage ... continuous clarity without burning budget.
+      .col-md-4
+        .marketing-tier
+          %p.marketing-kicker Tier
+          %p.marketing-tier-price.mb-1
+            $5
+            %small PEPM
+          %p.text-muted.mb-0 Steady adoption across the People Team, managers, and employees.
+      .col-md-4
+        .marketing-tier
+          %p.marketing-kicker Tier
+          %p.marketing-tier-price.mb-1
+            $10
+            %small PEPM
+          %p.text-muted.mb-0 Heavy value delivery ... still capped, never a blank check.
+
+    %h3.h5.mb-3 Guardrails
+    %ul.mb-0
+      %li
+        %strong Active teammates only
+        \... you don’t pay for empty seats.
+      %li
+        %strong Value-metered
+        \... if the value-based outcomes aren’t hit, you don’t pay.
+      %li
+        %strong Caps, not surprises
+        \... usage can grow you into a higher tier after a month of overages, or you can cap functionality to stay put.
+      %li
+        %strong Start Free forever
+        \... the job-description wizard stays free; when you create an org, those results can become real objects in OurGruuv.
+
+%section.marketing-section
+  .container
+    %h2.h4.mb-3 FAQ
+    .mb-4
+      %h3.h6 What is a “value event”?
+      %p.text-muted.mb-0
+        Product outcomes that create billable value in OurGruuv (for example completed billable consultations and related clarity work tracked in Value Billing) ... not logging in, and not seats that never engaged.
+    .mb-4
+      %h3.h6 What happens if we go over the PEPM cap?
+      %p.text-muted.mb-0
+        One month of overages, then you move up toward the max you averaged last month ... or you decide to cap functionality and stay on your current tier.
+    .mb-4
+      %h3.h6 Are there minimums?
+      %p.text-muted.mb-0
+        No. No minimum seats, no minimum monthly spend, no required annual commit to start.
+    .mb-4
+      %h3.h6 Who is this for?
+      %p.text-muted.mb-0
+        People Team / HR partners at roughly 50–300 person teams who want continuous clarity instead of glorified forms ... and want the business to see talent density rise because of it.
+
+    .d-flex.flex-wrap.gap-2.mt-4
+      = link_to "Start Free", start_free_path, class: "btn btn-dark btn-lg px-4"
+      = link_to "See Solutions", solutions_path, class: "btn btn-outline-dark btn-lg"
+
+    .mt-5
+      = render "shared/marketing/kindred_reading"

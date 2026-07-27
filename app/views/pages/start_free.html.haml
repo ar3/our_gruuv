@@ -1,0 +1,54 @@
+- content_for :title, "Start Free ... OurGruuv"
+
+%section.marketing-hero
+  .container
+    %p.marketing-kicker Start Free
+    %h1.mb-3 Upload a job description. See clarity take shape.
+    %p.lead.mb-4
+      Free forever. Paste or upload a JD ... we’ll outline assignments, abilities, and values, flag what might be missing, and preview how growth can look. When you create an organization, those results can become real objects in OurGruuv.
+    %p.small.text-muted.mb-0
+      Wizard implementation coming next ... below is the outline of the flow.
+
+%section.marketing-section.marketing-section-alt
+  .container
+    %h2.h3.mb-4 Wizard outline (stub)
+
+    .marketing-wizard-step
+      %p.marketing-kicker Step 1
+      %h3.h5.mb-2 Source the job description
+      %ul.mb-0
+        %li Upload a file (PDF / DOC / DOCX / text)
+        %li Or paste into a textarea
+        %li Primary user: People Team partner (also works for a sample role)
+
+    .marketing-wizard-step
+      %p.marketing-kicker Step 2
+      %h3.h5.mb-2 LLM turn
+      %ul.mb-0
+        %li Parse JD → proposed assignments, abilities, values
+        %li Feedback on what may be missing or underspecified
+        %li Progress / wait state while the consultation runs
+
+    .marketing-wizard-step
+      %p.marketing-kicker Step 3
+      %h3.h5.mb-2 Growth-style preview
+      %ul.mb-0
+        %li Show assignments, abilities, and values from the JD
+        %li Include demo / fake progress data illustrating continuous growth and coaching
+        %li Soft CTAs: create organization (promote to discrete OG objects) · Solutions · Pricing
+
+    .marketing-wizard-step
+      %p.marketing-kicker Later
+      %h3.h5.mb-2 After org creation
+      %ul.mb-0
+        %li Promote wizard output into real MAAP objects
+        %li Value Billing meter starts with org usage ... wizard itself stays free
+
+    .alert.alert-light.border.mt-4.mb-0
+      %strong Not implemented yet.
+      This page is the product outline only. Full upload, LLM invocation, and preview UI will be built in a follow-up.
+
+    .d-flex.flex-wrap.gap-2.mt-4
+      = link_to "Back to Home", root_path, class: "btn btn-outline-dark"
+      = link_to "See Solutions", solutions_path, class: "btn btn-dark"
+      = link_to "Pricing", pricing_path, class: "btn btn-link text-decoration-none"

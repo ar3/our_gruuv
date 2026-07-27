@@ -881,6 +881,10 @@ Rails.application.routes.draw do
   get '/eligibility-reviews', to: 'pages#eligibility_reviews_coming_soon', as: :eligibility_reviews_coming_soon
   
   # Public marketing / founder pages
+  get '/solutions', to: 'pages#solutions', as: :solutions
+  get '/flow-state', to: 'pages#flow_state', as: :flow_state
+  get '/pricing', to: 'pages#pricing', as: :pricing
+  get '/start-free', to: 'pages#start_free', as: :start_free
   get '/about', to: 'pages#about', as: :about
   get '/new-us', to: 'pages#new_us', as: :new_us
   get '/ar3', to: redirect('/new-us')

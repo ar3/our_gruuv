@@ -1,0 +1,218 @@
+// Public marketing pages (home, solutions, flow state, pricing, start free)
+// Palette: blue + grey (no yellow/amber)
+
+$mkt-blue: #1d4ed8;
+$mkt-blue-deep: #1e3a8a;
+$mkt-blue-soft: #3b82f6;
+$mkt-grey-900: #0f172a;
+$mkt-grey-700: #334155;
+$mkt-grey-500: #64748b;
+$mkt-grey-200: #e2e8f0;
+$mkt-grey-100: #f1f5f9;
+$mkt-grey-50: #f8fafc;
+
+.marketing-body {
+  background: linear-gradient(180deg, $mkt-grey-50 0%, #eef2f7 40%, $mkt-grey-50 100%);
+  color: #1e293b;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.marketing-main {
+  flex: 1;
+}
+
+.marketing-nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid $mkt-grey-200;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.marketing-nav .navbar-brand {
+  font-weight: 700;
+  color: $mkt-grey-900;
+  letter-spacing: -0.02em;
+}
+
+.marketing-nav .nav-link {
+  color: $mkt-grey-500;
+  font-weight: 500;
+}
+
+.marketing-nav .nav-link:hover,
+.marketing-nav .nav-link.active {
+  color: $mkt-blue-deep;
+}
+
+.marketing-nav .btn-start-free {
+  background: $mkt-blue;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+}
+
+.marketing-nav .btn-start-free:hover {
+  background: $mkt-blue-deep;
+  color: #fff;
+}
+
+.marketing-hero {
+  padding: 4.5rem 0 3rem;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(59, 130, 246, 0.22), transparent 55%),
+    radial-gradient(ellipse at 90% 30%, rgba(148, 163, 184, 0.35), transparent 50%),
+    linear-gradient(135deg, #eff6ff 0%, #e2e8f0 48%, #f8fafc 100%);
+}
+
+.marketing-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: $mkt-grey-900;
+  max-width: 22ch;
+}
+
+.marketing-hero .lead {
+  font-size: 1.2rem;
+  color: $mkt-grey-700;
+  max-width: 40rem;
+}
+
+.marketing-section {
+  padding: 3.5rem 0;
+}
+
+.marketing-section-alt {
+  background: #fff;
+  border-top: 1px solid $mkt-grey-200;
+  border-bottom: 1px solid $mkt-grey-200;
+}
+
+.marketing-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $mkt-blue;
+  margin-bottom: 0.5rem;
+}
+
+.marketing-persona {
+  border-left: 3px solid $mkt-blue;
+  padding-left: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.marketing-persona h3 {
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.marketing-bad {
+  color: $mkt-grey-500;
+  margin-bottom: 0.75rem;
+}
+
+.marketing-good {
+  color: $mkt-grey-900;
+  font-weight: 500;
+}
+
+.marketing-matrix-card {
+  background: #fff;
+  border: 1px solid $mkt-grey-200;
+  border-radius: 12px;
+  padding: 1.5rem;
+  height: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.marketing-matrix-card:hover {
+  border-color: $mkt-blue-soft;
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.1);
+  color: inherit;
+}
+
+.marketing-path-list li {
+  margin-bottom: 0.5rem;
+}
+
+.marketing-tier {
+  background: #fff;
+  border: 1px solid $mkt-grey-200;
+  border-radius: 12px;
+  padding: 1.75rem;
+  height: 100%;
+}
+
+.marketing-tier-price {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: $mkt-blue-deep;
+}
+
+.marketing-tier-price small {
+  font-size: 1rem;
+  font-weight: 600;
+  color: $mkt-grey-500;
+}
+
+.marketing-footer {
+  background: $mkt-grey-900;
+  color: #94a3b8;
+  padding: 2rem 0;
+  margin-top: auto;
+}
+
+.marketing-footer a {
+  color: #e2e8f0;
+  text-decoration: none;
+}
+
+.marketing-footer a:hover {
+  color: #fff;
+}
+
+.marketing-footnote {
+  font-size: 0.875rem;
+  color: $mkt-grey-500;
+}
+
+.marketing-wizard-step {
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+// Primary CTAs on marketing pages: blue, not near-black
+.marketing-body .btn-dark {
+  background-color: $mkt-blue;
+  border-color: $mkt-blue;
+}
+
+.marketing-body .btn-dark:hover {
+  background-color: $mkt-blue-deep;
+  border-color: $mkt-blue-deep;
+}
+
+.marketing-body .btn-outline-dark {
+  color: $mkt-blue-deep;
+  border-color: #94a3b8;
+}
+
+.marketing-body .btn-outline-dark:hover {
+  background-color: $mkt-blue;
+  border-color: $mkt-blue;
+  color: #fff;
+}

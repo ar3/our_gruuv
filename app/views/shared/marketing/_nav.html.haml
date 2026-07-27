@@ -1,0 +1,19 @@
+%nav.navbar.navbar-expand-lg.marketing-nav
+  .container
+    = link_to "OurGruuv", root_path, class: "navbar-brand"
+    %button.navbar-toggler{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#marketingNav", "aria-controls": "marketingNav", "aria-expanded": "false", "aria-label": "Toggle navigation"}
+      %span.navbar-toggler-icon
+    #marketingNav.collapse.navbar-collapse
+      %ul.navbar-nav.ms-auto.align-items-lg-center.gap-lg-2
+        %li.nav-item
+          = link_to "Solutions", solutions_path, class: "nav-link#{' active' if controller.action_name == 'solutions'}"
+        %li.nav-item
+          = link_to "Flow State", flow_state_path, class: "nav-link#{' active' if controller.action_name == 'flow_state'}"
+        %li.nav-item
+          = link_to "Pricing", pricing_path, class: "nav-link#{' active' if controller.action_name == 'pricing'}"
+        %li.nav-item
+          = link_to "About", about_path, class: "nav-link#{' active' if controller.action_name == 'about'}"
+        %li.nav-item.ms-lg-2
+          = link_to "Start Free", start_free_path, class: "btn btn-sm btn-start-free px-3"
+        %li.nav-item
+          = link_to "Sign in", login_path, class: "nav-link"

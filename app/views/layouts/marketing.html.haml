@@ -1,0 +1,10 @@
+!!!
+%html{lang: "en"}
+  %head
+    = render partial: 'layouts/head_common', locals: { title_default: content_for?(:title) ? yield(:title) : "OurGruuv" }
+  %body.marketing-body
+    = render partial: 'layouts/toast_container'
+    = render 'shared/marketing/nav'
+    %main.marketing-main
+      = yield
+    = render 'shared/marketing/footer'
