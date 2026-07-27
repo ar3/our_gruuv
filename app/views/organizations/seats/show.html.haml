@@ -35,6 +35,10 @@
     %p
       %strong Titles:
       = @seat.title_label.presence || '--Not selected--'
+      - if policy(@seat).update?
+        = link_to manage_titles_organization_seat_path(organization, @seat), class: "btn btn-sm btn-outline-primary ms-2" do
+          %i.bi.bi-tags.me-1
+          Manage titles
 
     %p
       %strong Department:

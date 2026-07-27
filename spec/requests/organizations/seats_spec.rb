@@ -112,5 +112,92 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(flash[:notice]).to eq('View updated successfully.')
     end
   end
+
+  describe 'GET /organizations/:organization_id/seats/:id/manage_titles' do
+    let!(:second_title) { create(:title, company: company, position_major_level: position_major_level, external_title: 'Staff Engineer') }
+
+    it 'returns http success' do
+      get manage_titles_organization_seat_path(company, seat)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders the manage titles selection page' do
+      get manage_titles_organization_seat_path(company, seat)
+
+      expect(response.body).to include('Manage Titles')
+      expect(response.body).to include('Select Titles')
+      expect(response.body).to include(title.external_title)
+      expect(response.body).to include(second_title.external_title)
+    end
+
+    it 'shows selection toolbar with search' do
+      get manage_titles_organization_seat_path(company, seat)
+
+      expect(response.body).to include('placeholder="Search titles..."')
+      expect(response.body).to include('aria-label="Filter titles"')
+      expect(response.body).to include('None selected')
+      expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+    end
+
+    it 'shows enabled save buttons at top and bottom when titles exist' do
+      get manage_titles_organization_seat_path(company, seat)
+
+      assert_select 'input[type="submit"][value="Save Titles"]', count: 2
+    end
+
+    it 'marks currently associated titles as checked' do
+      seat.update!(title_ids: [title.id, second_title.id])
+
+      get manage_titles_organization_seat_path(company, seat)
+
+      checkbox_html = response.body[/<input[^>]*id=["']title_#{second_title.id}["'][^>]*>/]
+      expect(checkbox_html).to be_present
+      expect(checkbox_html).to include('checked')
+    end
+
+    it 'links manage titles from the seat show page' do
+      get organization_seat_path(company, seat)
+
+      expect(response.body).to include(manage_titles_organization_seat_path(company, seat))
+      expect(response.body).to include('Manage titles')
+    end
+
+    context 'without MAAP permission' do
+      before do
+        person_teammate.update!(can_manage_maap: false)
+        person_ct = CompanyTeammate.find(person_teammate.id)
+        allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(person_ct)
+      end
+
+      it 'denies access' do
+        get manage_titles_organization_seat_path(company, seat)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/seats/:id/update_titles' do
+    let!(:second_title) { create(:title, company: company, position_major_level: position_major_level, external_title: 'Staff Engineer') }
+
+    it 'updates associated titles and redirects to the seat' do
+      patch update_titles_organization_seat_path(company, seat), params: {
+        title_ids: [title.id, second_title.id]
+      }
+
+      expect(response).to redirect_to(organization_seat_path(company, seat))
+      seat.reload
+      expect(seat.associated_title_ids).to contain_exactly(title.id, second_title.id)
+      expect(seat.title_id).to eq(title.id)
+    end
+
+    it 'rejects an empty selection' do
+      patch update_titles_organization_seat_path(company, seat), params: {
+        title_ids: []
+      }
+
+      expect(response).to redirect_to(manage_titles_organization_seat_path(company, seat))
+      expect(flash[:alert]).to include('at least one title')
+    end
+  end
 end
 

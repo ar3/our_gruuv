@@ -24,11 +24,12 @@
           .row
             .col-md-6
               .mb-3
-                - selected_title_ids = @seat.associated_titles.map(&:id)
-                = f.label :title_ids, "Titles", class: "form-label"
-                = f.collection_select :title_ids, @organization.titles.ordered, :id, :external_title, { selected: selected_title_ids }, { class: "form-select", multiple: true, size: 8, required: true }
+                = f.label :title_id, "Primary Title", class: "form-label"
+                = f.collection_select :title_id, @organization.titles.ordered, :id, :external_title, { prompt: "Select a title" }, { class: "form-select", required: true }
                 %small.form-text.text-muted
-                  Select one or more titles. The first selected title is the primary title used for department and uniqueness.
+                  Primary title used for department and display. To add or remove additional titles,
+                  = link_to "manage titles", manage_titles_organization_seat_path(@organization, @seat)
+                  = "."
                 - if @seat.errors[:title_id].any?
                   .invalid-feedback.d-block= @seat.errors[:title_id].join(", ")
                 - if @seat.errors[:titles].any?

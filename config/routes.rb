@@ -691,6 +691,8 @@ Rails.application.routes.draw do
       end
       member do
         patch :reconcile
+        get :manage_titles
+        patch :update_titles
       end
     end
     

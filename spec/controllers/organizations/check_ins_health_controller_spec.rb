@@ -137,10 +137,16 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
         'Department',
         'Manager Name',
         'Manager Email',
-        'Total Percentage Clear',
-        'Aspirational Values Total Percentage Clear',
-        'Required Assignments Total Percentage Clear',
-        'Position Total Percentage Clear'
+        'Total Percentage Healthy',
+        'Aspirations Percentage Healthy',
+        'Aspirations Percentage Warning',
+        'Aspirations Percentage Needs Attention',
+        'Assignments Percentage Healthy',
+        'Assignments Percentage Warning',
+        'Assignments Percentage Needs Attention',
+        'Position Percentage Healthy',
+        'Position Percentage Warning',
+        'Position Percentage Needs Attention'
       )
     end
   end

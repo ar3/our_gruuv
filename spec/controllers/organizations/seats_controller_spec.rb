@@ -394,36 +394,15 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         expect(created_seat.reports_to_seat).to be_nil
       end
 
-      it 'creates a seat with multiple titles' do
-        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Engineering Manager")
-
-        expect {
-          post :create, params: {
-            organization_id: company.id,
-            seat: {
-              title_ids: [title.id, second_title.id],
-              seat_needed_by: Date.current + 3.months
-            }
-          }
-        }.to change { Seat.count }.by(1)
-
-        created_seat = Seat.last
-        expect(created_seat.title_id).to eq(title.id)
-        expect(created_seat.associated_titles.map(&:id)).to include(title.id, second_title.id)
-        expect(created_seat.seat_titles.pluck(:title_id)).to include(title.id, second_title.id)
-      end
-
-      it 'rejects create when a selected title is already used on another seat for that needed-by date' do
-        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Shared Title")
+      it 'rejects create when the title is already used on another seat for that needed-by date' do
         needed_by = Date.current + 4.months
-        existing = create(:seat, title: title, seat_needed_by: needed_by)
-        existing.update!(title_ids: [title.id, second_title.id])
+        create(:seat, title: title, seat_needed_by: needed_by)
 
         expect {
           post :create, params: {
             organization_id: company.id,
             seat: {
-              title_ids: [second_title.id],
+              title_id: title.id,
               seat_needed_by: needed_by
             }
           }
@@ -485,20 +464,81 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         expect(seat.department).to be_a(Department)
         expect(seat.department.id).to eq(department.id)
       end
+    end
+  end
+
+  describe 'GET #manage_titles' do
+    context 'with MAAP management permission' do
+      before do
+        person_teammate.update!(can_manage_maap: true)
+      end
+
+      it 'returns http success' do
+        get :manage_titles, params: { organization_id: company.id, id: seat.id }
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
+  describe 'PATCH #update_titles' do
+    context 'with MAAP management permission' do
+      before do
+        person_teammate.update!(can_manage_maap: true)
+      end
 
       it 'updates a seat with multiple titles' do
         second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Staff Engineer")
 
-        patch :update, params: {
+        patch :update_titles, params: {
           organization_id: company.id,
           id: seat.id,
-          seat: {
-            title_ids: [seat.title_id, second_title.id]
-          }
+          title_ids: [seat.title_id, second_title.id]
         }
 
         seat.reload
         expect(seat.associated_titles.map(&:id)).to include(seat.title_id, second_title.id)
+        expect(seat.title_id).to eq(title.id)
+      end
+
+      it 'keeps the current primary when it remains selected' do
+        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Staff Engineer")
+        seat.update!(title_ids: [title.id, second_title.id])
+
+        patch :update_titles, params: {
+          organization_id: company.id,
+          id: seat.id,
+          title_ids: [second_title.id, title.id]
+        }
+
+        seat.reload
+        expect(seat.title_id).to eq(title.id)
+        expect(seat.associated_title_ids).to contain_exactly(title.id, second_title.id)
+      end
+
+      it 'promotes the first selected title when primary is removed' do
+        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Staff Engineer")
+        seat.update!(title_ids: [title.id, second_title.id])
+
+        patch :update_titles, params: {
+          organization_id: company.id,
+          id: seat.id,
+          title_ids: [second_title.id]
+        }
+
+        seat.reload
+        expect(seat.title_id).to eq(second_title.id)
+        expect(seat.associated_title_ids).to eq([second_title.id])
+      end
+
+      it 'rejects an empty selection' do
+        patch :update_titles, params: {
+          organization_id: company.id,
+          id: seat.id,
+          title_ids: []
+        }
+
+        expect(response).to redirect_to(manage_titles_organization_seat_path(company, seat))
+        expect(flash[:alert]).to include("at least one title")
       end
     end
   end

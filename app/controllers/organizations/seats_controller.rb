@@ -1,5 +1,5 @@
 class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_seat, only: [:show, :edit, :update, :destroy, :reconcile]
+  before_action :set_seat, only: [:show, :edit, :update, :destroy, :reconcile, :manage_titles, :update_titles]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
@@ -147,6 +147,39 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     redirect_to organization_seat_path(@organization, @seat), notice: 'Seat state was successfully reconciled.'
   end
 
+  def manage_titles
+    authorize @seat, :update?
+    load_titles_for_manage_page
+    render layout: "overlay"
+  end
+
+  def update_titles
+    authorize @seat, :update?
+
+    selected_ids = Array(params[:title_ids]).map(&:to_i).reject(&:zero?).uniq
+    if selected_ids.empty?
+      redirect_to manage_titles_organization_seat_path(organization, @seat),
+                  alert: "Select at least one title for this seat."
+      return
+    end
+
+    # Keep current primary when still selected; otherwise first selected becomes primary.
+    ordered_ids = if selected_ids.include?(@seat.title_id)
+      [@seat.title_id] + (selected_ids - [@seat.title_id])
+    else
+      selected_ids
+    end
+
+    if @seat.update(title_ids: ordered_ids)
+      redirect_to organization_seat_path(organization, @seat),
+                  notice: "Seat titles were successfully updated."
+    else
+      load_titles_for_manage_page
+      flash.now[:alert] = @seat.errors.full_messages.to_sentence
+      render :manage_titles, layout: "overlay", status: :unprocessable_entity
+    end
+  end
+
   def create_missing_employee_seats
     authorize Seat.new, :create?
     
@@ -263,7 +296,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def seat_params
-    permitted_params = params.require(:seat).permit(
+    params.require(:seat).permit(
       :title_id,
       :seat_needed_by,
       :job_classification,
@@ -279,17 +312,17 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       :why_needed,
       :why_now,
       :costs_risks,
-      :state,
-      title_ids: []
+      :state
     )
+  end
 
-    normalized_title_ids = Array(permitted_params[:title_ids]).reject(&:blank?).map(&:to_i).uniq
-    if normalized_title_ids.present?
-      permitted_params[:title_ids] = normalized_title_ids
-      permitted_params[:title_id] = normalized_title_ids.first
+  def load_titles_for_manage_page
+    titles = organization.titles.includes(:department, :position_major_level)
+    @titles = titles.sort_by do |title|
+      dept_key = title.department ? [1, title.department.display_name.to_s.downcase] : [0, ""]
+      dept_key + [title.external_title.to_s.downcase]
     end
-
-    permitted_params
+    @selected_title_ids = @seat.associated_title_ids.to_set
   end
 
   def calculate_spotlight_stats
