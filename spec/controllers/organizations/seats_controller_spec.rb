@@ -410,6 +410,26 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         created_seat = Seat.last
         expect(created_seat.title_id).to eq(title.id)
         expect(created_seat.associated_titles.map(&:id)).to include(title.id, second_title.id)
+        expect(created_seat.seat_titles.pluck(:title_id)).to include(title.id, second_title.id)
+      end
+
+      it 'rejects create when a selected title is already used on another seat for that needed-by date' do
+        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: "Shared Title")
+        needed_by = Date.current + 4.months
+        existing = create(:seat, title: title, seat_needed_by: needed_by)
+        existing.update!(title_ids: [title.id, second_title.id])
+
+        expect {
+          post :create, params: {
+            organization_id: company.id,
+            seat: {
+              title_ids: [second_title.id],
+              seat_needed_by: needed_by
+            }
+          }
+        }.not_to change { Seat.count }
+
+        expect(response).to have_http_status(:unprocessable_entity)
       end
     end
   end

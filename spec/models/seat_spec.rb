@@ -110,6 +110,34 @@ RSpec.describe Seat, type: :model do
     end
   end
 
+  describe 'associated title uniqueness for needed-by date' do
+    let(:needed_by) { Date.current + 5.months }
+    let!(:existing_seat) do
+      create(:seat, title: title, seat_needed_by: needed_by).tap do |s|
+        second = create(:title, company: organization)
+        s.update!(title_ids: [title.id, second.id])
+        @secondary_title = second
+      end
+    end
+    let(:secondary_title) { @secondary_title }
+
+    it 'rejects another seat that reuses a secondary title on the same needed-by date' do
+      other = build(:seat, title: secondary_title, seat_needed_by: needed_by)
+      expect(other).not_to be_valid
+      expect(other.errors[:titles]).to be_present
+    end
+
+    it 'allows the same secondary title on a different needed-by date' do
+      other = build(:seat, title: secondary_title, seat_needed_by: needed_by + 1.month)
+      expect(other).to be_valid
+    end
+
+    it 'keeps primary title in seat_titles after create' do
+      created = create(:seat, title: title, seat_needed_by: Date.current + 8.months)
+      expect(created.seat_titles.pluck(:title_id)).to include(title.id)
+    end
+  end
+
   describe '#title' do
     it 'returns the title object' do
       expect(seat.title).to eq(title)

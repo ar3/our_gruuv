@@ -45,8 +45,11 @@ RSpec.describe EmploymentTenure, type: :model do
         secondary_position = create(:position, title: secondary_title, position_level: position_level)
         seat = create(:seat, title: primary_title, seat_needed_by: Date.current + 2.months)
         seat.update!(title_ids: [primary_title.id, secondary_title.id])
+        seat.reload
 
-        tenure = build(:employment_tenure, company_teammate: teammate, company: company, position: secondary_position, seat: seat, ended_at: nil)
+        # Factory after(:build) overwrites position; set the secondary position after build.
+        tenure = build(:employment_tenure, company_teammate: teammate, company: company, seat: seat, ended_at: nil)
+        tenure.position = secondary_position
 
         expect(tenure).to be_valid
       end
