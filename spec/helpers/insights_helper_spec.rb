@@ -189,15 +189,15 @@ RSpec.describe InsightsHelper, type: :helper do
     end
   end
 
-  describe '#who_is_doing_what_gsd_medium_series' do
+  describe '#who_is_doing_what_digest_medium_series' do
     it 'places off last and colors it grey' do
-      helper.instance_variable_set(:@gsd_digest_medium_combinations, {
+      helper.instance_variable_set(:@digest_medium_combinations, {
         'off' => 4,
         'slack' => 2,
         'slack+email' => 1
       })
 
-      series = helper.who_is_doing_what_gsd_medium_series
+      series = helper.who_is_doing_what_digest_medium_series
 
       expect(series.map { |s| s[:name] }).to eq(%w[slack slack+email off])
       expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
@@ -205,17 +205,17 @@ RSpec.describe InsightsHelper, type: :helper do
     end
   end
 
-  describe '#who_is_doing_what_about_me_day_series' do
-    it 'places No 1:1s last and colors it grey' do
-      helper.instance_variable_set(:@about_me_digest_day_distribution, {
+  describe '#who_is_doing_what_weekly_digest_day_series' do
+    it 'places No weekly day last and colors it grey' do
+      helper.instance_variable_set(:@weekly_digest_day_distribution, {
         'off' => 2,
         '1' => 3,
         '3' => 1
       })
 
-      series = helper.who_is_doing_what_about_me_day_series
+      series = helper.who_is_doing_what_weekly_digest_day_series
 
-      expect(series.map { |s| s[:name] }).to eq(['Monday', 'Wednesday', 'No 1:1s'])
+      expect(series.map { |s| s[:name] }).to eq(['Monday', 'Wednesday', 'No weekly day'])
       expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
     end
   end
@@ -233,9 +233,9 @@ RSpec.describe InsightsHelper, type: :helper do
 
       expect(series.map { |s| s[:name] }).to eq([
         '1:1 guide only',
-        'About Me reminder only',
-        'Both digests',
-        'No weekly digests'
+        'About Me only',
+        'Both',
+        'Neither'
       ])
       expect(series.map { |s| s[:data] }).to eq([[2], [1], [0], [3]])
       expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
@@ -245,6 +245,34 @@ RSpec.describe InsightsHelper, type: :helper do
       helper.instance_variable_set(:@weekly_digest_type_distribution, {})
 
       expect(helper.who_is_doing_what_weekly_digest_type_series).to eq([])
+    end
+  end
+
+  describe '#who_is_doing_what_daily_digest_type_series' do
+    it 'returns stacked series in fixed order with labels' do
+      helper.instance_variable_set(:@daily_digest_type_distribution, {
+        'interesting_things_only' => 2,
+        'gsd_only' => 1,
+        'both' => 0,
+        'none' => 3
+      })
+
+      series = helper.who_is_doing_what_daily_digest_type_series
+
+      expect(series.map { |s| s[:name] }).to eq([
+        'Interesting Things only',
+        'GSD only',
+        'Both',
+        'Neither'
+      ])
+      expect(series.map { |s| s[:data] }).to eq([[2], [1], [0], [3]])
+      expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
+    end
+
+    it 'returns empty array when there are no active teammates' do
+      helper.instance_variable_set(:@daily_digest_type_distribution, {})
+
+      expect(helper.who_is_doing_what_daily_digest_type_series).to eq([])
     end
   end
 

@@ -359,8 +359,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     prefs_by_person_id = UserPreference.where(person_id: teammate_person_ids).index_by(&:person_id)
     combinations = Hash.new(0)
-    about_me_days = Hash.new(0)
+    weekly_digest_days = Hash.new(0)
     weekly_digest_types = Hash.new(0)
+    daily_digest_types = Hash.new(0)
     active_teammates.each do |tm|
       prefs = prefs_by_person_id[tm.person_id] || UserPreference.for_person(tm.person)
       enabled = []
@@ -370,7 +371,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       combinations[(enabled.any? ? enabled.join('+') : 'off')] += 1
 
       day = prefs.preference(:about_me_weekly_day).presence || 'off'
-      about_me_days[day] += 1
+      weekly_digest_days[day] += 1
 
       one_on_one_on = prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
       about_me_on = prefs.weekly_digest_enabled?(:about_me_digest_enabled)
@@ -384,10 +385,24 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
                                  'none'
                                end
       weekly_digest_types[weekly_digest_category] += 1
+
+      gsd_on = prefs.gsd_digest_enabled?
+      interesting_things_on = prefs.interesting_things_digest_enabled?
+      daily_digest_category = if gsd_on && interesting_things_on
+                                'both'
+                              elsif interesting_things_on
+                                'interesting_things_only'
+                              elsif gsd_on
+                                'gsd_only'
+                              else
+                                'none'
+                              end
+      daily_digest_types[daily_digest_category] += 1
     end
-    @gsd_digest_medium_combinations = combinations
-    @about_me_digest_day_distribution = about_me_days
+    @digest_medium_combinations = combinations
+    @weekly_digest_day_distribution = weekly_digest_days
     @weekly_digest_type_distribution = weekly_digest_types
+    @daily_digest_type_distribution = daily_digest_types
   end
 
   def check_ins_progress

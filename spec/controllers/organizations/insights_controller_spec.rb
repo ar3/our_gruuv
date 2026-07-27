@@ -552,6 +552,33 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:weekly_digest_type_distribution)['both']).to eq(0)
       expect(assigns(:weekly_digest_type_distribution)['none']).to eq(0)
     end
+
+    it 'assigns daily_digest_type_distribution by Interesting Things / GSD combination' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('interesting_things_digest_enabled', 'on')
+      prefs.update_preference('gsd_digest_enabled', 'off')
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      expect(assigns(:daily_digest_type_distribution)).to be_a(Hash)
+      expect(assigns(:daily_digest_type_distribution)['interesting_things_only']).to eq(1)
+      expect(assigns(:daily_digest_type_distribution)['gsd_only']).to eq(0)
+      expect(assigns(:daily_digest_type_distribution)['both']).to eq(0)
+      expect(assigns(:daily_digest_type_distribution)['none']).to eq(0)
+    end
+
+    it 'assigns weekly_digest_day_distribution and digest_medium_combinations' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('about_me_weekly_day', '2')
+      prefs.update_preference('digest_slack', 'on')
+      prefs.update_preference('digest_email', 'off')
+      prefs.update_preference('digest_sms', 'on')
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      expect(assigns(:weekly_digest_day_distribution)['2']).to eq(1)
+      expect(assigns(:digest_medium_combinations)['slack+sms']).to eq(1)
+    end
   end
 
   describe 'GET #prompts' do
