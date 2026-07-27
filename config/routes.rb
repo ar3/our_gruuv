@@ -532,6 +532,8 @@ Rails.application.routes.draw do
         post :clone_positions
       end
     end
+
+    resources :position_major_levels, only: [:show], module: :organizations
     
     # Aspirations management
     resources :aspirations, module: :organizations do

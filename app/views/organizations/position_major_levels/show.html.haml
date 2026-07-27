@@ -1,0 +1,88 @@
+- content_for :title, @position_major_level.display_name
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @position_major_level.display_name, url: nil }])
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-layers.me-2
+    = @position_major_level.display_name
+
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Details
+      .card-body
+        %dl.row.mb-0
+          %dt.col-sm-3 Set
+          %dd.col-sm-9= @position_major_level.set_name
+          %dt.col-sm-3 Major level
+          %dd.col-sm-9
+            %span.badge.bg-secondary= @position_major_level.major_level
+          %dt.col-sm-3 Description
+          %dd.col-sm-9
+            - if @position_major_level.description.present?
+              = @position_major_level.description
+            - else
+              %span.text-muted No description
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-list-ol.me-2
+          Position levels (#{@position_levels.size})
+      .card-body.p-0
+        - if @position_levels.any?
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead.table-light
+                %tr
+                  %th Level
+                  %th Ideal assignment goal types
+              %tbody
+                - @position_levels.each do |level|
+                  %tr
+                    %td
+                      %span.badge.bg-info= level.level
+                    %td
+                      - if level.ideal_assignment_goal_types.present?
+                        = level.ideal_assignment_goal_types
+                      - else
+                        %span.text-muted —
+        - else
+          .p-3.text-muted No position levels configured for this major level.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-briefcase.me-2
+          Titles in #{@organization.name} (#{@titles.size})
+      .card-body.p-0
+        - if @titles.any?
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead.table-light
+                %tr
+                  %th Title
+                  %th Department
+                  %th Positions
+              %tbody
+                - @titles.each do |title|
+                  %tr
+                    %td
+                      = link_to organization_title_path(@organization, title), class: "text-decoration-none fw-bold" do
+                        = title.external_title
+                    %td
+                      - if title.department
+                        = link_to organization_department_path(@organization, title.department), class: "text-decoration-none" do
+                          = title.department.display_name
+                      - else
+                        %span.text-muted —
+                    %td
+                      %span.badge.bg-secondary
+                        #{title.positions.size} / #{@position_levels.size}
+        - else
+          .p-3.text-muted No titles in this organization use this major level.

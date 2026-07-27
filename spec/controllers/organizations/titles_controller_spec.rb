@@ -260,6 +260,21 @@ RSpec.describe Organizations::TitlesController, type: :controller do
         expect(flash[:notice]).to include('Successfully created')
       end
 
+      it 'redirects to positions index when return_to is positions' do
+        target_level = create(:position_level, position_major_level: position_major_level, level: '1.2')
+
+        post :clone_positions, params: {
+          organization_id: organization.id,
+          id: title.id,
+          source_position_id: source_position.id,
+          target_level_ids: [target_level.id],
+          return_to: 'positions'
+        }
+
+        expect(response).to redirect_to(organization_positions_path(organization))
+        expect(flash[:notice]).to include('Successfully created')
+      end
+
       it 'redirects to organization_title_path with alert when no positions are created' do
         # Create a different position level and a position that already exists for it
         target_level = create(:position_level, position_major_level: position_major_level)

@@ -52,11 +52,11 @@ class Organizations::PositionsController < ApplicationController
     end
     
     # Load titles with department for grouping
-    # Eager load positions with position_level to avoid N+1 queries
+    # Eager load positions + major's levels to avoid N+1 (counts + fill-missing control)
     @titles = @organization.titles
       .includes(
-        :position_major_level,
         :department,
+        position_major_level: :position_levels,
         positions: [:position_level]
       )
       .order(:external_title)
@@ -87,6 +87,9 @@ class Organizations::PositionsController < ApplicationController
         position.instance_variable_set(:@suggested_count, pas.count { |pa| pa.assignment_type == 'suggested' })
       end
     end
+
+    @can_manage_maap = policy(@organization).manage_maap?
+    @fill_missing_by_title_id = @titles.to_h { |title| [title.id, Titles::FillMissingLevelsControl.for(title)] }
     
     # Group titles by department for display
     @titles_by_department = @titles.group_by { |title| title.department }

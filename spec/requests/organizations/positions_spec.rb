@@ -87,6 +87,63 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('bi-archive')
       expect(response.body).to include(archive_organization_position_path(organization, position_v1))
     end
+
+    context 'fill missing levels control' do
+      let(:incomplete_title) do
+        create(:title, company: organization, position_major_level: title.position_major_level,
+               external_title: 'Incomplete Role')
+      end
+      let!(:source_position) do
+        create(:position, title: incomplete_title, position_level: position_level_1)
+      end
+
+      before do
+        create_list(:position_assignment, 2, :required, position: source_position)
+      end
+
+      it 'shows a subtle missing-levels note without the fill button when user cannot manage maap' do
+        get organization_positions_path(organization)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('3 of 4 levels missing')
+        expect(response.body).not_to include('Fill 3 missing levels')
+        expect(response.body).to include(organization_position_major_level_path(organization, title.position_major_level))
+      end
+
+      context 'when user can manage maap' do
+        before do
+          CompanyTeammate.find_by!(person: person, organization: organization).update!(can_manage_maap: true)
+        end
+
+        it 'shows a fill button with the missing level count when incomplete and source qualifies' do
+          get organization_positions_path(organization)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('3 of 4 levels missing')
+          expect(response.body).to include('Fill 3 missing levels')
+          expect(response.body).to include(clone_positions_organization_title_path(organization, incomplete_title))
+        end
+
+        it 'shows muted complete message when all levels are filled' do
+          # title already has positions on levels 1.1, 1.2, 1.3, 2.1 — all levels for that major
+          get organization_positions_path(organization)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('All 4 position levels filled')
+        end
+
+        it 'shows muted message when source lacks enough required assignments' do
+          source_position.position_assignments.destroy_all
+          create(:position_assignment, :required, position: source_position)
+
+          get organization_positions_path(organization)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).not_to include('Fill 3 missing levels')
+          expect(response.body).to include('Source needs at least 2 required assignments')
+        end
+      end
+    end
   end
 
   describe 'GET /organizations/:organization_id/positions/:id' do

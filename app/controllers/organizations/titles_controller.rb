@@ -98,13 +98,13 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     
     if target_level_ids.empty?
       Rails.logger.warn "No target level IDs provided"
-      redirect_to organization_title_path(@organization, @title), alert: 'Please select at least one target level.'
+      redirect_to clone_positions_redirect_path, alert: 'Please select at least one target level.'
       return
     end
     
     if source_position.title != @title
       Rails.logger.warn "Source title mismatch: #{source_position.title_id} vs #{@title.id}"
-      redirect_to organization_title_path(@organization, @title), alert: 'Source position must belong to this title.'
+      redirect_to clone_positions_redirect_path, alert: 'Source position must belong to this title.'
       return
     end
     
@@ -181,14 +181,16 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     
     Rails.logger.info "Clone positions completed. Created: #{created_count}, Errors: #{errors.inspect}"
     
+    redirect_after_clone = clone_positions_redirect_path
+
     if created_count > 0
       notice_msg = "Successfully created #{created_count} new position(s)."
       notice_msg += " Errors: #{errors.join('; ')}" if errors.any?
-      redirect_to organization_title_path(@organization, @title), notice: notice_msg
+      redirect_to redirect_after_clone, notice: notice_msg
     else
       alert_msg = 'No new positions were created. They may already exist.'
       alert_msg += " Errors: #{errors.join('; ')}" if errors.any?
-      redirect_to organization_title_path(@organization, @title), alert: alert_msg
+      redirect_to redirect_after_clone, alert: alert_msg
     end
   end
 
@@ -219,6 +221,14 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
 
   def set_title
     @title = @organization.titles.find(params[:id])
+  end
+
+  def clone_positions_redirect_path
+    if params[:return_to].to_s == 'positions'
+      organization_positions_path(@organization)
+    else
+      organization_title_path(@organization, @title)
+    end
   end
 
   def title_params

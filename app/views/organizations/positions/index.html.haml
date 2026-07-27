@@ -60,16 +60,34 @@
                   = title.external_title
                 %span.badge.bg-secondary.ms-2= "#{title.positions.size} position#{'s' if title.positions.size != 1}"
               .d-flex.align-items-center.gap-2
+                - fill_control = @fill_missing_by_title_id[title.id]
+                - if fill_control&.incomplete?
+                  %small.text-muted
+                    #{fill_control.missing_count} of #{fill_control.available_count} levels missing
                 = link_to organization_title_path(@organization, title), class: "btn btn-sm btn-outline-secondary", title: "View Title" do
                   %i.bi.bi-eye
                 .text-muted.d-flex.align-items-center
-                  %small.me-1="L:#{title.position_major_level.major_level}.*"
                   - pml = title.position_major_level
+                  = link_to organization_position_major_level_path(@organization, pml), class: "text-muted text-decoration-none me-1", title: pml.display_name do
+                    %small="L:#{pml.major_level}.*"
                   - desc = pml.description.presence || "No description"
                   %i.bi.bi-info-circle{"data-bs-toggle" => "tooltip", "data-bs-title" => desc, title: desc}
             
             .collapse{"id" => "title#{title.id}"}
               .card-body.p-0
+                - if @can_manage_maap && fill_control
+                  .px-3.py-2.border-bottom.bg-light
+                    - if fill_control.button?
+                      = form_with url: clone_positions_organization_title_path(@organization, title), method: :post, local: true, class: "d-inline" do |f|
+                        = hidden_field_tag :source_position_id, fill_control.source_position.id
+                        - fill_control.missing_levels.each do |level|
+                          = hidden_field_tag "target_level_ids[]", level.id
+                        = hidden_field_tag :return_to, "positions"
+                        = f.button type: "submit", class: "btn btn-sm btn-warning", data: { confirm: "Create #{fill_control.missing_count} missing position#{'s' if fill_control.missing_count != 1} by cloning #{fill_control.source_position.display_name}?" } do
+                          %i.bi.bi-files.me-1
+                          Fill #{fill_control.missing_count} missing level#{'s' if fill_control.missing_count != 1}
+                    - else
+                      %small.text-muted= fill_control.message
                 - if title.positions.any?
                   .table-responsive
                     %table.table.table-hover.mb-0
