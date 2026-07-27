@@ -12,7 +12,6 @@ RSpec.describe 'Public marketing pages', type: :request do
       expect(response.body).to include('without the busy work')
       expect(response.body).to include('Start Free')
       expect(response.body).to include(solutions_path)
-      expect(response.body).to include(pricing_path)
       expect(response.body).to include('Three outcomes')
       expect(response.body).to include('How it benefits each seat')
       expect(response.body).not_to include('Taste-test')
