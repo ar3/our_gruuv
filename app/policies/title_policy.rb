@@ -15,9 +15,18 @@ class TitlePolicy < ApplicationPolicy
     admin_bypass? || user_has_maap_permission_for_record?
   end
 
+  def archive?
+    update?
+  end
+
+  def restore?
+    update?
+  end
+
   def clone_positions?
     admin_bypass? || user_has_maap_permission_for_record?
   end
+
 
   class Scope < ApplicationPolicy::Scope
     def resolve

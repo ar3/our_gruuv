@@ -530,8 +530,12 @@ Rails.application.routes.draw do
     resources :titles, module: :organizations do
       member do
         post :clone_positions
+        get :archive
+        patch :execute_archive
+        patch :restore
       end
     end
+
 
     resources :position_major_levels, only: [:show], module: :organizations
     

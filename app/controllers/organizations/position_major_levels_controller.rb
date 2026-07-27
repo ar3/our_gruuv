@@ -8,6 +8,7 @@ class Organizations::PositionMajorLevelsController < Organizations::Organization
 
     @position_levels = @position_major_level.position_levels.order(:level)
     @titles = @organization.titles
+      .unarchived
       .where(position_major_level_id: @position_major_level.id)
       .includes(:department, :positions)
       .ordered

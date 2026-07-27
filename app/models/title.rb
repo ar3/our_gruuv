@@ -35,6 +35,37 @@ class Title < ApplicationRecord
   scope :ordered, -> { order(:external_title) }
   scope :for_company, ->(company) { where(company_id: company.is_a?(Integer) ? company : company.id) }
   scope :for_department, ->(department) { where(department: department) }
+  scope :unarchived, -> { where(deleted_at: nil) }
+  scope :archived, -> { where.not(deleted_at: nil) }
+
+  # Archive (soft delete) – block if unarchived positions or non-archived seats still use this title
+  def archived?
+    deleted_at.present?
+  end
+
+  def archive!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
+  end
+
+  def archivable?
+    blocking_positions.none? && blocking_seats.none?
+  end
+
+  def blocking_positions
+    positions.unarchived
+  end
+
+  # Seats still tied as primary or via seat_titles, excluding already-archived seats
+  def blocking_seats
+    Seat.left_joins(:seat_titles)
+      .where('seats.title_id = :id OR seat_titles.title_id = :id', id: id)
+      .where.not(state: Seat.states[:archived])
+      .distinct
+  end
 
   # Instance methods
   def display_name

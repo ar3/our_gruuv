@@ -53,7 +53,9 @@ class Organizations::PositionsController < ApplicationController
     
     # Load titles with department for grouping
     # Eager load positions + major's levels to avoid N+1 (counts + fill-missing control)
-    @titles = @organization.titles
+    titles_scope = @organization.titles
+    titles_scope = titles_scope.unarchived unless @current_show_archived
+    @titles = titles_scope
       .includes(
         :department,
         position_major_level: :position_levels,
@@ -483,6 +485,7 @@ class Organizations::PositionsController < ApplicationController
 
   def set_related_data
     @titles = Title.joins(:company, :position_major_level)
+                   .unarchived
                    .where(organizations: { id: @organization.id })
                    .order('position_major_levels.major_level, titles.external_title')
     

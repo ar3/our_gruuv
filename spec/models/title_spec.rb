@@ -137,6 +137,63 @@ RSpec.describe Title, type: :model do
         expect(Title.for_department(department)).not_to include(no_dept_title)
       end
     end
+
+    describe 'archive scopes' do
+      let!(:active_title) { create(:title, company: company, external_title: 'Active Role') }
+      let!(:archived_title) do
+        create(:title, company: company, external_title: 'Archived Role').tap { |t| t.archive! }
+      end
+
+      it 'unarchived excludes archived titles' do
+        expect(Title.unarchived).to include(active_title)
+        expect(Title.unarchived).not_to include(archived_title)
+      end
+
+      it 'archived includes only archived titles' do
+        expect(Title.archived).to include(archived_title)
+        expect(Title.archived).not_to include(active_title)
+      end
+    end
+  end
+
+  describe 'archive' do
+    let(:position_level) { create(:position_level, position_major_level: position_major_level) }
+
+    it 'archives and restores' do
+      expect(title.archived?).to be false
+      title.archive!
+      expect(title.reload.archived?).to be true
+      title.restore!
+      expect(title.reload.archived?).to be false
+    end
+
+    it 'is not archivable when an unarchived position exists' do
+      create(:position, title: title, position_level: position_level)
+      expect(title.archivable?).to be false
+    end
+
+    it 'is archivable when positions are archived' do
+      position = create(:position, title: title, position_level: position_level)
+      position.archive!
+      expect(title.archivable?).to be true
+    end
+
+    it 'is not archivable when a non-archived seat uses the title' do
+      create(:seat, :open, title: title)
+      expect(title.archivable?).to be false
+    end
+
+    it 'treats archived seats as cleared' do
+      create(:seat, :archived, title: title)
+      expect(title.archivable?).to be true
+    end
+
+    it 'is not archivable when a secondary seat_title links a non-archived seat' do
+      other_title = create(:title, company: company, position_major_level: position_major_level, external_title: 'Other')
+      seat = create(:seat, :open, title: other_title)
+      seat.seat_titles.create!(title: title)
+      expect(title.archivable?).to be false
+    end
   end
 
   describe 'instance methods' do

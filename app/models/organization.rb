@@ -236,7 +236,7 @@ class Organization < ApplicationRecord
   end
 
   def titles_count
-    titles.count
+    titles.unarchived.count
   end
 
   def seats_count

@@ -10,6 +10,13 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @title.external_title, url: nil }])
 
+- if @title.archived?
+  .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
+    %h5.alert-heading
+      %i.bi.bi-archive.me-2
+      Archived as of #{l(@title.deleted_at, format: :long)}
+    %p.mb-0 This title is archived. It no longer appears in lists or selectors but remains viewable and its data is preserved.
+
 .row.justify-content-center
   .col-12
     .row.g-4.mb-4

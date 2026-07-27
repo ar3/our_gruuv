@@ -22,21 +22,34 @@
               Edit title
           %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions for this organization to edit titles"}
 
-      = link_to new_organization_position_path(t.company, title_id: t.id), class: "btn btn-outline-primary btn-sm w-100" do
-        %i.bi.bi-plus-circle.me-2
-        New position
+      - unless t.archived?
+        = link_to new_organization_position_path(t.company, title_id: t.id), class: "btn btn-outline-primary btn-sm w-100" do
+          %i.bi.bi-plus-circle.me-2
+          New position
 
-      - if policy(t).destroy?
-        = link_to organization_title_path(org, t), class: "btn btn-outline-danger btn-sm w-100", data: { turbo_method: :delete, turbo_confirm: "Delete this title? Positions and seats that use it may be affected." } do
-          %i.bi.bi-trash.me-2
-          Delete title
+      - if t.archived?
+        - if policy(t).restore?
+          = link_to restore_organization_title_path(org, t), class: "btn btn-outline-warning btn-sm w-100", data: { turbo_method: :patch, turbo_confirm: "Restore this title? It will appear in lists and selectors again." } do
+            %i.bi.bi-arrow-counterclockwise.me-2
+            Restore title
+        - else
+          .d-flex.align-items-center.gap-2
+            .flex-grow-1
+              %button.btn.btn-outline-secondary.btn-sm.w-100{type: "button", disabled: true}
+                %i.bi.bi-arrow-counterclockwise.me-2
+                Restore title
+            %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions to restore titles"}
+      - elsif policy(t).archive?
+        = link_to archive_organization_title_path(org, t), class: "btn btn-outline-warning btn-sm w-100" do
+          %i.bi.bi-archive.me-2
+          Archive title
       - else
         .d-flex.align-items-center.gap-2
           .flex-grow-1
             %button.btn.btn-outline-secondary.btn-sm.w-100{type: "button", disabled: true}
-              %i.bi.bi-trash.me-2
-              Delete title
-          %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions to delete titles"}
+              %i.bi.bi-archive.me-2
+              Archive title
+          %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions to archive titles"}
 
       %hr.my-1
       - title_positions = t.positions.includes(:position_level).sort_by { |p| p.position_level.level }

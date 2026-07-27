@@ -1,0 +1,82 @@
+- content_for :title, "Archive Title - #{@title.external_title}"
+- content_for :header do
+  Archive Title: #{@title.external_title}
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @title.external_title, url: organization_title_path(@organization, @title) }, { label: "Archive", url: nil }])
+
+.row.justify-content-center
+  .col-lg-10
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-archive.me-2
+          What happens when you archive
+      .card-body
+        %p.mb-2
+          Archiving this title will:
+        %ul
+          %li Remove it from title lists and selectors (e.g. when creating seats or positions).
+          %li Keep the title page reachable by direct URL, with an "Archived as of [date]" banner.
+          %li Preserve summary, positions, seats history, and comments.
+        %p.mb-0.text-muted
+          You must archive all positions under this title, and archive or disassociate any seats still using this title, before archiving.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-exclamation-triangle.me-2
+          Requirements before archiving
+      .card-body
+        %ul.list-unstyled.mb-0
+          %li.mb-3
+            - if @blocking_positions.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No unarchived positions
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Archive #{pluralize(@blocking_positions.size, 'position')} first
+              %ul.mt-1.mb-0.ms-4
+                - @blocking_positions.each do |position|
+                  %li
+                    = link_to position.display_name, organization_position_path(@organization, position), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      —
+                    = link_to 'Archive position', archive_organization_position_path(@organization, position), class: 'text-decoration-none'
+          %li
+            - if @blocking_seats.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No seats still using this title
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Archive or disassociate this title from #{pluralize(@blocking_seats.size, 'seat')}
+              %ul.mt-1.mb-0.ms-4
+                - @blocking_seats.each do |seat|
+                  %li
+                    = link_to seat.display_name, organization_seat_path(@organization, seat), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (#{seat.state.humanize})
+                    %span.text-muted.ms-1
+                      —
+                    = link_to 'Manage titles', manage_titles_organization_seat_path(@organization, seat), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      or
+                    = link_to 'Edit seat', edit_organization_seat_path(@organization, seat), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      to archive
+
+    - if @archivable
+      .card.mb-4
+        .card-body
+          = form_with url: execute_archive_organization_title_path(@organization, @title), method: :patch, local: true do |f|
+            .form-check.mb-3
+              = check_box_tag :confirm_archive, '1', false, class: 'form-check-input', id: 'confirm_archive', required: true
+              = label_tag 'confirm_archive', 'I understand that this title will be archived and removed from lists and selectors.', class: 'form-check-label'
+            = f.submit 'Archive title', class: 'btn btn-warning'
+    - else
+      .card.mb-4.border-warning
+        .card-body
+          %p.mb-2.text-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            You cannot archive until all positions are archived and all seats using this title are archived or disassociated.
+          %p.mb-0
+            = link_to 'Back to title', organization_title_path(@organization, @title), class: 'btn btn-outline-secondary'

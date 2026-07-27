@@ -34,7 +34,7 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
     @seats_as_department = Seat.for_department(@department).includes(:title, employment_tenures: { company_teammate: :person })
     
     # Load titles for this department
-    @titles = Title.for_department(@department).includes(:positions).ordered
+    @titles = Title.for_department(@department).unarchived.includes(:positions).ordered
     
     # Load assignments for this department
     @assignments = Assignment.unarchived.for_department(@department).ordered
@@ -154,14 +154,14 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
   # Titles association
   def associate_titles
     authorize @department, :update?
-    @unassociated_titles = Title.for_company(company).where(department_id: nil).includes(:position_major_level).ordered
+    @unassociated_titles = Title.for_company(company).unarchived.where(department_id: nil).includes(:position_major_level).ordered
   end
 
   def update_titles_association
     authorize @department, :update?
     
     title_ids = params[:title_ids] || []
-    titles_to_associate = Title.for_company(company).where(id: title_ids, department_id: nil)
+    titles_to_associate = Title.for_company(company).unarchived.where(id: title_ids, department_id: nil)
     
     count = titles_to_associate.count
     titles_to_associate.update_all(department_id: @department.id)

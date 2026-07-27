@@ -68,6 +68,8 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("View full change history")
       expect(response.body).to include("item_type=Title")
       expect(response.body).to include("item_id=#{title.id}")
+      expect(response.body).to include("Archive title")
+      expect(response.body).not_to include("Delete title")
     end
 
     it "renders public kudos card with Title rateable query params" do
@@ -185,6 +187,75 @@ RSpec.describe "Titles", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.body).to include('Edit Title')
       expect(title.reload.external_title).not_to eq("Duplicate Title")
+    end
+  end
+
+  describe "archive / restore" do
+    let(:position_major_level) { create(:position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: "Staff Engineer") }
+
+    describe "GET archive" do
+      it "renders archive confirmation page" do
+        get archive_organization_title_path(organization, title)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Archive Title")
+        expect(response.body).to include("What happens when you archive")
+      end
+
+      it "lists blocking positions and seats" do
+        level = create(:position_level, position_major_level: position_major_level, level: "1.1")
+        position = create(:position, title: title, position_level: level)
+        seat = create(:seat, :open, title: title)
+
+        get archive_organization_title_path(organization, title)
+
+        expect(response.body).to include(position.display_name)
+        expect(response.body).to include(seat.display_name)
+        expect(response.body).to include("You cannot archive until")
+      end
+    end
+
+    describe "PATCH execute_archive" do
+      it "archives title when archivable and redirects to show" do
+        expect(title.archivable?).to be true
+        patch execute_archive_organization_title_path(organization, title)
+        expect(response).to redirect_to(organization_title_path(organization, title))
+        expect(title.reload.archived?).to be true
+      end
+
+      it "redirects back with alert when not archivable" do
+        create(:seat, :open, title: title)
+        patch execute_archive_organization_title_path(organization, title)
+        expect(response).to redirect_to(archive_organization_title_path(organization, title))
+        expect(title.reload.archived?).to be false
+      end
+    end
+
+    describe "PATCH restore" do
+      before { title.update_columns(deleted_at: 1.day.ago) }
+
+      it "restores title and redirects to show" do
+        patch restore_organization_title_path(organization, title)
+        expect(response).to redirect_to(organization_title_path(organization, title))
+        expect(title.reload.archived?).to be false
+      end
+    end
+
+    it "show page displays archived banner when title is archived" do
+      title.update_columns(deleted_at: 1.day.ago)
+      get organization_title_path(organization, title)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Archived as of")
+      expect(response.body).to include("Restore title")
+    end
+
+    it "excludes archived titles from the header switcher" do
+      other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Other Role")
+      other.update_columns(deleted_at: 1.day.ago)
+
+      get organization_title_path(organization, title)
+
+      expect(response.body).not_to include("Other Role")
     end
   end
 end

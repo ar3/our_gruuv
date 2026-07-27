@@ -259,7 +259,11 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def set_related_data
-    @titles = organization.titles.ordered
+    titles_scope = organization.titles.unarchived
+    if @seat&.title_id.present?
+      titles_scope = titles_scope.or(organization.titles.where(id: @seat.title_id))
+    end
+    @titles = titles_scope.ordered
     
     @departments = organization.descendants.select { |o| o.type == 'Department' }.sort_by(&:display_name)
     @teams = organization.descendants.select { |o| o.type == 'Team' }.sort_by(&:display_name)
@@ -317,12 +321,14 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def load_titles_for_manage_page
-    titles = organization.titles.includes(:department, :position_major_level)
-    @titles = titles.sort_by do |title|
+    selected_ids = @seat.associated_title_ids
+    titles_scope = organization.titles.unarchived
+    titles_scope = titles_scope.or(organization.titles.where(id: selected_ids)) if selected_ids.any?
+    @titles = titles_scope.includes(:department, :position_major_level).sort_by do |title|
       dept_key = title.department ? [1, title.department.display_name.to_s.downcase] : [0, ""]
       dept_key + [title.external_title.to_s.downcase]
     end
-    @selected_title_ids = @seat.associated_title_ids.to_set
+    @selected_title_ids = selected_ids.to_set
   end
 
   def calculate_spotlight_stats

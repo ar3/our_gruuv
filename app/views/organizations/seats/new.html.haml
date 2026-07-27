@@ -25,7 +25,7 @@
             .col-md-6
               .mb-3
                 = f.label :title_id, "Primary Title", class: "form-label"
-                = f.collection_select :title_id, @organization.titles.ordered, :id, :external_title, { prompt: "Select a title" }, { class: "form-select", required: true }
+                = f.collection_select :title_id, @titles, :id, :external_title, { prompt: "Select a title" }, { class: "form-select", required: true }
                 %small.form-text.text-muted
                   Choose the primary title for this seat. You can add additional titles after creating the seat.
                 - if @seat.errors[:title_id].any?

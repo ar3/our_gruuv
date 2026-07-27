@@ -8,7 +8,7 @@ module Seats
 
     def call
       ActiveRecord::Base.transaction do
-        titles = @organization.titles.includes(:seats)
+        titles = @organization.titles.unarchived.includes(:seats)
         
         titles.each do |title|
           next if seat_exists_for_title?(title.id)

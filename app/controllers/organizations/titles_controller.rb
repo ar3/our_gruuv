@@ -1,7 +1,7 @@
 class Organizations::TitlesController < Organizations::OrganizationNamespaceBaseController
   include AssignsPublicKudosRateableCard
 
-  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions]
+  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions, :archive, :execute_archive, :restore]
   before_action :load_titles_for_header_switcher, only: [:show, :edit, :update]
   after_action :verify_authorized
 
@@ -9,7 +9,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     authorize @organization, :view_titles?
     respond_to do |format|
       format.html { redirect_to organization_positions_path(@organization) }
-      format.json { render json: @organization.titles.ordered }
+      format.json { render json: @organization.titles.unarchived.ordered }
     end
   end
 
@@ -83,6 +83,31 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     else
       redirect_to organization_positions_path(@organization), alert: result.error
     end
+  end
+
+  def archive
+    authorize @title, :archive?
+    @blocking_positions = @title.blocking_positions.includes(:position_level).order('position_levels.level')
+    @blocking_seats = @title.blocking_seats.includes(:title, :titles).ordered
+    @archivable = @title.archivable?
+  end
+
+  def execute_archive
+    authorize @title, :archive?
+    unless @title.archivable?
+      redirect_to archive_organization_title_path(@organization, @title),
+                  alert: 'Cannot archive: archive or clear all positions and seats that use this title first.'
+      return
+    end
+
+    @title.archive!
+    redirect_to organization_title_path(@organization, @title), notice: 'Title was successfully archived.'
+  end
+
+  def restore
+    authorize @title, :restore?
+    @title.restore!
+    redirect_to organization_title_path(@organization, @title), notice: 'Title was successfully restored.'
   end
 
   def clone_positions
@@ -202,6 +227,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
 
   def titles_by_department_for_switcher(org)
     titles = org.titles
+      .unarchived
       .includes(:department, :position_major_level)
       .left_joins(:department)
       .order(

@@ -27,7 +27,7 @@
           
           .mb-3
             %label.form-label Title
-            - titles = @organization.titles.includes(:position_major_level).order(:external_title)
+            - titles = @organization.titles.unarchived.includes(:position_major_level).order(:external_title)
             - title_options = [['All Titles', '']] + titles.map { |title| [title.external_title, title.id] }
             = select_tag 'title', options_for_select(title_options, @current_filters[:title]), class: 'form-select'
           
@@ -45,7 +45,7 @@
           .mb-3
             .form-check
               = check_box_tag 'show_archived', '1', @current_show_archived, class: 'form-check-input', id: 'show_archived'
-              = label_tag 'show_archived', 'Show archived positions', class: 'form-check-label'
+              = label_tag 'show_archived', 'Show archived positions and titles', class: 'form-check-label'
 
   .row
     .col-md-4

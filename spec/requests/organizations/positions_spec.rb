@@ -332,6 +332,19 @@ RSpec.describe 'Organizations::Positions', type: :request do
       position_ids = titles.flat_map { |t| t.positions.map(&:id) }
       expect(position_ids).to include(archived_position.id, visible_position.id)
     end
+
+    it 'excludes archived titles by default and includes them when show_archived=1' do
+      archived_title = create(:title, company: organization, position_major_level: title.position_major_level, external_title: 'Archived Title Only')
+      archived_title.update_columns(deleted_at: 1.day.ago)
+
+      get organization_positions_path(organization)
+      titles = controller.instance_variable_get(:@titles)
+      expect(titles.map(&:id)).not_to include(archived_title.id)
+
+      get organization_positions_path(organization, show_archived: '1')
+      titles = controller.instance_variable_get(:@titles)
+      expect(titles.map(&:id)).to include(archived_title.id)
+    end
   end
 end
 
