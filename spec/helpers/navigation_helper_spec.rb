@@ -313,6 +313,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(my_employees_item).to be_present
         expect(my_employees_item[:path]).to include('managers_view')
         expect(my_employees_item[:path]).to include("manager_teammate_id=#{manager_teammate.id}")
+        expect(my_employees_item[:path]).to include("spotlight=#{MyEmployeesLink::SPOTLIGHT}")
       end
 
       it 'includes "Protect Flow" under Insights after Observations Health' do

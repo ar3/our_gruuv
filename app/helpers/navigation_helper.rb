@@ -3,6 +3,14 @@ module NavigationHelper
   def current_company
     @current_company ||= current_organization&.root_company || current_organization
   end
+
+  # Teammates page filtered to the given manager's reports with Employee Health Overview.
+  def my_employees_directory_path(organization = current_organization, manager_teammate: current_company_teammate)
+    organization_employees_path(
+      organization,
+      **MyEmployeesLink.path_params(manager_teammate_id: manager_teammate&.id)
+    )
+  end
   
   # Calculate pending items count for Get Shit Done dashboard
   # Uses the same query service as the controller to ensure consistency
@@ -180,7 +188,7 @@ module NavigationHelper
           {
             label: 'My Employees',
             icon: 'bi-person-badge',
-            path: organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'employee_health_overview'),
+            path: my_employees_directory_path,
             policy_check: -> { current_company_teammate&.has_direct_reports? && policy(Organization).show? },
             coming_soon: false
           },

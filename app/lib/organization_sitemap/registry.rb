@@ -263,9 +263,7 @@ module OrganizationSitemap
             path: ->(ctx) {
               ctx.organization_employees_path(
                 ctx.organization,
-                manager_teammate_id: ctx.teammate&.id,
-                view: "managers_view",
-                spotlight: "employee_health_overview"
+                **MyEmployeesLink.path_params(manager_teammate_id: ctx.teammate&.id)
               )
             },
             policy: ->(ctx) {

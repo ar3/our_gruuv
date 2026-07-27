@@ -57,7 +57,7 @@
   - if current_organization
     - if current_company_teammate&.has_direct_reports?
       %li
-        = link_to organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'employee_health_overview'), class: "dropdown-item" do
+        = link_to my_employees_directory_path, class: "dropdown-item" do
           %i.bi.bi-people-fill.me-2
           My Employees
     %li

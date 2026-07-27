@@ -11,9 +11,7 @@ class StartHere::Widgets::MyEmployeesWidget < StartHere::Widget::Base
     path: ->(c) {
       c.view.organization_employees_path(
         c.organization,
-        manager_teammate_id: c.company_teammate&.id,
-        view: "managers_view",
-        spotlight: "employee_health_overview"
+        **MyEmployeesLink.path_params(manager_teammate_id: c.company_teammate&.id)
       )
     },
     description: "View and support the people who report to you.",
