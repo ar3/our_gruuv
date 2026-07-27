@@ -220,7 +220,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
 
     it 'renders Check-ins Progress insights page with timeframe links and charts' do
       get organization_insights_check_ins_progress_path(organization)
-      expect(response.body).to include('Insights: Check-ins Progress')
+      expect(response.body).to include(I18n.t('terminology.insights_clarity_check_ins_progress'))
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
@@ -229,7 +229,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('check-ins-by-department-chart')
       expect(response.body).to include('Check-ins by department')
       expect(response.body).to include('Department leaderboard')
-      expect(response.body).to include('Aggregated check-in health by department')
+      expect(response.body).to include('Aggregated Gruuv Health Required Clarity by department')
+      expect(response.body).to include('% clear')
     end
 
     it 'renders department leaderboard section (sort links when rows present, else empty state)' do
@@ -253,7 +254,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'shows department leaderboard section (table or empty state)' do
       get organization_insights_check_ins_progress_path(organization)
       expect(response.body).to include('Department leaderboard')
-      expect(response.body).to include('Aggregated check-in health by department')
+      expect(response.body).to include('Aggregated Gruuv Health Required Clarity by department')
+      expect(response.body).to include('% clear')
       expect(response).to have_http_status(:success)
     end
 

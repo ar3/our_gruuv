@@ -51,13 +51,13 @@
             Department leaderboard
         .card-body
           %p.small.text-muted.mb-3
-            Aggregated Gruuv Health Required Clarity by department (% healthy across direct-report items).
+            Aggregated Gruuv Health Required Clarity by department (% clear across required clarity action slots).
           - if @department_health_rows.any?
             .d-flex.align-items-center.mb-3
               %span.me-2.fw-medium Sort by
               .btn-group{role: "group"}
                 = link_to "Name", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "name"), class: "btn btn-sm #{@sort_by == 'name' ? 'btn-primary' : 'btn-outline-primary'}"
-                = link_to "% healthy", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
+                = link_to "% clear", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
             .table-responsive
               %table.table.table-hover.table-layout-fixed
                 %colgroup
@@ -85,7 +85,7 @@
                         %br
                         %small.text-muted
                           #{row[:employee_count]} employee#{'s' if row[:employee_count] != 1}
-                          · #{row[:completion_rate]}% healthy
+                          · #{row[:completion_rate]}% clear
                       %td
                         - if segments_asp.any?
                           - total = segments_asp.sum { |s| s[:count] }

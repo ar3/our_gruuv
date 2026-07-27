@@ -464,20 +464,17 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     teammate_ids_by_department.map do |department, ids|
       dept_records = ids.flat_map { |id| records_by_teammate[id] || [] }
-      build_department_health_row(department, dept_records, ids.size, records_by_teammate, ids)
+      build_department_health_row(department, dept_records, ids.size)
     end
   end
 
-  def build_department_health_row(department, dept_records, employee_count, records_by_teammate, teammate_ids)
+  def build_department_health_row(department, dept_records, employee_count)
     department_name = department&.name.presence || 'No Department'
     items = EngagementHealth::ClarityMetrics.clarity_items(dept_records)
     aspiration_items = items.select { |item| item.entity_type == 'Aspiration' }
     assignment_items = items.select { |item| item.entity_type == 'Assignment' }
     position_items = items.select { |item| item.entity_type == 'Position' }
-    completion_rate = EngagementHealth::ClarityMetrics.average_healthy_percentage_for_teammates(
-      records_by_teammate,
-      teammate_ids
-    )
+    completion_rate = EngagementHealth::ClarityActionMetrics.breakdown_for_items(items).ok_percentage
     {
       department: department,
       department_name: department_name,

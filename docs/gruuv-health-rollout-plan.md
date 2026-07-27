@@ -171,7 +171,8 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [x] About Me check-in sections — clarity icons + merge messaging from EH Required Clarity
 - [x] Start Here check-in status + My Employees overall `% clear` → action-slot math
 - [x] `CheckIns::RequiredCheckInUrgencySort` — EH severity (Needs Attention → Warning → Healthy); legacy blurred/obscured keys still map
-- [ ] Org aggregates still on item-healthy `%` (by-manager, Insights Check-ins Progress, employee summary CSV) — migrate to action slots or keep as explicit “% items healthy”
+- [x] Check-ins Health by-manager + Insights Check-ins Progress department leaderboard → action-slot `% clear`
+- [ ] Employee summary CSV (and any remaining org aggregates) still on item-healthy `%` — migrate to action slots or keep as explicit “% items healthy”
 
 **Retire when done:** 4-level clarity as *status* in `check_in_health_caches.required_check_ins` payload; `ClarityLevel` in non-scorecard paths; `ClarityMetrics.breakdown` if no remaining consumers
 
