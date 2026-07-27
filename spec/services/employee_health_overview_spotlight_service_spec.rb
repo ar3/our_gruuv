@@ -54,5 +54,20 @@ RSpec.describe EmployeeHealthOverviewSpotlightService do
         expect(service.stats[:manager_filter]).to eq("CompanyTeammate_#{other_manager_teammate.id}")
       end
     end
+
+    it "passes impersonating_teammate into the organization policy pundit user" do
+      impersonating = manager_teammate
+      service = described_class.new(
+        organization: organization,
+        current_person: manager,
+        current_company_teammate: manager_teammate,
+        manage_employment: false,
+        manager_teammate_id: manager_teammate.id,
+        impersonating_teammate: impersonating
+      )
+
+      policy = service.send(:organization_policy)
+      expect(policy.pundit_user.impersonating_teammate).to eq(impersonating)
+    end
   end
 end

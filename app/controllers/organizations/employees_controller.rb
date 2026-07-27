@@ -865,7 +865,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         current_person: current_person,
         current_company_teammate: current_company_teammate,
         manage_employment: manage_employment,
-        manager_teammate_id: params[:manager_teammate_id]
+        manager_teammate_id: params[:manager_teammate_id],
+        impersonating_teammate: impersonating_teammate
       ).stats
     end
 

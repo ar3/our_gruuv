@@ -5,14 +5,17 @@ require "ostruct"
 # Employee Health Overview spotlight: check-ins, goals, and observations health
 # compact stats scoped to a manager's direct reports (My Employees view).
 class EmployeeHealthOverviewSpotlightService
-  attr_reader :organization, :current_person, :current_company_teammate, :manage_employment, :manager_teammate_id
+  attr_reader :organization, :current_person, :current_company_teammate, :manage_employment,
+              :manager_teammate_id, :impersonating_teammate
 
-  def initialize(organization:, current_person:, current_company_teammate:, manage_employment:, manager_teammate_id:)
+  def initialize(organization:, current_person:, current_company_teammate:, manage_employment:,
+                 manager_teammate_id:, impersonating_teammate: nil)
     @organization = organization
     @current_person = current_person
     @current_company_teammate = current_company_teammate
     @manage_employment = manage_employment
     @manager_teammate_id = manager_teammate_id
+    @impersonating_teammate = impersonating_teammate
   end
 
   def stats
@@ -49,8 +52,7 @@ class EmployeeHealthOverviewSpotlightService
 
   def organization_policy
     @organization_policy ||= begin
-      imp = nil # controller impersonation not available in service; manage_employment covers admin paths
-      puser = OpenStruct.new(user: current_company_teammate, impersonating_teammate: imp)
+      puser = OpenStruct.new(user: current_company_teammate, impersonating_teammate: impersonating_teammate)
       OrganizationPolicy.new(puser, organization)
     end
   end
