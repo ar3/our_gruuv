@@ -85,7 +85,7 @@ RSpec.describe PeopleHelper, type: :helper do
     it 'returns Public Profile for public action' do
       allow(helper).to receive(:action_name).and_return('public')
       allow(helper).to receive(:controller_name).and_return('people')
-      allow(helper).to receive(:@teammate).and_return(nil)
+      helper.instance_variable_set(:@teammate, nil)
       expect(helper.people_current_view_name).to eq('Public Profile')
     end
 
