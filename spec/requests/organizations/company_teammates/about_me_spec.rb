@@ -82,14 +82,14 @@ RSpec.describe 'About Me Page', type: :request do
   end
 
   describe 'View switcher' do
-    it 'includes About Me View option' do
+    it 'includes About Me (classic) option' do
       get about_me_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to include('About Me View')
+      expect(response.body).to include('About Me (classic)')
     end
 
-    it 'shows About Me View as active when on about_me page' do
+    it 'shows About Me (classic) as active when on about_me page' do
       get about_me_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to include('About Me View (Active)')
+      expect(response.body).to include('About Me (classic) (Active)')
     end
   end
 

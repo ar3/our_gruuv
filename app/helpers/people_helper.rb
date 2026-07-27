@@ -154,7 +154,7 @@ module PeopleHelper
   end
 
   def people_current_view_name
-    return 'Manage Profile Mode' unless action_name
+    return profile_settings_label unless action_name
     
     if controller_name == 'company_teammates' && action_name == 'assignment_tenure_check_in_bypass'
       return set_assignments_view_label
@@ -165,11 +165,11 @@ module PeopleHelper
     end
 
     if clarity_check_ins_view_active?
-      return clarity_hub_label
+      return clarity_check_ins_view_switcher_label
     end
 
     if controller_name == 'ogos' && %w[about from feedback_requests].include?(action_name)
-      return @teammate ? "#{@teammate.person.casual_name}'s OGOs" : "OGOs"
+      return ogos_label_for(@teammate)
     end
 
     if controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
@@ -182,33 +182,37 @@ module PeopleHelper
 
     # Check for position controller
     if controller_name == 'position' && action_name == 'show'
-      return 'Seat Management Mode'
+      return seat_management_label
     end
 
     # Check for kudos points (company_teammates#kudos_points)
     if controller_name == 'company_teammates' && action_name == 'kudos_points'
-      return "#{company_label_plural('kudos_point', 'Kudos Point')} Mode"
+      return company_label_plural('kudos_point', 'Kudos Point')
     end
 
-    if controller_name == 'company_teammates' && %w[my_growth_experiences my_growth_abilities my_growth_goals my_growth_position_change].include?(action_name)
-      return 'My Growth'
+    if controller_name == 'company_teammates' && action_name == 'my_growth_goals'
+      return goals_label_for(@teammate)
+    end
+
+    if controller_name == 'company_teammates' && %w[my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
+      return growth_label_for(@teammate)
     end
     
     case action_name.downcase
     when 'show'
-      'Manage Profile Mode'
+      profile_settings_label
     when 'teammate'
-      'Teammate View'
+      teammate_view_label_for(@teammate)
     when 'internal'
-      'Teammate View'
+      teammate_view_label_for(@teammate)
     when 'public'
-      'Public View'
+      public_profile_label_for(@teammate)
     when 'complete_picture'
-      'Active Job View'
+      active_job_label_for(@teammate)
     when 'about_me'
-      'About Me'
+      about_me_classic_label
     when 'audit'
-      clarity_hub_label
+      clarity_check_ins_view_switcher_label
     when 'check_in'
       'Check-In'
     else

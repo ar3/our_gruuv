@@ -10,24 +10,24 @@ RSpec.describe PeopleHelper, type: :helper do
         allow(helper).to receive(:action_name).and_return('show')
       end
       
-      it 'returns Manage Profile Mode for people controller' do
+      it 'returns Profile Settings for people controller' do
         allow(helper).to receive(:controller_name).and_return('people')
-        expect(helper.people_current_view_name).to eq('Manage Profile Mode')
+        expect(helper.people_current_view_name).to eq('Profile Settings')
       end
       
-      it 'returns Clarity Check-Ins for check_ins controller' do
+      it 'returns Clarity Check-ins for check_ins controller' do
         allow(helper).to receive(:controller_name).and_return('check_ins')
-        expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+        expect(helper.people_current_view_name).to eq('Clarity Check-ins')
       end
       
-      it 'returns Clarity Check-Ins for finalizations controller' do
+      it 'returns Clarity Check-ins for finalizations controller' do
         allow(helper).to receive(:controller_name).and_return('finalizations')
-        expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+        expect(helper.people_current_view_name).to eq('Clarity Check-ins')
       end
       
-      it 'returns Seat Management Mode for position controller' do
+      it 'returns Seat Management for position controller' do
         allow(helper).to receive(:controller_name).and_return('position')
-        expect(helper.people_current_view_name).to eq('Seat Management Mode')
+        expect(helper.people_current_view_name).to eq('Seat Management')
       end
     end
 
@@ -37,22 +37,22 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Set Assignments')
     end
 
-    it 'returns Clarity Check-Ins for check_ins review_most_recent action' do
+    it 'returns Clarity Check-ins for check_ins review_most_recent action' do
       allow(helper).to receive(:action_name).and_return('review_most_recent')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
-    it 'returns Clarity Check-Ins for check_ins hub action' do
+    it 'returns Clarity Check-ins for check_ins hub action' do
       allow(helper).to receive(:action_name).and_return('hub')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
-    it 'returns Clarity Check-Ins for check_ins up_next action' do
+    it 'returns Clarity Check-ins for check_ins up_next action' do
       allow(helper).to receive(:action_name).and_return('up_next')
       allow(helper).to receive(:controller_name).and_return('check_ins')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
     it 'reports clarity check-ins view active for up_next' do
@@ -82,48 +82,56 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Consult OG')
     end
 
-    it 'returns Public View for public action' do
+    it 'returns Public Profile for public action' do
       allow(helper).to receive(:action_name).and_return('public')
       allow(helper).to receive(:controller_name).and_return('people')
-      expect(helper.people_current_view_name).to eq('Public View')
+      allow(helper).to receive(:@teammate).and_return(nil)
+      expect(helper.people_current_view_name).to eq('Public Profile')
     end
 
-    it 'returns Teammate View for teammate action' do
+    it 'returns possessive Teammate view for teammate action' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
       allow(helper).to receive(:action_name).and_return('teammate')
       allow(helper).to receive(:controller_name).and_return('people')
-      expect(helper.people_current_view_name).to eq('Teammate View')
+      allow(helper).to receive(:instance_variable_get).with(:@teammate).and_return(teammate)
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's Teammate view")
     end
 
-    it 'returns Active Job View for complete_picture action' do
+    it 'returns possessive Active Job for complete_picture action' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
       allow(helper).to receive(:action_name).and_return('complete_picture')
       allow(helper).to receive(:controller_name).and_return('people')
-      expect(helper.people_current_view_name).to eq('Active Job View')
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's Active Job")
     end
 
-    it 'returns My Growth for my_growth_experiences on company_teammates' do
+    it 'returns possessive Growth for my_growth_experiences on company_teammates' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
       allow(helper).to receive(:action_name).and_return('my_growth_experiences')
       allow(helper).to receive(:controller_name).and_return('company_teammates')
-      expect(helper.people_current_view_name).to eq('My Growth')
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's Growth")
     end
 
-    it 'returns Clarity Check-Ins for audit action' do
+    it 'returns Clarity Check-ins for audit action' do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')
-      expect(helper.people_current_view_name).to eq('Clarity Check-Ins')
+      expect(helper.people_current_view_name).to eq('Clarity Check-ins')
     end
 
-    it 'returns Kudos Points Mode for kudos_points action' do
+    it 'returns Kudos Points for kudos_points action' do
       allow(helper).to receive(:action_name).and_return('kudos_points')
       allow(helper).to receive(:controller_name).and_return('company_teammates')
       allow(helper).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Kudos Points')
-      expect(helper.people_current_view_name).to eq('Kudos Points Mode')
+      expect(helper.people_current_view_name).to eq('Kudos Points')
     end
 
-    it 'returns custom label Mode for kudos_points when company has kudos_point preference' do
+    it 'returns custom kudos label for kudos_points when company has kudos_point preference' do
       allow(helper).to receive(:action_name).and_return('kudos_points')
       allow(helper).to receive(:controller_name).and_return('company_teammates')
       allow(helper).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Stars')
-      expect(helper.people_current_view_name).to eq('Stars Mode')
+      expect(helper.people_current_view_name).to eq('Stars')
     end
 
     it 'returns Check-In for check_in action' do
@@ -132,10 +140,10 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Check-In')
     end
 
-    it 'returns Manage Profile Mode when action_name is nil' do
+    it 'returns Profile Settings when action_name is nil' do
       allow(helper).to receive(:action_name).and_return(nil)
       allow(helper).to receive(:controller_name).and_return('people')
-      expect(helper.people_current_view_name).to eq('Manage Profile Mode')
+      expect(helper.people_current_view_name).to eq('Profile Settings')
     end
   end
 

@@ -4,81 +4,87 @@
     = people_current_view_name
   %ul.dropdown-menu
     %li
-      - if action_name == 'public'
-        .dropdown-item.text-muted
-          %i.bi.bi-globe.me-2
-          Public View (Active)
-          %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate&.person
-        = link_to public_person_path(@teammate.person), class: 'dropdown-item' do
-          %i.bi.bi-globe.me-2
-          Public View
-      
-    %li
       - if action_name == 'teammate' || action_name == 'internal'
         .dropdown-item.text-muted
           %i.bi.bi-people.me-2
-          Teammate View (Active)
+          = "#{teammate_view_label_for(@teammate)} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).internal?
         = link_to internal_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-people.me-2
-          Teammate View
+          = teammate_view_label_for(@teammate)
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-people.me-2
-          Teammate View
+          = teammate_view_label_for(@teammate)
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the teammate version"}
-      
+
     %li
       - if action_name == 'complete_picture'
         .dropdown-item.text-muted
           %i.bi.bi-graph-up.me-2
-          Active Job View (Active)
+          = "#{active_job_label_for(@teammate)} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).complete_picture?
         = link_to complete_picture_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-graph-up.me-2
-          Active Job View
+          = active_job_label_for(@teammate)
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-graph-up.me-2
-          Active Job View
+          = active_job_label_for(@teammate)
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
-      
+
     %li
-      - if action_name == 'about_me' && controller_name == 'company_teammates'
+      - one_on_one_active = controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
+      - one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+      - if one_on_one_active
         .dropdown-item.text-muted
-          %i.bi.bi-person.me-2
-          About Me View (Active)
+          %i.bi.bi-link-45deg.me-2
+          = "#{one_thing_label_for(@teammate)} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate && policy(@teammate).view_check_ins?
-        = link_to about_me_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-person.me-2
-          About Me View
+      - elsif @teammate && policy(one_on_one_link).show?
+        = link_to organization_company_teammate_one_on_one_link_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-link-45deg.me-2
+          = one_thing_label_for(@teammate)
       - else
         .dropdown-item.text-muted.disabled
-          %i.bi.bi-person.me-2
-          About Me View
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
-      
+          %i.bi.bi-link-45deg.me-2
+          = one_on_one_hub_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can open My One Thing for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
+
     %li
       - my_growth_actions = %w[my_growth_experiences my_growth_abilities my_growth_goals my_growth_position_change]
       - if controller_name == 'company_teammates' && my_growth_actions.include?(action_name)
         .dropdown-item.text-muted
           %i.bi.bi-flask.me-2
-          My Growth (Active)
+          = "#{growth_label_for(@teammate)} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).complete_picture?
         = link_to my_growth_experiences_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-flask.me-2
-          My Growth
+          = growth_label_for(@teammate)
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-flask.me-2
-          My Growth
+          = growth_label_for(@teammate)
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
-      
+
+    %li
+      - if action_name == 'public'
+        .dropdown-item.text-muted
+          %i.bi.bi-globe.me-2
+          = "#{public_profile_label_for(@teammate)} (Active)"
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate&.person
+        = link_to public_person_path(@teammate.person), class: 'dropdown-item' do
+          %i.bi.bi-globe.me-2
+          = public_profile_label_for(@teammate)
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-globe.me-2
+          Public Profile
+
     %li
       - set_assignments_active = controller_name == 'company_teammates' && action_name == 'assignment_tenure_check_in_bypass'
       - can_set_assignments = @teammate && (policy(@teammate).manager? || policy(current_organization).manage_employment?)
@@ -102,21 +108,21 @@
       - if my_check_ins_active
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2
-          = clarity_hub_active_label
+          = "#{clarity_check_ins_view_switcher_label} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).view_check_ins?
         = link_to hub_organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
-          = clarity_hub_label
+          = clarity_check_ins_view_switcher_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-chat-square-text.me-2
-          = clarity_hub_label
+          = clarity_check_ins_view_switcher_label
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => clarity_check_in_features_tooltip}
 
     %li
       - ogos_active = controller_name == 'ogos' && %w[about from feedback_requests].include?(action_name)
-      - ogos_label = @teammate ? "#{@teammate.person.casual_name}'s OGOs" : "OGOs"
+      - ogos_label = ogos_label_for(@teammate)
       - if ogos_active
         .dropdown-item.text-muted
           %i.bi.bi-chat-quote.me-2
@@ -133,87 +139,86 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can view OGOs for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
 
     %li
-      - one_on_one_active = controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
-      - one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
-      - if one_on_one_active
-        .dropdown-item.text-muted
-          %i.bi.bi-link-45deg.me-2
-          = "#{one_thing_label_for(@teammate)} (Active)"
-          %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @teammate && policy(one_on_one_link).show?
-        = link_to organization_company_teammate_one_on_one_link_path(current_organization, @teammate), class: 'dropdown-item' do
-          %i.bi.bi-link-45deg.me-2
-          = one_thing_label_for(@teammate)
-      - else
-        .dropdown-item.text-muted.disabled
-          %i.bi.bi-link-45deg.me-2
-          = one_on_one_hub_label
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can open My One Thing for yourself, people in your managerial hierarchy, or if you have manage employment permission."}
-
-    %li
       - my_goals_active = controller_name == 'company_teammates' && action_name == 'my_growth_goals'
       - if my_goals_active
         .dropdown-item.text-muted
           %i.bi.bi-bullseye.me-2
-          My Goals (Active)
+          = "#{goals_label_for(@teammate)} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).complete_picture?
         = link_to my_growth_goals_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-bullseye.me-2
-          My Goals
+          = goals_label_for(@teammate)
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-bullseye.me-2
-          My Goals
+          = goals_label_for(@teammate)
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to view this teammate's goals."}
 
     %li
       - viewing_own_kudos = @teammate && current_company_teammate == @teammate
       - can_view_kudos = @teammate && (viewing_own_kudos || policy(@teammate).view_kudos_points?)
+      - kudos_label = company_label_plural('kudos_point', 'Kudos Point')
       - if action_name == 'kudos_points' && controller_name == 'company_teammates'
         .dropdown-item.text-muted
           %i.bi.bi-star.me-2
-          #{company_label_plural('kudos_point', 'Kudos Point')} Mode (Active)
+          = "#{kudos_label} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif can_view_kudos
         = link_to kudos_points_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-star.me-2
-          #{company_label_plural('kudos_point', 'Kudos Point')} Mode
+          = kudos_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-star.me-2
-          #{company_label_plural('kudos_point', 'Kudos Point')} Mode
+          = kudos_label
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You can only view your own #{company_label_plural('kudos_point', 'Kudos Point')} or those of people in your managerial hierarchy"}
-      
+
+    %li
+      - if action_name == 'about_me' && controller_name == 'company_teammates'
+        .dropdown-item.text-muted
+          %i.bi.bi-person.me-2
+          = "#{about_me_classic_label} (Active)"
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate && policy(@teammate).view_check_ins?
+        = link_to about_me_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-person.me-2
+          = about_me_classic_label
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-person.me-2
+          = about_me_classic_label
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+
     %li
       - if action_name == 'show' && controller_name == 'position'
         .dropdown-item.text-muted
           %i.bi.bi-briefcase.me-2
-          Seat Management Mode (Active)
+          = "#{seat_management_label} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif current_organization && @teammate && policy(@teammate).show?
         = link_to organization_teammate_position_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-briefcase.me-2
-          Seat Management Mode
+          = seat_management_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-briefcase.me-2
-          Seat Management Mode
+          = seat_management_label
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat management"}
-      
+
     %li
       - manage_profile_active = (action_name == 'show' && (controller_name == 'people' || controller_name == 'company_teammates' || controller_name == 'notifications'))
       - if manage_profile_active
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2
-          Manage Profile Mode (Active)
+          = "#{profile_settings_label} (Active)"
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif @teammate && policy(@teammate).show?
         = link_to organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-gear.me-2
-          Manage Profile Mode
+          = profile_settings_label
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-gear.me-2
-          Manage Profile Mode
+          = profile_settings_label
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access management features"}
