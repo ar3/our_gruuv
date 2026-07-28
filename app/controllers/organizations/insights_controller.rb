@@ -403,6 +403,43 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @weekly_digest_day_distribution = weekly_digest_days
     @weekly_digest_type_distribution = weekly_digest_types
     @daily_digest_type_distribution = daily_digest_types
+
+    # Search + Ask OG activity (org-wide) for abuse / engagement monitoring
+    @show_ask_og_spend = impersonating?
+    @show_search_ask_og_who = policy(company).manage_employment?
+    if @show_ask_og_spend
+      @ask_og_week_cost_micros = LlmInvocation
+        .where(organization_id: company.id, purpose: "ask_og", status: "completed")
+        .where(finished_at: 7.days.ago..Time.current)
+        .sum(:cost_micros)
+        .to_i
+    end
+    @recent_ask_og_sessions = AskOgResult
+      .joins(:og_consultation)
+      .where(og_consultations: { organization_id: company.id, kind: OgConsultation::KIND_ASK_OG })
+      .includes(:ask_og_messages, og_consultation: { triggered_by_teammate: :person })
+      .order(created_at: :desc)
+      .limit(25)
+      .map do |ask|
+        messages = ask.ask_og_messages
+        {
+          id: ask.og_consultation_id,
+          query: ask.query,
+          teammate_name: ask.og_consultation.triggered_by_teammate&.person&.display_name || "Unknown",
+          created_at: ask.created_at,
+          user_messages: messages.count { |m| m.user? },
+          turn_count: messages.size,
+          confirms_count: ask.confirms_count.to_i,
+          status: ask.og_consultation.status
+        }
+      end
+
+    @recent_search_logs = SearchQueryLog
+      .recent_for_organization(organization: company, limit: 25)
+      .includes(company_teammate: :person)
+
+    chart_range = 12.weeks.ago.beginning_of_week(:monday)..Time.current
+    @search_ask_og_weekly_charts = search_ask_og_weekly_charts(company, chart_range)
   end
 
   def check_ins_progress
@@ -420,6 +457,61 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   end
 
   private
+
+  def search_ask_og_weekly_charts(organization, chart_range)
+    week_dates = og_scorecard_week_starts(chart_range)
+    categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
+
+    search_rows = SearchQueryLog
+      .where(organization_id: organization.id, created_at: chart_range)
+      .pluck(:company_teammate_id, :created_at)
+
+    ask_rows = AskOgMessage
+      .user_messages
+      .joins(ask_og_result: :og_consultation)
+      .where(og_consultations: { organization_id: organization.id, kind: OgConsultation::KIND_ASK_OG })
+      .where(created_at: chart_range)
+      .pluck('og_consultations.triggered_by_teammate_id', 'ask_og_messages.created_at')
+
+    volume_series = [
+      {
+        name: 'Searches',
+        data: week_dates.map do |week_start|
+          week_end = week_start.end_of_week(:monday).end_of_day
+          search_rows.count { |_tid, created_at| created_at.to_date.between?(week_start, week_end.to_date) }
+        end
+      },
+      {
+        name: 'Ask OG user messages',
+        data: week_dates.map do |week_start|
+          week_end = week_start.end_of_week(:monday).end_of_day
+          ask_rows.count { |_tid, created_at| created_at.to_date.between?(week_start, week_end.to_date) }
+        end
+      }
+    ]
+
+    people_series = [
+      {
+        name: 'People who searched or asked OG',
+        data: week_dates.map do |week_start|
+          week_end = week_start.end_of_week(:monday).end_of_day
+          search_ids = search_rows.filter_map do |tid, created_at|
+            tid if created_at.to_date.between?(week_start, week_end.to_date)
+          end
+          ask_ids = ask_rows.filter_map do |tid, created_at|
+            tid if created_at.to_date.between?(week_start, week_end.to_date)
+          end
+          (search_ids | ask_ids).uniq.size
+        end
+      }
+    ]
+
+    {
+      categories: categories,
+      volume: { categories: categories, series: volume_series },
+      people: { categories: categories, series: people_series }
+    }
+  end
 
   def og_scorecard_week_starts(chart_range)
     start_date = chart_range.begin.to_date

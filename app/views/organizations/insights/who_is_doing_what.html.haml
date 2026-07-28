@@ -35,6 +35,87 @@
 
   %hr.my-5
 
+  / Search + Ask OG activity
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-dark.text-white
+          %h4.mb-0
+            %i.bi.bi-stars.me-2
+            Search & Ask OG activity
+        .card-body
+          - if @show_ask_og_spend
+            %p.mb-3
+              %strong Ask OG spend (last 7 days):
+              = number_to_currency(@ask_og_week_cost_micros.to_f / 1_000_000.0)
+              %span.text-muted.small.ms-2
+                Kill watch: over $10/week or avg turns &gt; 10 with no confirms → caps/billable within 2 weeks.
+
+          .row.g-4.mb-4
+            .col-lg-6
+              #who-is-doing-what-search-ask-og-volume-chart{style: "height: 320px;"}
+            .col-lg-6
+              #who-is-doing-what-search-ask-og-people-chart{style: "height: 320px;"}
+
+          .row.g-4
+            .col-lg-6
+              %h5.mb-3
+                %i.bi.bi-search.me-2
+                Recent searches (org-wide)
+              - if @recent_search_logs.present?
+                .table-responsive
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th When
+                        - if @show_search_ask_og_who
+                          %th Who
+                        %th Query
+                        %th.text-end Hits
+                    %tbody
+                      - @recent_search_logs.each do |log|
+                        %tr
+                          %td= format_date_in_user_timezone(log.created_at, format: "%b %-d %-l:%M%P")
+                          - if @show_search_ask_og_who
+                            %td= log.company_teammate.person&.display_name
+                          %td= log.query
+                          %td.text-end= log.results_count
+              - else
+                %p.text-muted.mb-0 No searches logged yet.
+
+            .col-lg-6
+              %h5.mb-3
+                %i.bi.bi-chat-dots.me-2
+                Recent Ask OG sessions (org-wide)
+              - if @recent_ask_og_sessions.present?
+                .table-responsive
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th When
+                        - if @show_search_ask_og_who
+                          %th Who
+                        %th Question
+                        %th.text-end User msgs
+                        %th.text-end Turns
+                        %th.text-end Confirms
+                        %th Status
+                    %tbody
+                      - @recent_ask_og_sessions.each do |session|
+                        %tr
+                          %td= format_date_in_user_timezone(session[:created_at], format: "%b %-d %-l:%M%P")
+                          - if @show_search_ask_og_who
+                            %td= session[:teammate_name]
+                          %td= truncate(session[:query], length: 60)
+                          %td.text-end= session[:user_messages]
+                          %td.text-end= session[:turn_count]
+                          %td.text-end= session[:confirms_count]
+                          %td= session[:status]
+              - else
+                %p.text-muted.mb-0 No Ask OG sessions yet.
+
+  %hr.my-5
+
   / Top 10 pages by visit count
   .row.mb-4
     .col-12
@@ -127,6 +208,8 @@
     var weeklyDigestTypeSeries = #{who_is_doing_what_weekly_digest_type_series.to_json};
     var dailyDigestTypeSeries = #{who_is_doing_what_daily_digest_type_series.to_json};
     var digestMediumSeries = #{who_is_doing_what_digest_medium_series.to_json};
+    var searchAskOgVolume = #{(@search_ask_og_weekly_charts&.dig(:volume) || { categories: [], series: [] }).to_json};
+    var searchAskOgPeople = #{(@search_ask_og_weekly_charts&.dig(:people) || { categories: [], series: [] }).to_json};
 
     function initializePieChart() {
       if (typeof Highcharts === 'undefined') return;
@@ -246,10 +329,64 @@
       }
     }
 
+    function initializeSearchAskOgCharts() {
+      if (typeof Highcharts === 'undefined') return;
+
+      var volumeEl = document.getElementById('who-is-doing-what-search-ask-og-volume-chart');
+      if (volumeEl && searchAskOgVolume.categories && searchAskOgVolume.categories.length > 0) {
+        Highcharts.chart('who-is-doing-what-search-ask-og-volume-chart', {
+          chart: { type: 'column' },
+          title: { text: 'Searches & Ask OG messages by week' },
+          accessibility: { enabled: false },
+          xAxis: {
+            categories: searchAskOgVolume.categories,
+            title: { text: 'Week of' }
+          },
+          yAxis: {
+            min: 0,
+            title: { text: 'Count' },
+            stackLabels: { enabled: true }
+          },
+          plotOptions: {
+            column: {
+              stacking: 'normal',
+              dataLabels: { enabled: false }
+            }
+          },
+          series: searchAskOgVolume.series
+        });
+      }
+
+      var peopleEl = document.getElementById('who-is-doing-what-search-ask-og-people-chart');
+      if (peopleEl && searchAskOgPeople.categories && searchAskOgPeople.categories.length > 0) {
+        Highcharts.chart('who-is-doing-what-search-ask-og-people-chart', {
+          chart: { type: 'column' },
+          title: { text: 'People who searched or asked OG by week' },
+          accessibility: { enabled: false },
+          xAxis: {
+            categories: searchAskOgPeople.categories,
+            title: { text: 'Week of' }
+          },
+          yAxis: {
+            min: 0,
+            allowDecimals: false,
+            title: { text: 'Unique people' }
+          },
+          plotOptions: {
+            column: {
+              dataLabels: { enabled: true }
+            }
+          },
+          series: searchAskOgPeople.series
+        });
+      }
+    }
+
     function initializeCharts() {
       initializePieChart();
       initializeHistogramChart();
       initializeDigestCoverageCharts();
+      initializeSearchAskOgCharts();
     }
 
     var attempts = 0;

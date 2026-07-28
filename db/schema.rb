@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_27_071226) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_28_113932) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -87,6 +87,30 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_071226) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["person_id"], name: "index_addresses_on_person_id"
+  end
+
+  create_table "ask_og_messages", force: :cascade do |t|
+    t.bigint "ask_og_result_id", null: false
+    t.string "role", null: false
+    t.text "body", null: false
+    t.integer "position", null: false
+    t.jsonb "proposed_actions", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ask_og_result_id", "position"], name: "index_ask_og_messages_on_ask_og_result_id_and_position", unique: true
+    t.index ["ask_og_result_id"], name: "index_ask_og_messages_on_ask_og_result_id"
+  end
+
+  create_table "ask_og_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.string "query", null: false
+    t.text "answer_text"
+    t.jsonb "proposed_actions", default: [], null: false
+    t.jsonb "tool_context", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "confirms_count", default: 0, null: false
+    t.index ["og_consultation_id"], name: "index_ask_og_results_on_og_consultation_id", unique: true
   end
 
   create_table "aspiration_check_ins", force: :cascade do |t|
@@ -1446,6 +1470,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_071226) do
     t.index ["prompt_template_id"], name: "index_prompts_on_prompt_template_id"
   end
 
+  create_table "search_query_logs", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.string "query", null: false
+    t.integer "results_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "created_at"], name: "index_search_query_logs_on_company_teammate_id_and_created_at"
+    t.index ["company_teammate_id"], name: "index_search_query_logs_on_company_teammate_id"
+    t.index ["organization_id", "created_at"], name: "index_search_query_logs_on_organization_id_and_created_at"
+    t.index ["organization_id"], name: "index_search_query_logs_on_organization_id"
+  end
+
   create_table "seat_titles", force: :cascade do |t|
     t.bigint "seat_id", null: false
     t.bigint "title_id", null: false
@@ -1832,6 +1869,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_071226) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "addresses", "people"
+  add_foreign_key "ask_og_messages", "ask_og_results"
+  add_foreign_key "ask_og_results", "og_consultations"
   add_foreign_key "aspiration_check_ins", "aspirations"
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
@@ -1980,6 +2019,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_27_071226) do
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
+  add_foreign_key "search_query_logs", "organizations"
+  add_foreign_key "search_query_logs", "teammates", column: "company_teammate_id"
   add_foreign_key "seat_titles", "seats"
   add_foreign_key "seat_titles", "titles"
   add_foreign_key "seats", "seats", column: "reports_to_seat_id"

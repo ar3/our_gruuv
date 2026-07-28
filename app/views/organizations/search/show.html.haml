@@ -8,7 +8,7 @@
     %h1.mb-0.me-2
       %i.bi.bi-search.me-2
       Search Results
-    - if @results[:total_count] > 0
+    - if @query.present? && @results[:total_count] > 0
       %span.badge.bg-primary.ms-2= "#{@results[:total_count]} results"
 
 .row.justify-content-center.mb-4
@@ -18,14 +18,22 @@
         = form_with url: organization_search_path(@organization), method: :get, local: true, class: "mb-0" do |f|
           .row
             .col-md-10
-              = f.text_field :q, 
-                  value: @query, 
-                  placeholder: "Search people, organizations, pages, observations, assignments, abilities, and titles...", 
+              = f.text_field :q,
+                  value: @query,
+                  placeholder: "Search people, organizations, pages, observations, assignments, abilities, and titles...",
                   class: "form-control form-control-lg",
                   autofocus: true,
                   style: "font-size: 1.25rem; padding: 1rem;"
             .col-md-2
               = f.submit "Search", class: "btn btn-primary btn-lg w-100", style: "padding: 1rem; font-size: 1.1rem;"
+
+- if @ask_og_id.present?
+  .row.justify-content-center.mb-4
+    .col-lg-12
+      %div{ data: { controller: "ask-og-loader", ask_og_loader_url_value: panel_organization_ask_ogs_path(@organization, id: @ask_og_id) } }
+        .text-muted.small
+          %span.spinner-border.spinner-border-sm.me-2{ role: "status" }
+          Loading Ask OG…
 
 - if @query.present?
   - if @results[:total_count] > 0
@@ -184,25 +192,87 @@
                           = link_to truncate(observation.story, length: 100), organization_observation_path(@organization, observation), class: "text-decoration-none fw-bold"
                         %td= observation.observer.display_name
                         %td= format_date_in_user_timezone(observation.observed_at, format: "%b %d, %Y")
+
+    - unless @ask_og_id.present?
+      .row.justify-content-center.mb-4
+        .col-lg-12
+          .card.border-0.shadow-sm
+            .card-body.d-flex.flex-wrap.align-items-center.justify-content-between.gap-3
+              %div
+                %h6.mb-1
+                  %i.bi.bi-stars.me-2
+                  Still need help?
+                %p.text-muted.small.mb-0 Ask OG can answer questions and propose actions like drafting an OGO or a goal confidence check-in.
+              = link_to organization_search_path(@organization, q: @query, ask_og: 1), class: "btn btn-outline-primary" do
+                %i.bi.bi-stars.me-1
+                Start Ask OG
+
+    - if params[:ask_og].present? && @ask_og_id.blank?
+      .row.justify-content-center.mb-4
+        .col-lg-12
+          %div{ data: { controller: "ask-og-loader", ask_og_loader_url_value: panel_organization_ask_ogs_path(@organization, q: @query) } }
+            .text-muted.small
+              %span.spinner-border.spinner-border-sm.me-2{ role: "status" }
+              Loading Ask OG…
   - else
     .row.justify-content-center
       .col-lg-12
-        .alert.alert-info
+        .alert.alert-info.mb-3
           %h6.mb-2
             %i.bi.bi-info-circle.me-2
             No Results Found
-          %p.mb-2 
+          %p.mb-2
             No results found for "#{@query}". Try different keywords or check your spelling.
           %p.mb-0
             %small.text-muted Search across people, organizations, pages, observations, assignments, abilities, and titles in #{@organization.display_name}.
+
+        %div{ data: { controller: "ask-og-loader", ask_og_loader_url_value: panel_organization_ask_ogs_path(@organization, q: @query) } }
+          .text-muted.small
+            %span.spinner-border.spinner-border-sm.me-2{ role: "status" }
+            Loading Ask OG…
 - else
   .row.justify-content-center
     .col-lg-12
-      .alert.alert-light
+      .alert.alert-light.mb-4
         %h6.mb-2
           %i.bi.bi-search.me-2
           Start Searching
-        %p.mb-2 
+        %p.mb-2
           Enter a search term above to find people, organizations, pages, observations, assignments, abilities, and titles.
         %p.mb-0
           %small.text-muted Search is scoped to #{@organization.display_name} and respects your permissions.
+
+      .row.g-3
+        .col-md-6
+          .card.border-0.shadow-sm.h-100
+            .card-header.bg-white
+              %h6.mb-0
+                %i.bi.bi-clock-history.me-2
+                Recent searches
+            .card-body
+              - if @recent_searches.present?
+                %ul.list-unstyled.mb-0
+                  - @recent_searches.each do |log|
+                    %li.mb-2
+                      = link_to organization_search_path(@organization, q: log.query), class: "text-decoration-none" do
+                        = log.query
+                      %span.text-muted.small.ms-1= "(#{log.results_count})"
+              - else
+                %p.text-muted.small.mb-0 No recent searches yet.
+
+        .col-md-6
+          .card.border-0.shadow-sm.h-100
+            .card-header.bg-white
+              %h6.mb-0
+                %i.bi.bi-stars.me-2
+                Recent Ask OG
+            .card-body
+              - if @recent_ask_ogs.present?
+                %ul.list-unstyled.mb-0
+                  - @recent_ask_ogs.each do |ask|
+                    %li.mb-2
+                      = link_to organization_search_path(@organization, ask_og_id: ask.og_consultation_id), class: "text-decoration-none" do
+                        = truncate(ask.query, length: 80)
+                      %span.text-muted.small.ms-1= ask.created_at.strftime("%b %-d")
+              - else
+                %p.text-muted.small.mb-0 No Ask OG threads yet.

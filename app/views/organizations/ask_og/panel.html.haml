@@ -1,0 +1,44 @@
+.ask-og-panel{
+  data: {
+    controller: "ask-og",
+    ask_og_create_url_value: organization_ask_ogs_path(@organization),
+    ask_og_query_value: @query.to_s,
+    ask_og_csrf_token_value: form_authenticity_token,
+    ask_og_auto_start_value: @auto_start,
+    ask_og_consultation_id_value: @consultation&.id,
+    ask_og_status_url_value: (@consultation ? status_organization_ask_og_path(@organization, @consultation) : ""),
+    ask_og_reply_url_value: (@consultation ? reply_organization_ask_og_path(@organization, @consultation) : "")
+  }
+}
+  .card.border-0.shadow-sm.mb-0.ask-og-card
+    .card-header.bg-white.border-bottom.d-flex.align-items-center.gap-2
+      %i.bi.bi-stars.text-primary
+      %strong Ask OG
+      - if @query.present?
+        %span.text-muted.small.text-truncate= @query
+
+    .card-body.p-0
+      .ask-og-thread{ data: { ask_og_target: "thread" } }
+
+      .ask-og-waiting.d-none.px-3.py-2.border-top{ data: { ask_og_target: "waiting" } }
+        .d-flex.align-items-center.gap-2.text-muted.small
+          .spinner-border.spinner-border-sm{ role: "status" }
+            %span.visually-hidden Loading
+          %span{ data: { ask_og_target: "phaseLabel" } } Starting…
+
+      .ask-og-error.alert.alert-warning.mb-0.rounded-0.d-none{ data: { ask_og_target: "error" } }
+
+      .ask-og-composer.border-top.p-3{ data: { ask_og_target: "composer" } }
+        .input-group
+          %textarea.form-control{
+            data: { ask_og_target: "input", action: "keydown.enter->ask-og#handleEnter" },
+            rows: 2,
+            placeholder: "Message Ask OG…",
+            disabled: @auto_start
+          }
+          %button.btn.btn-primary{
+            type: "button",
+            data: { ask_og_target: "sendButton", action: "ask-og#send" },
+            disabled: @auto_start
+          }
+            Send

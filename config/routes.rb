@@ -741,6 +741,14 @@ Rails.application.routes.draw do
     
     # Search functionality
     resource :search, only: [:show], module: :organizations, controller: 'search'
+    resources :ask_ogs, only: [:create, :show], module: :organizations, controller: 'ask_og' do
+      get :panel, on: :collection
+      member do
+        get :status
+        post :confirm
+        post :reply
+      end
+    end
     get 'sitemap', to: 'organizations/sitemap#show', as: :sitemap
     
     # Slack integration nested under organizations

@@ -95,6 +95,15 @@ module OgConsultations
         runner_class_name: nil,
         llm_purpose: 'slack_chunk',
         billable: true
+      ),
+      OgConsultation::KIND_ASK_OG => Entry.new(
+        kind: OgConsultation::KIND_ASK_OG,
+        label: 'Ask OG',
+        result_class_name: 'AskOgResult',
+        job_class_name: 'AskOgJob',
+        runner_class_name: 'Assistant::AskOgRunner',
+        llm_purpose: 'ask_og',
+        billable: true
       )
     }.freeze
 
