@@ -7,6 +7,7 @@ class Person < ApplicationRecord
   has_many :person_identities, dependent: :destroy
   has_many :observations, foreign_key: :observer_id, dependent: :destroy
   has_many :page_visits, dependent: :destroy
+  has_many :mcp_access_tokens, dependent: :destroy
   has_one :user_preference, dependent: :destroy
 
   has_many :company_teammates, class_name: 'CompanyTeammate', dependent: :destroy

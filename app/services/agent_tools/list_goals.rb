@@ -25,7 +25,7 @@ module AgentTools
         needing_check_in: ActiveModel::Type::Boolean.new.cast(needing_check_in)
       )
     rescue AgentTools::NotAuthorized => e
-      err(e.message)
+      err(e.message, code: "not_authorized")
     end
 
     private

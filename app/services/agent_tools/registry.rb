@@ -18,6 +18,92 @@ module AgentTools
       set_current_week_goal_confidence
     ].freeze
 
+    # JSON Schema–style input schemas for MCP and other machine clients.
+    INPUT_SCHEMAS = {
+      "list_teammates" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Optional name/email filter" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
+        },
+        additionalProperties: false
+      },
+      "list_goals" => {
+        type: "object",
+        properties: {
+          needing_check_in: { type: "boolean", description: "If true, only goals needing a confidence check-in" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
+        },
+        additionalProperties: false
+      },
+      "list_observations" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Optional story text filter" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
+        },
+        additionalProperties: false
+      },
+      "search_organization" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search query (required)" }
+        },
+        required: ["query"],
+        additionalProperties: false
+      },
+      "create_draft_observation" => {
+        type: "object",
+        properties: {
+          observee_path: {
+            type: "string",
+            description: "Path from list/search tools, e.g. /organizations/.../company_teammates/.../internal"
+          },
+          story: { type: "string", description: "Optional draft story" },
+          observation_type: {
+            type: "string",
+            enum: %w[kudos feedback quick_note],
+            description: "Defaults to feedback"
+          },
+          privacy_level: {
+            type: "string",
+            description: "Privacy enum; default observed_and_managers"
+          },
+          goal_path: { type: "string", description: "Optional goal path from tool results" }
+        },
+        required: ["observee_path"],
+        additionalProperties: false
+      },
+      "set_current_week_goal_confidence" => {
+        type: "object",
+        properties: {
+          goal_path: { type: "string", description: "Goal path from tool results (active goals only)" },
+          confidence_percentage: {
+            type: "integer",
+            minimum: 0,
+            maximum: 100,
+            description: "Confidence 0–100 for the current Monday week"
+          },
+          confidence_reason: { type: "string", description: "Optional reason for mid-range confidence" },
+          learnings: {
+            type: "string",
+            description: "Required when confidence is 0 or 100 (completing the goal)"
+          }
+        },
+        required: ["goal_path", "confidence_percentage"],
+        additionalProperties: false
+      }
+    }.freeze
+
+    DESCRIPTIONS = {
+      "list_teammates" => "List teammates in the organization (directory). Prefer paths from results over numeric ids.",
+      "list_goals" => "List goals visible to you, optionally only those needing a current-week confidence check-in.",
+      "list_observations" => "List published observations (OGOs) visible to you.",
+      "search_organization" => "Search people, assignments, abilities, titles, and observations in the org.",
+      "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
+      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
+    }.freeze
+
     module_function
 
     def tool_names
@@ -41,6 +127,14 @@ module AgentTools
 
     def invoke(name, context:, **args)
       fetch(name).call(context: context, **args)
+    end
+
+    def description_for(name)
+      DESCRIPTIONS[name.to_s]
+    end
+
+    def input_schema_for(name)
+      INPUT_SCHEMAS[name.to_s]
     end
 
     # Compact schemas for LLM proposal prompts (not MCP wire format).

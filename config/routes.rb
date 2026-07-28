@@ -38,6 +38,9 @@ Rails.application.routes.draw do
   namespace :api do
     post 'companies/teams', to: 'companies#teams'
   end
+
+  # MCP (Model Context Protocol) — AgentTools over Streamable HTTP. Auth: Bearer McpAccessToken.
+  match "/mcp", to: "mcp#handle", via: [:get, :post, :delete], as: :mcp
   
   # Integration routes
   namespace :integrations do
@@ -749,6 +752,7 @@ Rails.application.routes.draw do
         post :reply
       end
     end
+    resources :mcp_access_tokens, only: [:index, :create, :destroy], module: :organizations
     get 'sitemap', to: 'organizations/sitemap#show', as: :sitemap
     
     # Slack integration nested under organizations

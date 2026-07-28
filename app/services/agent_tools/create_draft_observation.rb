@@ -5,10 +5,11 @@ module AgentTools
   class CreateDraftObservation < Base
     include Rails.application.routes.url_helpers
 
-    TRIGGER_SOURCE = "ask_og"
-    TRIGGER_TYPE = "ask_og_assistant"
+    DEFAULT_TRIGGER_SOURCE = "ask_og"
+    DEFAULT_TRIGGER_TYPE = "ask_og_assistant"
+    DEFAULT_CREATED_AS = "ask_og"
+    ALLOWED_TRIGGER_SOURCES = %w[ask_og mcp].freeze
     ALLOWED_TYPES = %w[kudos feedback quick_note].freeze
-    CREATED_AS = "ask_og"
 
     def call(
       context:,
@@ -19,18 +20,33 @@ module AgentTools
       privacy_level: "observed_and_managers",
       goal_path: nil,
       goal_id: nil,
+      trigger_source: DEFAULT_TRIGGER_SOURCE,
+      trigger_type: nil,
+      created_as_type: nil,
       **_ignored
     )
       context.authorize!(Observation.new(company: company_for(context)), :create?)
+
+      source = trigger_source.to_s.presence || DEFAULT_TRIGGER_SOURCE
+      unless ALLOWED_TRIGGER_SOURCES.include?(source)
+        return err("invalid trigger_source", code: "validation_failed")
+      end
+
+      type = trigger_type.to_s.presence || (source == "mcp" ? "mcp_assistant" : DEFAULT_TRIGGER_TYPE)
+      created_as = created_as_type.to_s.presence || (source == "mcp" ? "mcp" : DEFAULT_CREATED_AS)
 
       observee = RecordPaths.resolve_teammate(
         context,
         observee_path: observee_path,
         observee_teammate_id: observee_teammate_id
       )
-      return err("observee path is required") if observee_path.blank? && observee_teammate_id.blank?
-      return err("observee teammate not found") if observee.nil?
-      return err("observee not in organization") unless teammate_in_company_tree?(observee, company_for(context))
+      if observee_path.blank? && observee_teammate_id.blank?
+        return err("observee path is required", code: "validation_failed")
+      end
+      return err("observee teammate not found", code: "not_found") if observee.nil?
+      unless teammate_in_company_tree?(observee, company_for(context))
+        return err("observee not in organization", code: "validation_failed")
+      end
 
       kind = ALLOWED_TYPES.include?(observation_type.to_s) ? observation_type.to_s : "feedback"
       company = company_for(context)
@@ -39,10 +55,10 @@ module AgentTools
       observation = nil
       ActiveRecord::Base.transaction do
         trigger = ObservationTrigger.create!(
-          trigger_source: TRIGGER_SOURCE,
-          trigger_type: TRIGGER_TYPE,
+          trigger_source: source,
+          trigger_type: type,
           trigger_data: {
-            "created_via" => "ask_og",
+            "created_via" => source,
             "organization_id" => context.organization.id
           }
         )
@@ -55,7 +71,7 @@ module AgentTools
           observed_at: Time.current,
           published_at: nil,
           observation_type: kind,
-          created_as_type: CREATED_AS,
+          created_as_type: created_as,
           observation_trigger: trigger,
           goal_id: linked_goal&.id
         )
@@ -71,9 +87,9 @@ module AgentTools
         redirect_path: edit_organization_observation_path(context.organization, observation)
       )
     rescue AgentTools::NotAuthorized => e
-      err(e.message)
+      err(e.message, code: "not_authorized")
     rescue ActiveRecord::RecordInvalid => e
-      err(e.record.errors.full_messages.presence || e.message)
+      err(e.record.errors.full_messages.presence || e.message, code: "validation_failed")
     end
 
     private

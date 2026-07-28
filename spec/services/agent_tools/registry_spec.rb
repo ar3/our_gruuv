@@ -12,4 +12,11 @@ RSpec.describe AgentTools::Registry do
   it "raises for unknown tools" do
     expect { described_class.fetch("not_a_tool") }.to raise_error(AgentTools::UnknownTool)
   end
+
+  it "exposes JSON input schemas for every registered tool" do
+    described_class.tool_names.each do |name|
+      expect(described_class.input_schema_for(name)).to be_a(Hash)
+      expect(described_class.description_for(name)).to be_present
+    end
+  end
 end

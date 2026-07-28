@@ -29,7 +29,7 @@ module AgentTools
         count: visible.size
       )
     rescue AgentTools::NotAuthorized => e
-      err(e.message)
+      err(e.message, code: "not_authorized")
     end
 
     private

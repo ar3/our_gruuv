@@ -42,6 +42,20 @@ RSpec.describe AgentTools::CreateDraftObservation, type: :service do
     expect(result.data[:path]).to be_present
   end
 
+  it "accepts mcp trigger_source for MCP adapter provenance" do
+    result = described_class.call(
+      context: context,
+      observee_path: observee_path,
+      story: "MCP draft",
+      trigger_source: "mcp"
+    )
+
+    expect(result.ok?).to be(true), -> { result.error.inspect }
+    observation = Observation.order(:id).last
+    expect(observation.created_as_type).to eq("mcp")
+    expect(observation.observation_trigger.trigger_source).to eq("mcp")
+  end
+
   it "does not publish" do
     result = described_class.call(
       context: context,

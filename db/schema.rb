@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_28_113932) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_28_121500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -915,6 +915,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_113932) do
     t.index ["employee_id"], name: "index_maap_snapshots_on_employee_id"
     t.index ["maap_data"], name: "index_maap_snapshots_on_maap_data", using: :gin
     t.index ["manager_request_info"], name: "index_maap_snapshots_on_manager_request_info", using: :gin
+  end
+
+  create_table "mcp_access_tokens", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.string "token_digest", null: false
+    t.string "name", default: "Claude Desktop", null: false
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_mcp_access_tokens_on_company_teammate_id"
+    t.index ["person_id"], name: "index_mcp_access_tokens_on_person_id"
+    t.index ["revoked_at"], name: "index_mcp_access_tokens_on_revoked_at"
+    t.index ["token_digest"], name: "index_mcp_access_tokens_on_token_digest", unique: true
   end
 
   create_table "missing_resource_requests", force: :cascade do |t|
@@ -1963,6 +1979,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_113932) do
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "teammates", column: "creator_company_teammate_id"
   add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"
+  add_foreign_key "mcp_access_tokens", "people"
+  add_foreign_key "mcp_access_tokens", "teammates", column: "company_teammate_id"
   add_foreign_key "missing_resource_requests", "missing_resources"
   add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"

@@ -20,28 +20,35 @@ module AgentTools
 
       if week_start.present?
         parsed = parse_date(week_start)
-        return err("week_start must be the current week (#{current_monday})") if parsed != current_monday
+        if parsed != current_monday
+          return err("week_start must be the current week (#{current_monday})", code: "not_current_week")
+        end
       end
 
-      return err("goal_path is required") if goal_path.blank? && goal_id.blank?
+      return err("goal_path is required", code: "validation_failed") if goal_path.blank? && goal_id.blank?
 
       goal = RecordPaths.resolve_goal(context, goal_path: goal_path, goal_id: goal_id)
-      return err("goal not found") if goal.nil?
-      return err("goal not in organization") unless goal.company_id == company_for(context).id
-      return err("goal not viewable") unless goal.can_be_viewed_by?(context.person)
-      return err("cannot set confidence on a completed goal") if goal.completed_at.present?
-      return err("cannot set confidence on a deleted goal") if goal.deleted_at.present?
+      return err("goal not found", code: "not_found") if goal.nil?
+      return err("goal not in organization", code: "validation_failed") unless goal.company_id == company_for(context).id
+      return err("goal not viewable", code: "not_authorized") unless goal.can_be_viewed_by?(context.person)
+      return err("cannot set confidence on a completed goal", code: "validation_failed") if goal.completed_at.present?
+      return err("cannot set confidence on a deleted goal", code: "validation_failed") if goal.deleted_at.present?
 
       check_in_record = GoalCheckIn.new(goal: goal)
       context.authorize!(check_in_record, :create?)
 
       pct = confidence_percentage.present? ? confidence_percentage.to_i : nil
-      return err("confidence_percentage is required") if pct.nil?
-      return err("confidence_percentage must be between 0 and 100") unless pct.between?(0, 100)
+      return err("confidence_percentage is required", code: "validation_failed") if pct.nil?
+      unless pct.between?(0, 100)
+        return err("confidence_percentage must be between 0 and 100", code: "validation_failed")
+      end
 
       learnings_text = learnings.to_s.strip.presence || confidence_reason.to_s.strip.presence
       if [0, 100].include?(pct) && learnings_text.blank?
-        return err("cannot complete a goal (0% or 100%) without learnings — ask what was learned first")
+        return err(
+          "cannot complete a goal (0% or 100%) without learnings — ask what was learned first",
+          code: "validation_failed"
+        )
       end
 
       reason = learnings_text.presence || confidence_reason
@@ -55,7 +62,7 @@ module AgentTools
         week_start: current_monday
       )
 
-      return err(result.error) unless result.ok?
+      return err(result.error, code: "validation_failed") unless result.ok?
 
       ok(
         path: organization_goal_path(context.organization, goal),
@@ -65,7 +72,7 @@ module AgentTools
         redirect_path: "#{organization_goal_path(context.organization, goal)}#check-in"
       )
     rescue AgentTools::NotAuthorized => e
-      err(e.message)
+      err(e.message, code: "not_authorized")
     end
 
     private

@@ -16,8 +16,8 @@ module AgentTools
       AgentTools::Result.ok(data)
     end
 
-    def err(message)
-      AgentTools::Result.err(message)
+    def err(message, code: nil)
+      AgentTools::Result.err(message, code: code)
     end
   end
 end

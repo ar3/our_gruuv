@@ -7,7 +7,7 @@ module AgentTools
       context.authorize!(context.organization, :view_search?)
 
       q = query.to_s.strip
-      return err("query is required") if q.blank?
+      return err("query is required", code: "validation_failed") if q.blank?
 
       results = GlobalSearchQuery.new(
         query: q,
@@ -35,7 +35,7 @@ module AgentTools
         }
       )
     rescue AgentTools::NotAuthorized => e
-      err(e.message)
+      err(e.message, code: "not_authorized")
     end
 
     private
