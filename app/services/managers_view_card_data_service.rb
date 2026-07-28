@@ -27,6 +27,10 @@ class ManagersViewCardDataService
 
     teammate_ids = teammates.map(&:id)
     goals_by_teammate = goals_grouped_by_teammate(teammate_ids)
+    engagement_health_by_teammate_id = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: organization,
+      teammate_ids: teammate_ids
+    )
     observation_caches = ObservationHealthCache
       .where(teammate_id: teammate_ids, organization_id: organization.id)
       .index_by(&:teammate_id)
@@ -36,10 +40,13 @@ class ManagersViewCardDataService
       goals = goals_by_teammate[teammate.id] || []
       cache = observation_caches[teammate.id]
       ogo_counts = ogo_30d_counts[teammate.id] || { given: 0, received: 0 }
+      eh_status = GoalsHealthEngagementHealthSupport.category_status(
+        engagement_health_by_teammate_id[teammate.id] || []
+      )
 
       rows[teammate.id] = RowData.new(
         check_in_actions_needed: check_in_actions_needed_for(teammate),
-        goals_health_status: Goals::HealthStatusCalculator.call(goals),
+        goals_health_status: GoalsHealthEngagementHealthSupport.spotlight_symbol(eh_status),
         active_goals_count: goals.count { |g| g.deleted_at.nil? && g.completed_at.nil? && g.started_at.present? },
         draft_goals_count: goals.count { |g| g.deleted_at.nil? && g.completed_at.nil? && g.started_at.nil? },
         ogo_overall_status: cache&.overall_status,

@@ -150,8 +150,8 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(json.dig("widgets", "insights_goals_health", "ok")).to eq(true)
       expect(html).to include("Total Active Employees")
       expect(html).to include("Healthy")
-      expect(html).to include("Ok")
-      expect(html).to include("Needs attention")
+      expect(html).to include("Warning")
+      expect(html).to include("Needs Attention")
       expect(html).to include("goals-health-spotlight-compact")
     end
 

@@ -16,23 +16,11 @@
   .col-lg-12
     .card.border-0.shadow-sm
       .card-body
-        .row
-          .col-md-8
-            .row.text-center
-              .col-3
-                .h3.text-primary= @spotlight_stats[:total_employees]
-                %small.text-muted Total Active Employees
-              .col-3
-                .h3.text-success= @spotlight_stats[:healthy_count]
-                %small.text-muted Healthy
-              .col-3
-                .h3.text-warning= @spotlight_stats[:ok_count]
-                %small.text-muted Ok
-              .col-3
-                .h3.text-danger= @spotlight_stats[:concerning_count]
-                %small.text-muted Needs attention
-          .col-md-4
-            - if @spotlight_stats[:concerning_count] > 0
+        .row.align-items-center
+          .col-md-9
+            = render "shared/goals_health_spotlight_compact", stats: @spotlight_stats, variant: :full
+          .col-md-3
+            - if @spotlight_stats[:concerning_count].to_i.positive?
               .alert.alert-danger.small.mb-0
                 %i.bi.bi-exclamation-triangle.me-2
                 %strong= "#{@spotlight_stats[:concerning_pct]}% need attention"
@@ -64,20 +52,11 @@
 
 .row.justify-content-center.mb-3
   .col-lg-12
-    = render "organizations/health/dashboard_switcher", organization: @organization, current: :goals_health, manager_id: @current_manager_filter
-    .d-flex.gap-2.flex-wrap.align-items-center
-      = link_to organization_goals_path(@organization), class: "btn btn-outline-primary" do
-        %i.bi.bi-bullseye.me-2
-        My goals
-      = link_to organization_goals_health_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
-        %i.bi.bi-download.me-2
-        Download goals (CSV)
-      = link_to organization_goals_health_employee_summary_export_path(@organization, manager_id: @current_manager_filter), class: "btn btn-outline-primary" do
-        %i.bi.bi-download.me-2
-        Download employees goals summary (CSV)
-      = link_to organization_insights_goals_path(@organization), class: "btn btn-outline-secondary" do
-        %i.bi.bi-bar-chart-steps.me-2
-        Company Goal Insights
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :goals_health,
+      manager_id: @current_manager_filter,
+      other_actions: goals_health_other_actions(@organization, manager_id: @current_manager_filter)
 
 .row.justify-content-center.mb-2
   .col-lg-12
@@ -90,16 +69,12 @@
       .table-responsive
         %table.table.table-hover.table-layout-fixed
           %colgroup
-            %col{style: "width: 25%"}
-            %col{style: "width: 25%"}
-            %col{style: "width: 25%"}
-            %col{style: "width: 25%"}
+            %col{style: "width: 18%"}
+            %col{style: "width: 82%"}
           %thead
             %tr
               %th Employee
-              %th Top-level & associated
-              %th Top-level & unassociated
-              %th Child-goals
+              %th.visually-hidden Details
           %tbody
             - @employee_rows.each do |row|
               %tr
@@ -112,56 +87,25 @@
                   - else
                     %small.text-muted —
                 %td
-                  %div{
-                    class: goals_health_row_bucket_alert_class(row, :associated),
-                    "data-bs-toggle" => "popover",
-                    "data-bs-trigger" => "hover focus",
-                    "data-bs-placement" => "auto",
-                    "data-bs-html" => "true",
-                    "data-bs-title" => goals_health_cell_popover_title("Top-level & associated"),
-                    "data-bs-content" => goals_health_cell_popover_content(row[:associated_goals])
-                  }
-                    %strong= goals_health_status_copy(row[:associated][:status])
-                    %span.ms-2
-                      Draft: #{row[:associated][:draft]}
-                      |
-                      Active: #{row[:associated][:active]}
-                      |
-                      Completed: #{row[:associated][:completed]}
-                %td
-                  %div{
-                    class: goals_health_row_bucket_alert_class(row, :unassociated),
-                    "data-bs-toggle" => "popover",
-                    "data-bs-trigger" => "hover focus",
-                    "data-bs-placement" => "auto",
-                    "data-bs-html" => "true",
-                    "data-bs-title" => goals_health_cell_popover_title("Top-level & unassociated"),
-                    "data-bs-content" => goals_health_cell_popover_content(row[:unassociated_goals])
-                  }
-                    %strong= goals_health_status_copy(row[:unassociated][:status])
-                    %span.ms-2
-                      Draft: #{row[:unassociated][:draft]}
-                      |
-                      Active: #{row[:unassociated][:active]}
-                      |
-                      Completed: #{row[:unassociated][:completed]}
-                %td
-                  %div{
-                    class: goals_health_row_bucket_alert_class(row, :child),
-                    "data-bs-toggle" => "popover",
-                    "data-bs-trigger" => "hover focus",
-                    "data-bs-placement" => "auto",
-                    "data-bs-html" => "true",
-                    "data-bs-title" => goals_health_cell_popover_title("Child-goals"),
-                    "data-bs-content" => goals_health_cell_popover_content(row[:child_goals])
-                  }
-                    %strong= goals_health_status_copy(row[:child][:status])
-                    %span.ms-2
-                      Draft: #{row[:child][:draft]}
-                      |
-                      Active: #{row[:child][:active]}
-                      |
-                      Completed: #{row[:child][:completed]}
+                  .row.g-2.align-items-start
+                    .col-3
+                      .text-center.py-1
+                        %i.bi.fs-3{class: goals_health_status_icon_class(row[:status])}
+                        %div.fw-semibold.small.mt-1= goals_health_status_copy(row[:status])
+                    .col-6
+                      - EngagementHealth::STATUSES.each do |eh_status|
+                        - counts = row[:status_lines][eh_status]
+                        .small.mb-1{class: goals_health_status_line_text_class(eh_status)}
+                          %strong= goals_health_status_line_label(eh_status)
+                          %span.text-muted
+                            Active: #{counts[:active]}
+                            |
+                            Completed: #{counts[:completed]}
+                            - if eh_status == EngagementHealth::NEEDS_ATTENTION
+                              |
+                              Drafts: #{counts[:draft]}
+                    .col-3
+                      .small= goals_health_attachment_html(row)
       .d-flex.justify-content-center.mt-4
         - if @pagy.pages > 1
           = raw pagy_nav(@pagy)

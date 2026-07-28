@@ -3,8 +3,8 @@
 module ManagersViewHelper
   GOALS_AXIS_STATUS_COPY = {
     healthy: "Healthy",
-    ok: "Need update",
-    concerning: "Need attention"
+    ok: "Warning",
+    concerning: "Needs Attention"
   }.freeze
 
   OGO_AXIS_STATUS_COPY = {

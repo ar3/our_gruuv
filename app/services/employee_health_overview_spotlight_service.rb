@@ -74,7 +74,7 @@ class EmployeeHealthOverviewSpotlightService
     return nil unless organization_policy.goals_health?
 
     {
-      stats: goals_filtering.rows_and_spotlight_for(filter).fetch(:spotlight_stats)
+      stats: goals_filtering.compact_spotlight_stats(filter)
     }
   end
 

@@ -1,0 +1,37 @@
+-# locals: organization, current, manager_id (optional), other_actions (Array of action hashes)
+-# action: { label:, path:, icon: (optional), method: :get|:post (optional), html: (optional escape hatch) }
+- other_actions = Array(local_assigns[:other_actions])
+- pages = health_dashboard_switcher_pages(organization, manager_id: manager_id)
+
+.health-dashboard-toolbar.d-flex.flex-wrap.justify-content-between.align-items-start.gap-3.mb-3
+  .health-dashboard-toolbar__switcher
+    - if pages.size > 1
+      .btn-group{role: "group", "aria-label" => "Health dashboards"}
+        - pages.each do |page|
+          = link_to page[:path], class: health_dashboard_switcher_button_class(page[:key], current) do
+            %i.bi{class: "#{page[:icon]} me-1"}
+            = page[:label]
+  - if other_actions.any?
+    .health-dashboard-toolbar__other-actions
+      .health-dashboard-other-actions
+        .health-dashboard-other-actions__label Other actions
+        .row.row-cols-1.row-cols-sm-2.g-1
+          - other_actions.each do |action|
+            .col
+              - if action[:html].present?
+                = action[:html]
+              - elsif action[:method].to_s.downcase == "post"
+                = button_to action[:path], method: :post, class: "btn btn-link btn-sm text-decoration-none text-body-secondary p-0 text-start", form: { class: "d-inline" }, disabled: action[:disabled] do
+                  - if action[:icon].present?
+                    %i.bi{class: "#{action[:icon]} me-1"}
+                  = action[:label]
+              - elsif action[:disabled]
+                %span.small.text-muted{title: action[:title], "data-bs-toggle" => ("tooltip" if action[:title].present?), "data-bs-placement" => "top"}
+                  - if action[:icon].present?
+                    %i.bi{class: "#{action[:icon]} me-1"}
+                  = action[:label]
+              - else
+                = link_to action[:path], class: "small text-decoration-none text-body-secondary", title: action[:title] do
+                  - if action[:icon].present?
+                    %i.bi{class: "#{action[:icon]} me-1"}
+                  = action[:label]

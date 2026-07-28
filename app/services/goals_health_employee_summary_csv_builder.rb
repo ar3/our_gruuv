@@ -3,9 +3,12 @@
 require "csv"
 
 class GoalsHealthEmployeeSummaryCsvBuilder
-  def initialize(visible_goals_by_teammate, bucket_lookup: nil)
+  HEALTHY_DAYS = EngagementHealth::Thresholds::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS
+  COMPLETED_WINDOW_DAYS = EngagementHealth::Thresholds::COMPLETED_GOAL_WINDOW_DAYS
+
+  def initialize(visible_goals_by_teammate, organization: nil)
     @visible_goals_by_teammate = visible_goals_by_teammate
-    @bucket_lookup = bucket_lookup
+    @organization = organization
   end
 
   def call
@@ -17,7 +20,7 @@ class GoalsHealthEmployeeSummaryCsvBuilder
 
   private
 
-  attr_reader :visible_goals_by_teammate, :bucket_lookup
+  attr_reader :visible_goals_by_teammate, :organization
 
   def headers
     [
@@ -25,90 +28,76 @@ class GoalsHealthEmployeeSummaryCsvBuilder
       "Employee Email",
       "Manager Name",
       "Manager Email",
-      "Overall Status",
-      "Top-level & associated Status",
-      "Top-level & associated Draft Count",
-      "Top-level & associated Active (no recent check-in) Count",
-      "Top-level & associated Active (recent check-in) Count",
-      "Top-level & associated Completed in last 90 days Count",
-      "Top-level & associated Completed more than 90 days ago Count",
-      "Top-level & unassociated Status",
-      "Top-level & unassociated Draft Count",
-      "Top-level & unassociated Active (no recent check-in) Count",
-      "Top-level & unassociated Active (recent check-in) Count",
-      "Top-level & unassociated Completed in last 90 days Count",
-      "Top-level & unassociated Completed more than 90 days ago Count",
-      "Child-goals Status",
-      "Child-goals Draft Count",
-      "Child-goals Active (no recent check-in) Count",
-      "Child-goals Active (recent check-in) Count",
-      "Child-goals Completed in last 90 days Count",
-      "Child-goals Completed more than 90 days ago Count"
+      "Goal Confidence Status",
+      "Draft Count",
+      "Active Count",
+      "Active (Healthy) Count",
+      "Active (not Healthy) Count",
+      "Completed Count",
+      "Completed in last #{COMPLETED_WINDOW_DAYS} days Count",
+      "Completed more than #{COMPLETED_WINDOW_DAYS} days ago Count",
+      "In-scope Goal Count"
     ]
   end
 
   def rows
-    lookup = bucket_lookup || Goals::HealthGoalBucketLookup.load_for_goal_ids(visible_goals_by_teammate.values.flatten.map(&:id))
+    org = organization || visible_goals_by_teammate.keys.first&.organization
+    records_by_teammate_id = if org
+      GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+        organization: org,
+        teammate_ids: visible_goals_by_teammate.keys.map(&:id)
+      )
+    else
+      {}
+    end
+
     visible_goals_by_teammate.map do |teammate, goals|
       manager = Goals::HealthManagerPerson.for(teammate)
-      buckets = bucketed_counts(goals, lookup)
+      records = records_by_teammate_id[teammate.id] || []
+      counts = goal_counts(goals)
       [
         teammate.person&.display_name.to_s,
         teammate.person&.email.to_s,
         manager&.display_name.to_s,
         manager&.email.to_s,
-        Goals::HealthStatusCalculator.call(goals).to_s,
-        buckets[:associated][:status].to_s,
-        buckets[:associated][:draft],
-        buckets[:associated][:active_no_recent_check_in],
-        buckets[:associated][:active_recent_check_in],
-        buckets[:associated][:completed_recent],
-        buckets[:associated][:completed_older],
-        buckets[:unassociated][:status].to_s,
-        buckets[:unassociated][:draft],
-        buckets[:unassociated][:active_no_recent_check_in],
-        buckets[:unassociated][:active_recent_check_in],
-        buckets[:unassociated][:completed_recent],
-        buckets[:unassociated][:completed_older],
-        buckets[:child][:status].to_s,
-        buckets[:child][:draft],
-        buckets[:child][:active_no_recent_check_in],
-        buckets[:child][:active_recent_check_in],
-        buckets[:child][:completed_recent],
-        buckets[:child][:completed_older]
+        status_label(GoalsHealthEngagementHealthSupport.category_status(records)),
+        counts[:draft],
+        counts[:active],
+        counts[:active_healthy],
+        counts[:active_not_healthy],
+        counts[:completed],
+        counts[:completed_recent],
+        counts[:completed_older],
+        GoalsHealthEngagementHealthSupport.items_for(records).size
       ]
     end
   end
 
-  def bucketed_counts(goals, lookup)
-    buckets = lookup.partition(goals)
-    {
-      associated: status_and_counts(buckets[:associated]),
-      unassociated: status_and_counts(buckets[:unassociated]),
-      child: status_and_counts(buckets[:child])
-    }
-  end
-
-  def status_and_counts(goals)
-    active_cutoff_week = Goals::HealthThresholds.check_in_recency_cutoff_week_start
-    completed_cutoff = Goals::HealthThresholds.completed_recently_cutoff
+  def goal_counts(goals)
+    healthy_cutoff = HEALTHY_DAYS.days.ago
+    completed_cutoff = COMPLETED_WINDOW_DAYS.days.ago
     active_goals = goals.select { |goal| goal.completed_at.nil? && goal.started_at.present? }
-    active_recent = active_goals.count { |goal| active_goal_has_recent_check_in?(goal, active_cutoff_week) }
+    active_healthy = active_goals.count { |goal| active_goal_healthy?(goal, healthy_cutoff) }
     completed_goals = goals.select { |goal| goal.completed_at.present? }
     completed_recent = completed_goals.count { |goal| goal.completed_at && goal.completed_at >= completed_cutoff }
 
     {
-      status: Goals::HealthStatusCalculator.call(goals),
       draft: goals.count { |goal| goal.completed_at.nil? && goal.started_at.nil? },
-      active_no_recent_check_in: active_goals.count - active_recent,
-      active_recent_check_in: active_recent,
+      active: active_goals.count,
+      active_healthy: active_healthy,
+      active_not_healthy: active_goals.count - active_healthy,
+      completed: completed_goals.count,
       completed_recent: completed_recent,
       completed_older: completed_goals.count - completed_recent
     }
   end
 
-  def active_goal_has_recent_check_in?(goal, cutoff_week)
-    latest_check_in = goal.goal_check_ins.max_by(&:check_in_week_start)
-    latest_check_in&.check_in_week_start.present? && latest_check_in.check_in_week_start >= cutoff_week
+  def active_goal_healthy?(goal, healthy_cutoff)
+    latest_check_in = goal.goal_check_ins.max_by(&:updated_at)
+    latest_check_in&.updated_at.present? && latest_check_in.updated_at >= healthy_cutoff
+  end
+
+  def status_label(status)
+    EngagementHealth::STATUS_LABELS.fetch(status.to_s) { status.to_s }
   end
 end

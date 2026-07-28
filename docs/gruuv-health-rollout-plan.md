@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0–2 done for health dashboards on EH for clarity + OGO Given/Received. Phase 1.1–1.5 scorecard done. Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.6 confirm / 1.7; Phase 8 teammate OGO cards. **Next:** approval gate — then Phase 4 (Goals Health) recommended.
+**Status:** Phase 0–2 + Phase 4 done (Observations + Goals Health on EH). Phase 1.1–1.5 scorecard done. Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.6/1.7; Phase 8 teammate OGO cards; Complete Picture / My Goals still on legacy goal health. **Next:** approval gate — then Phase 5 (Milestones Health) recommended.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -27,7 +27,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | 1 | OG Scorecard | 🔄 In progress (1.1–1.5 done) |
 | 2 | Observations Health | ✅ Done (teammate OGO cards → Phase 8) |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
-| 4 | Goals Health | ⬜ |
+| 4 | Goals Health | ✅ Done |
 | 5 | Milestones Health (+ migrate check-ins milestone bars) | ⬜ |
 | 6 | Check-ins Health (remainder) | 🔄 Style 2 + `CheckInHealthService` removed |
 | 7 | Insights pages | ⬜ — dept `% healthy` still item-healthy math |
@@ -180,15 +180,21 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 ---
 
-## Phase 4 — Goals Health dashboard
+## Phase 4 — Goals Health dashboard ✅
 
-- [ ] Per-teammate rollup from EH `goal_confidence` category
-- [ ] Replace 14-day week logic in `Goals::HealthStatusCalculator` for dashboard display
-- [ ] `GoalsHealthSpotlightService` + compact partial aligned
-- [ ] CSV exports updated
-- [ ] `ManagersViewCardDataService` goals axis uses EH
+- [x] Per-teammate rollup from EH `goal_confidence` category
+- [x] Replace 14-day week logic in `Goals::HealthStatusCalculator` for dashboard display
+- [x] `GoalsHealthSpotlightService` + compact partial aligned; Goals Health page uses full-width Start Here component (`variant: :full`)
+- [x] CSV exports updated (`GoalsHealthEmployeeSummaryCsvBuilder`)
+- [x] `ManagersViewCardDataService` goals axis uses EH
+- [x] Collapsed associated/unassociated/child columns into one **Goal Confidence** column (status + draft/active/completed/in-scope counts)
+- [x] Zero / no in-scope goals → Needs Attention (EH category rollup; completed within 90d still in-scope)
 
-**Retire when done:** `Goals::HealthStatusCalculator` / `Goals::HealthThresholds` for dashboard paths (keep goal on/off track pills on goal pages — different concept)
+**Keep separate (not EH):** goal on/off track pills on goal pages — different concept
+
+**Still on legacy calculator (follow-ups, not Phase 4):** Complete Picture spotlight; Start Here My Goals 14-day counts
+
+**Retire when done:** `Goals::HealthStatusCalculator` / `Goals::HealthThresholds` for dashboard paths — still used by Complete Picture / My Goals until those migrate
 
 **Gate:** Approval before Phase 5.
 

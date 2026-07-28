@@ -1,11 +1,21 @@
+# frozen_string_literal: true
+
 module GoalsHealthHelper
   STATUS_COPY = {
     healthy: "Healthy",
-    ok: "Ok",
-    concerning: "Needs attention"
+    ok: "Warning",
+    concerning: "Needs Attention"
   }.freeze
 
-  BUCKET_KEYS = %i[associated unassociated child].freeze
+  STATUS_ICON = {
+    healthy: "bi-check-circle-fill text-success",
+    ok: "bi-exclamation-circle-fill text-warning",
+    concerning: "bi-x-circle-fill text-danger"
+  }.freeze
+
+  GOAL_CONFIDENCE_HEALTHY_DAYS = EngagementHealth::Thresholds::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS
+  GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS = EngagementHealth::Thresholds::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS
+  COMPLETED_GOAL_WINDOW_DAYS = EngagementHealth::Thresholds::COMPLETED_GOAL_WINDOW_DAYS
 
   def goals_health_alert_class(status)
     case status
@@ -18,21 +28,6 @@ module GoalsHealthHelper
     end
   end
 
-  # When any goal bucket for the row is healthy, non-healthy buckets use info (not warning/danger)
-  # so the row reads as "overall on track" with neutral detail for other groupings.
-  def goals_health_row_bucket_alert_class(row, bucket_key)
-    any_healthy = BUCKET_KEYS.any? { |k| row[k][:status] == :healthy }
-    status = row[bucket_key][:status]
-
-    if any_healthy
-      return goals_health_alert_class(:healthy) if status == :healthy
-
-      "alert alert-info mb-0 py-2"
-    else
-      goals_health_alert_class(status)
-    end
-  end
-
   def goals_health_filter_label(value)
     option = @available_manager_filter_options.find { |(_label, option_value)| option_value.to_s == value.to_s }
     option ? option.first : "Unknown filter"
@@ -42,80 +37,76 @@ module GoalsHealthHelper
     STATUS_COPY[status.to_sym] || status.to_s.humanize
   end
 
+  def goals_health_status_icon_class(status)
+    STATUS_ICON[status.to_sym] || "bi-question-circle text-muted"
+  end
+
   def goals_health_definition_lines
     [
-      "Healthy — Completed a goal in the last #{Goals::HealthThresholds::COMPLETED_RECENTLY_DAYS} days, or every active goal has a check-in in the last #{Goals::HealthThresholds::CHECK_IN_RECENCY_DAYS} days.",
-      "Ok — Has active goals, but not every active goal has a recent check-in.",
-      "Needs attention — No active goals and no goal completed in the last #{Goals::HealthThresholds::COMPLETED_RECENTLY_DAYS} days."
+      "Goal Confidence uses Gruuv Health (same rules as 1:1 Hub Overview).",
+      "Scored goals: active goals plus goals completed in the last #{COMPLETED_GOAL_WINDOW_DAYS} days (drafts are not scored).",
+      "Healthy — checked within #{GOAL_CONFIDENCE_HEALTHY_DAYS} days. Warning — #{GOAL_CONFIDENCE_HEALTHY_DAYS + 1}–#{GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS - 1} days. Needs Attention — ≥ #{GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS} days, never, or no scored goals."
     ]
   end
 
-  def goals_health_cell_popover_title(label)
-    "#{label} by privacy"
+  def goals_health_status_line_label(eh_status)
+    EngagementHealth::STATUS_LABELS.fetch(eh_status)
   end
 
-  def goals_health_cell_popover_content(goals)
-    header = content_tag(:thead) do
-      content_tag(:tr) do
-        content_tag(:th, "Privacy") +
-          content_tag(:th, "Draft", class: "text-end") +
-          content_tag(:th, "Active", class: "text-end") +
-          content_tag(:th, class: "text-end") do
-            content_tag(:i, "", class: "bi bi-trophy")
-          end
+  def goals_health_status_line_text_class(eh_status)
+    case eh_status
+    when EngagementHealth::HEALTHY then "text-success"
+    when EngagementHealth::WARNING then "text-warning"
+    else "text-danger"
+    end
+  end
+
+  def goals_health_attachment_html(row)
+    entry = row[:attachments]
+    teammate = row[:teammate]
+    parts = []
+
+    if entry.active_with_attachments_count.zero?
+      parts << content_tag(:div, "No active goals are attached to assignments, abilities, values, or prompts.")
+    else
+      attached_bits = entry.type_groups.map { |group| goals_health_type_group_html(group, teammate) }
+      prefix = "#{entry.active_with_attachments_count} #{'active goal'.pluralize(entry.active_with_attachments_count)} attached to"
+      parts << content_tag(:div) do
+        safe_join([prefix, ": ", safe_join(attached_bits, ", "), "."])
       end
     end
 
-    body = content_tag(:tbody) do
-      goals_health_popover_privacy_groups.map do |row|
-        counts = goals_health_counts_for_privacy_levels(goals, row[:privacy_levels])
-        content_tag(:tr) do
-          content_tag(:td, row[:label]) +
-            content_tag(:td, counts[:draft].to_s, class: "text-end") +
-            content_tag(:td, "#{counts[:active_healthy]} of #{counts[:active_total]}", class: "text-end") +
-            content_tag(:td, "#{counts[:completed_recent]} of #{counts[:completed_total]}", class: "text-end")
-        end
-      end.join.html_safe
+    if entry.active_child_count.positive?
+      parts << content_tag(:div) do
+        "#{entry.active_child_count} #{'active goal'.pluralize(entry.active_child_count)} #{entry.active_child_count == 1 ? 'is a' : 'are'} child #{'goal'.pluralize(entry.active_child_count)}."
+      end
     end
 
-    caption = content_tag(:caption, class: "text-muted small mt-2") do
-      content_tag(:div, "Active = [w/ recent check-ins] of [active]") +
-        content_tag(:div) do
-          "#{content_tag(:i, '', class: 'bi bi-trophy')} = [#{content_tag(:i, '', class: 'bi bi-check-circle-fill')} in last #{Goals::HealthThresholds::COMPLETED_RECENTLY_DAYS}] of [completed]".html_safe
-        end
+    safe_join(parts)
+  end
+
+  def goals_health_type_group_html(group, teammate)
+    if group.sole
+      link_to(
+        group.sole.name,
+        goals_health_associable_path(teammate, group.sole),
+        class: "text-decoration-none"
+      )
+    else
+      "#{group.count} #{group.plural_label}"
     end
-
-    content_tag(:table, header + body + caption, class: "table table-sm mb-0")
   end
 
-  def goals_health_popover_privacy_groups
-    [
-      { label: "Private", privacy_levels: %w[only_creator only_creator_and_owner] },
-      { label: "Shared w/ Mgrs", privacy_levels: %w[only_creator_owner_and_managers] },
-      { label: "Public", privacy_levels: %w[everyone_in_company] }
-    ]
-  end
-
-  def goals_health_counts_for_privacy_levels(goals, privacy_levels)
-    levels = Array(privacy_levels).map(&:to_s)
-    privacy_goals = goals.select { |goal| levels.include?(goal.privacy_level.to_s) }
-    active_cutoff_week = Goals::HealthThresholds.check_in_recency_cutoff_week_start
-    completed_cutoff = Goals::HealthThresholds.completed_recently_cutoff
-
-    active_goals = privacy_goals.select { |goal| goal.started_at.present? && goal.completed_at.nil? }
-    completed_goals = privacy_goals.select { |goal| goal.completed_at.present? }
-
-    {
-      draft: privacy_goals.count { |goal| goal.started_at.nil? && goal.completed_at.nil? },
-      active_healthy: active_goals.count { |goal| goals_health_active_recent?(goal, active_cutoff_week) },
-      active_total: active_goals.count,
-      completed_recent: completed_goals.count { |goal| goal.completed_at && goal.completed_at >= completed_cutoff },
-      completed_total: completed_goals.count
-    }
-  end
-
-  def goals_health_active_recent?(goal, cutoff_week)
-    latest_check_in = goal.goal_check_ins.max_by(&:check_in_week_start)
-    latest_check_in&.check_in_week_start.present? && latest_check_in.check_in_week_start >= cutoff_week
+  def goals_health_associable_path(teammate, sole)
+    case sole.associable_type
+    when "Assignment"
+      organization_teammate_assignment_path(@organization, teammate, sole.id)
+    when "Ability"
+      organization_teammate_ability_path(@organization, teammate, sole.id)
+    when "Aspiration"
+      organization_teammate_aspiration_path(@organization, teammate, sole.id)
+    when "Prompt"
+      edit_organization_prompt_path(@organization, sole.id)
+    end
   end
 end

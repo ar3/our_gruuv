@@ -32,8 +32,10 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     apply_filter_default_if_needed
     teammates = goals_health_spotlight_service.filtered_teammates(params[:manager_id]).to_a
     aggregate_goals_by_teammate = goals_health_spotlight_service.build_aggregate_goals_by_teammate(teammates)
-    bucket_lookup = Goals::HealthGoalBucketLookup.load_for_goal_ids(aggregate_goals_by_teammate.values.flatten.map(&:id))
-    csv_content = GoalsHealthEmployeeSummaryCsvBuilder.new(aggregate_goals_by_teammate, bucket_lookup: bucket_lookup).call
+    csv_content = GoalsHealthEmployeeSummaryCsvBuilder.new(
+      aggregate_goals_by_teammate,
+      organization: @organization
+    ).call
     filename = "employee_goals_summary_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     send_data csv_content, filename: filename, type: "text/csv", disposition: "attachment"
   end

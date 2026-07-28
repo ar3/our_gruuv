@@ -60,10 +60,33 @@ class GoalsHealthSpotlightService
   def rows_and_spotlight_for(manager_id)
     teammates = filtered_teammates(manager_id).to_a
     aggregate = build_aggregate_goals_by_teammate(teammates)
-    all_goal_ids = aggregate.values.flatten.map(&:id)
-    bucket_lookup = Goals::HealthGoalBucketLookup.load_for_goal_ids(all_goal_ids)
-    rows = teammates.map { |tm| row_for(tm, aggregate[tm] || [], bucket_lookup) }
+    all_goals = aggregate.values.flatten
+    engagement_health_by_teammate_id = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: organization,
+      teammate_ids: teammates.map(&:id)
+    )
+    attachment_facts = GoalsHealthAttachmentLookup.load_for_goals(all_goals)
+
+    rows = teammates.map do |tm|
+      row_for(
+        tm,
+        aggregate[tm] || [],
+        engagement_health_by_teammate_id[tm.id] || [],
+        attachment_facts
+      )
+    end
     { rows: rows, spotlight_stats: spotlight_stats(rows) }
+  end
+
+  # Three-tier counts for Start Here / full-page compact component (ok_count = Warning).
+  def compact_spotlight_stats(manager_id)
+    stats = rows_and_spotlight_for(manager_id)[:spotlight_stats]
+    {
+      total_employees: stats[:total_employees],
+      healthy_count: stats[:healthy_count],
+      ok_count: stats[:warning_count],
+      concerning_count: stats[:needs_attention_count]
+    }
   end
 
   def available_manager_filter_options
@@ -79,44 +102,60 @@ class GoalsHealthSpotlightService
 
   private
 
-  def row_for(teammate, goals, bucket_lookup)
-    buckets = bucket_lookup.partition(goals)
+  def row_for(teammate, goals, records, attachment_facts)
+    category = GoalsHealthEngagementHealthSupport.category_rollup(records)
+    eh_status = GoalsHealthEngagementHealthSupport.category_status(records)
+    overall_status = GoalsHealthEngagementHealthSupport.spotlight_symbol(eh_status)
+    items = GoalsHealthEngagementHealthSupport.items_for(records)
+    active_goals = goals.select { |goal| goal.completed_at.nil? && goal.started_at.present? }
+
     {
       teammate: teammate,
       person: teammate.person,
       manager: Goals::HealthManagerPerson.for(teammate),
       manager_teammate: Goals::HealthManagerPerson.manager_teammate_for(teammate),
-      status: Goals::HealthStatusCalculator.call(goals),
-      associated_goals: buckets[:associated],
-      unassociated_goals: buckets[:unassociated],
-      child_goals: buckets[:child],
-      associated: status_and_counts(buckets[:associated]),
-      unassociated: status_and_counts(buckets[:unassociated]),
-      child: status_and_counts(buckets[:child])
+      status: overall_status,
+      eh_status: eh_status,
+      goals: goals,
+      engagement_health_records: records,
+      empty_reason: category&.inputs&.dig("empty_reason"),
+      status_lines: status_lines_from_items(items, goals),
+      attachments: GoalsHealthAttachmentLookup.entry_for_active_goals(active_goals, attachment_facts)
     }
   end
 
-  def status_and_counts(goals)
-    {
-      status: Goals::HealthStatusCalculator.call(goals),
-      draft: goals.count { |goal| goal.completed_at.nil? && goal.started_at.nil? },
-      active: goals.count { |goal| goal.completed_at.nil? && goal.started_at.present? },
-      completed: goals.count { |goal| goal.completed_at.present? }
-    }
+  def status_lines_from_items(items, goals)
+    base = EngagementHealth::STATUSES.index_with { { active: 0, completed: 0, draft: 0 } }
+    items.each do |item|
+      status = item.status
+      next unless base.key?(status)
+
+      if item.inputs["goal_state"].to_s == "completed"
+        base[status][:completed] += 1
+      else
+        base[status][:active] += 1
+      end
+    end
+
+    draft_count = Array(goals).count { |goal| goal.completed_at.nil? && goal.started_at.nil? }
+    base[EngagementHealth::NEEDS_ATTENTION][:draft] = draft_count
+    base
   end
 
   def spotlight_stats(rows)
     total_employees = rows.count
     healthy_count = rows.count { |row| row[:status] == :healthy }
-    ok_count = rows.count { |row| row[:status] == :ok }
-    concerning_count = rows.count { |row| row[:status] == :concerning }
-    concerning_pct = total_employees.positive? ? ((concerning_count.to_f / total_employees) * 100).round(1) : 0.0
+    warning_count = rows.count { |row| row[:status] == :ok }
+    needs_attention_count = rows.count { |row| row[:status] == :concerning }
+    concerning_pct = total_employees.positive? ? ((needs_attention_count.to_f / total_employees) * 100).round(1) : 0.0
 
     {
       total_employees: total_employees,
       healthy_count: healthy_count,
-      ok_count: ok_count,
-      concerning_count: concerning_count,
+      warning_count: warning_count,
+      needs_attention_count: needs_attention_count,
+      ok_count: warning_count,
+      concerning_count: needs_attention_count,
       concerning_pct: concerning_pct
     }
   end
