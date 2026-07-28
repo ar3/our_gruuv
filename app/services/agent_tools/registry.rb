@@ -104,6 +104,15 @@ module AgentTools
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
     }.freeze
 
+    TITLES = {
+      "list_teammates" => "List teammates",
+      "list_goals" => "List goals",
+      "list_observations" => "List observations",
+      "search_organization" => "Search organization",
+      "create_draft_observation" => "Create draft observation",
+      "set_current_week_goal_confidence" => "Set current-week goal confidence"
+    }.freeze
+
     module_function
 
     def tool_names
@@ -131,6 +140,10 @@ module AgentTools
 
     def description_for(name)
       DESCRIPTIONS[name.to_s]
+    end
+
+    def title_for(name)
+      TITLES[name.to_s]
     end
 
     def input_schema_for(name)

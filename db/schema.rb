@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_28_121500) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_28_124500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -931,6 +931,78 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_121500) do
     t.index ["person_id"], name: "index_mcp_access_tokens_on_person_id"
     t.index ["revoked_at"], name: "index_mcp_access_tokens_on_revoked_at"
     t.index ["token_digest"], name: "index_mcp_access_tokens_on_token_digest", unique: true
+  end
+
+  create_table "mcp_oauth_access_tokens", force: :cascade do |t|
+    t.string "token_digest", null: false
+    t.bigint "mcp_oauth_client_id", null: false
+    t.bigint "person_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.string "scope", default: "mcp", null: false
+    t.string "resource"
+    t.datetime "expires_at", null: false
+    t.datetime "revoked_at"
+    t.datetime "last_used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_mcp_oauth_access_tokens_on_company_teammate_id"
+    t.index ["mcp_oauth_client_id"], name: "index_mcp_oauth_access_tokens_on_mcp_oauth_client_id"
+    t.index ["person_id"], name: "index_mcp_oauth_access_tokens_on_person_id"
+    t.index ["token_digest"], name: "index_mcp_oauth_access_tokens_on_token_digest", unique: true
+  end
+
+  create_table "mcp_oauth_authorization_codes", force: :cascade do |t|
+    t.string "code_digest", null: false
+    t.bigint "mcp_oauth_client_id", null: false
+    t.bigint "person_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.string "redirect_uri", null: false
+    t.string "code_challenge", null: false
+    t.string "code_challenge_method", default: "S256", null: false
+    t.string "scope", default: "mcp", null: false
+    t.string "resource"
+    t.datetime "expires_at", null: false
+    t.datetime "consumed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code_digest"], name: "index_mcp_oauth_authorization_codes_on_code_digest", unique: true
+    t.index ["company_teammate_id"], name: "index_mcp_oauth_authorization_codes_on_company_teammate_id"
+    t.index ["mcp_oauth_client_id"], name: "index_mcp_oauth_authorization_codes_on_mcp_oauth_client_id"
+    t.index ["person_id"], name: "index_mcp_oauth_authorization_codes_on_person_id"
+  end
+
+  create_table "mcp_oauth_clients", force: :cascade do |t|
+    t.string "client_id", null: false
+    t.string "client_name"
+    t.jsonb "redirect_uris", default: [], null: false
+    t.string "token_endpoint_auth_method", default: "none", null: false
+    t.jsonb "grant_types", default: [], null: false
+    t.jsonb "response_types", default: [], null: false
+    t.string "client_uri"
+    t.string "logo_uri"
+    t.string "registration_source", default: "dcr", null: false
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["client_id"], name: "index_mcp_oauth_clients_on_client_id", unique: true
+  end
+
+  create_table "mcp_oauth_refresh_tokens", force: :cascade do |t|
+    t.string "token_digest", null: false
+    t.bigint "mcp_oauth_client_id", null: false
+    t.bigint "person_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.string "scope", default: "mcp offline_access", null: false
+    t.string "resource"
+    t.datetime "expires_at"
+    t.datetime "revoked_at"
+    t.datetime "rotated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_mcp_oauth_refresh_tokens_on_company_teammate_id"
+    t.index ["mcp_oauth_client_id"], name: "index_mcp_oauth_refresh_tokens_on_mcp_oauth_client_id"
+    t.index ["person_id"], name: "index_mcp_oauth_refresh_tokens_on_person_id"
+    t.index ["token_digest"], name: "index_mcp_oauth_refresh_tokens_on_token_digest", unique: true
   end
 
   create_table "missing_resource_requests", force: :cascade do |t|
@@ -1981,6 +2053,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_121500) do
   add_foreign_key "maap_snapshots", "teammates", column: "employee_company_teammate_id"
   add_foreign_key "mcp_access_tokens", "people"
   add_foreign_key "mcp_access_tokens", "teammates", column: "company_teammate_id"
+  add_foreign_key "mcp_oauth_access_tokens", "mcp_oauth_clients"
+  add_foreign_key "mcp_oauth_access_tokens", "people"
+  add_foreign_key "mcp_oauth_access_tokens", "teammates", column: "company_teammate_id"
+  add_foreign_key "mcp_oauth_authorization_codes", "mcp_oauth_clients"
+  add_foreign_key "mcp_oauth_authorization_codes", "people"
+  add_foreign_key "mcp_oauth_authorization_codes", "teammates", column: "company_teammate_id"
+  add_foreign_key "mcp_oauth_refresh_tokens", "mcp_oauth_clients"
+  add_foreign_key "mcp_oauth_refresh_tokens", "people"
+  add_foreign_key "mcp_oauth_refresh_tokens", "teammates", column: "company_teammate_id"
   add_foreign_key "missing_resource_requests", "missing_resources"
   add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"

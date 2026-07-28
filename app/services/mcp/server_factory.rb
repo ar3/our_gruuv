@@ -44,6 +44,7 @@ module Mcp
 
       MCP::Tool.define(
         name: name,
+        title: AgentTools::Registry.title_for(name) || name,
         description: description,
         input_schema: schema,
         annotations: {

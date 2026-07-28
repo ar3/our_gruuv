@@ -39,7 +39,22 @@ Rails.application.routes.draw do
     post 'companies/teams', to: 'companies#teams'
   end
 
-  # MCP (Model Context Protocol) — AgentTools over Streamable HTTP. Auth: Bearer McpAccessToken.
+  # MCP OAuth 2.1 discovery (RFC 9728 / RFC 8414)
+  get "/.well-known/oauth-protected-resource", to: "well_known#oauth_protected_resource"
+  get "/.well-known/oauth-protected-resource/mcp", to: "well_known#oauth_protected_resource_mcp"
+  get "/.well-known/oauth-authorization-server", to: "well_known#oauth_authorization_server"
+
+  # MCP OAuth endpoints (authorization code + PKCE, DCR, token)
+  namespace :oauth do
+    namespace :mcp do
+      get "authorize", to: "authorizations#new"
+      post "authorize", to: "authorizations#create"
+      post "token", to: "tokens#create"
+      post "register", to: "registrations#create"
+    end
+  end
+
+  # MCP (Model Context Protocol) — AgentTools over Streamable HTTP.
   match "/mcp", to: "mcp#handle", via: [:get, :post, :delete], as: :mcp
   
   # Integration routes

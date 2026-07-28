@@ -2,6 +2,7 @@
 
 module Mcp
   # Resolves Authorization: Bearer <token> → AgentTools::Context.
+  # Accepts OAuth access tokens (ogoat_…) and personal MCP tokens (ogmcp_…).
   class Authenticate
     Result = Data.define(:ok?, :context, :token, :error)
 
@@ -17,19 +18,18 @@ module Mcp
       raw = extract_bearer
       return failure("Missing Bearer token") if raw.blank?
 
-      token = McpAccessToken.authenticate(raw)
-      return failure("Invalid or revoked MCP token") if token.nil?
+      record = McpOauthAccessToken.authenticate(raw) || McpAccessToken.authenticate(raw)
+      return failure("Invalid or revoked MCP token") if record.nil?
 
-      teammate = token.company_teammate
+      teammate = record.company_teammate
       return failure("Teammate missing") if teammate.nil?
 
-      organization = teammate.organization
       context = Assistant::ContextBuilder.call(
-        organization: organization,
+        organization: teammate.organization,
         company_teammate: teammate
       )
 
-      Result.new(ok?: true, context: context, token: token, error: nil)
+      Result.new(ok?: true, context: context, token: record, error: nil)
     end
 
     private

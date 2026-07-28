@@ -11,31 +11,13 @@
 
 .alert.alert-light.border.mb-4
   %p.mb-2
-    Connect Claude Desktop (or another MCP client) to OurGruuv using a personal token.
-    Tools run
-    %strong as you
-    in
-    %strong= @organization.name
-    — same permissions as the UI.
-  %p.mb-2.small.text-muted
-    Endpoint:
+    Prefer
+    %strong Claude Connectors with OAuth
+    (no paste): add
     %code= "#{request.base_url}/mcp"
-    · Auth header:
-    %code Authorization: Bearer YOUR_TOKEN
-  %p.mb-1.small.fw-semibold Claude Desktop (HTTP / remote MCP) example
-  %pre.small.bg-light.border.rounded.p-2.mb-0
-    = <<~JSON.strip
-      {
-        "mcpServers": {
-          "ourgruuv": {
-            "url": "#{request.base_url}/mcp",
-            "headers": {
-              "Authorization": "Bearer YOUR_TOKEN"
-            }
-          }
-        }
-      }
-    JSON
+    in Claude Settings → Connectors, then sign in with Google and pick an organization.
+  %p.mb-0.small.text-muted
+    Personal tokens below are a fallback for Claude Code / Desktop bridges that need a Bearer header.
 
 - if @raw_token.present?
   .alert.alert-warning.mb-4
