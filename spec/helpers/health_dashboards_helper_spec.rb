@@ -11,7 +11,13 @@ RSpec.describe HealthDashboardsHelper, type: :helper do
 
   before do
     allow(helper).to receive(:policy).with(organization).and_return(
-      double(check_ins_health?: true, goals_health?: true, observations_health?: true, protect_flow?: true)
+      double(
+        check_ins_health?: true,
+        goals_health?: true,
+        milestones_health?: true,
+        observations_health?: true,
+        protect_flow?: true
+      )
     )
   end
 
@@ -22,11 +28,19 @@ RSpec.describe HealthDashboardsHelper, type: :helper do
       expect(check_ins[:path]).to eq(organization_check_ins_health_path(organization, manager_id: "just_me"))
       protect_flow = pages.find { |p| p[:key] == :protect_flow }
       expect(protect_flow[:path]).to eq(organization_protect_flow_path(organization, manager_id: "just_me"))
+      milestones = pages.find { |p| p[:key] == :milestones_health }
+      expect(milestones[:path]).to eq(organization_milestones_health_path(organization, manager_id: "just_me"))
     end
 
     it "filters to pages the user can access" do
       allow(helper).to receive(:policy).with(organization).and_return(
-        double(check_ins_health?: true, goals_health?: false, observations_health?: true, protect_flow?: false)
+        double(
+          check_ins_health?: true,
+          goals_health?: false,
+          milestones_health?: false,
+          observations_health?: true,
+          protect_flow?: false
+        )
       )
       keys = helper.health_dashboard_switcher_pages(organization, manager_id: "everyone").map { |p| p[:key] }
       expect(keys).to eq([:check_ins_health, :observations_health])

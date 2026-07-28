@@ -301,6 +301,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Milestones Health',
+            icon: 'bi-heart-pulse',
+            path: organization_milestones_health_path(current_organization),
+            policy_check: -> { policy(current_organization).milestones_health? },
+            coming_soon: false
+          },
+          {
             label: 'Observations Health',
             icon: 'bi-heart-pulse',
             path: organization_observations_health_path(current_organization),

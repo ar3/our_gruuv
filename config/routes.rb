@@ -201,6 +201,10 @@ Rails.application.routes.draw do
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'
+    get :milestones_health, to: 'organizations/milestones_health#index'
+    get :milestones_health_employee_summary_export, to: 'organizations/milestones_health#export_employee_summary'
+    post :milestones_health_refresh, to: 'organizations/milestones_health#refresh', as: :milestones_health_refresh
+    post :milestones_health_refresh_all, to: 'organizations/milestones_health#refresh_all', as: :milestones_health_refresh_all
     get :observations_health, to: 'organizations/observations_health#index'
     get :observations_health_export, to: 'organizations/observations_health#export'
     get :observations_health_employee_summary_export, to: 'organizations/observations_health#export_employee_summary'

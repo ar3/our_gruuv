@@ -24,6 +24,13 @@ module HealthDashboardsHelper
       policy_method: :goals_health?
     },
     {
+      key: :milestones_health,
+      label: "Milestones",
+      icon: "bi-trophy",
+      path_name: :organization_milestones_health_path,
+      policy_method: :milestones_health?
+    },
+    {
       key: :observations_health,
       label: "Observations",
       icon: "bi-eye",
@@ -128,5 +135,26 @@ module HealthDashboardsHelper
       icon: "bi-download"
     }
     actions
+  end
+
+  def milestones_health_other_actions(organization, manager_id:)
+    [
+      {
+        label: "Company Abilities Insights",
+        path: organization_insights_abilities_path(organization),
+        icon: "bi-bar-chart-steps"
+      },
+      {
+        label: "Refresh all in this view",
+        path: organization_milestones_health_refresh_all_path(organization, manager_id: manager_id),
+        icon: "bi-arrow-clockwise",
+        method: :post
+      },
+      {
+        label: "Download employees milestones summary (CSV)",
+        path: organization_milestones_health_employee_summary_export_path(organization, manager_id: manager_id),
+        icon: "bi-download"
+      }
+    ]
   end
 end

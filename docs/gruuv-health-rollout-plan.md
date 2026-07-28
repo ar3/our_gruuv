@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0–2 + Phase 4 done (Observations + Goals Health on EH). Phase 1.1–1.5 scorecard done. Phase 3/6/8 partial. **Open leftovers:** item-healthy % aggregates; Phase 1.6/1.7; Phase 8 teammate OGO cards; Complete Picture / My Goals still on legacy goal health. **Next:** approval gate — then Phase 5 (Milestones Health) recommended.
+**Status:** Phase 0–2, 4–5 done (Observations, Goals, Milestones Health on EH). Phase 1.1–1.5 scorecard done. Phase 3/6/8 partial. **Open leftovers:** item-healthy CSV; Phase 1.6/1.7; Phase 8 teammate OGO cards / Complete Picture / My Goals; Phase 7 Insights polish; Phase 9 cleanup. **Next:** Phase 7 or 9 cleanup after approval.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -28,7 +28,7 @@ Centralize engagement signal status on **Healthy / At Risk / Needs Attention** v
 | 2 | Observations Health | ✅ Done (teammate OGO cards → Phase 8) |
 | 3 | Required clarity / percentage clear | 🔄 In progress (action-slot `% clear` everywhere that used the old component) |
 | 4 | Goals Health | ✅ Done |
-| 5 | Milestones Health (+ migrate check-ins milestone bars) | ⬜ |
+| 5 | Milestones Health (+ migrate check-ins milestone bars) | ✅ Done (check-ins bars N/A) |
 | 6 | Check-ins Health (remainder) | 🔄 Style 2 + `CheckInHealthService` removed |
 | 7 | Insights pages | ⬜ — dept `% healthy` still item-healthy math |
 | 8 | 1:1 system (One Thing, hub next-up, etc.) | ✅ threshold alignment done (all-fresh, hub next-up, One Thing) |
@@ -200,12 +200,12 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 ---
 
-## Phase 5 — Milestones Health page + check-ins milestone bars
+## Phase 5 — Milestones Health page + check-ins milestone bars ✅
 
-- [ ] **New:** Milestones Health dashboard page (mirror Observations/Goals/Check-ins Health pattern)
-- [ ] Per-teammate EH `milestones` category + ability item rows
-- [ ] Migrate check-ins health milestone stacked bars to EH data
-- [ ] Insights Abilities page — keep event counts; link to Milestones Health where appropriate
+- [x] **New:** Milestones Health dashboard page (mirror Goals/Observations/Check-ins Health pattern)
+- [x] Per-teammate EH `milestones` category + ability item rows (status counts + attention list with ability links)
+- [x] Migrate check-ins health milestone stacked bars to EH data — **N/A** (no milestone bars on current Check-ins Health)
+- [x] Insights Abilities page — keep event counts; link to Milestones Health
 
 **Retire when done:** `check_in_health_cache_builder` milestone section (`CheckInHealthService#milestone_health` removed with Style 2)
 
@@ -216,7 +216,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 ## Phase 6 — Check-ins Health (remainder)
 
 - [x] Required clarity section → EH (bars, action slots, spotlight, Start Here widget)
-- [ ] Milestone section → already EH from Phase 5 (verify integrated) — N/A on current Check-ins Health page (no milestone bars)
+- [x] Milestone section → already EH from Phase 5 (verify integrated) — **N/A** on current Check-ins Health page (no milestone bars)
 - [ ] **Keep:** 7-category completion bars (in-progress / acknowledgment — not in EH) — superseded by EH + action bars on dedicated page
 - [x] Legacy employees index `displays/_check_ins_health.html.haml` — **removed** (Style 2)
 - [x] `CheckInHealthService` — **removed** (only consumer was Style 2)
@@ -233,7 +233,7 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [ ] **Check-ins Progress** dept table → EH aggregates (required clarity + milestones)
 - [ ] **Observations Insights** — keep culture ratios (kudos/ratings); not EH
 - [ ] **Goals Insights** charts — link to Goals Health / EH; no duplicate threshold logic
-- [ ] **Abilities Insights** — event-based milestone charts stay; cross-link Milestones Health
+- [x] **Abilities Insights** — event-based milestone charts stay; cross-link Milestones Health
 
 **Gate:** Approval before Phase 8.
 

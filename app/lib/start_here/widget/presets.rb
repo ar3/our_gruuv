@@ -17,6 +17,7 @@ module StartHere
             one_on_one_hub
             insights_check_ins_health
             insights_goals_health
+            insights_milestones_health
             insights_observations_health
             my_check_in
             my_goals

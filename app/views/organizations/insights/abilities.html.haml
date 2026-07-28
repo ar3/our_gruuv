@@ -4,10 +4,14 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities", url: organization_abilities_path(@organization) }, { label: "Insights: Abilities", url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center
+  .d-flex.align-items-center.flex-wrap.gap-2
     %h1.mb-0.me-2
       %i.bi.bi-bar-chart-line.me-2
       Insights: Abilities
+    - if policy(@organization).milestones_health?
+      = link_to organization_milestones_health_path(@organization), class: "btn btn-sm btn-outline-secondary" do
+        %i.bi.bi-trophy.me-1
+        Milestones Health
 
 / Milestones distribution chart
 .row.mb-4
