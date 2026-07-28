@@ -7,7 +7,7 @@ module Oauth
       before_action :load_authorize_params, only: [:new, :create]
       before_action :require_login_for_oauth!, only: [:new, :create]
 
-      layout "application"
+      layout "oauth"
 
       def new
         @client = resolve_client!

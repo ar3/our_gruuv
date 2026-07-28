@@ -50,6 +50,7 @@ RSpec.describe "MCP OAuth flow", type: :request do
     }
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Connect Claude")
+    expect(response.body).to include("Organization")
 
     post "/oauth/mcp/authorize", params: {
       client_id: client["client_id"],

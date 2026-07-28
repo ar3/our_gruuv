@@ -1,41 +1,40 @@
 - content_for :title, "Connect Claude to OurGruuv"
 
-.container.py-4{style: "max-width: 40rem"}
-  %h1.h3.mb-3 Connect Claude to OurGruuv
-  %p.text-muted
-    Claude is requesting access to OurGruuv tools as
-    %strong= current_person.display_name
-    \. Choose which organization Claude should use.
+%h1.h3.mb-3 Connect Claude to OurGruuv
+%p.text-muted
+  Claude is requesting access to OurGruuv tools as
+  %strong= current_person.display_name
+  \. Choose which organization Claude should use.
 
-  - if @loopback_warning
-    .alert.alert-warning
-      Redirect goes to
-      %code= @redirect_host
-      (local loopback). Only approve if you started this from Claude on this machine.
-
-  %p.small.text-muted.mb-3
-    Client:
-    %code= @client.client_name.presence || @client.client_id
-    · Redirect host:
+- if @loopback_warning
+  .alert.alert-warning
+    Redirect goes to
     %code= @redirect_host
+    (local loopback). Only approve if you started this from Claude on this machine.
 
-  = form_with url: oauth_mcp_authorize_path, method: :post, local: true do
-    = hidden_field_tag :client_id, @client_id
-    = hidden_field_tag :redirect_uri, @redirect_uri
-    = hidden_field_tag :response_type, @response_type
-    = hidden_field_tag :scope, @scope
-    = hidden_field_tag :state, @state
-    = hidden_field_tag :code_challenge, @code_challenge
-    = hidden_field_tag :code_challenge_method, @code_challenge_method
-    = hidden_field_tag :resource, @resource
+%p.small.text-muted.mb-3
+  Client:
+  %code= @client.client_name.presence || @client.client_id
+  · Redirect host:
+  %code= @redirect_host
 
-    .mb-3
-      %label.form-label{for: "company_teammate_id"} Organization
-      = select_tag :company_teammate_id,
-        options_for_select(@teammates.map { |t| [t.organization.name, t.id] }, @teammates.first&.id),
-        class: "form-select",
-        required: true
+= form_with url: oauth_mcp_authorize_path, method: :post, local: true do
+  = hidden_field_tag :client_id, @client_id
+  = hidden_field_tag :redirect_uri, @redirect_uri
+  = hidden_field_tag :response_type, @response_type
+  = hidden_field_tag :scope, @scope
+  = hidden_field_tag :state, @state
+  = hidden_field_tag :code_challenge, @code_challenge
+  = hidden_field_tag :code_challenge_method, @code_challenge_method
+  = hidden_field_tag :resource, @resource
 
-    .d-flex.gap-2
-      = submit_tag "Allow access", class: "btn btn-primary"
-      = link_to "Cancel", root_path, class: "btn btn-outline-secondary"
+  .mb-3
+    %label.form-label{for: "company_teammate_id"} Organization
+    = select_tag :company_teammate_id,
+      options_for_select(@teammates.map { |t| [t.organization.name, t.id] }, @teammates.first&.id),
+      class: "form-select",
+      required: true
+
+  .d-flex.gap-2
+    = submit_tag "Allow access", class: "btn btn-primary"
+    = link_to "Cancel", root_path, class: "btn btn-outline-secondary"

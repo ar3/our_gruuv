@@ -1,0 +1,12 @@
+!!!
+%html{lang: "en"}
+  %head
+    = render partial: 'layouts/head_common', locals: { title_default: content_for?(:title) ? yield(:title) : "OurGruuv" }
+  %body
+    = render partial: 'layouts/toast_container'
+    %header.border-bottom.bg-light
+      .container.py-3{style: "max-width: 40rem"}
+        %span.fw-semibold OurGruuv
+        %span.text-muted.ms-2 · Connect Claude
+    %main.container.py-4{style: "max-width: 40rem"}
+      = yield

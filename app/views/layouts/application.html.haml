@@ -12,9 +12,6 @@
           = link_to "OurGruuv", root_path, class: "navbar-brand"
 
           .navbar-nav.ms-auto
-            - if current_person.admin?
-              .nav-item
-                = link_to "People", people_path, class: "nav-link"
             - if current_organization
               .nav-item.me-3
                 = link_to organization_search_path(current_organization), class: "nav-link", title: "Search" do
