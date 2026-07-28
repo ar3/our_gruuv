@@ -18,7 +18,7 @@
   · Redirect host:
   %code= @redirect_host
 
-= form_with url: oauth_mcp_authorize_path, method: :post, local: true do
+= form_with url: oauth_mcp_authorize_path, method: :post, data: { turbo: false } do
   = hidden_field_tag :client_id, @client_id
   = hidden_field_tag :redirect_uri, @redirect_uri
   = hidden_field_tag :response_type, @response_type
@@ -33,8 +33,9 @@
     = select_tag :company_teammate_id,
       options_for_select(@teammates.map { |t| [t.organization.name, t.id] }, @teammates.first&.id),
       class: "form-select",
+      id: "company_teammate_id",
       required: true
 
   .d-flex.gap-2
-    = submit_tag "Allow access", class: "btn btn-primary"
+    = submit_tag "Allow access", class: "btn btn-primary", data: { disable_with: "Redirecting to Claude…" }
     = link_to "Cancel", root_path, class: "btn btn-outline-secondary"

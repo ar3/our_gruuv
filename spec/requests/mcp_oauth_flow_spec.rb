@@ -62,6 +62,7 @@ RSpec.describe "MCP OAuth flow", type: :request do
       code_challenge_method: "S256",
       company_teammate_id: teammate.id
     }
+    expect(response).to have_http_status(:see_other)
     expect(response).to redirect_to(%r{\Ahttps://claude\.ai/api/mcp/auth_callback\?})
     location = response.headers["Location"]
     code = Rack::Utils.parse_query(URI.parse(location).query)["code"]

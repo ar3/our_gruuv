@@ -55,7 +55,9 @@ module Oauth
           resource: @resource
         )
 
-        redirect_to build_redirect(@redirect_uri, code: raw, state: @state), allow_other_host: true
+        redirect_to build_redirect(@redirect_uri, code: raw, state: @state),
+                    allow_other_host: true,
+                    status: :see_other
       end
 
       private
