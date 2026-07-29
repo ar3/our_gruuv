@@ -1,102 +1,20 @@
 - content_for :title, "Observations Health Dashboard"
+- page_help_id = "observationsHealthPageHelp"
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-eye.me-2
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-eye
       Observations Health Dashboard
-      %span.d-inline-flex.align-items-center.ms-2{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "See who is giving and receiving feedback and whether OGO patterns look healthy. Click for a full breakdown."}
-        %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#observationsHealthPageInfo", "aria-expanded" => "false", "aria-controls" => "observationsHealthPageInfo", "aria-label" => "Show page explanation"}
-          %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "See who is giving and receiving feedback and whether OGO patterns look healthy. Click for a full breakdown."
 
 .mb-4
   = content_for :go_back_link
 
-.collapse.mb-4#observationsHealthPageInfo
-  .alert.alert-info.mb-0
-    %h5.fw-semibold.mb-2 Ultimate goal
-    %p.mb-3 Give managers a quick view of who is actively giving and receiving OGO feedback—and whether authored OGOs show a healthy mix of kudos and constructive ratings.
-    %p.mb-2
-      %strong How to read each row:
-      Given and Received drive the row spotlight (worst of the two). Kudos mix and Rating intensity are additional culture signals from OGOs this person authored.
-    %p.mb-3 Use refresh controls only when you believe Gruuv Health or mix data is out of date and want to queue a background rebuild.
-
-    .card.mb-3
-      .card-header.py-2
-        %strong Example employee row
-      .card-body.py-2
-        .table-responsive
-          %table.table.table-sm.mb-2
-            %thead
-              %tr
-                %th Employee
-                %th Given
-                %th Received
-                %th Kudos mix
-                %th Rating intensity
-            %tbody
-              %tr
-                %td
-                  Alex Rivera
-                  %br
-                  %small.text-muted Casey Manager
-                %td
-                  .alert.alert-success.mb-0.py-1.small
-                    %strong Healthy
-                    %div.text-muted 4 OGOs, last 5 days ago
-                %td
-                  .alert.alert-warning.mb-0.py-1.small
-                    %strong Warning
-                    %div.text-muted 2 OGOs, last 2 months ago
-                %td
-                  .alert.alert-success.mb-0.py-1.small
-                    %strong 4:1
-                    %span.ms-1 Kudos: 4 | Constructive: 1
-                %td
-                  .alert.alert-success.mb-0.py-1.small
-                    %strong 3:1
-                    %span.ms-1 Less extreme: 6 | Most extreme: 2
-        .row.g-2.small
-          .col-12.col-lg-6
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Hover Kudos mix and Rating intensity for why the ratio matters for that person.
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Hover Given or Received for Gruuv Health rules (#{EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS}/#{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS}-day windows).
-          .col-12.col-lg-6
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Spotlight counts use only Given + Received—not the mix columns.
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Refresh queues Gruuv Health + mix rebuild; data also refreshes on publish/unpublish and nightly.
-
-    .row
-      .col-12.col-lg-6
-        %h6.fw-semibold.mb-2 Given & Received (Gruuv Health)
-        %ul.mb-0
-          %li
-            %span.d-inline-block.rounded-circle.me-2.align-middle.bg-success{style: "width: 10px; height: 10px;"}
-            %strong Healthy
-            = " — published a qualifying OGO in the last #{EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS} days."
-          %li
-            %span.d-inline-block.rounded-circle.me-2.align-middle.bg-warning{style: "width: 10px; height: 10px;"}
-            %strong Warning
-            = " — last publish was #{EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS + 1}–#{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS - 1} days ago."
-          %li
-            %span.d-inline-block.rounded-circle.me-2.align-middle.bg-danger{style: "width: 10px; height: 10px;"}
-            %strong Needs Attention
-            = " — last publish was ≥ #{EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS} days ago, or never."
-      .col-12.col-lg-6
-        %h6.fw-semibold.mb-2 Kudos mix & Rating intensity
-        %ul.mb-0
-          %li
-            %strong Kudos mix
-            = " — kudos-style vs constructive OGOs authored (target about #{Insights::ObservationsRatingHealth::KUDOS_CONSTRUCTIVE_HEALTHY_RATIO_LABEL})."
-          %li
-            %strong Rating intensity
-            = " — everyday (Solid + Misaligned) vs extreme (Exceptional + Concerning) ratings on authored OGOs (target about 3:1)."
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/observations_health/page_help"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Observations Health Dashboard", url: nil }])

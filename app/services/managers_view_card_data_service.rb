@@ -27,29 +27,32 @@ class ManagersViewCardDataService
 
     teammate_ids = teammates.map(&:id)
     goals_by_teammate = goals_grouped_by_teammate(teammate_ids)
-    engagement_health_by_teammate_id = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+    goal_eh_by_teammate_id = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
       organization: organization,
       teammate_ids: teammate_ids
     )
-    observation_caches = ObservationHealthCache
-      .where(teammate_id: teammate_ids, organization_id: organization.id)
-      .index_by(&:teammate_id)
+    ogo_eh_by_teammate_id = ObservationsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: organization,
+      teammate_ids: teammate_ids
+    )
     ogo_30d_counts = batch_ogo_30d_counts(teammate_ids)
 
     teammates.each_with_object({}) do |teammate, rows|
       goals = goals_by_teammate[teammate.id] || []
-      cache = observation_caches[teammate.id]
       ogo_counts = ogo_30d_counts[teammate.id] || { given: 0, received: 0 }
-      eh_status = GoalsHealthEngagementHealthSupport.category_status(
-        engagement_health_by_teammate_id[teammate.id] || []
+      goal_eh_status = GoalsHealthEngagementHealthSupport.category_status(
+        goal_eh_by_teammate_id[teammate.id] || []
+      )
+      ogo_eh_status = ObservationsHealthEngagementHealthSupport.overall_status(
+        ogo_eh_by_teammate_id[teammate.id] || []
       )
 
       rows[teammate.id] = RowData.new(
         check_in_actions_needed: check_in_actions_needed_for(teammate),
-        goals_health_status: GoalsHealthEngagementHealthSupport.spotlight_symbol(eh_status),
+        goals_health_status: GoalsHealthEngagementHealthSupport.spotlight_symbol(goal_eh_status),
         active_goals_count: goals.count { |g| g.deleted_at.nil? && g.completed_at.nil? && g.started_at.present? },
         draft_goals_count: goals.count { |g| g.deleted_at.nil? && g.completed_at.nil? && g.started_at.nil? },
-        ogo_overall_status: cache&.overall_status,
+        ogo_overall_status: GoalsHealthEngagementHealthSupport.spotlight_symbol(ogo_eh_status),
         ogos_given_30d_count: ogo_counts[:given],
         ogos_received_30d_count: ogo_counts[:received]
       )
@@ -64,7 +67,6 @@ class ManagersViewCardDataService
     Goal
       .where(owner_type: "CompanyTeammate", owner_id: teammate_ids, company: organization)
       .where(deleted_at: nil)
-      .includes(:goal_check_ins)
       .group_by(&:owner_id)
   end
 

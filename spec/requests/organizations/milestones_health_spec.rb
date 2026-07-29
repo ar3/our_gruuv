@@ -19,6 +19,8 @@ RSpec.describe "Milestones Health", type: :request do
       get organization_milestones_health_path(company)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Milestones Health")
+      expect(response.body).to include("milestonesHealthPageHelp")
+      expect(response.body).to include("Goal of this page")
       expect(response.body).to include("Who to show")
       expect(response.body).to include("milestones-health-spotlight-full")
       expect(response.body).to include("Other actions")

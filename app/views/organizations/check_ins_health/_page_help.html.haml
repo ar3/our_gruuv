@@ -1,0 +1,85 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3 Give a manager a quick view of where to focus so their folks stay clear on Required Clarity.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Required Clarity is a Gruuv Health category (Healthy / Warning / Needs Attention), same rules as 1:1 Hub Overview.
+    This dashboard rolls those signals up per employee with action guidance for what to do next.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 How to read each row
+  %p.mb-3
+    The top bar shows Gruuv Health Required Clarity per item (Healthy, Warning, Needs Attention); the bottom bar shows what action to take next on each check-in.
+    Hover any segment for details. Use refresh controls when data seems stale — they queue a Gruuv Health recalculation.
+
+  %h5.fw-semibold.mb-2 Example employee row
+  .card.mb-3
+    .card-header.py-2
+      %strong Example
+    .card-body.py-2
+      .table-responsive
+        %table.table.table-sm.mb-2
+          %thead
+            %tr
+              %th Employee
+              %th Aspirations
+              %th Assignments
+              %th Position
+          %tbody
+            %tr
+              %td
+                Alex Rivera
+                %br
+                %small.text-muted Casey Manager
+              %td
+                .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
+                  .flex-grow-0.check-in-health-eh-warning{style: "width: 100%;"}
+                .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
+                  .flex-grow-0.check-in-health-action-red{style: "width: 100%;"}
+              %td
+                .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
+                  .flex-grow-0.check-in-health-eh-healthy{style: "width: 50%;"}
+                  .flex-grow-0.check-in-health-eh-warning{style: "width: 50%;"}
+                .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
+                  .flex-grow-0.check-in-health-action-green-striped{style: "width: 50%;"}
+                  .flex-grow-0.check-in-health-action-orange{style: "width: 50%;"}
+              %td
+                .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 60px;"}
+                  .flex-grow-0.check-in-health-eh-healthy{style: "width: 100%;"}
+                .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 60px;"}
+                  .flex-grow-0.check-in-health-action-neon-green-striped{style: "width: 100%;"}
+      .row.g-2.small
+        .col-12.col-lg-6
+          %div
+            %i.bi.bi-arrow-up-right.me-1
+            Top bars (taller) show Gruuv Health per required item.
+          %div
+            %i.bi.bi-arrow-up-right.me-1
+            Bottom bars (shorter) show the recommended next action for each item.
+        .col-12.col-lg-6
+          %div
+            %i.bi.bi-arrow-up-right.me-1
+            Hover a segment for status, last finalized date, and next steps.
+          %div
+            %i.bi.bi-arrow-up-right.me-1
+            Refresh controls should be used only when data seems stale/incorrect.
+
+  %h5.fw-semibold.mb-2 Status legend
+  .row.mb-0
+    .col-12.col-lg-6
+      %p.fw-semibold.mb-2 Top bar (Gruuv Health Required Clarity)
+      %ul.mb-3.mb-lg-0
+        - [EngagementHealth::NEEDS_ATTENTION, EngagementHealth::WARNING, EngagementHealth::HEALTHY].each do |status|
+          %li
+            %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_ins_health_eh_status_swatch_css(status), style: "width: 10px; height: 10px;"}
+            %strong= EngagementHealth::STATUS_LABELS.fetch(status)
+            = " - #{check_ins_health_engagement_status_meaning(status)}"
+    .col-12.col-lg-6
+      %p.fw-semibold.mb-2 Bottom bar (action-based)
+      %ul.mb-0
+        - check_ins_health_action_bar_legend_items.each do |legend|
+          %li
+            %span.d-inline-block.rounded-circle.me-2.align-middle{class: legend[:css], style: "width: 10px; height: 10px;"}
+            %strong= legend[:color].humanize
+            = " - #{legend[:label]}"

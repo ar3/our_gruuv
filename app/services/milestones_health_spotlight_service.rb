@@ -43,11 +43,18 @@ class MilestonesHealthSpotlightService
       organization: organization,
       teammate_ids: teammates.map(&:id)
     )
+    assignment_counts_by_teammate = required_assignment_counts_by_teammate(teammates)
 
-    teammates.map { |teammate| row_for(teammate, records_by_teammate_id[teammate.id] || []) }
+    teammates.map do |teammate|
+      row_for(
+        teammate,
+        records_by_teammate_id[teammate.id] || [],
+        assignment_counts_by_teammate[teammate.id] || {}
+      )
+    end
   end
 
-  def row_for(teammate, records)
+  def row_for(teammate, records, assignment_counts)
     category = MilestonesHealthEngagementHealthSupport.category_rollup(records)
     eh_status = MilestonesHealthEngagementHealthSupport.category_status(records)
     items = MilestonesHealthEngagementHealthSupport.items_for(records)
@@ -62,16 +69,18 @@ class MilestonesHealthSpotlightService
       engagement_health_records: records,
       empty_reason: category&.inputs&.dig("empty_reason"),
       status_counts: MilestonesHealthEngagementHealthSupport.status_counts(items),
-      attention_items: attention_items(items),
+      attention_items: attention_items(items, assignment_counts),
       refreshed_at: MilestonesHealthEngagementHealthSupport.computed_at_for(records)
     }
   end
 
-  def attention_items(items)
+  # One non-healthy ability: most required assignments → highest required milestone →
+  # Needs Attention before Warning → alphanumeric name.
+  def attention_items(items, assignment_counts)
     Array(items)
       .select { |item| item.status != EngagementHealth::HEALTHY }
-      .sort_by { |item| [EngagementHealth.status_severity_rank(item.status), item.inputs["name"].to_s.downcase] }
-      .first(5)
+      .sort_by { |item| attention_sort_key(item, assignment_counts) }
+      .first(1)
       .map do |item|
         {
           name: item.inputs["name"].presence || "Ability ##{item.entity_id}",
@@ -82,6 +91,43 @@ class MilestonesHealthSpotlightService
           earned_level: item.inputs["earned_level"]
         }
       end
+  end
+
+  def attention_sort_key(item, assignment_counts)
+    ability_id = item.entity_id.to_i
+    [
+      -assignment_counts.fetch(ability_id, 0),
+      -item.inputs["required_level"].to_i,
+      item.status == EngagementHealth::NEEDS_ATTENTION ? 0 : 1,
+      item.inputs["name"].to_s.downcase
+    ]
+  end
+
+  # Counts how many required assignments (position required + active energy tenures)
+  # list each ability for each teammate.
+  def required_assignment_counts_by_teammate(teammates)
+    teammates.each_with_object({}) do |teammate, memo|
+      counts = Hash.new(0)
+      position = teammate.active_employment_tenure&.position
+
+      if position
+        position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+          position_assignment.assignment&.assignment_abilities&.each do |assignment_ability|
+            counts[assignment_ability.ability_id] += 1
+          end
+        end
+      end
+
+      teammate.assignment_tenures.active_and_given_energy.includes(assignment: :assignment_abilities).each do |tenure|
+        next unless tenure.assignment&.company_id == organization.id
+
+        tenure.assignment.assignment_abilities.each do |assignment_ability|
+          counts[assignment_ability.ability_id] += 1
+        end
+      end
+
+      memo[teammate.id] = counts
+    end
   end
 
   def spotlight_stats(rows)

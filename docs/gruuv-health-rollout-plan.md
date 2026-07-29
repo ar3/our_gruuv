@@ -1,6 +1,6 @@
 # Gruuv Health rollout plan
 
-**Status:** Phase 0–2, 4–5 done (Observations, Goals, Milestones Health on EH). Phase 1.1–1.5 scorecard done. Phase 3/6/8 partial. **Open leftovers:** item-healthy CSV; Phase 1.6/1.7; Phase 8 teammate OGO cards / Complete Picture / My Goals; Phase 7 Insights polish; Phase 9 cleanup. **Next:** Phase 7 or 9 cleanup after approval.
+**Status:** Phase 0–2, 4–5 done. Correctness leftovers done: Complete Picture / About Me / My Goals → EH Goal Confidence; Managers View OGO → EH. Milestones Health shows one prioritized ability. Protect Flow marked Beta. **Still optional:** teammate OGO cards; CSV item-healthy rename; Phase 9 cleanup; Phase 1.6/1.7 verify.
 
 Centralize engagement signal status on **Healthy / At Risk / Needs Attention** via `EngagementHealth` (calculator, thresholds, cache, daily + event-driven refresh). Retire overlapping health logic in other dashboards as each phase completes.
 
@@ -192,9 +192,9 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 
 **Keep separate (not EH):** goal on/off track pills on goal pages — different concept
 
-**Still on legacy calculator (follow-ups, not Phase 4):** Complete Picture spotlight; Start Here My Goals 14-day counts
+**Still on legacy calculator (follow-ups, not Phase 4):** ~~Complete Picture spotlight; Start Here My Goals 14-day counts~~ → migrated to EH Goal Confidence
 
-**Retire when done:** `Goals::HealthStatusCalculator` / `Goals::HealthThresholds` for dashboard paths — still used by Complete Picture / My Goals until those migrate
+**Retire when done:** `Goals::HealthStatusCalculator` / `Goals::HealthThresholds` — **removed**
 
 **Gate:** Approval before Phase 5.
 
@@ -247,6 +247,8 @@ These still use 30/60/90 `clarity_level` / old green buckets and can disagree wi
 - [ ] **Work to Meet** — evaluate; likely stays goal/OGO *presence* logic (separate from Gruuv Health status)
 - [ ] **Detailed hub** — no health scoring changes expected
 - [ ] Teammate OGO sub-pages observation health cards → EH or link to Overview
+- [x] Managers View OGO axis → EH (worst of Given + Received)
+- [x] Complete Picture / About Me / My Goals Goal Confidence → EH
 
 **Gate:** Approval before Phase 9.
 

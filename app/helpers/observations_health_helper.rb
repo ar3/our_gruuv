@@ -25,23 +25,56 @@ module ObservationsHealthHelper
   end
 
   def observations_health_status_caption(section)
-    count = section["observations_count"].to_i
+    healthy = section["healthy_count"].to_i
+    warning = section["warning_count"].to_i
+    needs_attention = section["needs_attention_count"].to_i
+    band_total = healthy + warning + needs_attention
+    # Prefer live band totals; only fall back to cache count when bands were not computed.
+    count = band_total.positive? ? band_total : section["observations_count"].to_i
     last_at = section["last_published_at"]
     never = section["never"] == true || (last_at.blank? && count.zero?)
+    status = section["status"].to_s
+    bands_computed = section.key?("healthy_count")
 
-    if never && count.zero?
-      return "Never published"
+    return "Never published" if never && count.zero?
+
+    case status
+    when EngagementHealth::HEALTHY, "green"
+      observations_health_status_band_caption(
+        total: count,
+        status_count: healthy,
+        label: "Healthy",
+        bands_computed: bands_computed
+      )
+    when EngagementHealth::WARNING, "yellow"
+      observations_health_status_band_caption(
+        total: count,
+        status_count: warning,
+        label: "Warning",
+        bands_computed: bands_computed
+      )
+    else
+      # Needs Attention: count only (status is already on the cell); never handled above.
+      count.positive? ? "#{count} #{'OGO'.pluralize(count)}" : "No data yet"
     end
+  end
 
-    parts = []
-    parts << "#{count} #{'OGO'.pluralize(count)}" if count.positive?
+  # All in that band → "X Healthy OGOs"; mixed → "X OGOs, Y Healthy".
+  # Never render "X OGOs, 0 Warning" (band/cache mismatch or empty band).
+  def observations_health_status_band_caption(total:, status_count:, label:, bands_computed: true)
+    return "No data yet" if total <= 0
 
-    if last_at.present?
-      parsed = Time.zone.parse(last_at.to_s)
-      parts << "last #{time_ago_in_words(parsed)} ago" if parsed
+    effective_status_count = status_count
+    # Cell status is derived from the latest OGO, so at least one must be in-band when bands are live.
+    effective_status_count = 1 if bands_computed && effective_status_count <= 0 && total.positive?
+
+    if effective_status_count >= total
+      "#{total} #{label} #{'OGO'.pluralize(total)}"
+    elsif effective_status_count <= 0
+      "#{total} #{'OGO'.pluralize(total)}"
+    else
+      "#{total} #{'OGO'.pluralize(total)}, #{effective_status_count} #{label}"
     end
-
-    parts.join(", ").presence || "No data yet"
   end
 
   def observations_health_recency_caption(section)

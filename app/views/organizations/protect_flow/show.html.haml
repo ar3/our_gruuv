@@ -6,10 +6,14 @@
 
 - content_for :header do
   .d-flex.flex-wrap.align-items-center.gap-2
-    %h1.mb-0 Protect Flow
-    = render "shared/page_help/header_info_button",
-             collapse_id: page_help_id,
-             tooltip: "Protect flow — stale clarity kills it. Click for details."
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      Protect Flow
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Protect flow — stale clarity kills it. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
   %p.text-muted.mb-0
     Protect flow — stale clarity kills it. About 30 focused minutes per person this week.
 

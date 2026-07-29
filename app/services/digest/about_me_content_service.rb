@@ -35,7 +35,7 @@ module Digest
         green: 'Last finalized check-in was within the last 90 days'
       },
       goals: {
-        red: 'No active goals',
+        red: 'Needs Attention — no in-scope goals, or worst goal is 90+ days without a confidence check (Gruuv Health Goal Confidence)',
         yellow: I18n.t('terminology.about_me_goals_yellow_confidence'),
         green: I18n.t('terminology.about_me_goals_green_confidence')
       },

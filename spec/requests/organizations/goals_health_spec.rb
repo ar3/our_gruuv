@@ -19,6 +19,8 @@ RSpec.describe "Goals Health", type: :request do
       get organization_goals_health_path(company)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Goals Health")
+      expect(response.body).to include("goalsHealthPageHelp")
+      expect(response.body).to include("Goal of this page")
       expect(response.body).to include("Who to show")
       expect(response.body).to include("Goal Confidence")
       expect(response.body).to include("goals-health-spotlight-full")

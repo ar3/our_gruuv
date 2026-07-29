@@ -3,8 +3,6 @@
 require "rails_helper"
 
 RSpec.describe ObservationsHealthHelper, type: :helper do
-  include ActiveSupport::Testing::TimeHelpers
-
   describe "#observations_health_status_copy" do
     it "maps EngagementHealth statuses to display labels" do
       expect(helper.observations_health_status_copy(EngagementHealth::HEALTHY)).to eq("Healthy")
@@ -24,17 +22,65 @@ RSpec.describe ObservationsHealthHelper, type: :helper do
 
   describe "#observations_health_status_caption" do
     it "returns never published when there is no last event" do
-      expect(helper.observations_health_status_caption("observations_count" => 0, "never" => true)).to eq("Never published")
+      expect(helper.observations_health_status_caption(
+        "observations_count" => 0,
+        "never" => true,
+        "status" => EngagementHealth::NEEDS_ATTENTION
+      )).to eq("Never published")
     end
 
-    it "includes last published time in words when observations exist" do
-      travel_to Time.zone.parse("2026-05-27 12:00:00") do
-        caption = helper.observations_health_status_caption(
-          "observations_count" => 2,
-          "last_published_at" => 12.days.ago.iso8601
-        )
-        expect(caption).to eq("2 OGOs, last 12 days ago")
-      end
+    it "says X Healthy OGOs when every OGO is Healthy" do
+      expect(helper.observations_health_status_caption(
+        "status" => EngagementHealth::HEALTHY,
+        "healthy_count" => 2,
+        "warning_count" => 0,
+        "needs_attention_count" => 0
+      )).to eq("2 Healthy OGOs")
+    end
+
+    it "says X OGOs, Y Healthy when only some are Healthy" do
+      expect(helper.observations_health_status_caption(
+        "status" => EngagementHealth::HEALTHY,
+        "healthy_count" => 1,
+        "warning_count" => 1,
+        "needs_attention_count" => 1
+      )).to eq("3 OGOs, 1 Healthy")
+    end
+
+    it "says X Warning OGOs when every OGO is Warning" do
+      expect(helper.observations_health_status_caption(
+        "status" => EngagementHealth::WARNING,
+        "healthy_count" => 0,
+        "warning_count" => 2,
+        "needs_attention_count" => 0
+      )).to eq("2 Warning OGOs")
+    end
+
+    it "says X OGOs, Y Warning when only some are Warning" do
+      expect(helper.observations_health_status_caption(
+        "status" => EngagementHealth::WARNING,
+        "healthy_count" => 0,
+        "warning_count" => 1,
+        "needs_attention_count" => 2
+      )).to eq("3 OGOs, 1 Warning")
+    end
+
+    it "does not say 0 Warning when band count is missing but cell is Warning" do
+      expect(helper.observations_health_status_caption(
+        "status" => EngagementHealth::WARNING,
+        "healthy_count" => 0,
+        "warning_count" => 0,
+        "needs_attention_count" => 11
+      )).to eq("11 OGOs, 1 Warning")
+    end
+
+    it "shows only the OGO count for Needs Attention when OGOs exist" do
+      expect(helper.observations_health_status_caption(
+        "status" => EngagementHealth::NEEDS_ATTENTION,
+        "healthy_count" => 0,
+        "warning_count" => 0,
+        "needs_attention_count" => 3
+      )).to eq("3 OGOs")
     end
   end
 

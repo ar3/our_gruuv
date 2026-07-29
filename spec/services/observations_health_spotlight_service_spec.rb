@@ -94,6 +94,49 @@ RSpec.describe ObservationsHealthSpotlightService do
       expect(row[:given]["status"]).to eq(EngagementHealth::NEEDS_ATTENTION)
       expect(data[:spotlight_stats][:needs_attention_count]).to eq(1)
     end
+
+    it "counts Given OGOs by Healthy/Warning/Needs Attention age bands" do
+      create_ogo_statuses(
+        given_status: EngagementHealth::HEALTHY,
+        received_status: EngagementHealth::NEEDS_ATTENTION,
+        last_received_at: nil
+      )
+      create(:observation, :published, company: organization, observer: person, published_at: 5.days.ago)
+      create(:observation, :published, company: organization, observer: person, published_at: 45.days.ago)
+      create(:observation, :published, company: organization, observer: person, published_at: 120.days.ago)
+
+      data = service.rows_and_spotlight_for("just_me")
+      row = data[:rows].find { |r| r[:teammate].id == teammate.id }
+
+      expect(row[:given]["healthy_count"]).to eq(1)
+      expect(row[:given]["warning_count"]).to eq(1)
+      expect(row[:given]["needs_attention_count"]).to eq(1)
+      expect(row[:given]["observations_count"]).to eq(3)
+    end
+
+    it "counts Received OGOs with the same HealthScopes rules as EngagementHealth" do
+      other = create(:person)
+      create_ogo_statuses(
+        given_status: EngagementHealth::NEEDS_ATTENTION,
+        received_status: EngagementHealth::WARNING,
+        last_given_at: nil,
+        last_received_at: 45.days.ago
+      )
+
+      [45.days.ago, 120.days.ago].each do |published_at|
+        observation = build(:observation, :published, company: organization, observer: other, published_at: published_at)
+        observation.observees = []
+        observation.observees.build(teammate: teammate)
+        observation.save!
+      end
+
+      data = service.rows_and_spotlight_for("just_me")
+      row = data[:rows].find { |r| r[:teammate].id == teammate.id }
+
+      expect(row[:received]["warning_count"]).to eq(1)
+      expect(row[:received]["needs_attention_count"]).to eq(1)
+      expect(row[:received]["observations_count"]).to eq(2)
+    end
   end
 
   describe "#compact_spotlight_stats" do

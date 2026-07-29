@@ -21,6 +21,11 @@ Under **Specifics of this page**, each page uses its own `h5` labels (e.g. “Bu
 
 ## Pages using this structure
 
+- Protect Flow — `protect_flow/_page_help.html.haml` (**canonical health/dashboard example**)
+- Check-ins Health — `check_ins_health/_page_help.html.haml`
+- Goals Health — `goals_health/_page_help.html.haml`
+- Milestones Health — `milestones_health/_page_help.html.haml`
+- Observations Health — `observations_health/_page_help.html.haml`
 - Bulk clarity check-in — `check_ins/_bulk_check_in_page_help.html.haml`
 - Review / finalization — `finalizations/_finalization_page_help.html.haml`
 - Single-assignment check-in — `teammates/assignments/_single_item_check_in_page_help.html.haml`

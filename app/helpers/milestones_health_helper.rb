@@ -32,7 +32,8 @@ module MilestonesHealthHelper
       "Required abilities come from the teammate’s current position and active assignments.",
       "Healthy — required milestone earned, or an active goal is attached.",
       "Warning — earlier milestone only, or only a draft goal attached.",
-      "Needs Attention — no milestone and no goal on a required ability. No required abilities is vacuously Healthy."
+      "Needs Attention — no milestone and no goal on a required ability. No required abilities is vacuously Healthy.",
+      "Attention column shows one ability: most required assignments, then highest required milestone, then Needs Attention before Warning, then name."
     ]
   end
 

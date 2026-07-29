@@ -1,94 +1,20 @@
 - content_for :title, "Check-ins Health Dashboard"
+- page_help_id = "checkInsHealthPageHelp"
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-clipboard-check.me-2
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-clipboard-check
       Check-ins Health Dashboard
-      %span.d-inline-flex.align-items-center.ms-2{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "Quickly monitor who needs clarity support. Click for a full breakdown of this page."}
-        %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInsHealthPageInfo", "aria-expanded" => "false", "aria-controls" => "checkInsHealthPageInfo", "aria-label" => "Show page explanation"}
-          %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Quickly monitor who needs clarity support. Click for a full breakdown of this page."
 
 .mb-4
   = content_for :go_back_link
 
-.collapse.mb-4#checkInsHealthPageInfo
-  .alert.alert-info.mb-0
-    %h5.fw-semibold.mb-2 Ultimate goal
-    %p.mb-3 Give a manager a quick view at where they should focus in order to keep their folks 100% clear.
-    %p.mb-2
-      %strong How to read each row:
-      the top bar shows Gruuv Health Required Clarity per item (Healthy, Warning, Needs Attention); the bottom bar shows what action to take next on each check-in.
-    %p.mb-3 Hover any segment for details. Use refresh controls when data seems stale — they queue a Gruuv Health recalculation.
-
-    .card.mb-3
-      .card-header.py-2
-        %strong Example employee row
-      .card-body.py-2
-        .table-responsive
-          %table.table.table-sm.mb-2
-            %thead
-              %tr
-                %th Employee
-                %th Aspirations
-                %th Assignments
-                %th Position
-            %tbody
-              %tr
-                %td
-                  Alex Rivera
-                  %br
-                  %small.text-muted Casey Manager
-                %td
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
-                    .flex-grow-0.check-in-health-eh-warning{style: "width: 100%;"}
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
-                    .flex-grow-0.check-in-health-action-red{style: "width: 100%;"}
-                %td
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 80px;"}
-                    .flex-grow-0.check-in-health-eh-healthy{style: "width: 50%;"}
-                    .flex-grow-0.check-in-health-eh-warning{style: "width: 50%;"}
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 80px;"}
-                    .flex-grow-0.check-in-health-action-green-striped{style: "width: 50%;"}
-                    .flex-grow-0.check-in-health-action-orange{style: "width: 50%;"}
-                %td
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 16px; min-width: 60px;"}
-                    .flex-grow-0.check-in-health-eh-healthy{style: "width: 100%;"}
-                  .check-in-health-bar.d-flex.rounded.overflow-hidden.mt-1{style: "height: 6px; min-width: 60px;"}
-                    .flex-grow-0.check-in-health-action-neon-green-striped{style: "width: 100%;"}
-        .row.g-2.small
-          .col-12.col-lg-6
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Top bars (taller) show Gruuv Health per required item.
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Bottom bars (shorter) show the recommended next action for each item.
-          .col-12.col-lg-6
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Hover a segment for status, last finalized date, and next steps.
-            %div
-              %i.bi.bi-arrow-up-right.me-1
-              Refresh controls should be used only when data seems stale/incorrect.
-
-    .row
-      .col-12.col-lg-6
-        %h6.fw-semibold.mb-2 Top bar (Gruuv Health Required Clarity)
-        %ul.mb-0
-          - [EngagementHealth::NEEDS_ATTENTION, EngagementHealth::WARNING, EngagementHealth::HEALTHY].each do |status|
-            %li
-              %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_ins_health_eh_status_swatch_css(status), style: "width: 10px; height: 10px;"}
-              %strong= EngagementHealth::STATUS_LABELS.fetch(status)
-              = " - #{check_ins_health_engagement_status_meaning(status)}"
-      .col-12.col-lg-6
-        %h6.fw-semibold.mb-2 Bottom bar (action-based)
-        %ul.mb-0
-          - check_ins_health_action_bar_legend_items.each do |legend|
-            %li
-              %span.d-inline-block.rounded-circle.me-2.align-middle{class: legend[:css], style: "width: 10px; height: 10px;"}
-              %strong= legend[:color].humanize
-              = " - #{legend[:label]}"
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/check_ins_health/page_help"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Check-ins Health Dashboard", url: nil }])

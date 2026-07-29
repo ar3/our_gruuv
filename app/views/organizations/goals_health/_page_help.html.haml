@@ -1,0 +1,28 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3 See who needs Goal Confidence attention so managers can keep scored goals freshly checked.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Goal Confidence is a Gruuv Health category (Healthy / Warning / Needs Attention), same rules as 1:1 Hub Overview.
+    Worst scored goal wins for the person. Drafts are not scored; completed goals stay in-scope for #{GoalsHealthHelper::COMPLETED_GOAL_WINDOW_DAYS} days.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 How to read each row
+  %ul.mb-3
+    %li Status icon is the person’s Goal Confidence rollup.
+    %li Middle column counts Healthy / Warning / Needs Attention goals (Active | Completed; Drafts only on Needs Attention).
+    %li Attachments list assignments, abilities, values, prompts, and child goals when present.
+    %li Refresh queues a Gruuv Health recalculation when data looks stale.
+
+  %h5.fw-semibold.mb-2 Status legend
+  %ul.list-unstyled.mb-0
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2.bg-success{style: "width:0.65rem;height:0.65rem;"}
+      Healthy — scored goals checked within #{GoalsHealthHelper::GOAL_CONFIDENCE_HEALTHY_DAYS} days
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2.bg-warning{style: "width:0.65rem;height:0.65rem;"}
+      Warning — worst goal last checked #{GoalsHealthHelper::GOAL_CONFIDENCE_HEALTHY_DAYS + 1}–#{GoalsHealthHelper::GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS - 1} days ago
+    %li.mb-0
+      %span.d-inline-block.rounded-circle.me-2.bg-danger{style: "width:0.65rem;height:0.65rem;"}
+      Needs Attention — ≥ #{GoalsHealthHelper::GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS} days, never checked, or no scored goals

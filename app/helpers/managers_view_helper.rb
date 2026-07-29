@@ -8,9 +8,9 @@ module ManagersViewHelper
   }.freeze
 
   OGO_AXIS_STATUS_COPY = {
-    "green" => "Healthy",
-    "yellow" => "Need update",
-    "red" => "Need attention"
+    healthy: "Healthy",
+    ok: "Warning",
+    concerning: "Needs Attention"
   }.freeze
 
   def managers_view_axis_status_icon(status, kind:)
@@ -57,10 +57,8 @@ module ManagersViewHelper
 
   def normalize_managers_view_axis_status(status, kind:)
     case kind
-    when :goals
-      status.to_sym
-    when :ogos
-      status.presence&.to_s || "red"
+    when :goals, :ogos
+      status.presence&.to_sym || :concerning
     else
       status
     end

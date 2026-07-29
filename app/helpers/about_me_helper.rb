@@ -18,34 +18,15 @@ module AboutMeHelper
   end
 
   def goals_status_indicator(teammate)
-    # Same scope as about_me goals section: only goals where teammate is the owner
-    goals_owned = Goal.where(owner: teammate)
+    records = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: teammate.organization,
+      teammate_ids: [teammate.id]
+    )[teammate.id] || []
 
-    # Check if any goal (active or completed) completed in last 90 days
-    completed_recently = goals_owned
-      .where('completed_at >= ?', 90.days.ago)
-      .where(deleted_at: nil)
-      .exists?
-
-    if completed_recently
-      return :green
-    end
-
-    all_goals = goals_owned.active.includes(:goal_check_ins)
-    
-    return :red if all_goals.empty?
-    
-    # Second path to green: all active goals have check-ins in past 2 weeks
-    cutoff_week = (Date.current - 14.days).beginning_of_week(:monday)
-    
-    all_goals_have_recent_check_ins = all_goals.all? do |goal|
-      goal.goal_check_ins.any? { |check_in| check_in.check_in_week_start >= cutoff_week }
-    end
-    
-    if all_goals_have_recent_check_ins
-      :green
-    else
-      :yellow
+    case GoalsHealthEngagementHealthSupport.category_status(records)
+    when EngagementHealth::HEALTHY then :green
+    when EngagementHealth::WARNING then :yellow
+    else :red
     end
   end
 
@@ -469,11 +450,11 @@ module AboutMeHelper
       end
     when :goals
       content_tag(:div) do
-        content_tag(:strong, "Active Goals Status Conditions:") +
+        content_tag(:strong, "Active Goals Status Conditions (Gruuv Health Goal Confidence):") +
         content_tag(:ul, class: "mb-0 mt-2") do
-          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "No active goals") +
-          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "Has active goals but not all have check-ins in the past 2 weeks") +
-          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "Any goal completed in last 90 days, OR all active goals have check-ins in past 2 weeks")
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "Needs Attention — no in-scope goals, or worst goal is 90+ days without a confidence check") +
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "Warning — worst scored goal last checked 31–89 days ago") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "Healthy — all scored goals checked within 30 days (worst wins)")
         end
       end
     when :prompts

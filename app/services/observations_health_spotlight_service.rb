@@ -72,17 +72,19 @@ class ObservationsHealthSpotlightService
     caches_by_teammate_id = ObservationHealthCache
       .where(organization: organization, teammate_id: teammate_ids)
       .index_by(&:teammate_id)
+    band_counts_by_teammate_id = ogo_band_counts_by_teammate(teammates)
 
     teammates.map do |teammate|
       row_for(
         teammate,
         engagement_health_by_teammate_id[teammate.id] || [],
-        caches_by_teammate_id[teammate.id]
+        caches_by_teammate_id[teammate.id],
+        band_counts_by_teammate_id[teammate.id] || empty_band_counts
       )
     end
   end
 
-  def row_for(teammate, records, cache)
+  def row_for(teammate, records, cache, band_counts)
     payload = cache&.payload || {}
     given_count = payload.dig("given", "observations_count")
     received_count = payload.dig("received", "observations_count")
@@ -90,12 +92,14 @@ class ObservationsHealthSpotlightService
       records,
       category: EngagementHealth::CATEGORY_OGO_GIVEN,
       observations_count: given_count
-    )
+    ).merge(band_counts[:given])
     received = ObservationsHealthEngagementHealthSupport.section_payload(
       records,
       category: EngagementHealth::CATEGORY_OGO_RECEIVED,
       observations_count: received_count
-    )
+    ).merge(band_counts[:received])
+    apply_band_total_as_observations_count!(given)
+    apply_band_total_as_observations_count!(received)
     overall = ObservationsHealthEngagementHealthSupport.overall_status(records) ||
               EngagementHealth::NEEDS_ATTENTION
     eh_computed_at = ObservationsHealthEngagementHealthSupport.computed_at_for(records)
@@ -115,6 +119,47 @@ class ObservationsHealthSpotlightService
       overall_status: overall,
       status: spotlight_status(overall)
     }
+  end
+
+  def empty_band_counts
+    empty = { "healthy_count" => 0, "warning_count" => 0, "needs_attention_count" => 0 }
+    { given: empty.dup, received: empty.dup }
+  end
+
+  def apply_band_total_as_observations_count!(section)
+    total = section["healthy_count"].to_i + section["warning_count"].to_i + section["needs_attention_count"].to_i
+    section["observations_count"] = total if total.positive? || section["never"] == true
+  end
+
+  # Counts published OGOs by Gruuv Health age band (Healthy ≤30d, Warning 31–89d, Needs Attention ≥90d).
+  # Uses the same scopes as EngagementHealth so captions cannot disagree with the cell status.
+  def ogo_band_counts_by_teammate(teammates)
+    reference_time = Time.current
+
+    teammates.each_with_object({}) do |teammate, result|
+      given = { "healthy_count" => 0, "warning_count" => 0, "needs_attention_count" => 0 }
+      received = { "healthy_count" => 0, "warning_count" => 0, "needs_attention_count" => 0 }
+
+      Observations::HealthScopes.given_scope(teammate, organization).pluck(:published_at).each do |published_at|
+        increment_band_count!(given, published_at, reference_time: reference_time)
+      end
+      Observations::HealthScopes.received_scope(teammate, organization).distinct.pluck(:published_at).each do |published_at|
+        increment_band_count!(received, published_at, reference_time: reference_time)
+      end
+
+      result[teammate.id] = { given: given, received: received }
+    end
+  end
+
+  def increment_band_count!(counts, published_at, reference_time:)
+    status = EngagementHealth::Thresholds.status_for_last_event(
+      published_at,
+      healthy_within: EngagementHealth::Thresholds::OGO_HEALTHY_WITHIN_DAYS,
+      needs_attention_at: EngagementHealth::Thresholds::OGO_NEEDS_ATTENTION_AT_DAYS,
+      reference_time: reference_time
+    )
+    key = "#{status}_count"
+    counts[key] = counts[key].to_i + 1 if counts.key?(key)
   end
 
   def spotlight_status(overall_status)

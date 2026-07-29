@@ -6,13 +6,15 @@ alwaysApply: false
 
 # Page Help UX Pattern
 
+**Canonical example:** Protect Flow (`organizations/protect_flow/show` + `_page_help`). Full write-up: `docs/page-help-pattern.md`.
+
 When editing page-level views, use this pattern by default:
 
-- Place an info icon directly to the right of the page header text.
-- Use an outline-style info icon unless product direction says otherwise.
+- Place an info icon directly to the right of the page header text via `shared/page_help/header_info_button` (do not inline a duplicate `fs-1` info button).
 - Icon supports both:
   - hover tooltip with a very brief sentence and "click for details" cue
   - click to expand/collapse a hidden full-width help alert below the header
+- Expanded shell: `.alert.alert-light.border` (not `.alert.alert-info`).
 - Keep helper text concise, practical, and adapted to the current page.
 
 ## Expanded help structure (required)
@@ -23,9 +25,16 @@ Inside `.alert.alert-light.border`, use **three `%h3.fw-semibold.mb-2` sections*
 2. **Context** — shared explainers only:
    - `= render 'shared/maap/definition'` when MAAP/clarity-related
    - `= render 'shared/check_ins/three_step_clarity_flow', organization:, teammate:` on check-in / finalization / tenure-bypass / single-assignment check-in pages
+   - Or short Gruuv Health / product context when those partials do not apply
 3. **Specifics of this page** — route-specific bullets and behavior; subsection titles use **`%h5.fw-semibold.mb-2`** (not `%h6`).
 
 Shared partials (`maap/definition`, `three_step_clarity_flow`) already use `%h5` for their titles so they nest under Context.
+
+## Anti-patterns (fix when touching a page)
+
+- Inlined `bi-info-circle.fs-1` button markup instead of `header_info_button`
+- `.alert.alert-info` + “Ultimate goal” / flat help without three H3s
+- Tiny decorative `bi-info-circle` treated as page help (that is field-level only)
 
 ## Expanded Help Content
 

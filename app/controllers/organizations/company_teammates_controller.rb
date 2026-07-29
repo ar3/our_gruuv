@@ -926,9 +926,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @complete_picture_check_ins_url = organization_company_teammate_check_ins_path(organization, @teammate)
     @complete_picture_seats_management_url = organization_seats_path(organization)
 
-    goals_arr = Goal.where(owner: @teammate, deleted_at: nil).includes(:goal_check_ins).to_a
+    goals_arr = Goal.where(owner: @teammate, deleted_at: nil).to_a
     @complete_picture_goals_active_count = goals_arr.count { |g| g.started_at.present? && g.completed_at.nil? }
-    @complete_picture_goals_health_status = Goals::HealthStatusCalculator.call(goals_arr)
+    eh_goal_records = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: organization,
+      teammate_ids: [@teammate.id]
+    )[@teammate.id] || []
+    @complete_picture_goals_health_status = GoalsHealthEngagementHealthSupport.spotlight_symbol(
+      GoalsHealthEngagementHealthSupport.category_status(eh_goal_records)
+    )
 
     casual = @teammate.person.casual_name
     return_path = complete_picture_organization_company_teammate_path(organization, @teammate)
@@ -1671,15 +1677,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       
       # Check if any goals were completed in the last 90 days (for status indicator)
       @goals_completed_recently = base_goals.where('completed_at >= ?', 90.days.ago).exists?
-      
-      # Calculate goals with check-ins in the past two weeks
-      cutoff_week = (Date.current - 14.days).beginning_of_week(:monday)
-      recent_check_in_goal_ids = all_check_ins
-        .select { |check_in| check_in.check_in_week_start >= cutoff_week }
-        .map(&:goal_id)
-        .uniq
-      @goals_with_recent_check_ins_count = all_active_goals.count { |goal| recent_check_in_goal_ids.include?(goal.id) }
-      
+
+      eh_goal_records = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+        organization: organization,
+        teammate_ids: [@teammate.id]
+      )[@teammate.id] || []
+      @goals_with_recent_check_ins_count = GoalsHealthEngagementHealthSupport.items_for(eh_goal_records)
+        .count { |item| item.status == EngagementHealth::HEALTHY }
+
       # Calculate goals completed in the last 90 days (owner-only, same scope as list)
       @goals_completed_count = Goal.where(owner: @teammate)
         .where('completed_at >= ?', 90.days.ago)
