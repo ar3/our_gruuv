@@ -12,6 +12,17 @@ module Organizations
     def index
       authorize PossibleObservationConsult
       @consults = policy_scope(PossibleObservationConsult).recent_first.limit(50)
+      @slack_searches = load_hub_slack_searches
+      @slack_searches_polling = @slack_searches.any?(&:hub_in_flight?)
+    end
+
+    def slack_search_statuses
+      authorize PossibleObservationConsult, :index?
+      searches = load_hub_slack_searches
+      render json: {
+        searches: searches.map { |search| hub_slack_search_payload(search) },
+        polling: searches.any?(&:hub_in_flight?)
+      }
     end
 
     def new
@@ -185,6 +196,30 @@ module Organizations
       )
       consult.update!(suggested_teammate_ids: suggested.map(&:id))
       redirect_to organization_possible_observation_consult_path(organization, consult), notice: notice
+    end
+
+    def load_hub_slack_searches
+      return PossibleObservationSlackSearch.none unless current_company_teammate
+
+      policy_scope(PossibleObservationSlackSearch)
+        .where(creator_company_teammate_id: current_company_teammate.id)
+        .recent_first
+        .limit(50)
+        .includes(:subject_company_teammate, :message_batches, subject_company_teammate: :person)
+    end
+
+    def hub_slack_search_payload(search)
+      batches = search.message_batches.to_a
+      {
+        id: search.id,
+        phase: search.hub_phase,
+        search_status: search.search_status,
+        batches_total: batches.size,
+        batches_completed: batches.count { |b| b.extraction_status == "completed" },
+        pogo_count: search.pogo_count,
+        dismissed_pogo_count: search.dismissed_pogo_count,
+        promoted_pogo_count: search.promoted_pogo_count
+      }
     end
 
     def consult_path

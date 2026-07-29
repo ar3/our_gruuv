@@ -14,11 +14,17 @@ class PossibleObservationSlackSearchJob < ApplicationJob
     search.reload
     return unless search.auto_extract_after_search?
 
+    model_id = search.auto_extract_model_id.presence
     search.message_batches.find_each do |batch|
       next unless batch.extraction_status == "ready"
 
       batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-      PossibleObservationSlackSearchExtractionJob.perform_later(batch.id)
+      if model_id.present?
+        PossibleObservationSlackSearchExtractionJob.perform_later(batch.id, model_id: model_id)
+      else
+        PossibleObservationSlackSearchExtractionJob.perform_later(batch.id)
+      end
     end
   end
 end
+

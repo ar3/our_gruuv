@@ -18,7 +18,7 @@
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "#{@casual_name}'s OGOs", url: ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)) }, { label: "Slack search", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Consult OG to find pOGOs", url: organization_possible_observation_consults_path(organization) }, { label: "Teammates", url: organization_employees_path(organization) }, { label: "#{@casual_name}'s OGOs", url: ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)) }, { label: "Slack search", url: nil }])
 
 .collapse.mb-4{id: page_help_id}
   = render "page_help", casual_name: @casual_name

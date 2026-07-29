@@ -1,4 +1,14 @@
 / Employee Health Overview Spotlight — check-ins, goals, and observations health
+- slack_connected = current_company_teammate&.has_slack_search_identity?
+- bulk_pogo_blockers = []
+- bulk_pogo_blockers << "You need to be signed in as a teammate in this organization." if current_company_teammate.nil?
+- if current_company_teammate.present?
+  - bulk_pogo_blockers << "You need at least one direct report to run this bulk consultation." unless current_company_teammate.has_direct_reports?
+  - bulk_pogo_blockers << "Terminated teammates cannot start Slack consultations." if current_company_teammate.terminated?
+- bulk_pogo_enabled = bulk_pogo_blockers.empty? && slack_connected
+- bulk_pogo_tooltip = bulk_pogo_blockers.join(" ")
+- bulk_pogo_collapse_id = "employee-health-bulk-slack-pogo"
+- slack_oauth_return_to = request.fullpath
 .row.justify-content-center.mb-4
   .col-lg-12
     .row.g-3
@@ -38,6 +48,39 @@
                 = link_to organization_observations_health_path(@organization, manager_id: @spotlight_stats[:manager_filter]), class: "btn btn-outline-primary btn-sm w-100" do
                   %i.bi.bi-chat-square-text.me-2
                   Observations Health
+    .text-end.mt-2
+      %a.small.text-muted.text-decoration-none{ href: "##{bulk_pogo_collapse_id}", "data-bs-toggle" => "collapse", "aria-expanded" => "false", "aria-controls" => bulk_pogo_collapse_id }
+        Want OG to help you find OGOs that may be hiding in plain sight in Slack?
+        %i.bi.bi-chevron-down.ms-1
+    .collapse.mt-2{ id: bulk_pogo_collapse_id }
+      .border.rounded.bg-light.p-3
+        %p.small.text-muted.mb-3
+          Run a 30-day Slack search + an AI-powered consultation to find potential OGOs for each direct report.
+          This may take a while — each person finishes separately. Watch progress on
+          = succeed "." do
+            = link_to "Consult OG to find potential OGOs", organization_possible_observation_consults_path(@organization)
+        .d-flex.flex-wrap.align-items-center.gap-2
+          - if current_company_teammate.nil?
+            %span.btn.btn-primary.btn-sm.disabled{ style: "opacity: 0.6; cursor: not-allowed;", "aria-disabled" => "true" }
+              %i.bi.bi-slack.me-1
+              Refresh pOGOs for my direct reports
+            %i.bi.bi-exclamation-triangle.text-warning{ "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => bulk_pogo_tooltip, "aria-label" => bulk_pogo_tooltip }
+          - elsif !slack_connected
+            = link_to organization_company_teammate_slack_search_oauth_authorize_path(@organization, current_company_teammate, source: "myEmployeesBulkPogo", return_to: slack_oauth_return_to), class: "btn btn-outline-primary btn-sm" do
+              %i.bi.bi-slack.me-1
+              Connect Slack (search)
+          - elsif bulk_pogo_enabled
+            = button_to organization_direct_reports_slack_ogo_consults_path(@organization),
+                        method: :post,
+                        class: "btn btn-primary btn-sm",
+                        data: { turbo: false, confirm: "Start a 30-day Slack search + stronger-model consultation for each of your direct reports? This may take a while — each person finishes separately. You’ll be taken to Consult OG to find potential OGOs to watch progress and open results." } do
+              %i.bi.bi-slack.me-1
+              Refresh pOGOs for my direct reports
+          - else
+            %span.btn.btn-primary.btn-sm.disabled{ style: "opacity: 0.6; cursor: not-allowed;", "aria-disabled" => "true" }
+              %i.bi.bi-slack.me-1
+              Refresh pOGOs for my direct reports
+            %i.bi.bi-exclamation-triangle.text-warning{ "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => bulk_pogo_tooltip, "aria-label" => bulk_pogo_tooltip }
     .card.border-0.shadow-sm.mt-3
       .card-footer.bg-light
         .row.align-items-center

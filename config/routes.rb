@@ -254,6 +254,7 @@ Rails.application.routes.draw do
       collection do
         post :import_google_meet
         post :import_zoom
+        get :slack_search_statuses
       end
       member do
         patch :confirm_teammates
@@ -263,6 +264,8 @@ Rails.application.routes.draw do
         post :create_draft_observations
       end
     end
+
+    resources :direct_reports_slack_ogo_consults, module: :organizations, only: %i[create]
 
     # Legacy upload_events routes for backward compatibility
     resources :upload_events, only: [:index, :show, :new, :create, :destroy], controller: 'bulk_sync_events' do

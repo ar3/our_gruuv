@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_28_124500) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_28_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1484,6 +1484,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_124500) do
     t.integer "messages_count", default: 0, null: false
     t.integer "filtered_messages_count", default: 0, null: false
     t.boolean "auto_extract_after_search", default: false, null: false
+    t.string "auto_extract_model_id"
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_27e60c973a"
     t.index ["extraction_status"], name: "index_possible_observation_slack_searches_on_extraction_status"
     t.index ["organization_id"], name: "index_possible_observation_slack_searches_on_organization_id"

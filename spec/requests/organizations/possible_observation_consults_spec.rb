@@ -297,6 +297,47 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Dismissed")
       expect(response.body).to include("Promoted")
     end
+
+    it "lists the viewer's Slack searches next to transcript consults" do
+      create(:teammate_identity, :slack_search, teammate: teammate)
+      search = create(
+        :possible_observation_slack_search,
+        :completed,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: other,
+        display_name: "Slack search about Pat (last 30 days)"
+      )
+
+      get organization_possible_observation_consults_path(organization)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Slack searches")
+      expect(response.body).to include(search.display_name)
+      expect(response.body).to include(
+        organization_company_teammate_possible_observation_slack_search_path(organization, other, search)
+      )
+    end
+  end
+
+  describe "GET slack_search_statuses" do
+    it "returns hub phase payloads for the viewer's searches" do
+      create(
+        :possible_observation_slack_search,
+        organization: organization,
+        creator_company_teammate: teammate,
+        subject_company_teammate: other,
+        search_status: "processing"
+      )
+
+      get slack_search_statuses_organization_possible_observation_consults_path(organization),
+          headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:ok)
+      json = response.parsed_body
+      expect(json["polling"]).to be(true)
+      expect(json["searches"].first["phase"]).to eq("searching")
+    end
   end
 
   describe "GET show while processing" do

@@ -56,11 +56,9 @@ class PossibleObservationSlackSearch < ApplicationRecord
     {}.with_indifferent_access
   end
 
+  # Candidates live on message batches (legacy search.extractions is unused for new runs).
   def extraction_items
-    hash = extractions.is_a?(Hash) ? extractions.with_indifferent_access : {}
-    Array(hash[:items])
-      .map(&:with_indifferent_access)
-      .sort_by { |item| [-item[:confidence].to_f, item[:ts].to_s] }
+    message_batches.flat_map(&:extraction_items)
   end
 
   def mark_extraction_processing!
@@ -124,6 +122,42 @@ class PossibleObservationSlackSearch < ApplicationRecord
     return "—" unless search_status == "completed"
 
     "#{messages_count} fetched · #{filtered_messages_count} for consultation"
+  end
+
+  # Aggregate phase for hub listing / polling (search + batch extractions).
+  def hub_phase
+    case search_status
+    when "pending", "processing"
+      "searching"
+    when "failed"
+      "failed"
+    when "completed"
+      batches = message_batches.to_a
+      return "completed" if batches.empty?
+      return "extracting" if batches.any? { |b| %w[pending processing].include?(b.extraction_status) }
+      return "failed" if batches.any? { |b| b.extraction_status == "failed" } &&
+                         batches.none? { |b| %w[pending processing completed].include?(b.extraction_status) }
+
+      "completed"
+    else
+      "idle"
+    end
+  end
+
+  def hub_in_flight?
+    %w[searching extracting].include?(hub_phase)
+  end
+
+  def pogo_count
+    extraction_items.size
+  end
+
+  def dismissed_pogo_count
+    extraction_items.count { |item| item[:dismissed_at].present? }
+  end
+
+  def promoted_pogo_count
+    extraction_items.count { |item| item[:observation_id].present? }
   end
 
   def mark_search_failed!(message)

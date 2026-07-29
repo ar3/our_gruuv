@@ -5,10 +5,60 @@
       %i.bi.bi-stars
       OG to find potential OurGruuv Observations (pOGOs)
     %p.text-muted.mb-0
-      Paste or upload a transcript, confirm teammates, run one OG consultation, then create draft OGOs.
+      Paste or upload a transcript, or start Slack searches for your direct reports from My Employees. Process candidates from either source here.
 
-.mb-3
+.mb-3.d-flex.flex-wrap.gap-2
   = link_to "New consult", new_organization_possible_observation_consult_path(organization), class: "btn btn-primary"
+  - if current_company_teammate&.has_direct_reports? && policy(PossibleObservationSlackSearch).create?
+    = button_to organization_direct_reports_slack_ogo_consults_path(organization),
+                method: :post,
+                class: "btn btn-outline-primary",
+                data: { turbo: false, confirm: "Start a 30-day Slack search + stronger-model consultation for each of your direct reports? This may take a while — each person finishes separately. Results will appear on this page." } do
+      %i.bi.bi-slack.me-1
+      Refresh pOGOs for my direct reports (30 days)
+
+- if @slack_searches.any?
+  %h2.h5.mt-4.mb-2
+    %i.bi.bi-slack.me-1
+    Slack searches
+  %p.small.text-muted.mb-2
+    Open a search to review candidates on that teammate’s Slack search page.
+    - if @slack_searches_polling
+      In-flight runs update automatically.
+  .table-responsive{ "data-controller" => (@slack_searches_polling ? "hub-slack-search-status" : nil),
+                     "data-hub-slack-search-status-url-value" => (@slack_searches_polling ? slack_search_statuses_organization_possible_observation_consults_path(organization) : nil) }
+    %table.table.table-striped.align-middle
+      %thead
+        %tr
+          %th Name / teammate
+          %th Status
+          %th.text-end pOGOs
+          %th.text-end Dismissed
+          %th.text-end Promoted
+          %th Created
+          %th
+      %tbody
+        - @slack_searches.each do |search|
+          - subject = search.subject_company_teammate
+          %tr{ "data-hub-slack-search-status-row" => true, "data-search-id" => search.id }
+            %td
+              .fw-semibold= search.display_name
+              .small.text-muted= subject&.person&.display_name
+            %td
+              %span.badge.text-bg-secondary{ "data-hub-phase" => true }= search.hub_phase
+            %td.text-end{ "data-hub-pogo-count" => true }= search.pogo_count
+            %td.text-end{ "data-hub-dismissed-count" => true }= search.dismissed_pogo_count
+            %td.text-end{ "data-hub-promoted-count" => true }= search.promoted_pogo_count
+            %td= l(search.created_at, format: :short)
+            %td
+              - if policy(search).show?
+                = link_to "Open",
+                          organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),
+                          class: "btn btn-sm btn-outline-primary"
+
+%h2.h5.mt-4.mb-2 Transcript consults
+.mb-3
+  %p.small.text-muted.mb-0 Paste or upload a transcript, confirm teammates, run one OG consultation, then create draft OGOs.
 
 - if @consults.any?
   .table-responsive
@@ -38,4 +88,4 @@
             %td
               = link_to "Open", organization_possible_observation_consult_path(organization, consult), class: "btn btn-sm btn-outline-primary"
 - else
-  %p.text-muted No consults yet. Start by pasting or uploading a transcript.
+  %p.text-muted No transcript consults yet. Start by pasting or uploading a transcript.
