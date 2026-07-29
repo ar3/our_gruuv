@@ -12,6 +12,7 @@ class LlmInvocationsController < ApplicationController
     teammate_resolve
     abilities_hr_enrich
     abilities_hr_match
+    ask_og
   ].freeze
 
   PER_PURPOSE_LIMIT = 10

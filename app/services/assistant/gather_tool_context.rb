@@ -18,6 +18,9 @@ module Assistant
         teammates: invoke_data("list_teammates", query: @query, limit: 15),
         goals_needing_check_in: invoke_data("list_goals", needing_check_in: true, limit: 15),
         goals: invoke_data("list_goals", needing_check_in: false, limit: 15),
+        goals_owned_by_me: invoke_data("list_goals", owned_by_me: true, limit: 15),
+        goals_created_by_me: invoke_data("list_goals", created_by_me: true, limit: 15),
+        sitemap: invoke_data("list_sitemap"),
         observations: invoke_data("list_observations", query: @query, limit: 10)
       }
     end

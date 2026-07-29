@@ -47,6 +47,7 @@ RSpec.describe "MCP HTTP endpoint", type: :request do
     expect(names).to include(
       "list_teammates",
       "list_goals",
+      "list_sitemap",
       "list_observations",
       "search_organization",
       "create_draft_observation",

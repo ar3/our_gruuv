@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Assistant
-  # Starts an Ask OG consultation with the first user message and enqueues the job.
+  # Starts an Ask OG thread (non-billable OgConsultation shell + LLM invocations) and enqueues the job.
   class StartAskOg
     def self.call(...) = new(...).call
 

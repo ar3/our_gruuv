@@ -25,6 +25,14 @@ RSpec.describe OgConsultations::Kinds do
     expect(entry.runner_class).to be_nil
   end
 
+  it 'registers Ask OG as non-billable (LLM cost only, like teammate resolve)' do
+    entry = described_class.fetch(OgConsultation::KIND_ASK_OG)
+
+    expect(entry.llm_purpose).to eq('ask_og')
+    expect(entry.billable).to be(false)
+    expect(entry.job_class).to eq(AskOgJob)
+  end
+
   it 'raises a clear error for unknown kinds' do
     expect { described_class.fetch('not_a_kind') }.to raise_error(KeyError, /Unknown OgConsultation kind/)
   end

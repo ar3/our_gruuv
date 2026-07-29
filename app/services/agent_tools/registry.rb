@@ -8,6 +8,7 @@ module AgentTools
       "list_teammates" => "AgentTools::ListTeammates",
       "list_goals" => "AgentTools::ListGoals",
       "list_observations" => "AgentTools::ListObservations",
+      "list_sitemap" => "AgentTools::ListSitemap",
       "search_organization" => "AgentTools::SearchOrganization",
       "create_draft_observation" => "AgentTools::CreateDraftObservation",
       "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence"
@@ -31,9 +32,46 @@ module AgentTools
       "list_goals" => {
         type: "object",
         properties: {
-          needing_check_in: { type: "boolean", description: "If true, only goals needing a confidence check-in" },
+          needing_check_in: {
+            type: "boolean",
+            description: "If true, only goals needing a current-week confidence check-in (AND with other filters)"
+          },
+          owned_by_me: {
+            type: "boolean",
+            description: "If true, only goals owned by you (owner_type CompanyTeammate + your teammate id)"
+          },
+          created_by_me: {
+            type: "boolean",
+            description: "If true, only goals you created (can combine with owned_by_me)"
+          },
+          everyone_in_company: {
+            type: "boolean",
+            description: "If true, only goals with privacy_level everyone_in_company"
+          },
+          my_relevant_goals: {
+            type: "boolean",
+            description: "If true, active goals that are company-visible or owned by you"
+          },
+          owner_type: {
+            type: "string",
+            enum: %w[CompanyTeammate Organization Department Team Company],
+            description: "Filter by polymorphic owner type (Company maps to Organization). Use with owner_path or owner_id."
+          },
+          owner_path: {
+            type: "string",
+            description: "Path of the owner from tool results (teammate/department/team/organization path)"
+          },
+          owner_id: {
+            type: "integer",
+            description: "Owner id when owner_path is unavailable; requires owner_type"
+          },
           limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
         },
+        additionalProperties: false
+      },
+      "list_sitemap" => {
+        type: "object",
+        properties: {},
         additionalProperties: false
       },
       "list_observations" => {
@@ -97,7 +135,8 @@ module AgentTools
 
     DESCRIPTIONS = {
       "list_teammates" => "List teammates in the organization (directory). Prefer paths from results over numeric ids.",
-      "list_goals" => "List goals visible to you, optionally only those needing a current-week confidence check-in.",
+      "list_goals" => "List goals visible to you. Each goal includes owned_by_me, created_by_me, owner (type/name/path), and creator. Optional filters AND together; omit filters for the full labeled list.",
+      "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
       "list_observations" => "List published observations (OGOs) visible to you.",
       "search_organization" => "Search people, assignments, abilities, titles, and observations in the org.",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
@@ -107,6 +146,7 @@ module AgentTools
     TITLES = {
       "list_teammates" => "List teammates",
       "list_goals" => "List goals",
+      "list_sitemap" => "List sitemap",
       "list_observations" => "List observations",
       "search_organization" => "Search organization",
       "create_draft_observation" => "Create draft observation",

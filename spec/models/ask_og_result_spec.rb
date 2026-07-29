@@ -13,7 +13,7 @@ RSpec.describe AskOgResult do
       organization: organization,
       triggered_by_teammate: teammate,
       status: "completed",
-      billable: true,
+      billable: false,
       prompt_version: Assistant::Prompts::ASK_OG_PROMPT_VERSION,
       units_total: 1,
       units_completed: 1

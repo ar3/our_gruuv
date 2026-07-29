@@ -35,6 +35,7 @@ RSpec.describe "Organizations::AskOg", type: :request do
       expect(body["reply_url"]).to be_present
       consultation = OgConsultation.find(body["consultation_id"])
       expect(consultation.kind).to eq(OgConsultation::KIND_ASK_OG)
+      expect(consultation.billable).to eq(false)
       expect(consultation.result).to be_a(AskOgResult)
       expect(consultation.result.query).to eq("draft kudos for a teammate")
       expect(consultation.result.ask_og_messages.user_messages.count).to eq(1)

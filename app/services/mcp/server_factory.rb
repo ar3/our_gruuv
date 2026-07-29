@@ -6,10 +6,13 @@ module Mcp
     SERVER_NAME = "ourgruuv"
     SERVER_VERSION = "1.0.0"
     INSTRUCTIONS = <<~TEXT.freeze
-      OurGruuv MCP: query teammates, goals, observations (OGOs), and org search as the
-      authenticated teammate. Prefer path values from tool results over numeric ids.
-      create_draft_observation never publishes. set_current_week_goal_confidence only
-      updates the current Monday week; 0% or 100% requires learnings.
+      OurGruuv MCP: query teammates, goals, observations (OGOs), sitemap pages, and org
+      search as the authenticated teammate. Prefer path values from tool results over
+      numeric ids. Use list_sitemap for navigation / where-to-go answers; do not invent
+      pages. list_goals rows include owned_by_me, created_by_me, and owner details;
+      optional filters AND together. create_draft_observation never publishes.
+      set_current_week_goal_confidence only updates the current Monday week; 0% or 100%
+      requires learnings.
     TEXT
 
     def self.build(agent_tools_context:)

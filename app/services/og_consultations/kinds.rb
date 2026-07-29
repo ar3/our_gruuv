@@ -96,6 +96,8 @@ module OgConsultations
         llm_purpose: 'slack_chunk',
         billable: true
       ),
+      # Ask OG: LLM invocations for cost ledger only — not Value Billing (like teammate_resolve).
+      # Still uses an OgConsultation shell for job status / multi-turn threads.
       OgConsultation::KIND_ASK_OG => Entry.new(
         kind: OgConsultation::KIND_ASK_OG,
         label: 'Ask OG',
@@ -103,7 +105,7 @@ module OgConsultations
         job_class_name: 'AskOgJob',
         runner_class_name: 'Assistant::AskOgRunner',
         llm_purpose: 'ask_og',
-        billable: true
+        billable: false
       )
     }.freeze
 
