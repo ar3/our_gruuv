@@ -81,10 +81,21 @@ module AssignmentSurveys
 
     def distributions_for(responses)
       DIMENSIONS.to_h do |dimension, attribute|
-        values = responses.filter_map { |response| response.public_send(attribute) }
+        rated = responses.select { |response| response.public_send(attribute).present? }
+        values = rated.map { |response| response.public_send(attribute) }
         counts = (1..6).to_h { |rating| [ rating, values.count(rating) ] }
+        rating_sets = (1..6).to_h do |rating|
+          set = rated.select { |response| response.public_send(attribute) == rating }
+          [
+            rating,
+            {
+              teammate_count: set.map { |response| response.submission.teammate_id }.uniq.size,
+              assignment_count: set.map(&:assignment_id).uniq.size
+            }
+          ]
+        end
         average = values.any? ? (values.sum.to_f / values.size).round(2) : nil
-        [ dimension, { counts: counts, average: average, total: values.size } ]
+        [ dimension, { counts: counts, average: average, total: values.size, rating_sets: rating_sets } ]
       end
     end
   end

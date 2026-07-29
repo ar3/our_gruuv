@@ -19,4 +19,11 @@ RSpec.describe AssignmentSurveysHelper, type: :helper do
     prompt = helper.assignment_survey_understandable_prompt("<script>x</script>")
     expect(prompt).not_to include("<script>")
   end
+
+  it "describes teammates and assignments in a rating-set popover" do
+    content = helper.assignment_survey_rating_set_popover_content(teammate_count: 2, assignment_count: 3)
+    expect(content).to include("2 teammates make up these responses")
+    expect(content).to include("3 assignments represented")
+    expect(content).to be_html_safe
+  end
 end

@@ -145,6 +145,13 @@ RSpec.describe "Assignment Experience Survey", type: :request do
 
     expect(response).to have_http_status(:success)
     expect(response.body).to include("Current overall results")
+    expect(response.body).to include("Results by assignment")
+    expect(response.body).to include("Understandable")
+    expect(response.body).to include("Possible")
+    expect(response.body).to include("Relevant")
+    expect(response.body).to include("data-bs-toggle=\"popover\"")
+    expect(response.body).to include("make up these responses")
+    expect(response.body).to include("represented")
     expect(response.body).to include(person.display_name)
 
     get export_organization_assignment_survey_path(organization)

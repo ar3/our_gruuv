@@ -17,4 +17,13 @@ module AssignmentSurveysHelper
     article = assignment_survey_indefinite_article(name)
     safe_join([ "The outcomes of being #{article} ", tag.strong(name), " represents a real business need for the team and therefore company success." ])
   end
+
+  def assignment_survey_rating_set_popover_content(teammate_count:, assignment_count:)
+    safe_join(
+      [
+        tag.div("#{pluralize(teammate_count, 'teammate')} make up these responses"),
+        tag.div("#{pluralize(assignment_count, 'assignment')} represented")
+      ]
+    )
+  end
 end
