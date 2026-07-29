@@ -6,6 +6,7 @@ class OgConsultation < ApplicationRecord
     assignment_clarity
     position_clarity
     teammate_growth
+    position_change_eligibility
     ogo_search_transcript
     ogo_search_slack
     ogo_search_consult
@@ -18,6 +19,7 @@ class OgConsultation < ApplicationRecord
   KIND_ASSIGNMENT_CLARITY = 'assignment_clarity'
   KIND_POSITION_CLARITY = 'position_clarity'
   KIND_TEAMMATE_GROWTH = 'teammate_growth'
+  KIND_POSITION_CHANGE_ELIGIBILITY = 'position_change_eligibility'
   KIND_OGO_SEARCH_TRANSCRIPT = 'ogo_search_transcript'
   KIND_OGO_SEARCH_SLACK = 'ogo_search_slack'
   KIND_OGO_SEARCH_CONSULT = 'ogo_search_consult'
@@ -34,6 +36,7 @@ class OgConsultation < ApplicationRecord
   has_one :assignment_clarity_result, dependent: :destroy
   has_one :position_clarity_result, dependent: :destroy
   has_one :teammate_growth_result, dependent: :destroy
+  has_one :position_change_eligibility_result, dependent: :destroy
   has_one :ogo_search_result, dependent: :destroy
   has_one :ask_og_result, dependent: :destroy
 

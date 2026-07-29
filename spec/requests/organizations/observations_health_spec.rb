@@ -83,6 +83,7 @@ RSpec.describe "Observations Health", type: :request do
       expect(response.body).to include("2:1")
       expect(response.body).to include("Warning")
       expect(response.body).to include("bi-arrow-clockwise")
+      expect(response.body).to include(ogos_organization_company_teammate_path(company, "me"))
     end
   end
 

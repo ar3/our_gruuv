@@ -72,6 +72,10 @@ In-flight Consult OG and OGO search wait banners share `shared/og_consultations/
 5. Specs for create → complete and Value Billing inclusion if `billable: true`.
 6. Bump prompt version per [prompt-versioning](./RULES/prompt-versioning.md) when changing prompts.
 
+### Position-Change Eligibility
+
+Kind `position_change_eligibility` lives on the eligibility requirements page (teammate × target position). Subject is `CompanyTeammate`; target `position_id` is on `PositionChangeEligibilityResult`. One billable shared LLM call, plus optional manager-only and teammate-only overlays when private observations exist in the past year (`units_total` 1–3). UI chrome holds framing/disclaimers; private layers are gated by viewer role but both sides see that the other private section exists.
+
 ## Shared entrypoint
 
 All Bedrock calls go through `Llm::Client` (`Llm::BedrockPricing` + `Llm::BedrockCostCalculator`). Prefer parenting invocations on the consultation when the call is part of a billable run.

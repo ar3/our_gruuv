@@ -99,6 +99,33 @@ module OgConsultationSpecHelpers
     consultation
   end
 
+  def create_position_change_eligibility_consultation!(teammate:, position:, organization:, status: 'pending', **attrs)
+    consultation = OgConsultation.create!(
+      {
+        kind: OgConsultation::KIND_POSITION_CHANGE_ELIGIBILITY,
+        subject: teammate,
+        organization_id: organization.id,
+        status: status,
+        billable: true,
+        prompt_version: Maap::Prompts::MAAP_PROMPTS_VERSION,
+        units_total: 1,
+        units_completed: status == 'completed' ? 1 : 0
+      }.merge(attrs.slice(*CONSULTATION_ATTRS))
+    )
+    result = PositionChangeEligibilityResult.create!(
+      og_consultation: consultation,
+      position: position,
+      change_type: attrs[:change_type] || 'same_position',
+      output_text: attrs[:output_text],
+      manager_only_output_text: attrs[:manager_only_output_text],
+      teammate_only_output_text: attrs[:teammate_only_output_text],
+      manager_only_ran: attrs.fetch(:manager_only_ran, false),
+      teammate_only_ran: attrs.fetch(:teammate_only_ran, false)
+    )
+    consultation.update!(result: result)
+    consultation
+  end
+
   def create_ogo_search_consultation!(
     subject:,
     kind:,

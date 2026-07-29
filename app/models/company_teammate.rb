@@ -30,6 +30,19 @@ class CompanyTeammate < ApplicationRecord
     og_consultations.for_kind(OgConsultation::KIND_TEAMMATE_GROWTH).latest_first.first
   end
 
+  def position_change_eligibility_consultations_for(position)
+    og_consultations
+      .for_kind(OgConsultation::KIND_POSITION_CHANGE_ELIGIBILITY)
+      .joins(:position_change_eligibility_result)
+      .where(position_change_eligibility_results: { position_id: position.id })
+      .latest_first
+      .includes(:triggered_by_teammate, :position_change_eligibility_result)
+  end
+
+  def latest_position_change_eligibility_consultation_for(position)
+    position_change_eligibility_consultations_for(position).first
+  end
+
   # Kudos associations
   has_one :kudos_points_ledger, foreign_key: :company_teammate_id, dependent: :destroy
   has_many :kudos_transactions, foreign_key: :company_teammate_id, dependent: :destroy

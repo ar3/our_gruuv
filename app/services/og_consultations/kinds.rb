@@ -67,6 +67,15 @@ module OgConsultations
         llm_purpose: 'teammate_growth',
         billable: true
       ),
+      OgConsultation::KIND_POSITION_CHANGE_ELIGIBILITY => Entry.new(
+        kind: OgConsultation::KIND_POSITION_CHANGE_ELIGIBILITY,
+        label: 'Position-Change Eligibility',
+        result_class_name: 'PositionChangeEligibilityResult',
+        job_class_name: 'PositionChangeEligibilityJob',
+        runner_class_name: 'Maap::PositionChangeEligibilityRunner',
+        llm_purpose: 'position_change_eligibility',
+        billable: true
+      ),
       # Historical kind only — Meeting transcripts → FR path was retired (Phase 1).
       # Keep for Value Billing / Insights labels on existing og_consultations rows.
       OgConsultation::KIND_OGO_SEARCH_TRANSCRIPT => Entry.new(

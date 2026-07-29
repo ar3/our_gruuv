@@ -162,7 +162,16 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :eligibility_requirements, module: :organizations, only: [:index, :show]
+    resources :eligibility_requirements, module: :organizations, only: [:index, :show] do
+      member do
+        post 'position_change_eligibility/run',
+             to: 'position_change_eligibilities#run',
+             as: :run_position_change_eligibility
+        get 'position_change_eligibility/status',
+            to: 'position_change_eligibilities#status',
+            as: :position_change_eligibility_status
+      end
+    end
     resource :position_comparison, module: :organizations, only: [:show]
 
     resource :position_eligibility_defaults, only: [:show], module: :organizations, controller: 'position_eligibility_defaults' do

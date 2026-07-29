@@ -29,9 +29,75 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
     set_eligibility_source_context
     @eligibility_report = PositionEligibilityService.new.check_eligibility(@teammate, @position)
     load_requirement_lists
+    load_position_change_eligibility_consult
   end
 
   private
+
+  def load_position_change_eligibility_consult
+    @pce_history = @teammate.position_change_eligibility_consultations_for(@position).limit(25).to_a
+    requested_id = params[:consultation_id].presence
+    @pce_run = if requested_id
+                 @pce_history.find { |c| c.id.to_s == requested_id.to_s } ||
+                   @teammate.position_change_eligibility_consultations_for(@position).find_by(id: requested_id)
+               else
+                 @pce_history.first
+               end
+    @pce_result = @pce_run&.position_change_eligibility_result || @pce_run&.result
+    @viewer_is_subject = current_company_teammate&.id == @teammate.id
+    @viewer_can_see_manager_overlay = viewer_can_see_manager_overlay?
+    @pce_change_type = detect_pce_change_type
+    @pce_maap_managers_path = organization_employees_path(@organization, permission: ['maap_mgmt'])
+    @pce_last_position_change_at = pce_last_position_change_at
+    @pce_manager_casual_names = (@managerial_hierarchy_for_display || []).drop(1).filter_map do |entry|
+      ct = entry[:company_teammate]
+      next unless ct
+
+      ct.person.casual_name.presence || ct.person.display_name
+    end
+    @pce_tenure_phrase = if @pce_last_position_change_at.present?
+                           ago = helpers.distance_of_time_in_words(@pce_last_position_change_at, Time.current)
+                           "past #{ago} (since their last position-changing employment tenure)"
+                         else
+                           'past year'
+                         end
+  end
+
+  def viewer_can_see_manager_overlay?
+    return true if current_person&.og_admin?
+    return false unless current_company_teammate
+    return false if @viewer_is_subject
+    return true if current_company_teammate.can_manage_employment?
+    return true if current_company_teammate.in_managerial_hierarchy_of?(@teammate)
+
+    false
+  end
+
+  def detect_pce_change_type
+    current = @teammate.active_employment_tenure&.position
+    if current.nil?
+      'title_change'
+    elsif current.id == @position.id
+      'same_position'
+    elsif current.title_id == @position.title_id
+      'intra_title'
+    else
+      'title_change'
+    end
+  end
+
+  def pce_last_position_change_at
+    tenures = @teammate.employment_tenures.order(started_at: :asc).to_a
+    return tenures.last&.started_at if tenures.size <= 1
+
+    previous = nil
+    last_change = tenures.first&.started_at
+    tenures.each do |tenure|
+      last_change = tenure.started_at if previous && previous.position_id != tenure.position_id
+      previous = tenure
+    end
+    last_change
+  end
 
   def set_positions
     @positions = Position.for_company(organization).ordered

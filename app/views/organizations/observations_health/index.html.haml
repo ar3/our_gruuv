@@ -103,7 +103,7 @@
             - @employee_rows.each do |row|
               %tr
                 %td
-                  = link_to row[:person].display_name, organization_observations_path(@organization), class: "text-decoration-none fw-bold"
+                  = link_to row[:person].display_name, ogos_organization_company_teammate_path(@organization, teammate_route_param(row[:teammate])), class: "text-decoration-none fw-bold"
                   %br
                   - if row[:manager_teammate]
                     %small.text-muted

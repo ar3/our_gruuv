@@ -1,0 +1,185 @@
+- casual = @teammate.person.casual_name.presence || @teammate.person.display_name
+- current_name = @teammate.active_employment_tenure&.position&.display_name || "their current position"
+- target_name = @position.display_name
+- manager_names = @pce_manager_casual_names
+- tenure_phrase = @pce_tenure_phrase
+- status_url = position_change_eligibility_status_organization_eligibility_requirement_path(@organization, @position, teammate_id: @teammate.id, consultation_id: @pce_run&.id)
+- run_url = run_position_change_eligibility_organization_eligibility_requirement_path(@organization, @position, teammate_id: @teammate.id)
+- pce_body_id = "pceConsultBody"
+- pce_expanded = @pce_run&.in_flight? || params[:consultation_id].present?
+
+.row.mb-5.mt-5
+  .col-12
+    %hr.mb-5.mt-5{ style: "border-width: 5px;" }
+
+.row.mb-4
+  .col-12
+    .card.border-primary
+      .card-header.eligibility-section-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.py-2{ "data-bs-toggle": "collapse", "data-bs-target": "##{pce_body_id}", role: "button", tabindex: "0", style: "cursor: pointer;", "aria-expanded": pce_expanded.to_s, "aria-controls": pce_body_id }
+        .d-flex.align-items-center.gap-2.flex-wrap
+          %h3.mb-0.d-flex.align-items-center.gap-2
+            %i.bi.bi-stars
+            Consult OG — Position-Change Eligibility
+          %span.badge.text-bg-warning
+            %i.bi.bi-flask.me-1
+            Beta
+        .d-flex.align-items-center.gap-3.flex-wrap
+          = button_to run_url, method: :post, class: "btn btn-primary btn-sm", disabled: @pce_run&.in_flight?, form: { onclick: "event.stopPropagation();", "data-turbo": false }, onclick: "event.stopPropagation(); var el = document.getElementById('#{pce_body_id}'); if (el && window.bootstrap) { bootstrap.Collapse.getOrCreateInstance(el).show(); }" do
+            %i.bi.bi-play-fill.me-1
+            - if @pce_run&.persisted?
+              Consult OG again
+            - else
+              Consult OG
+          .small.text-muted
+            %span.expand-detail-label.d-inline-flex.align-items-center
+              Expand for details
+              %i.bi.bi-chevron-down.ms-1
+            %span.collapse-detail-label.d-inline-flex.align-items-center{ style: "display: none;" }
+              Show less detail
+              %i.bi.bi-chevron-up.ms-1
+
+      .card-body.collapse.eligibility-section-collapse-body{ id: pce_body_id, class: ("show" if pce_expanded) }
+        - case @pce_change_type
+        - when "same_position"
+          %p.mb-3
+            Let's analyze how
+            %strong= casual
+            is doing in their current position of
+            %strong= target_name
+            \.
+        - when "intra_title"
+          %p.mb-3
+            Let's analyze how
+            %strong= casual
+            is doing in pursuit of an intra-title level change, from
+            %strong= current_name
+            to
+            %strong= target_name
+            \.
+        - else
+          %p.mb-3
+            Let's analyze how
+            %strong= casual
+            is doing in pursuit of a Position that should have new/different expectations and responsibilities (Assignments and Abilities)… From
+            %strong= current_name
+            to
+            %strong= target_name
+            \.
+
+        .alert.alert-light.border.mb-3
+          %p.mb-2
+            This is AI, and should be used only as an assistant… Decisions like this still are in the hands of humans. So,
+            %strong= casual
+            and
+            - if manager_names.any?
+              - manager_names.each_with_index do |name, idx|
+                %strong= name
+                - if idx < manager_names.size - 1
+                  %span ,
+            - else
+              their managers
+            should be speaking about the things that are not captured in OurGruuv but play a big part in whether or not Position Changes are appropriate.
+          %p.mb-0
+            One of the primary goals of OurGruuv is to make things more clear for everyone… to ensure consistency which leads to more fairness… to ensure clarity which promotes personal and team Flow State… to invite appropriate levels of challenge which promotes personal and team growth. However, we can never fully remove subjectivity from this process. Our sincere hope is that this shines a light on the reality of how
+            = casual
+            has been experienced in this
+            = tenure_phrase
+            , and gets as close to a consistent yes or no as possible… but OG will never give the final recommendation.
+
+        - if @show_business_need_criterion && @seats_for_position.blank?
+          .alert.alert-warning.mb-3
+            %p.mb-2
+              This position does not currently appear attached to an official seat. Encourage a conversation between
+              = casual
+              and their manager to flesh out the position and determine if or when it will be part of an official seat.
+            %p.mb-0
+              If you think this is an error and there is a business need, reach out to your manager and one of the people found
+              = link_to "here (teammates who can manage MAAP)", @pce_maap_managers_path, class: "alert-link"
+              to get OG configured properly.
+
+        - if @pce_run&.error_message.present? && @pce_run.status == "failed"
+          .alert.alert-danger.mb-3
+            %strong Something went wrong.
+            = @pce_run.error_message
+
+        - if @pce_run&.status.in?(%w[pending processing])
+          = render "shared/og_consultations/status_banner",
+                   status_url: status_url,
+                   initial_status: @pce_run.status,
+                   time_zone: current_person_iana_timezone
+          .placeholder-glow.py-3
+            - 4.times do
+              .placeholder.col-12.mb-2.rounded{ style: "height: 0.9rem;" }
+
+        - elsif @pce_run&.status == "completed" && @pce_result&.output_text.present?
+          - initiator = @pce_run.triggered_by_teammate&.person
+          .d-flex.flex-wrap.align-items-center.gap-2.mb-3.small.text-muted
+            %span
+              Run
+              = l(@pce_run.completed_at || @pce_run.updated_at, format: :long)
+            - if initiator
+              %span
+                · started by
+                = initiator.casual_name.presence || initiator.display_name
+
+          .markdown-content.mb-4
+            = render_markdown(@pce_result.output_text)
+
+          -# Manager-only overlay (always show section so both sides know the other can't see private layers)
+          .border-top.pt-3.mt-3
+            %h4.h5.mb-2 Manager-only analysis
+            - if @viewer_can_see_manager_overlay
+              - if @pce_result.manager_only_ran? && @pce_result.manager_only_output_text.present?
+                .markdown-content
+                  = render_markdown(@pce_result.manager_only_output_text)
+              - else
+                %p.small.text-muted.mb-0
+                  No manager-only observations or journals in the past year for this run — no manager overlay was generated.
+            - else
+              %p.small.text-muted.mb-0 For managers only
+
+          -# Teammate-only overlay
+          .border-top.pt-3.mt-3
+            %h4.h5.mb-2
+              = "#{casual}'s eyes only"
+            - if @viewer_is_subject
+              - if @pce_result.teammate_only_ran? && @pce_result.teammate_only_output_text.present?
+                .markdown-content
+                  = render_markdown(@pce_result.teammate_only_output_text)
+              - else
+                %p.small.text-muted.mb-0
+                  No teammate-only observations or journals in the past year for this run — no teammate overlay was generated.
+            - else
+              %p.small.text-muted.mb-0
+                For
+                = casual
+                's eyes only.
+
+        - elsif @pce_run.nil?
+          %p.text-muted.mb-0
+            No consultation yet. Click “Consult OG” for a year-horizon read of eligibility evidence for
+            = casual
+            and this position.
+
+        - if @pce_history.present? && @pce_history.size > 1
+          .border-top.pt-3.mt-4
+            %h4.h6.text-muted Prior runs
+            %ul.list-unstyled.mb-0.small
+              - @pce_history.each do |run|
+                - active = @pce_run&.id == run.id
+                %li.mb-1
+                  - if active
+                    %strong
+                      = l(run.completed_at || run.created_at, format: :short)
+                      = " — #{run.status}"
+                      - starter = run.triggered_by_teammate&.person
+                      - if starter
+                        = " · #{starter.casual_name.presence || starter.display_name}"
+                      %span.text-muted (viewing)
+                  - else
+                    = link_to organization_eligibility_requirement_path(@organization, @position, teammate_id: @teammate.id, consultation_id: run.id), class: "text-decoration-none" do
+                      = l(run.completed_at || run.created_at, format: :short)
+                      = " — #{run.status}"
+                      - starter = run.triggered_by_teammate&.person
+                      - if starter
+                        = " · #{starter.casual_name.presence || starter.display_name}"

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_28_234014) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_29_080055) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1325,6 +1325,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_234014) do
     t.index ["position_id"], name: "index_position_assignments_on_position_id"
   end
 
+  create_table "position_change_eligibility_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.bigint "position_id", null: false
+    t.text "output_text"
+    t.text "manager_only_output_text"
+    t.text "teammate_only_output_text"
+    t.boolean "manager_only_ran", default: false, null: false
+    t.boolean "teammate_only_ran", default: false, null: false
+    t.string "change_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "idx_on_og_consultation_id_daec45875a", unique: true
+    t.index ["position_id"], name: "index_position_change_eligibility_results_on_position_id"
+  end
+
   create_table "position_check_ins", force: :cascade do |t|
     t.bigint "teammate_id", null: false
     t.bigint "employment_tenure_id", null: false
@@ -2096,6 +2111,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_234014) do
   add_foreign_key "position_abilities", "positions"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
+  add_foreign_key "position_change_eligibility_results", "og_consultations"
+  add_foreign_key "position_change_eligibility_results", "positions"
   add_foreign_key "position_check_ins", "employment_tenures"
   add_foreign_key "position_check_ins", "maap_snapshots"
   add_foreign_key "position_check_ins", "teammates"
