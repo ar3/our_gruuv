@@ -436,10 +436,17 @@ module EngagementHealth
       }
     end
 
-    # Worst status wins; the rollup records which items were the "worst" so
-    # the debug page can show exactly what produced each category rating.
+    # Goal confidence: best status wins (a fresh confidence check keeps the
+    # teammate healthy even while older in-window goals are Warning/NA).
+    # Other categories: worst status wins. The rollup records which items
+    # matched the winning status so the debug page can show what produced it.
     def rollup_row(category, items)
-      status = EngagementHealth.worst_status(items.map { |item| item[:status] })
+      statuses = items.map { |item| item[:status] }
+      status = if category == CATEGORY_GOAL_CONFIDENCE
+        EngagementHealth.best_status(statuses)
+      else
+        EngagementHealth.worst_status(statuses)
+      end
       determining = items.select { |item| item[:status] == status }
       {
         level: "category",

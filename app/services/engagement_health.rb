@@ -5,9 +5,12 @@
 # clarity check-ins, milestones). Deliberately NOT "on/off track", which
 # already describes a goal's outcome trajectory — these statuses describe the
 # freshness/coverage of engagement signals. This module and its children are
-# the SINGLE source of truth for statuses, thresholds, and the
-# worst-status-wins rollup — no other code path may reimplement these
-# definitions.
+# the SINGLE source of truth for statuses, thresholds, and rollup rules —
+# no other code path may reimplement these definitions.
+#
+# Category rollups: goal confidence uses best-status-wins (any fresh
+# confidence signal keeps the teammate healthy); other multi-item categories
+# use worst-status-wins.
 module EngagementHealth
   HEALTHY = "healthy"
   WARNING = "warning"
@@ -43,11 +46,18 @@ module EngagementHealth
 
   module_function
 
-  # Rollup rule: worst status wins.
+  # Rollup rule for most categories: worst status wins.
   def worst_status(statuses)
     return HEALTHY if statuses.blank?
 
     STATUSES.reverse.find { |status| statuses.include?(status) } || HEALTHY
+  end
+
+  # Rollup rule for goal confidence: best status wins.
+  def best_status(statuses)
+    return HEALTHY if statuses.blank?
+
+    STATUSES.find { |status| statuses.include?(status) } || HEALTHY
   end
 
   # 0 = worst (Needs Attention), increasing toward best; unknown statuses sort last.

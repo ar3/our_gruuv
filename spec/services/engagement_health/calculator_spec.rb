@@ -291,9 +291,9 @@ RSpec.describe EngagementHealth::Calculator do
       expect(statuses[never_goal.id]).to eq(EngagementHealth::NEEDS_ATTENTION)
 
       rollup = rollup_for('goal_confidence')
-      expect(rollup[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+      expect(rollup[:status]).to eq(EngagementHealth::HEALTHY)
       determining_ids = rollup[:inputs]['determined_by'].map { |d| d['entity_id'] }
-      expect(determining_ids).to eq([never_goal.id])
+      expect(determining_ids).to eq([fresh_goal.id])
     end
 
     it 'includes goals completed within 90 days and drops older completions' do
@@ -305,6 +305,21 @@ RSpec.describe EngagementHealth::Calculator do
       item_ids = rows_for('goal_confidence', level: 'item').map { |item| item[:entity_id] }
       expect(item_ids).to include(recent_completed.id)
       expect(item_ids).not_to include(old_completed.id)
+    end
+
+    it 'uses best status wins for the category rollup' do
+      healthy_goal = create_goal(:active, owner: teammate, creator: teammate)
+      healthy_check_in = create(:goal_check_in, goal: healthy_goal)
+      healthy_check_in.update_column(:updated_at, 3.days.ago)
+
+      warning_goal = create_goal(:active, owner: teammate, creator: teammate)
+      warning_check_in = create(:goal_check_in, goal: warning_goal,
+                                check_in_week_start: 10.weeks.ago.to_date.beginning_of_week(:monday))
+      warning_check_in.update_column(:updated_at, 45.days.ago)
+
+      rollup = rollup_for('goal_confidence')
+      expect(rollup[:status]).to eq(EngagementHealth::HEALTHY)
+      expect(rollup[:inputs]['determined_by'].map { |d| d['entity_id'] }).to eq([healthy_goal.id])
     end
   end
 
@@ -433,5 +448,14 @@ RSpec.describe EngagementHealth::Calculator do
       expect(EngagementHealth.worst_status(%w[healthy healthy])).to eq('healthy')
       expect(EngagementHealth.worst_status([])).to eq('healthy')
     end
+
+    it 'best status wins' do
+      expect(EngagementHealth.best_status(%w[healthy warning])).to eq('healthy')
+      expect(EngagementHealth.best_status(%w[warning needs_attention])).to eq('warning')
+      expect(EngagementHealth.best_status(%w[healthy warning needs_attention])).to eq('healthy')
+      expect(EngagementHealth.best_status(%w[needs_attention needs_attention])).to eq('needs_attention')
+      expect(EngagementHealth.best_status([])).to eq('healthy')
+    end
   end
+
 end

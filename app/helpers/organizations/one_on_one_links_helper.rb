@@ -119,6 +119,7 @@ module Organizations
         "Each started goal (plus goals completed in the last #{EngagementHealth::Thresholds::COMPLETED_GOAL_WINDOW_DAYS} days) is rated by its most recent confidence check. " \
           "Healthy when checked within #{EngagementHealth::Thresholds::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS} days, " \
           "Needs Attention at #{EngagementHealth::Thresholds::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS}+ days or never; Warning in between. " \
+          "The teammate's Goal Confidence is the best of those item ratings (best status wins). " \
           "Never having started or completed a goal is itself Needs Attention."
       when EngagementHealth::CATEGORY_REQUIRED_CLARITY
         "Each required check-in item (current position, required and actively-tenured assignments, and aspirations) is rated by its last finalized check-in. " \

@@ -112,7 +112,11 @@ module Maap
     end
 
     def model_id
-      @model_id ||= ENV.fetch('MAAP_BEDROCK_MODEL_ID') { Llm::TranscriptMomentsExtractor.default_model_id }
+      # Position-Change Eligibility is a high-stakes year-horizon read — default to Sonnet 4.5.
+      # Override with POSITION_CHANGE_ELIGIBILITY_BEDROCK_MODEL_ID if needed.
+      @model_id ||= ENV.fetch('POSITION_CHANGE_ELIGIBILITY_BEDROCK_MODEL_ID') {
+        Llm::SlackMomentsExtractor.stronger_model_id
+      }
     end
 
     def fail_consultation(message)
