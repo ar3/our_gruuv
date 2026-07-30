@@ -185,17 +185,24 @@ module EngagementHealth
         .group_by(&:assignment_id)
         .transform_values { |check_ins| open_check_in_at_reference(check_ins) }
 
+      tenure_history_by_assignment_id = positive_energy_assignment_tenure_history_by_assignment_id(assignment_ids)
+
       assignment_ids.filter_map do |assignment_id|
         assignment = assignments_by_id[assignment_id]
         next unless assignment
 
         latest = latest_by_assignment_id[assignment_id]
+        tenure_chain_started_at = ReferenceTime.consecutive_positive_energy_tenure_started_at(
+          tenure_history_by_assignment_id[assignment_id] || [],
+          reference_time: reference_time
+        )
         clarity_item(
           "Assignment",
           assignment.id,
           assignment.title,
           latest,
-          open_check_in: open_by_assignment_id[assignment_id]
+          open_check_in: open_by_assignment_id[assignment_id],
+          tenure_chain_started_at: tenure_chain_started_at
         )
       end
     end
@@ -230,7 +237,7 @@ module EngagementHealth
       end
     end
 
-    def clarity_item(entity_type, entity_id, name, last_check_in, open_check_in: nil)
+    def clarity_item(entity_type, entity_id, name, last_check_in, open_check_in: nil, tenure_chain_started_at: nil)
       last_finalized_at = last_check_in&.official_check_in_completed_at
       days_since = Thresholds.days_since(last_finalized_at, reference_time: reference_time)
       status = Thresholds.status_for_last_event(
@@ -252,6 +259,15 @@ module EngagementHealth
         inputs["last_event_id"] = last_check_in.id
         inputs["last_event_summary"] = "Finalized #{name} check-in"
       end
+
+      status = apply_new_assignment_grace!(
+        status: status,
+        inputs: inputs,
+        entity_type: entity_type,
+        last_finalized_at: last_finalized_at,
+        tenure_chain_started_at: tenure_chain_started_at
+      )
+
       inputs.merge!(
         WorkflowSnapshot.call(
           status: status,
@@ -262,6 +278,37 @@ module EngagementHealth
         )
       )
       item_row(CATEGORY_REQUIRED_CLARITY, entity_type, entity_id, status, inputs)
+    end
+
+    # Assignments with no finalize yet: Warning (not NA) while consecutive >0%
+    # tenure age is under the grace window. Inputs flag the special case so UI
+    # can treat these differently later without re-deriving tenure chains.
+    def apply_new_assignment_grace!(status:, inputs:, entity_type:, last_finalized_at:, tenure_chain_started_at:)
+      return status unless entity_type == "Assignment"
+      return status unless last_finalized_at.nil?
+      return status if tenure_chain_started_at.blank?
+
+      days_on_assignment = Thresholds.days_since(tenure_chain_started_at, reference_time: reference_time)
+      inputs["tenure_chain_started_at"] = tenure_chain_started_at.to_date.iso8601
+      inputs["days_since_tenure_chain_start"] = days_on_assignment
+      inputs["new_assignment_grace_within_days"] = Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+
+      if days_on_assignment && days_on_assignment < Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+        inputs["new_assignment_grace"] = true
+        WARNING
+      else
+        inputs["new_assignment_grace"] = false
+        status
+      end
+    end
+
+    def positive_energy_assignment_tenure_history_by_assignment_id(assignment_ids)
+      teammate.assignment_tenures
+        .where(assignment_id: assignment_ids)
+        .where("assignment_tenures.started_at <= ?", reference_time)
+        .where("assignment_tenures.anticipated_energy_percentage > 0")
+        .order(:assignment_id, :started_at, :id)
+        .group_by(&:assignment_id)
     end
 
     def latest_closed_check_in(scope)

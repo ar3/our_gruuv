@@ -361,6 +361,146 @@ RSpec.describe EngagementHealth::Calculator do
         expect(position_item[:inputs]['days_until_warning']).to eq(11)
       end
     end
+
+    context 'new assignment grace' do
+      let!(:employment_tenure) do
+        create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+      let(:assignment) { create(:assignment, company: organization) }
+
+      def assignment_item
+        rows_for('required_clarity', level: 'item').find do |item|
+          item[:entity_type] == 'Assignment' && item[:entity_id] == assignment.id
+        end
+      end
+
+      it 'rates never-finalized assignments Warning during the first 60 days of consecutive >0% tenure' do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 30.days.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
+        expect(item[:inputs]['never']).to be(true)
+        expect(item[:inputs]['new_assignment_grace']).to be(true)
+        expect(item[:inputs]['days_since_tenure_chain_start']).to eq(30)
+        expect(item[:inputs]['tenure_chain_started_at']).to eq(30.days.ago.to_date.iso8601)
+        expect(item[:inputs]['new_assignment_grace_within_days']).to eq(60)
+      end
+
+      it 'keeps the tenure clock across energy reallocations with no calendar gap' do
+        chain_start = 45.days.ago.to_date
+        mid = 10.days.ago.to_date
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: chain_start,
+          ended_at: mid,
+          anticipated_energy_percentage: 25
+        )
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: mid,
+          ended_at: nil,
+          anticipated_energy_percentage: 75
+        )
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
+        expect(item[:inputs]['new_assignment_grace']).to be(true)
+        expect(item[:inputs]['tenure_chain_started_at']).to eq(chain_start.iso8601)
+        expect(item[:inputs]['days_since_tenure_chain_start']).to eq(45)
+      end
+
+      it 'reverts to Needs Attention at 60+ days with still no finalize' do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 60.days.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+        expect(item[:inputs]['never']).to be(true)
+        expect(item[:inputs]['new_assignment_grace']).to be(false)
+        expect(item[:inputs]['days_since_tenure_chain_start']).to eq(60)
+      end
+
+      it 'restarts the clock after a calendar gap between >0% tenures' do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 80.days.ago.to_date,
+          ended_at: 40.days.ago.to_date,
+          anticipated_energy_percentage: 30
+        )
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 20.days.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
+        expect(item[:inputs]['new_assignment_grace']).to be(true)
+        expect(item[:inputs]['tenure_chain_started_at']).to eq(20.days.ago.to_date.iso8601)
+        expect(item[:inputs]['days_since_tenure_chain_start']).to eq(20)
+      end
+
+      it 'does not apply grace once a check-in has been finalized' do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 10.days.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+        check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)
+        check_in.update_column(:official_check_in_completed_at, 5.days.ago)
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::HEALTHY)
+        expect(item[:inputs]['never']).to be(false)
+        expect(item[:inputs]).not_to have_key('new_assignment_grace')
+      end
+
+      it 'does not apply grace to position or aspiration never-finalized items' do
+        create(:aspiration, company: organization)
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 10.days.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+
+        items = rows_for('required_clarity', level: 'item')
+        position_item = items.find { |item| item[:entity_type] == 'Position' }
+        aspiration_item = items.find { |item| item[:entity_type] == 'Aspiration' }
+
+        expect(position_item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+        expect(position_item[:inputs]).not_to have_key('new_assignment_grace')
+        expect(aspiration_item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
+        expect(aspiration_item[:inputs]).not_to have_key('new_assignment_grace')
+      end
+    end
   end
 
   describe 'milestones' do

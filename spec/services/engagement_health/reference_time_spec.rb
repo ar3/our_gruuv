@@ -113,6 +113,101 @@ RSpec.describe EngagementHealth::ReferenceTime do
     end
   end
 
+  describe '.consecutive_positive_energy_tenure_started_at' do
+    let(:assignment) { create(:assignment, company: organization) }
+
+    def tenure(started_at:, ended_at:, energy: 40)
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment,
+        started_at: started_at,
+        ended_at: ended_at,
+        anticipated_energy_percentage: energy
+      )
+    end
+
+    it 'returns nil when no positive-energy tenure is active at reference_time' do
+      tenure(started_at: reference_time - 40.days, ended_at: reference_time - 1.day)
+      history = described_class.positive_energy_assignment_tenures_history(
+        teammate: teammate,
+        assignment_id: assignment.id,
+        reference_time: reference_time
+      )
+
+      expect(
+        described_class.consecutive_positive_energy_tenure_started_at(history, reference_time: reference_time)
+      ).to be_nil
+    end
+
+    it 'uses the earliest start in a no-gap consecutive chain' do
+      chain_start = (reference_time - 45.days).to_date
+      mid = (reference_time - 20.days).to_date
+      tenure(started_at: chain_start, ended_at: mid, energy: 25)
+      tenure(started_at: mid, ended_at: nil, energy: 60)
+      history = described_class.positive_energy_assignment_tenures_history(
+        teammate: teammate,
+        assignment_id: assignment.id,
+        reference_time: reference_time
+      )
+
+      expect(
+        described_class.consecutive_positive_energy_tenure_started_at(history, reference_time: reference_time)
+      ).to eq(chain_start)
+    end
+
+    it 'treats adjacent calendar days as consecutive (no gap)' do
+      first_start = (reference_time - 30.days).to_date
+      first_end = (reference_time - 15.days).to_date
+      second_start = first_end + 1.day
+      tenure(started_at: first_start, ended_at: first_end, energy: 25)
+      tenure(started_at: second_start, ended_at: nil, energy: 40)
+      history = described_class.positive_energy_assignment_tenures_history(
+        teammate: teammate,
+        assignment_id: assignment.id,
+        reference_time: reference_time
+      )
+
+      expect(
+        described_class.consecutive_positive_energy_tenure_started_at(history, reference_time: reference_time)
+      ).to eq(first_start)
+    end
+
+    it 'breaks the chain on any calendar gap' do
+      old_start = (reference_time - 50.days).to_date
+      tenure(started_at: old_start, ended_at: reference_time - 20.days, energy: 25)
+      new_start = (reference_time - 10.days).to_date
+      tenure(started_at: new_start, ended_at: nil, energy: 40)
+      history = described_class.positive_energy_assignment_tenures_history(
+        teammate: teammate,
+        assignment_id: assignment.id,
+        reference_time: reference_time
+      )
+
+      expect(
+        described_class.consecutive_positive_energy_tenure_started_at(history, reference_time: reference_time)
+      ).to eq(new_start)
+    end
+
+    it 'does not let 0% energy tenures bridge or extend the chain' do
+      old_start = (reference_time - 50.days).to_date
+      tenure(started_at: old_start, ended_at: reference_time - 20.days, energy: 25)
+      tenure(started_at: reference_time - 20.days, ended_at: reference_time - 10.days, energy: 0)
+      new_start = (reference_time - 10.days).to_date
+      tenure(started_at: new_start, ended_at: nil, energy: 40)
+      history = described_class.positive_energy_assignment_tenures_history(
+        teammate: teammate,
+        assignment_id: assignment.id,
+        reference_time: reference_time
+      )
+
+      expect(history.map(&:anticipated_energy_percentage)).to all(be > 0)
+      expect(
+        described_class.consecutive_positive_energy_tenure_started_at(history, reference_time: reference_time)
+      ).to eq(new_start)
+    end
+  end
+
   describe '.aspirations_for' do
     it 'excludes aspirations created or deleted after reference_time' do
       current = create(:aspiration, company: organization, created_at: reference_time - 1.year)

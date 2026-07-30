@@ -3,7 +3,9 @@
 module EngagementHealth
   # The threshold table. OGOs and goal confidence use a 30/90-day model;
   # required clarity check-ins use a stricter 60/90-day model because they
-  # are required. "Never" (no record) always evaluates to Needs Attention.
+  # are required. "Never" (no record) evaluates to Needs Attention, except
+  # assignment items in their first NEW_ASSIGNMENT_GRACE_WITHIN_DAYS of
+  # consecutive >0% energy tenure (see Calculator), which are Warning.
   module Thresholds
     OGO_HEALTHY_WITHIN_DAYS = 30
     OGO_NEEDS_ATTENTION_AT_DAYS = 90
@@ -13,6 +15,10 @@ module EngagementHealth
 
     REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS = 60
     REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS = 90
+
+    # Assignments only: no finalized check-in + consecutive >0% tenure age
+    # strictly less than this → Warning instead of Needs Attention.
+    NEW_ASSIGNMENT_GRACE_WITHIN_DAYS = REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
 
     # Completed goals stay in the goal-confidence rollup for this long after
     # completion, then drop out.

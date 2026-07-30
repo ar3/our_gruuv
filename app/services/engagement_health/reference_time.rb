@@ -30,6 +30,48 @@ module EngagementHealth
         .where("assignment_tenures.anticipated_energy_percentage > 0")
     end
 
+    # Positive-energy tenures for one assignment that had started by
+    # reference_time (including ended ones). Used to measure consecutive
+    # tenure age; 0% rows are excluded so they never bridge a chain.
+    def positive_energy_assignment_tenures_history(teammate:, assignment_id:, reference_time:)
+      teammate.assignment_tenures
+        .where(assignment_id: assignment_id)
+        .where("assignment_tenures.started_at <= ?", reference_time)
+        .where("assignment_tenures.anticipated_energy_percentage > 0")
+        .order(:started_at, :id)
+    end
+
+    # Start of the consecutive >0% energy tenure chain active at reference_time.
+    # Energy reallocations with no calendar gap keep the same start; any gap
+    # between prior.ended_at and the next started_at breaks the chain.
+    # tenures: ascending by started_at; only >0% energy; 0% must not be included.
+    def consecutive_positive_energy_tenure_started_at(tenures, reference_time:)
+      list = Array(tenures)
+      active_index = list.rindex do |tenure|
+        tenure_active_at?(tenure.started_at, tenure.ended_at, reference_time)
+      end
+      return nil if active_index.nil?
+
+      chain_start = list[active_index].started_at
+      index = active_index
+      while index.positive?
+        prior = list[index - 1]
+        current = list[index]
+        break if prior.ended_at.blank?
+        break if calendar_gap?(prior.ended_at, current.started_at)
+
+        chain_start = prior.started_at
+        index -= 1
+      end
+      chain_start
+    end
+
+    def calendar_gap?(ended_at, next_started_at)
+      return true if ended_at.blank? || next_started_at.blank?
+
+      next_started_at.to_date > ended_at.to_date + 1
+    end
+
     def aspirations_for(organization:, reference_time:)
       Aspiration.unscoped
         .where(company_id: organization.id)
