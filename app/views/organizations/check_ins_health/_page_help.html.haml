@@ -75,6 +75,10 @@
             %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_ins_health_eh_status_swatch_css(status), style: "width: 10px; height: 10px;"}
             %strong= EngagementHealth::STATUS_LABELS.fetch(status)
             = " - #{check_ins_health_engagement_status_meaning(status)}"
+        %li
+          %span.d-inline-block.rounded-circle.me-2.align-middle{class: check_ins_health_eh_status_swatch_css(CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY), style: "width: 10px; height: 10px;"}
+          %strong New assignment
+          = " - #{check_ins_health_engagement_status_meaning(CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY)}"
     .col-12.col-lg-6
       %p.fw-semibold.mb-2 Bottom bar (action-based)
       %ul.mb-0

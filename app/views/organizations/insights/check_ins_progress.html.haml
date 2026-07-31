@@ -74,7 +74,7 @@
                 %tbody
                   - @department_health_rows.each do |row|
                     - segments_asp = check_ins_health_engagement_stacked_bar_segments(row[:aspiration_status_counts])
-                    - segments_assign = check_ins_health_engagement_stacked_bar_segments(row[:assignment_status_counts])
+                    - segments_assign = check_ins_health_engagement_stacked_bar_segments(row[:assignment_status_counts], display: :assignment)
                     - segments_pos = check_ins_health_engagement_stacked_bar_segments(row[:position_status_counts])
                     %tr
                       %td

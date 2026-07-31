@@ -73,7 +73,20 @@ module Organizations
     # (in the viewer's timezone) lives in a hover tooltip.
     def engagement_health_last_event_display(item)
       inputs = item.inputs
-      return content_tag(:span, "Never", class: "badge text-bg-danger") if inputs["never"]
+      if inputs["never"]
+        if ActiveModel::Type::Boolean.new.cast(inputs["new_assignment_grace"])
+          day = inputs["days_since_tenure_chain_start"]
+          within = inputs["new_assignment_grace_within_days"] ||
+                   EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+          return content_tag(
+            :span,
+            "New — no check-in yet (day #{day} of #{within})",
+            class: "badge text-bg-secondary"
+          )
+        end
+
+        return content_tag(:span, "Never", class: "badge text-bg-danger")
+      end
 
       last_event_at = inputs["last_event_at"]
       return "—" if last_event_at.blank?

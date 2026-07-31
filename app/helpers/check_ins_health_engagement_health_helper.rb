@@ -10,6 +10,14 @@ module CheckInsHealthEngagementHealthHelper
     EngagementHealth::HEALTHY
   ].freeze
 
+  # Assignments stacked bars: split grace (grey) out of Warning for glanceability.
+  ASSIGNMENT_DISPLAY_BAR_ORDER = [
+    EngagementHealth::NEEDS_ATTENTION,
+    CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY,
+    EngagementHealth::WARNING,
+    EngagementHealth::HEALTHY
+  ].freeze
+
   ENGAGEMENT_HEALTH_BAR_CSS = {
     EngagementHealth::NEEDS_ATTENTION => "bg-danger",
     EngagementHealth::WARNING => "bg-warning",
@@ -28,11 +36,18 @@ module CheckInsHealthEngagementHealthHelper
     CheckInsHealthEngagementHealthSupport.status_counts(items)
   end
 
-  def check_ins_health_engagement_stacked_bar_segments(status_counts)
+  # Display counts for Assignments EH bars: grace items leave Warning and enter
+  # the grey bucket. EH classification is unchanged (still Warning).
+  def check_ins_health_assignment_display_counts(items)
+    EngagementHealth::ClarityMetrics.assignment_display_counts_for_items(items)
+  end
+
+  def check_ins_health_engagement_stacked_bar_segments(status_counts, display: :status)
     total = status_counts.values.sum.to_f
     return [] if total.zero?
 
-    ENGAGEMENT_HEALTH_BAR_ORDER.filter_map do |status|
+    order = display == :assignment ? ASSIGNMENT_DISPLAY_BAR_ORDER : ENGAGEMENT_HEALTH_BAR_ORDER
+    order.filter_map do |status|
       count = status_counts[status].to_i
       next if count.zero?
 
@@ -40,14 +55,22 @@ module CheckInsHealthEngagementHealthHelper
         status: status,
         pct: (count / total * 100).round(1),
         count: count,
-        css: ENGAGEMENT_HEALTH_BAR_CSS.fetch(status)
+        css: check_ins_health_stacked_segment_css(status)
       }
     end
   end
 
   def check_ins_health_engagement_segment_tooltip(segment, total, object_name)
-    label = EngagementHealth::STATUS_LABELS.fetch(segment[:status])
+    label = check_ins_health_display_status_label(segment[:status])
     "#{segment[:count]} of #{total} required #{object_name} are #{label}"
+  end
+
+  def check_ins_health_display_status_label(status)
+    if status.to_s == CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY
+      "new (first check-in not due yet)"
+    else
+      EngagementHealth::STATUS_LABELS.fetch(status)
+    end
   end
 
   def check_ins_health_engagement_status_meaning(status)
@@ -59,6 +82,10 @@ module CheckInsHealthEngagementHealthHelper
         "#{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
     when EngagementHealth::NEEDS_ATTENTION
       "any required item ≥ #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS} days ago or never finalized"
+    when CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY
+      "assignment with no finalized check-in in its first " \
+        "#{EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS} days of consecutive >0% energy tenure " \
+        "(counts as Warning in rollups)"
     else
       status.to_s.humanize
     end
@@ -153,5 +180,15 @@ module CheckInsHealthEngagementHealthHelper
       partial: "organizations/check_ins_health/action_slots_popover_table",
       locals: { rows: rows, employee_name: employee_name, manager_name: manager_name }
     ).html_safe
+  end
+
+  private
+
+  def check_ins_health_stacked_segment_css(status)
+    if status.to_s == CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY
+      CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_CSS
+    else
+      ENGAGEMENT_HEALTH_BAR_CSS.fetch(status)
+    end
   end
 end

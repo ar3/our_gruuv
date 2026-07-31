@@ -36,6 +36,39 @@ RSpec.describe EngagementHealth::ClarityMetrics do
     end
   end
 
+  describe ".assignment_display_counts_for_items" do
+    it "splits grace Warning items into the grey display bucket" do
+      grace = clarity_item(
+        "Assignment",
+        1,
+        "New Work",
+        EngagementHealth::WARNING,
+        "never" => true,
+        "new_assignment_grace" => true
+      )
+      stale = clarity_item(
+        "Assignment",
+        2,
+        "Stale Work",
+        EngagementHealth::WARNING,
+        "days_since_last_event" => 70
+      )
+      healthy = clarity_item("Assignment", 3, "Fresh", EngagementHealth::HEALTHY)
+
+      expect(described_class.assignment_display_counts_for_items([grace, stale, healthy])).to eq(
+        EngagementHealth::NEEDS_ATTENTION => 0,
+        "new_assignment_grace" => 1,
+        EngagementHealth::WARNING => 1,
+        EngagementHealth::HEALTHY => 1
+      )
+      expect(described_class.status_counts_for_items([grace, stale, healthy])).to eq(
+        EngagementHealth::HEALTHY => 1,
+        EngagementHealth::WARNING => 2,
+        EngagementHealth::NEEDS_ATTENTION => 0
+      )
+    end
+  end
+
   describe ".fully_clear?" do
     it "is true when every required item is healthy" do
       clarity_item("Position", 1, "Engineer", EngagementHealth::HEALTHY)

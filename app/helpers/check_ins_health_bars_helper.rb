@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 module CheckInsHealthBarsHelper
+  # Display-only bar bucket (not an EngagementHealth status). Grace assignments
+  # remain Warning in EH data; this key drives grey segments on health bars.
+  NEW_ASSIGNMENT_GRACE_DISPLAY = "new_assignment_grace"
+  NEW_ASSIGNMENT_GRACE_CSS = "check-in-health-eh-new-assignment-grace"
+
   EH_STATUS_CSS = {
     EngagementHealth::HEALTHY => "check-in-health-eh-healthy",
     EngagementHealth::WARNING => "check-in-health-eh-warning",
@@ -30,7 +35,28 @@ module CheckInsHealthBarsHelper
   }.freeze
 
   def check_ins_health_eh_status_swatch_css(status)
+    return NEW_ASSIGNMENT_GRACE_CSS if status.to_s == NEW_ASSIGNMENT_GRACE_DISPLAY
+
     EH_STATUS_CSS.fetch(status, "check-in-health-action-anomaly-gray")
+  end
+
+  def check_ins_health_eh_css_for_item(item)
+    return NEW_ASSIGNMENT_GRACE_CSS if check_ins_health_new_assignment_grace?(item)
+
+    EH_STATUS_CSS.fetch(item.status, "check-in-health-action-anomaly-gray")
+  end
+
+  def check_ins_health_new_assignment_grace?(item)
+    ActiveModel::Type::Boolean.new.cast(item.inputs["new_assignment_grace"])
+  end
+
+  def check_ins_health_new_assignment_grace_summary(item)
+    return nil unless check_ins_health_new_assignment_grace?(item)
+
+    day = item.inputs["days_since_tenure_chain_start"]
+    within = item.inputs["new_assignment_grace_within_days"] ||
+             EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+    "New assignment — first check-in not due yet (day #{day} of #{within})"
   end
 
   def check_ins_health_item_initials(name)
@@ -59,7 +85,8 @@ module CheckInsHealthBarsHelper
         entity_type: item.entity_type,
         entity_id: item.entity_id,
         eh_status: item.status,
-        eh_css: EH_STATUS_CSS.fetch(item.status, "check-in-health-action-anomaly-gray"),
+        eh_css: check_ins_health_eh_css_for_item(item),
+        new_assignment_grace: check_ins_health_new_assignment_grace?(item),
         action_color: action_color,
         action_css: ACTION_BAR_CSS.fetch(action_color, "check-in-health-action-anomaly-gray"),
         flex_percent: flex_percent,
@@ -89,6 +116,12 @@ module CheckInsHealthBarsHelper
     action_label = ERB::Util.html_escape(
       ACTION_BAR_LABELS.fetch(check_ins_health_resolved_action_bar_color(item), "Unexpected state — refresh Gruuv Health")
     )
+    grace_summary = check_ins_health_new_assignment_grace_summary(item)
+    grace_line = if grace_summary
+                   %(<br><span class="text-muted">#{ERB::Util.html_escape(grace_summary)}</span>)
+                 else
+                   ""
+                 end
 
     body = if show_workflow_steps_popover?(item)
              workflow_steps_popover_body(
@@ -103,7 +136,7 @@ module CheckInsHealthBarsHelper
     <<~HTML.squish
       <div class="small text-start check-ins-health-bar-popover">
         <strong>#{name}</strong><br>
-        Gruuv Health: #{status_label}<br>
+        Gruuv Health: #{status_label}#{grace_line}<br>
         Last finalized: #{last_finalized}<br>
         <span class="text-muted">#{action_label}</span>
         #{body}
@@ -255,7 +288,9 @@ module CheckInsHealthBarsHelper
     employee_done = inputs["open_employee_completed"]
     manager_done = inputs["open_manager_completed"]
 
-    consider = if item.status.in?([EngagementHealth::WARNING, EngagementHealth::NEEDS_ATTENTION]) && !inputs["open_check_in_present"]
+    consider = if check_ins_health_new_assignment_grace?(item)
+                 ""
+               elsif item.status.in?([EngagementHealth::WARNING, EngagementHealth::NEEDS_ATTENTION]) && !inputs["open_check_in_present"]
                  "<div class=\"mt-1\">Consider a check-in now</div>"
                else
                  ""

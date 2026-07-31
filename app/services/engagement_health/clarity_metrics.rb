@@ -74,6 +74,25 @@ module EngagementHealth
       end
     end
 
+    # Display-only for Assignments health bars: grace Warning items move into
+    # the grey bucket. Rollups/CSV should keep using status_counts_for_items.
+    def assignment_display_counts_for_items(items)
+      counts = {
+        EngagementHealth::NEEDS_ATTENTION => 0,
+        "new_assignment_grace" => 0,
+        EngagementHealth::WARNING => 0,
+        EngagementHealth::HEALTHY => 0
+      }
+      Array(items).each do |item|
+        if ActiveModel::Type::Boolean.new.cast(item.inputs["new_assignment_grace"])
+          counts["new_assignment_grace"] += 1
+        elsif counts.key?(item.status)
+          counts[item.status] += 1
+        end
+      end
+      counts
+    end
+
     def average_healthy_percentage_for_teammates(records_by_teammate_id, teammate_ids)
       return 0.0 if teammate_ids.blank?
 

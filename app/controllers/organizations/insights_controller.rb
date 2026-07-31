@@ -586,7 +586,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       department: department,
       department_name: department_name,
       aspiration_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(aspiration_items),
-      assignment_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(assignment_items),
+      assignment_status_counts: EngagementHealth::ClarityMetrics.assignment_display_counts_for_items(assignment_items),
       position_status_counts: EngagementHealth::ClarityMetrics.status_counts_for_items(position_items),
       employee_count: employee_count,
       completion_rate: completion_rate

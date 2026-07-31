@@ -1183,6 +1183,11 @@ body:has(.vertical-nav.open) .floating-toggle {
   text-shadow: none;
 }
 
+.check-in-health-eh-new-assignment-grace .check-in-health-bar__initials {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.45);
+}
+
 .check-in-health-bar--action {
   opacity: 0.92;
 }
@@ -1220,6 +1225,10 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 .check-in-health-eh-warning {
   background-color: #ffc107 !important;
+}
+
+.check-in-health-eh-new-assignment-grace {
+  background-color: #94a3b8 !important;
 }
 
 .check-in-health-eh-needs-attention {
