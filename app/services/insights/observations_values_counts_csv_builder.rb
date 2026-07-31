@@ -4,12 +4,7 @@ require 'csv'
 
 module Insights
   class ObservationsValuesCountsCsvBuilder
-    RATING_LABELS = {
-      'strongly_agree' => 'Exceptional',
-      'agree' => 'Solid',
-      'disagree' => 'Misaligned',
-      'strongly_disagree' => 'Concerning'
-    }.freeze
+    RATING_LABELS = ObservationRating::DISPLAY_LABELS.freeze
 
     PRIVATE_RATING_KEYS = %w[strongly_agree agree disagree strongly_disagree].freeze
     PUBLIC_RATING_KEYS = %w[strongly_agree agree].freeze

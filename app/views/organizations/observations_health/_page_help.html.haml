@@ -90,4 +90,4 @@
           = " — kudos-style vs constructive OGOs authored (target about #{Insights::ObservationsRatingHealth::KUDOS_CONSTRUCTIVE_HEALTHY_RATIO_LABEL})."
         %li
           %strong Rating intensity
-          = " — everyday (Solid + Misaligned) vs extreme (Exceptional + Concerning) ratings on authored OGOs (target about 3:1)."
+          = " — everyday (#{ObservationRating.display_label('agree')} + #{ObservationRating.display_label('disagree')}) vs extreme (#{ObservationRating.display_label('strongly_agree')} + #{ObservationRating.display_label('strongly_disagree')}) ratings on authored OGOs (target about 3:1)."

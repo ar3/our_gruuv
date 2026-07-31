@@ -570,7 +570,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
 
         # Rating UI (from rating_button_group partial)
         expect(response.body).to include('Exceptional')
-        expect(response.body).to include('Solid')
+        expect(response.body).to include('Strong')
         expect(response.body).to include('N/A')
 
         # 4/8 column layout and vertical border

@@ -1041,21 +1041,12 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       .merge(Observation.not_soft_deleted.published)
     scope = scope.where(observations: { published_at: range }) if range
 
-    rating_labels = {
-      'strongly_agree' => 'Exceptional',
-      'agree' => 'Solid',
-      'disagree' => 'Misaligned',
-      'strongly_disagree' => 'Concerning',
-      'na' => 'N/A'
-    }
-
     scope
       .group(:rating)
       .count
       .sort_by { |_rating, count| -count }
       .map do |rating, count|
-        label = rating_labels[rating.to_s] || rating.to_s.humanize
-        { name: label, y: count }
+        { name: ObservationRating.display_label(rating), y: count }
       end
   end
 
@@ -1420,16 +1411,10 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     start_date = chart_range.begin.to_date
     week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
     categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
-    rating_labels = {
-      'strongly_agree' => 'Exceptional',
-      'agree' => 'Solid',
-      'disagree' => 'Misaligned',
-      'strongly_disagree' => 'Concerning'
-    }
     rating_order = %w[strongly_agree agree disagree strongly_disagree]
     series = rating_order.map do |rating|
       {
-        name: rating_labels[rating] || rating.humanize,
+        name: ObservationRating.display_label(rating),
         data: week_dates.map { |wd| raw_normalized[[wd.to_s, rating]] || 0 }
       }
     end
@@ -1522,16 +1507,10 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     start_date = chart_range.begin.to_date
     week_dates = (start_date..end_date).to_a.map(&:beginning_of_week).uniq.sort
     categories = week_dates.map { |w| w.strftime('%b %d, %Y') }
-    rating_labels = {
-      'strongly_agree' => 'Exceptional',
-      'agree' => 'Solid',
-      'disagree' => 'Misaligned',
-      'strongly_disagree' => 'Concerning'
-    }
     rating_order = %w[strongly_agree agree disagree strongly_disagree]
     series = rating_order.map do |rating|
       {
-        name: rating_labels[rating] || rating.humanize,
+        name: ObservationRating.display_label(rating),
         data: week_dates.map { |wd| raw_normalized[[wd.to_s, rating]] || 0 }
       }
     end

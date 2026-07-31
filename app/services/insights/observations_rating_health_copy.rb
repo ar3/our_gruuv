@@ -45,18 +45,23 @@ module Insights
 
       def rating_intensity_html(band:, subject_name:)
         band = band.to_sym
+        agree_label = ObservationRating.display_label('agree')
+        disagree_label = ObservationRating.display_label('disagree')
+        exceptional_label = ObservationRating.display_label('strongly_agree')
+        concerning_label = ObservationRating.display_label('strongly_disagree')
+
         case band
         when :above_five
           h.content_tag(:p, class: "small mb-0") do
             h.safe_join([
               "#{subject_name} may be under-using ",
-              h.content_tag(:strong, "Exceptional"),
+              h.content_tag(:strong, exceptional_label),
               " and ",
-              h.content_tag(:strong, "Concerning"),
+              h.content_tag(:strong, concerning_label),
               " relative to ",
-              h.content_tag(:strong, "Solid"),
+              h.content_tag(:strong, agree_label),
               " and ",
-              h.content_tag(:strong, "Misaligned"),
+              h.content_tag(:strong, disagree_label),
               ". The strongest positive and negative signals should stay rare—but not ",
               h.content_tag(:em, "this"),
               " rare, or standout work and serious gaps can get lost in the middle buckets."
@@ -68,20 +73,20 @@ module Insights
               "This may be a ",
               h.content_tag(:strong, "calibration"),
               " issue: ",
-              h.content_tag(:strong, "Exceptional"),
+              h.content_tag(:strong, exceptional_label),
               " or ",
-              h.content_tag(:strong, "Concerning"),
+              h.content_tag(:strong, concerning_label),
               " may be used often relative to ",
-              h.content_tag(:strong, "Solid"),
+              h.content_tag(:strong, agree_label),
               " and ",
-              h.content_tag(:strong, "Misaligned"),
-              ", making it harder to tell strong work from stand-out work—or everyday gaps from serious issues."
+              h.content_tag(:strong, disagree_label),
+              ", making it harder to tell everyday performance from stand-out work—or everyday gaps from serious issues."
             ])
           end
         when :healthy
           h.content_tag(
             :p,
-            "#{subject_name} has a healthy balance between everyday ratings (Solid / Misaligned) and the most extreme buckets (Exceptional / Concerning). 🎉 Well done 🎉",
+            "#{subject_name} has a healthy balance between everyday ratings (#{agree_label} / #{disagree_label}) and the most extreme buckets (#{exceptional_label} / #{concerning_label}). 🎉 Well done 🎉",
             class: "small mb-0"
           )
         when :no_data

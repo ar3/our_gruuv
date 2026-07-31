@@ -60,17 +60,17 @@
     .card-body
       .row.mb-3
         .col-md-6.mt-2
-          = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_min", "Exceptional Ratings Minimum", class: "form-label"
+          = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_min", "#{ObservationRating.display_label('strongly_agree')} Ratings Minimum", class: "form-label"
           = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_min'), step: 1, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_min", disabled: !can_manage_economy
         .col-md-6.mt-2
-          = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_max", "Exceptional Ratings Maximum", class: "form-label"
+          = label_tag "economy_peer_to_peer_rating_limits_exceptional_ratings_max", "#{ObservationRating.display_label('strongly_agree')} Ratings Maximum", class: "form-label"
           = number_field_tag "economy[peer_to_peer_rating_limits][exceptional_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'exceptional_ratings_max'), step: 1, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_exceptional_ratings_max", disabled: !can_manage_economy
       .row.mb-3
         .col-md-6.mt-2
-          = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_min", "Solid Ratings Minimum", class: "form-label"
+          = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_min", "#{ObservationRating.display_label('agree')} Ratings Minimum", class: "form-label"
           = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_min]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_min'), step: 1, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_min", disabled: !can_manage_economy
         .col-md-6.mt-2
-          = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_max", "Solid Ratings Maximum", class: "form-label"
+          = label_tag "economy_peer_to_peer_rating_limits_solid_ratings_max", "#{ObservationRating.display_label('agree')} Ratings Maximum", class: "form-label"
           = number_field_tag "economy[peer_to_peer_rating_limits][solid_ratings_max]", @config.dig('peer_to_peer_rating_limits', 'solid_ratings_max'), step: 1, min: 0, class: "form-control", id: "economy_peer_to_peer_rating_limits_solid_ratings_max", disabled: !can_manage_economy
 
   .d-flex.align-items-center

@@ -126,7 +126,7 @@
                     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
                     = hidden_field_tag "items[#{idx}][observation_id]", item[:observation_id]
                     - if item[:suggested_rating].present? || item[:suggested_rateable_type].present?
-                      - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
+                      - rating_label = ObservationRating.display_label(item[:suggested_rating]) if item[:suggested_rating].present?
                       - rateable_type_label = item[:suggested_rateable_type] == "Aspiration" ? "Value" : item[:suggested_rateable_type]
                       - rateable_key = "#{item[:suggested_rateable_type]}:#{item[:suggested_rateable_id]}"
                       - rateable_name = rateable_name.presence || suggested_rateable_names_by_key[rateable_key]

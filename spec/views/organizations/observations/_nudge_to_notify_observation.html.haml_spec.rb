@@ -40,7 +40,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     let(:ability) { create(:ability, company: company) }
     let(:positive_rating) { create(:observation_rating, :agree, observation: observation, rateable: ability) }
     let(:positive_rating_reward_options) do
-      [{ rating: positive_rating, label: 'A Solid demonstration of ' + ability.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
+      [{ rating: positive_rating, label: 'A Strong demonstration of ' + ability.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
     end
 
     before do
@@ -103,7 +103,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     let(:ability) { create(:ability, company: company) }
     let(:positive_rating) { create(:observation_rating, :agree, observation: observation, rateable: ability) }
     let(:positive_rating_reward_options) do
-      [{ rating: positive_rating, label: 'A Solid demonstration of ' + ability.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
+      [{ rating: positive_rating, label: 'A Strong demonstration of ' + ability.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
     end
 
     before do
@@ -142,7 +142,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     let(:ability_two) { create(:ability, company: company) }
     let!(:positive_rating_two) { create(:observation_rating, :agree, observation: observation_two, rateable: ability_two) }
     let(:positive_rating_reward_options_two) do
-      [{ rating: positive_rating_two, label: 'A Solid demonstration of ' + ability_two.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
+      [{ rating: positive_rating_two, label: 'A Strong demonstration of ' + ability_two.name, rating_kind: :solid, min: 5, max: 25, point_options: (5..25).to_a }]
     end
 
     before do

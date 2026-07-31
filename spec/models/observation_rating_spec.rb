@@ -28,6 +28,21 @@ RSpec.describe ObservationRating, type: :model do
     end
   end
 
+  describe '.display_label' do
+    it 'returns the human-facing label for each rating' do
+      expect(described_class.display_label(:strongly_agree)).to eq('Exceptional')
+      expect(described_class.display_label(:agree)).to eq('Strong')
+      expect(described_class.display_label(:na)).to eq('N/A')
+      expect(described_class.display_label(:disagree)).to eq('Mis-aligned')
+      expect(described_class.display_label(:strongly_disagree)).to eq('Concerning')
+    end
+
+    it 'exposes an inverse map for label-to-enum lookups' do
+      expect(described_class.label_to_rating['Strong']).to eq('agree')
+      expect(described_class.label_to_rating['Exceptional']).to eq('strongly_agree')
+    end
+  end
+
   describe 'validations' do
     it { should validate_presence_of(:observation) }
     it { should validate_presence_of(:rateable) }

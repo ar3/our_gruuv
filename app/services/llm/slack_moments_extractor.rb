@@ -9,19 +9,30 @@ module Llm
     SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
     # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
     # Ask before bumping major; otherwise set date to today and increment minor.
-    PROMPT_VERSION = "1.20260718.0"
-    RATING_WORDS = {
-      "strongly_agree" => "Exceptional",
-      "agree" => "Solid",
-      "disagree" => "Mis-aligned",
-      "strongly_disagree" => "Concerning"
-    }.freeze
+    PROMPT_VERSION = "1.20260731.0"
+    RATING_WORDS = ObservationRating::DISPLAY_LABELS.except("na").freeze
     ALLOWED_RATINGS = RATING_WORDS.keys.freeze
     ALLOWED_RATEABLE_TYPES = %w[Assignment Ability Aspiration].freeze
     # Model may return weaker hits; drop these before review.
     MIN_RETURN_CONFIDENCE = 0.5
     # Auto-check Include when speaker/subject resolve and confidence is high.
     INCLUDE_CONFIDENCE_THRESHOLD = 0.75
+
+    def self.agree_label
+      RATING_WORDS.fetch("agree")
+    end
+
+    def self.exceptional_label
+      RATING_WORDS.fetch("strongly_agree")
+    end
+
+    def self.disagree_label
+      RATING_WORDS.fetch("disagree")
+    end
+
+    def self.concerning_label
+      RATING_WORDS.fetch("strongly_disagree")
+    end
 
     def self.region_prefix
       region = RubyLLM.config.bedrock_region.presence || ENV["AWS_REGION"].presence || "us-east-1"
@@ -105,20 +116,25 @@ module Llm
     end
 
     def system_instructions
+      agree = self.class.agree_label
+      exceptional = self.class.exceptional_label
+      disagree = self.class.disagree_label
+      concerning = self.class.concerning_label
+
       <<~TXT.squish
         You select rare, noteworthy Slack moments that deserve an OurGruuv Observation (OGO):
         reinforce something that strengthens community/aspirations, or correct something that harms them.
         Prefer precision over recall — skip routine chatter, logistics, status updates, and empty/generic
         praise with no named person or concrete work.
         Default OGO-worthy evidence is a completed action with clear impact or outcome.
-        Offers, availability, and routine clarification are usually not Exceptional; often omit them or rate them
-        no higher than Solid with lower confidence.
-        Exception: a sharp, leading question that clearly shapes decisions or value can be Solid — not Exceptional —
+        Offers, availability, and routine clarification are usually not #{exceptional}; often omit them or rate them
+        no higher than #{agree} with lower confidence.
+        Exception: a sharp, leading question that clearly shapes decisions or value can be #{agree} — not #{exceptional} —
         when the value is obvious.
         Confidence calibration:
         - Peer praise of "#{@subject_name}" (thanks / great work / recognition directed at them) is a strong signal.
           When the praised work is identifiable, confidence is usually >= 0.80. That does not automatically mean
-          Exceptional rating — use Solid unless the evidence clearly exceeds expectations.
+          #{exceptional} rating — use #{agree} unless the evidence clearly exceeds expectations.
         - Status-only confirmations ("done!", "shipped", "finished", or a bare link) without a clear description of
           what was completed and what changed are weak evidence: omit, or keep confidence <= 0.65.
         - Shares, cross-posts, and forwards have low confidence unless the message itself makes the result or value
@@ -159,8 +175,8 @@ module Llm
         "association_reason":"one concise sentence explaining why the evidence maps to this object",
         "rating_reason":"one concise sentence explaining why the evidence warrants this rating",
         "suggested_goal_id":number|null}]}.
-        Rating bands: strongly_agree=Exceptional, agree=Solid, disagree=Mis-aligned, strongly_disagree=Concerning.
-        Kind follows rating: Exceptional/Solid => kudos; Mis-aligned/Concerning => feedback.
+        Rating bands: strongly_agree=#{exceptional}, agree=#{agree}, disagree=#{disagree}, strongly_disagree=#{concerning}.
+        Kind follows rating: #{exceptional}/#{agree} => kudos; #{disagree}/#{concerning} => feedback.
         Rules: full_quote/short_quote must come from message text; never invent channel_id/ts/permalink/slack_user_id;
         every returned item must have a rateable object, rating, association_reason, and rating_reason;
         only use suggested_* ids that appear in SUBJECT CONTEXT; if unsure, omit the item;

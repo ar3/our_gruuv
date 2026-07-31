@@ -104,18 +104,7 @@ module ObservationRatingFormatter
   private
 
   def rating_to_word(rating_value)
-    case rating_value.to_s
-    when 'strongly_agree'
-      'Exceptional'
-    when 'agree'
-      'Solid'
-    when 'disagree'
-      'Mis-aligned'
-    when 'strongly_disagree'
-      'Concerning'
-    else
-      rating_value.to_s.humanize
-    end
+    ObservationRating.display_label(rating_value)
   end
 
   def public_url_for_rateable(rateable)

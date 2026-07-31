@@ -2,18 +2,7 @@ class ObservationRatingDecorator < Draper::Decorator
   delegate_all
 
   def rating_to_words
-    case rating
-    when 'strongly_agree'
-      'Exceptional'
-    when 'agree'
-      'Solid'
-    when 'na'
-      'N/A'
-    when 'disagree'
-      'Mis-aligned'
-    when 'strongly_disagree'
-      'Concerning'
-    end
+    ObservationRating.display_label(rating)
   end
 
   def rating_icon

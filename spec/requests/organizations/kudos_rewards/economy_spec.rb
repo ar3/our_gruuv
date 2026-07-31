@@ -67,8 +67,8 @@ RSpec.describe 'Organizations::KudosRewards::Economy', type: :request do
         expect(response.body).to include('Peer to Peer Rating Point Limits')
         expect(response.body).to include('Exceptional Ratings Minimum')
         expect(response.body).to include('Exceptional Ratings Maximum')
-        expect(response.body).to include('Solid Ratings Minimum')
-        expect(response.body).to include('Solid Ratings Maximum')
+        expect(response.body).to include('Strong Ratings Minimum')
+        expect(response.body).to include('Strong Ratings Maximum')
         expect(response.body).to include('Save economy settings')
       end
 

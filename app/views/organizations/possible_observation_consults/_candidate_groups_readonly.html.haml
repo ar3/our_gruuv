@@ -22,7 +22,7 @@
                   .mb-2.fs-6
                     %span.badge.me-2{ class: badge_class }= "#{format('%.0f%%', confidence * 100)} confident in this suggestion"
                     - if item[:suggested_rating].present?
-                      - rating_label = { "strongly_agree" => "Exceptional", "agree" => "Solid", "disagree" => "Mis-aligned", "strongly_disagree" => "Concerning" }[item[:suggested_rating].to_s]
+                      - rating_label = ObservationRating.display_label(item[:suggested_rating]) if item[:suggested_rating].present?
                       Suggested:
                       %strong= rating_label
                       for #{item[:suggested_rateable_name].presence || item[:suggested_rateable_type]}

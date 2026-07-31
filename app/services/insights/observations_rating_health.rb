@@ -19,24 +19,24 @@ module Insights
             name: "Kudos : Constructive",
             healthy_ratio: KUDOS_CONSTRUCTIVE_HEALTHY_RATIO_LABEL,
             display_ratio: rounded_ratio_display(kudos, constructive),
-            popover_line_1: "Exceptional or Solid Ratings Total: #{kudos}",
-            popover_line_2: "Misaligned or Concerning Ratings Total: #{constructive}",
+            popover_line_1: "#{ObservationRating.display_label('strongly_agree')} or #{ObservationRating.display_label('agree')} Ratings Total: #{kudos}",
+            popover_line_2: "#{ObservationRating.display_label('disagree')} or #{ObservationRating.display_label('strongly_disagree')} Ratings Total: #{constructive}",
             kudos_constructive_band: kudos_constructive_ratio_band(kudos, constructive)
           },
           {
-            name: "Solid : Exceptional",
+            name: "#{ObservationRating.display_label('agree')} : #{ObservationRating.display_label('strongly_agree')}",
             healthy_ratio: SOLID_EXCEPTIONAL_HEALTHY_RATIO_LABEL,
             display_ratio: rounded_ratio_display(counts[:agree], counts[:strongly_agree]),
-            popover_line_1: "Solid Ratings Total: #{counts[:agree]}",
-            popover_line_2: "Exceptional Ratings Total: #{counts[:strongly_agree]}",
+            popover_line_1: "#{ObservationRating.display_label('agree')} Ratings Total: #{counts[:agree]}",
+            popover_line_2: "#{ObservationRating.display_label('strongly_agree')} Ratings Total: #{counts[:strongly_agree]}",
             solid_exceptional_band: two_tier_ratio_band(counts[:agree], counts[:strongly_agree])
           },
           {
-            name: "Misaligned : Concerning",
+            name: "#{ObservationRating.display_label('disagree')} : #{ObservationRating.display_label('strongly_disagree')}",
             healthy_ratio: MISALIGNED_CONCERNING_HEALTHY_RATIO_LABEL,
             display_ratio: rounded_ratio_display(counts[:disagree], counts[:strongly_disagree]),
-            popover_line_1: "Misaligned Ratings Total: #{counts[:disagree]}",
-            popover_line_2: "Concerning Ratings Total: #{counts[:strongly_disagree]}",
+            popover_line_1: "#{ObservationRating.display_label('disagree')} Ratings Total: #{counts[:disagree]}",
+            popover_line_2: "#{ObservationRating.display_label('strongly_disagree')} Ratings Total: #{counts[:strongly_disagree]}",
             misaligned_concerning_band: two_tier_ratio_band(counts[:disagree], counts[:strongly_disagree])
           }
         ]
@@ -84,7 +84,7 @@ module Insights
         kudos_constructive_ratio_band(tallies[:kudos], tallies[:constructive])
       end
 
-      # Less extreme (Solid + Misaligned) vs most extreme (Exceptional + Concerning).
+      # Less extreme (agree + disagree) vs most extreme (strongly_agree + strongly_disagree).
       def combined_rating_intensity_band(counts)
         less_extreme = counts[:agree] + counts[:disagree]
         most_extreme = counts[:strongly_agree] + counts[:strongly_disagree]
@@ -121,7 +121,7 @@ module Insights
         :below_three
       end
 
-      # For Solid:Exceptional, Misaligned:Concerning, and combined intensity — left:right where healthy ~3:1.
+      # For agree:strongly_agree, disagree:strongly_disagree, and combined intensity — left:right where healthy ~3:1.
       # > 5:1 → “too rare” on the right bucket; < 1:1 → calibration concern.
       def two_tier_ratio_band(left, right)
         l = left.to_i

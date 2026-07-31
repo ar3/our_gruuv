@@ -5,19 +5,19 @@
 .d-inline-block{data: { controller: "observation-rating-toggle", legacy_rating_buttons: true }}
   .form-check.form-check-inline
     - strongly_agree_active = likert_value == :strongly_agree
-    %label.btn.btn-sm{title: 'Exceptional', class: "btn-outline-success #{'active' if strongly_agree_active}"}
+    %label.btn.btn-sm{title: ObservationRating.display_label('strongly_agree'), class: "btn-outline-success #{'active' if strongly_agree_active}"}
       = radio_button_tag input_name, 'strongly_agree', strongly_agree_active
       %i.bi.bi-star
 
   .form-check.form-check-inline
     - agree_active = likert_value == :agree
-    %label.btn.btn-sm{title: 'Good', class: "btn-outline-secondary #{'active' if agree_active}"}
+    %label.btn.btn-sm{title: ObservationRating.display_label('agree'), class: "btn-outline-secondary #{'active' if agree_active}"}
       = radio_button_tag input_name, 'agree', agree_active
       %i.bi.bi-hand-thumbs-up
 
   .form-check.form-check-inline
     - il_active = ![:strongly_agree, :agree, :disagree, :strongly_disagree].include?(likert_value)
-    %label.btn.btn-sm{title: 'N/A', class: "btn-outline-light #{'active' if il_active}"}
+    %label.btn.btn-sm{title: ObservationRating.display_label('na'), class: "btn-outline-light #{'active' if il_active}"}
       = radio_button_tag input_name, 'na', il_active
       %i.bi.bi-eye-slash
 

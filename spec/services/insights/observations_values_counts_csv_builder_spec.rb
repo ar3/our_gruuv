@@ -52,14 +52,14 @@ RSpec.describe Insights::ObservationsValuesCountsCsvBuilder do
     expect(rows.first['OGO URL']).to include("/organizations/#{company.to_param}/observations")
     expect(rows.first['OGO URL']).to include("involving_teammate_id=#{observee_teammate.id}")
     expect(rows.headers).to include('Integrity : Private : Exceptional')
-    expect(rows.headers).to include('Integrity : Public : Solid')
-    expect(rows.headers).not_to include('Integrity : Public : Misaligned')
+    expect(rows.headers).to include('Integrity : Public : Strong')
+    expect(rows.headers).not_to include('Integrity : Public : Mis-aligned')
     expect(rows.headers).not_to include('Integrity : Public : Concerning')
     expect(rows.length).to eq(1)
     expect(rows.first['all_names_display_name']).to include('Bob')
     expect(rows.first['email']).to eq('bob@example.com')
     expect(rows.first['Integrity : Private : Exceptional']).to eq('1')
-    expect(rows.first['Integrity : Private : Solid']).to eq('0')
+    expect(rows.first['Integrity : Private : Strong']).to eq('0')
   end
 
   it 'excludes journal observations' do
@@ -99,7 +99,7 @@ RSpec.describe Insights::ObservationsValuesCountsCsvBuilder do
 
     expect(rows.length).to eq(1)
     expect(rows.first['email']).to eq('carol@example.com')
-    expect(rows.first['Integrity : Public : Solid']).to eq('1')
+    expect(rows.first['Integrity : Public : Strong']).to eq('1')
   end
 
   it 'counts ratings separately for private and public privacy levels' do
@@ -122,7 +122,7 @@ RSpec.describe Insights::ObservationsValuesCountsCsvBuilder do
     add_aspiration_rating!(public_obs, :strongly_agree)
 
     row = parse_csv(described_class.new(company).call).first
-    expect(row['Integrity : Private : Misaligned']).to eq('1')
+    expect(row['Integrity : Private : Mis-aligned']).to eq('1')
     expect(row['Integrity : Public : Exceptional']).to eq('1')
   end
 
@@ -160,8 +160,8 @@ RSpec.describe Insights::ObservationsValuesCountsCsvBuilder do
 
     row = parse_csv(described_class.new(company, show_private_counts: false).call).first
     expect(row['Integrity : Private : Exceptional']).to eq('X')
-    expect(row['Integrity : Private : Solid']).to eq('X')
-    expect(row['Integrity : Public : Solid']).to eq('1')
+    expect(row['Integrity : Private : Strong']).to eq('X')
+    expect(row['Integrity : Public : Strong']).to eq('1')
   end
 
   it 'filters by published_at range' do
@@ -184,6 +184,6 @@ RSpec.describe Insights::ObservationsValuesCountsCsvBuilder do
     add_aspiration_rating!(out_of_range, :agree)
 
     row = parse_csv(described_class.new(company, published_at_range: 30.days.ago..Time.current).call).first
-    expect(row['Integrity : Private : Solid']).to eq('1')
+    expect(row['Integrity : Private : Strong']).to eq('1')
   end
 end

@@ -15,7 +15,7 @@ RSpec.describe ObservationRatingDecorator, type: :decorator do
       expect(decorated_rating.rating_to_words).to eq('Exceptional')
       
       observation_rating.rating = :agree
-      expect(decorated_rating.rating_to_words).to eq('Solid')
+      expect(decorated_rating.rating_to_words).to eq('Strong')
       
       observation_rating.rating = :na
       expect(decorated_rating.rating_to_words).to eq('N/A')

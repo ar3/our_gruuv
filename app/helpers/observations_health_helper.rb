@@ -113,7 +113,7 @@ module ObservationsHealthHelper
       "Given: Healthy if a non-journal OGO was published in the last #{OGO_HEALTHY_DAYS} days; Warning if #{OGO_HEALTHY_DAYS + 1}–#{OGO_NEEDS_ATTENTION_DAYS - 1}; Needs Attention if ≥ #{OGO_NEEDS_ATTENTION_DAYS} days or never.",
       "Received: same Gruuv Health rules for published OGOs where they are an observee (self-journals count only when they are the observee).",
       "Kudos mix: ratio of kudos-style vs constructive OGOs they authored (healthy target about #{Insights::ObservationsRatingHealth::KUDOS_CONSTRUCTIVE_HEALTHY_RATIO_LABEL}).",
-      "Rating intensity: ratio of everyday (Solid + Misaligned) to extreme (Exceptional + Concerning) ratings on OGOs they authored (healthy target about 3:1)."
+      "Rating intensity: ratio of everyday (#{ObservationRating.display_label('agree')} + #{ObservationRating.display_label('disagree')}) to extreme (#{ObservationRating.display_label('strongly_agree')} + #{ObservationRating.display_label('strongly_disagree')}) ratings on OGOs they authored (healthy target about 3:1)."
     ]
   end
 

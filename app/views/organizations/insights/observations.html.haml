@@ -154,16 +154,16 @@
                               %strong exceptional
                               performance deserves the top rating. Exceptional should be rare—but not
                               %em this
-                              rare. If Solid dominates this heavily, highlight the most extreme positive outcomes so standout impact stays visible and ratings don’t all collapse into “good enough.”
+                              rare. If #{ObservationRating.display_label('agree')} dominates this heavily, highlight the most extreme positive outcomes so standout impact stays visible and ratings don’t all collapse into “good enough.”
                         - when :below_one
                           .alert.alert-warning.mb-0.small
                             %p.mb-0
                               This pattern suggests a potential
                               %strong calibration
-                              issue: Exceptional may be used too often relative to Solid, which makes it harder for people to tell strong work from truly stand-out work.
+                              issue: Exceptional may be used too often relative to #{ObservationRating.display_label('agree')}, which makes it harder for people to tell everyday performance from truly stand-out work.
                         - when :healthy
                           .alert.alert-success.mb-0.small
-                            #{org_name} has a healthy balance between Solid and Exceptional—enough differentiation without over-using the top bucket. 🎉 Well done 🎉
+                            #{org_name} has a healthy balance between #{ObservationRating.display_label('agree')} and Exceptional—enough differentiation without over-using the top bucket. 🎉 Well done 🎉
                         - when :no_data
                           %p.small.text-muted.mb-0 Not enough observation ratings in this timeframe to assess this ratio.
                       - elsif row[:misaligned_concerning_band].present?
@@ -175,16 +175,16 @@
                               %strong Concerning
                               rating. Concerning should be rare—but not
                               %em this
-                              rare. If Misaligned dominates this heavily, ensure the most extreme issues are still called out so serious problems aren’t only ever labeled as “soft” misalignment.
+                              rare. If #{ObservationRating.display_label('disagree')} dominates this heavily, ensure the most extreme issues are still called out so serious problems aren’t only ever labeled as “soft” misalignment.
                         - when :below_one
                           .alert.alert-warning.mb-0.small
                             %p.mb-0
                               This pattern suggests a potential
                               %strong calibration
-                              issue: Concerning may be used too often relative to Misaligned, which blurs the line between “needs correction” and “serious cause for attention.”
+                              issue: Concerning may be used too often relative to #{ObservationRating.display_label('disagree')}, which blurs the line between “needs correction” and “serious cause for attention.”
                         - when :healthy
                           .alert.alert-success.mb-0.small
-                            #{org_name} has a healthy balance between Misaligned and Concerning—clear enough escalation for the worst cases without over-labeling everyday gaps. 🎉 Well done 🎉
+                            #{org_name} has a healthy balance between #{ObservationRating.display_label('disagree')} and Concerning—clear enough escalation for the worst cases without over-labeling everyday gaps. 🎉 Well done 🎉
                         - when :no_data
                           %p.small.text-muted.mb-0 Not enough observation ratings in this timeframe to assess this ratio.
                       - else
