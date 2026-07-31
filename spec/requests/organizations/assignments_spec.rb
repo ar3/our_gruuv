@@ -541,6 +541,27 @@ RSpec.describe 'Organizations::Assignments', type: :request do
           expect(assignment.reload.archived?).to be true
         end
 
+        it 'system-closes open check-ins for the archived assignment' do
+          teammate_for_check_in = create(:teammate, organization: organization)
+          open_check_in = create(
+            :assignment_check_in,
+            teammate: teammate_for_check_in,
+            assignment: assignment,
+            shared_notes: 'In progress',
+            official_check_in_completed_at: nil,
+            official_rating: nil
+          )
+
+          patch execute_archive_organization_assignment_path(organization, assignment)
+
+          expect(assignment.reload.archived?).to be true
+          open_check_in.reload
+          expect(open_check_in).to be_closed
+          expect(open_check_in.official_rating).to be_nil
+          expect(open_check_in.shared_notes).to include(AssignmentCheckIn::SYSTEM_CLOSE_DUE_TO_ARCHIVE_NOTE)
+          expect(open_check_in.finalized_by_teammate).to eq(manager_teammate)
+        end
+
         it 'redirects back with alert when not archivable' do
           teammate_for_tenure = create(:teammate, organization: organization)
           create(:assignment_tenure, assignment: assignment, teammate: teammate_for_tenure, started_at: 1.day.ago, ended_at: nil)

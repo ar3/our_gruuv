@@ -1,5 +1,8 @@
 class AssignmentCheckIn < ApplicationRecord
   include CheckInBehavior
+
+  SYSTEM_CLOSE_DUE_TO_ARCHIVE_NOTE =
+    "Assignment archived — system closed this check-in.".freeze
   
   belongs_to :assignment
   belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
@@ -43,7 +46,8 @@ class AssignmentCheckIn < ApplicationRecord
   validates :official_rating, inclusion: { in: official_ratings.keys }, allow_nil: true
   validates :employee_personal_alignment, inclusion: { in: employee_personal_alignments.keys }, allow_nil: true
   validates :manager_completed_by_teammate, presence: true, if: :manager_completed?
-  validates :finalized_by_teammate, presence: true, if: :officially_completed?
+  # Rated finalize requires a finalizer; non-rated system closes (e.g. assignment archive) do not.
+  validates :finalized_by_teammate, presence: true, if: -> { officially_completed? && official_rating.present? }
   
   # Custom validation to prevent multiple open check-ins per teammate per assignment
   validate :only_one_open_check_in_per_teammate_assignment
@@ -133,9 +137,11 @@ class AssignmentCheckIn < ApplicationRecord
 
   # Find or create open check-in for a teammate and assignment.
   # Tenure is optional: when none exists, energy is left blank (same as bulk check-in).
+  # Does not create opens for archived assignments (returns existing open if any, else nil).
   def self.find_or_create_open_for(teammate, assignment)
     open_check_in = where(company_teammate: teammate, assignment: assignment).open.first
     return open_check_in if open_check_in
+    return nil if assignment.archived?
 
     tenure = AssignmentTenure.most_recent_for(teammate, assignment)
 
@@ -145,6 +151,20 @@ class AssignmentCheckIn < ApplicationRecord
       check_in_started_on: Date.current,
       actual_energy_percentage: tenure&.anticipated_energy_percentage
     )
+  end
+
+  # Non-rated close used when an assignment is archived. Preserves all draft fields.
+  def system_close_due_to_assignment_archive!(closed_by_teammate: nil)
+    return false unless open?
+
+    notes = [shared_notes.to_s.strip.presence, SYSTEM_CLOSE_DUE_TO_ARCHIVE_NOTE].compact.join("\n\n")
+    update!(
+      shared_notes: notes,
+      official_check_in_completed_at: Time.current,
+      official_rating: nil,
+      finalized_by_teammate: closed_by_teammate
+    )
+    true
   end
 
   # Completion tracking methods

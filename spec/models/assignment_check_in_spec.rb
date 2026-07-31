@@ -191,6 +191,45 @@ RSpec.describe AssignmentCheckIn, type: :model do
       expect(check_in.actual_energy_percentage).to be_nil
       expect(AssignmentTenure.where(company_teammate: teammate, assignment: assignment)).to be_empty
     end
+
+    it 'does not create a new open check-in for an archived assignment' do
+      assignment_tenure.destroy
+      assignment.archive!
+
+      expect {
+        result = AssignmentCheckIn.find_or_create_open_for(teammate, assignment)
+        expect(result).to be_nil
+      }.not_to change(AssignmentCheckIn, :count)
+    end
+  end
+
+  describe '#system_close_due_to_assignment_archive!' do
+    it 'closes an open check-in without an official rating and appends the system note' do
+      check_in = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment,
+        shared_notes: 'Existing notes',
+        official_check_in_completed_at: nil
+      )
+
+      expect(check_in.system_close_due_to_assignment_archive!).to be true
+
+      check_in.reload
+      expect(check_in).to be_closed
+      expect(check_in.official_rating).to be_nil
+      expect(check_in.shared_notes).to eq("Existing notes\n\n#{AssignmentCheckIn::SYSTEM_CLOSE_DUE_TO_ARCHIVE_NOTE}")
+    end
+
+    it 'is a no-op for already closed check-ins' do
+      check_in = create(:assignment_check_in, :finalized, teammate: teammate, assignment: assignment)
+      completed_at = check_in.official_check_in_completed_at
+      notes = check_in.shared_notes
+
+      expect(check_in.system_close_due_to_assignment_archive!).to be false
+      expect(check_in.reload.official_check_in_completed_at).to eq(completed_at)
+      expect(check_in.shared_notes).to eq(notes)
+    end
   end
 
   describe 'assignment_tenure association' do

@@ -781,6 +781,24 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(other_check_in).to be_nil
       end
 
+      it 'does not include or recreate open check-ins for archived assignments with history' do
+        archived_assignment = create(:assignment, company: organization, title: 'Archived Assignment')
+        create(
+          :assignment_check_in,
+          teammate: employee_teammate,
+          assignment: archived_assignment,
+          check_in_started_on: 2.weeks.ago,
+          official_check_in_completed_at: nil
+        )
+        archived_assignment.archive!
+
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+
+        assignment_ids = assigns(:assignment_check_ins).map(&:assignment_id)
+        expect(assignment_ids).not_to include(archived_assignment.id)
+        expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: archived_assignment).open).to be_empty
+      end
+
       it 'creates blank check-ins for suggested assignments without tenure' do
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         

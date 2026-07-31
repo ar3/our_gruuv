@@ -184,6 +184,37 @@ RSpec.describe Assignment, type: :model do
         expect(assignment.reload.deleted_at).to be_present
         expect(assignment.reload.deleted_at).to be_within(5.seconds).of(Time.current)
       end
+
+      it 'system-closes open check-ins without inventing an official rating' do
+        teammate = create(:teammate, organization: organization)
+        closed_by = create(:teammate, organization: organization)
+        open_check_in = create(
+          :assignment_check_in,
+          teammate: teammate,
+          assignment: assignment,
+          shared_notes: 'Draft progress',
+          official_check_in_completed_at: nil,
+          official_rating: nil
+        )
+        finalized = create(
+          :assignment_check_in,
+          :finalized,
+          teammate: teammate,
+          assignment: assignment,
+          check_in_started_on: 1.month.ago,
+          official_check_in_completed_at: 1.month.ago
+        )
+
+        assignment.archive!(closed_by_teammate: closed_by)
+
+        open_check_in.reload
+        expect(open_check_in).to be_closed
+        expect(open_check_in.official_rating).to be_nil
+        expect(open_check_in.shared_notes).to include('Draft progress')
+        expect(open_check_in.shared_notes).to include(AssignmentCheckIn::SYSTEM_CLOSE_DUE_TO_ARCHIVE_NOTE)
+        expect(open_check_in.finalized_by_teammate).to eq(closed_by)
+        expect(finalized.reload.official_check_in_completed_at).to be_within(1.second).of(1.month.ago)
+      end
     end
 
     describe '#restore!' do

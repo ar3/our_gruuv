@@ -56,8 +56,13 @@ class Assignment < ApplicationRecord
     deleted_at.present?
   end
 
-  def archive!
-    update!(deleted_at: Time.current)
+  def archive!(closed_by_teammate: nil)
+    transaction do
+      update!(deleted_at: Time.current)
+      AssignmentCheckIn.where(assignment_id: id).open.find_each do |check_in|
+        check_in.system_close_due_to_assignment_archive!(closed_by_teammate: closed_by_teammate)
+      end
+    end
   end
 
   def restore!

@@ -294,7 +294,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     active_tenures = AssignmentTenure
       .joins(:assignment)
       .where(company_teammate: @teammate, ended_at: nil)
-      .where(assignments: { company: organization.self_and_descendants })
+      .where(assignments: { company: organization.self_and_descendants, deleted_at: nil })
       .includes(:assignment)
 
     assignment_ids = active_tenures.map(&:assignment_id).uniq
@@ -302,17 +302,21 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
     active_employment = @teammate.employment_tenures.active.where(company: organization).first
     if active_employment&.position
-      assignment_ids |= active_employment.position.required_assignments.pluck(:assignment_id)
-      assignment_ids |= active_employment.position.suggested_assignments.pluck(:assignment_id)
+      assignment_ids |= active_employment.position.required_assignments
+        .where(assignments: { deleted_at: nil })
+        .pluck(:assignment_id)
+      assignment_ids |= active_employment.position.suggested_assignments
+        .where(assignments: { deleted_at: nil })
+        .pluck(:assignment_id)
     end
 
     assignment_ids |= AssignmentCheckIn
       .joins(:assignment)
-      .where(company_teammate: @teammate, assignments: { company: organization.self_and_descendants })
+      .where(company_teammate: @teammate, assignments: { company: organization.self_and_descendants, deleted_at: nil })
       .distinct
       .pluck(:assignment_id)
 
-    assignments_by_id = Assignment.where(id: assignment_ids).index_by(&:id)
+    assignments_by_id = Assignment.unarchived.where(id: assignment_ids).index_by(&:id)
 
     assignment_ids.filter_map do |assignment_id|
       assignment = assignments_by_id[assignment_id]
@@ -507,10 +511,11 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   def load_or_build_assignment_check_ins
     check_ins = []
     
-    # Get all active assignment tenures for this teammate
+    # Get all active assignment tenures for this teammate (exclude archived assignments)
     active_tenures = AssignmentTenure.joins(:assignment)
                                     .where(company_teammate: @teammate)
                                     .where(ended_at: nil)
+                                    .where(assignments: { deleted_at: nil })
                                     .includes(:assignment)
     
     # Find or create check-ins for each active assignment tenure
@@ -523,8 +528,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     active_employment = @teammate.employment_tenures.active.where(company: organization).first
     if active_employment&.position
       position = active_employment.position
-      required_assignments = position.required_assignments.map(&:assignment)
-      suggested_assignments = position.suggested_assignments.map(&:assignment)
+      required_assignments = position.required_assignments.map(&:assignment).reject(&:archived?)
+      suggested_assignments = position.suggested_assignments.map(&:assignment).reject(&:archived?)
       position_assignments = required_assignments + suggested_assignments
       
       # Batch load open check-ins for position assignments we don't have yet (avoid N+1)
@@ -569,12 +574,12 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     check_ins = check_ins.compact
     
-    # Also include assignments that have ever had a check-in (even if no active tenure or position assignment)
-    # This ensures we show all assignments with check-in history
+    # Also include unarchived assignments that have ever had a check-in (even if no active tenure or position assignment)
+    # This ensures we show all living assignments with check-in history — not archived ones.
     assignments_with_check_in_history = AssignmentCheckIn
       .where(company_teammate: @teammate)
       .joins(:assignment)
-      .where(assignments: { company: organization.self_and_descendants })
+      .where(assignments: { company: organization.self_and_descendants, deleted_at: nil })
       .select(:assignment_id)
       .distinct
       .pluck(:assignment_id)
@@ -594,7 +599,9 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     missing_history_ids.each do |assignment_id|
       open_check_in = open_check_ins_by_assignment[assignment_id]
       if open_check_in.nil?
-        assignment = Assignment.find(assignment_id)
+        assignment = Assignment.unarchived.find_by(id: assignment_id)
+        next unless assignment
+
         check_in = AssignmentCheckIn.create!(
           teammate: @teammate,
           assignment: assignment,

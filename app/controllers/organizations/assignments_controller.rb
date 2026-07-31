@@ -355,7 +355,7 @@ class Organizations::AssignmentsController < ApplicationController
                   alert: 'Cannot archive: remove all position assignments and active assignment tenures first.'
       return
     end
-    @assignment.archive!
+    @assignment.archive!(closed_by_teammate: current_company_teammate)
     redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully archived.'
   end
 
