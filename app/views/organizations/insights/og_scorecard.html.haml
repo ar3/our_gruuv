@@ -139,7 +139,7 @@
             %tr.table-light.og-scorecard-repeat-header
               = render 'og_scorecard_header_cells'
           %tr.table-secondary
-            %td.sticky-col.fw-semibold= group[:title]
+            %td.sticky-col.fw-semibold= og_scorecard_group_title(group[:title])
             %td{colspan: 4 + @week_labels.size}
           - group[:rows].each do |row|
             - if row[:separator]

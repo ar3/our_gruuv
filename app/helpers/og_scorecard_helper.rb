@@ -50,6 +50,27 @@ module OgScorecardHelper
     safe_join([label, content_tag(:span, " (#{hint})", class: 'text-muted')], '')
   end
 
+  # Concept group header → corresponding Insights health page (Teammates has none).
+  def og_scorecard_group_title(title)
+    path = case title
+           when 'Observations' then organization_observations_health_path(@organization)
+           when 'Check-ins' then organization_check_ins_health_path(@organization)
+           when 'Ability Milestones' then organization_milestones_health_path(@organization)
+           when 'Goals' then organization_goals_health_path(@organization)
+           end
+    return title if path.blank?
+
+    link_to path, class: 'text-decoration-none text-body' do
+      safe_join(
+        [
+          title,
+          ' ',
+          content_tag(:i, '', class: 'bi bi-heart-pulse', 'aria-hidden': true)
+        ]
+      )
+    end
+  end
+
   # Status-colored icon shown before a Gruuv Health row label. On hover it
   # explains the shared three-state model and what this specific row counts.
   def og_scorecard_gruuv_status_icon(status, category)
