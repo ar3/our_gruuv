@@ -784,11 +784,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def update
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    email_before = @teammate.person.email
     if @teammate.person.update(person_params)
       if params[:start_page].present?
         key = "start_page_#{organization.id}"
         UserPreference.for_person(@teammate.person).update_preference(key, params[:start_page])
       end
+      log_google_email_mismatch_if_needed(email_before)
       redirect_to organization_company_teammate_path(organization, @teammate), notice: 'Profile updated successfully!'
     else
       capture_error_in_sentry(ActiveRecord::RecordInvalid.new(@teammate.person), {
@@ -800,13 +802,17 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       render :show, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotUnique => e
-    # Handle unique constraint violations (like duplicate phone numbers)
+    # Handle unique constraint violations (duplicate phone or email)
     capture_error_in_sentry(e, {
       method: 'update_profile',
       teammate_id: @teammate&.id,
       error_type: 'unique_constraint_violation'
     })
-    @teammate.person.errors.add(:unique_textable_phone_number, 'is already taken by another user')
+    if e.message.match?(/index_people_on_email|people_email|Key \(email\)/i)
+      @teammate.person.errors.add(:email, 'has already been taken')
+    else
+      @teammate.person.errors.add(:unique_textable_phone_number, 'is already taken by another user')
+    end
     setup_show_instance_variables
     render :show, status: :unprocessable_entity
   rescue ActiveRecord::StatementInvalid => e
@@ -1594,9 +1600,21 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def person_params
-    params.require(:person).permit(:first_name, :last_name, :middle_name, :suffix, 
-                                  :unique_textable_phone_number, :timezone,
+    params.require(:person).permit(:first_name, :last_name, :middle_name, :suffix,
+                                  :email, :unique_textable_phone_number, :timezone,
                                   :preferred_name, :gender_identity, :pronouns)
+  end
+
+  def log_google_email_mismatch_if_needed(email_before)
+    person = @teammate.person
+    return unless person.google_identity_email_mismatch?
+    return if email_before.to_s.downcase == person.email.to_s.downcase
+
+    Rails.logger.warn(
+      "[PersonEmail] person_id=#{person.id} email=#{person.email} " \
+      "does not match Google identity emails=#{person.all_google_emails.inspect} " \
+      "(login still uses Google uid; identities were not changed)"
+    )
   end
 
   # Data loading methods for about_me page

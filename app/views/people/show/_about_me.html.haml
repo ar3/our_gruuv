@@ -41,11 +41,19 @@
 
               .col-md-6.col-12
                 .mb-3
-                  %strong Email:
-                  %br
-                  = @person.email
-                  %small.form-text.text-muted.d-block This is your login email and cannot be changed
-              
+                  = form.label :email, "Email", class: "form-label"
+                  = form.email_field :email, class: "form-control#{' is-invalid' if @person.errors[:email].any?}", required: true
+                  %small.form-text.text-muted Connected Google / Slack / Asana accounts are not changed when you update this email.
+                  - if @person.errors[:email].any?
+                    .invalid-feedback.d-block
+                      = @person.errors[:email].join(', ')
+                  - elsif @person.google_identity_email_mismatch?
+                    .form-text.text-warning.d-block.mt-1
+                      %i.bi.bi-exclamation-triangle.me-1
+                      This email does not match a connected Google account
+                      (#{@person.all_google_emails.join(', ')}).
+                      Login still works via the connected Google account.
+
                 .mb-3
                   = form.label :unique_textable_phone_number, "Phone Number", class: "form-label"
                   = form.telephone_field :unique_textable_phone_number, class: "form-control", placeholder: "+1234567890"

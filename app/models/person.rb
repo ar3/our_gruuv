@@ -26,7 +26,8 @@ class Person < ApplicationRecord
 
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
-  validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP },
+                    uniqueness: { case_sensitive: false }
   validates :gender_identity, inclusion: {
     in: %w[man woman non_binary genderqueer genderfluid agender two_spirit prefer_not_to_say other],
     allow_blank: true
@@ -414,6 +415,15 @@ class Person < ApplicationRecord
 
   def all_google_emails
     person_identities.google.pluck(:email)
+  end
+
+  # True when at least one Google identity exists and none of its emails match people.email.
+  # Login still works via Google uid; mismatch is allowed (e.g. work contact vs personal Google).
+  def google_identity_email_mismatch?
+    google_emails = all_google_emails.map { |e| e.to_s.downcase }.reject(&:blank?).uniq
+    return false if google_emails.empty?
+
+    google_emails.exclude?(email.to_s.downcase)
   end
 
   def can_disconnect_identity?(identity)

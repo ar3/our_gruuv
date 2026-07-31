@@ -33,6 +33,19 @@ RSpec.describe Person, type: :model do
       expect(person.errors[:email]).to include('is invalid')
     end
 
+    it 'validates email uniqueness case-insensitively' do
+      create(:person, email: 'taken@example.com')
+      person.email = 'TAKEN@example.com'
+      expect(person).not_to be_valid
+      expect(person.errors[:email]).to include('has already been taken')
+    end
+
+    it 'allows updating a person without changing their own email' do
+      existing = create(:person, email: 'mine@example.com')
+      existing.first_name = 'Updated'
+      expect(existing).to be_valid
+    end
+
     it 'automatically fixes invalid timezones' do
       person.timezone = 'Invalid/Timezone'
       expect(person).to be_valid
@@ -208,6 +221,29 @@ RSpec.describe Person, type: :model do
       it 'returns email' do
         expect(person.display_name).to eq('john@example.com')
       end
+    end
+  end
+
+  describe '#google_identity_email_mismatch?' do
+    let(:person) { create(:person, email: 'work@company.com') }
+
+    it 'is false when there are no Google identities' do
+      expect(person.google_identity_email_mismatch?).to be false
+    end
+
+    it 'is false when a Google identity email matches the person email' do
+      create(:person_identity, :google, person: person, email: 'work@company.com')
+      expect(person.google_identity_email_mismatch?).to be false
+    end
+
+    it 'is false when a Google identity email matches case-insensitively' do
+      create(:person_identity, :google, person: person, email: 'WORK@company.com')
+      expect(person.google_identity_email_mismatch?).to be false
+    end
+
+    it 'is true when Google identity emails do not match the person email' do
+      create(:person_identity, :google, person: person, email: 'personal@gmail.com')
+      expect(person.google_identity_email_mismatch?).to be true
     end
   end
 

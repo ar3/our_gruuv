@@ -72,6 +72,21 @@ RSpec.describe 'About Me Page', type: :request do
     end
   end
 
+  describe 'Email field on profile form' do
+    it 'renders an editable email field on the teammate show page' do
+      get organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include('name="person[email]"')
+      expect(response.body).not_to include('cannot be changed')
+    end
+
+    it 'shows a mismatch warning when Google identity email differs' do
+      create(:person_identity, :google, person: person, email: 'personal@gmail.com')
+      get organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include('does not match a connected Google account')
+      expect(response.body).to include('personal@gmail.com')
+    end
+  end
+
   describe 'Navigation link' do
     it 'appears in navigation for authorized users' do
       get dashboard_organization_path(organization)

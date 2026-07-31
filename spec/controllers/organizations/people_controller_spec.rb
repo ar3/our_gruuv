@@ -546,6 +546,59 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       end
     end
 
+    context 'with email change' do
+      before do
+        session[:current_company_teammate_id] = person_teammate.id
+        @current_company_teammate = nil if defined?(@current_company_teammate)
+      end
+
+      it 'updates the person email' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: person_teammate.id,
+          person: { email: 'corrected@example.com' }
+        }
+        expect(person.reload.email).to eq('corrected@example.com')
+        expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
+      end
+
+      it 'hard-blocks when the email is already taken' do
+        create(:person, email: 'taken@example.com')
+        patch :update, params: {
+          organization_id: organization.id,
+          id: person_teammate.id,
+          person: { email: 'taken@example.com' }
+        }
+        expect(person.reload.email).to eq('john@example.com')
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(assigns(:teammate).person.errors[:email]).to include('has already been taken')
+      end
+
+      it 'does not disconnect Google identities when email changes' do
+        identity = create(:person_identity, :google, person: person, email: 'john@example.com', uid: 'google-uid-keep')
+        patch :update, params: {
+          organization_id: organization.id,
+          id: person_teammate.id,
+          person: { email: 'new-work@example.com' }
+        }
+        expect(person.reload.email).to eq('new-work@example.com')
+        expect(PersonIdentity.find_by(id: identity.id)).to be_present
+        expect(identity.reload.email).to eq('john@example.com')
+      end
+
+      it 'does not disconnect teammate identities when email changes' do
+        slack_identity = create(:teammate_identity, :slack, teammate: person_teammate, email: 'john@slack.example.com')
+        patch :update, params: {
+          organization_id: organization.id,
+          id: person_teammate.id,
+          person: { email: 'new-work@example.com' }
+        }
+        expect(person.reload.email).to eq('new-work@example.com')
+        expect(TeammateIdentity.find_by(id: slack_identity.id)).to be_present
+        expect(slack_identity.reload.email).to eq('john@slack.example.com')
+      end
+    end
+
     context 'with invalid parameters' do
       let(:invalid_params) do
         {
