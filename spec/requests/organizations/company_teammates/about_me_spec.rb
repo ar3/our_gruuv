@@ -85,6 +85,16 @@ RSpec.describe 'About Me Page', type: :request do
       expect(response.body).to include('does not match a connected Google account')
       expect(response.body).to include('personal@gmail.com')
     end
+
+    it 're-renders the profile with validation errors when email is taken' do
+      create(:person, email: 'taken@example.com')
+      patch organization_company_teammate_path(organization, teammate), params: {
+        person: { email: 'taken@example.com', first_name: person.first_name, last_name: person.last_name }
+      }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('has already been taken')
+      expect(response.body).to include('name="person[email]"')
+    end
   end
 
   describe 'Navigation link' do

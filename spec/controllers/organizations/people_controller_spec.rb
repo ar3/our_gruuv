@@ -571,6 +571,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         }
         expect(person.reload.email).to eq('john@example.com')
         expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:show)
+        expect(assigns(:person)).to eq(person)
         expect(assigns(:teammate).person.errors[:email]).to include('has already been taken')
       end
 

@@ -1576,6 +1576,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def setup_show_instance_variables
     assign_viewable_teammates_context!(selected_teammate: @teammate)
+    @person = @teammate.person
     # Get all employment tenures for this organization
     @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
                                  &.where(company: organization)
@@ -1587,7 +1588,10 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
                                  &.where(assignments: { company: organization })
                                  &.order(started_at: :desc) || []
     @teammates = @teammate.person.teammates.includes(:organization)
-    
+    @teammate_identities = @teammate&.teammate_identities || []
+    @most_visited_pages = @person.page_visits.most_visited.limit(5)
+    @most_recent_pages = @person.page_visits.recent.limit(5)
+
     # Preload huddle associations to avoid N+1 queries
     HuddleParticipant.joins(:company_teammate)
                     .where(teammates: { id: @teammate.id, organization: organization })
