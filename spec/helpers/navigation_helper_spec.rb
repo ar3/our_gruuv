@@ -462,7 +462,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Check-ins Health')
       end
 
-      it 'includes Beta section with Insights, Position Comparison, Eligibility Requirements, and Goal Impact Scanner' do
+      it 'includes Beta section with Insights, Position Comparison, Eligibility Requirements, Goal Impact Scanner, and Position Suggestions' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
@@ -473,6 +473,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Position Comparison')
         expect(labels).to include('Eligibility Requirements')
         expect(labels).to include('Goal Impact Scanner')
+        expect(labels).to include('Position Suggestions')
         expect(labels).not_to include('Start Here')
         expect(labels).not_to include('Something Interesting')
         expect(labels).not_to include('Notifications')

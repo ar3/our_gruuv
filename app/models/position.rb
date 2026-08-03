@@ -11,6 +11,7 @@ class Position < ApplicationRecord
   has_many :position_abilities, dependent: :destroy
   has_many :abilities, through: :position_abilities
   has_many :comments, as: :commentable, dependent: :destroy
+  has_many :position_suggestions, dependent: :destroy
   has_many :og_consultations, as: :subject, dependent: :destroy
 
   def latest_position_clarity_consultation

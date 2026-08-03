@@ -1,0 +1,126 @@
+- content_for :title, "Position Suggestions — #{@position.display_name}"
+- page_help_id = "positionSuggestionShowHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      = @position.display_name
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Suggest assignment and milestone changes. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+    - if @suggestion.open?
+      %span.badge.text-bg-primary Open session
+    - else
+      %span.badge.text-bg-success Completed
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/position_suggestions/page_help"
+
+.d-flex.flex-wrap.gap-2.mb-4
+  = link_to "All position suggestions", organization_position_suggestions_path(@organization), class: "btn btn-outline-secondary btn-sm"
+  - if @suggestion.open? && @participant
+    - if @participant.active?
+      = button_to "Save and mark as complete",
+                  update_participation_organization_position_suggestion_path(@organization, @suggestion),
+                  method: :patch,
+                  params: { participation_status: "done_contributing" },
+                  class: "btn btn-primary btn-sm",
+                  form: { data: { turbo: false } }
+      = button_to "Withdraw",
+                  update_participation_organization_position_suggestion_path(@organization, @suggestion),
+                  method: :patch,
+                  params: { participation_status: "withdrawn" },
+                  class: "btn btn-outline-danger btn-sm",
+                  form: { data: { turbo: false } }
+    - elsif @participant.done_contributing? || @participant.withdrawn?
+      = button_to "Resume reviewing",
+                  update_participation_organization_position_suggestion_path(@organization, @suggestion),
+                  method: :patch,
+                  params: { participation_status: "active" },
+                  class: "btn btn-outline-primary btn-sm",
+                  form: { data: { turbo: false } }
+  - if @suggestion.open? && @can_manage_maap
+    - if @suggestion.can_complete?
+      = button_to "Mark review completed",
+                  close_organization_position_suggestion_path(@organization, @suggestion),
+                  method: :patch,
+                  class: "btn btn-success btn-sm",
+                  form: { data: { turbo: false, confirm: "Close this suggestion session? A new session can be opened later." } }
+    - else
+      %span.badge.text-bg-warning.align-self-center
+        Resolve active participants' root comments before completing
+
+- if @suggestion.open?
+  %p.text-muted.small.mb-4
+    Each Assignment row pairs content on the left with comments on the right. Each Ability row pairs the ability on the left with the milestone suggestion control on the right. Milestone radios save as soon as you change them (proposals only). Hover a level for milestone language; current MAAP levels use a thicker border.
+
+.border.rounded.p-3.mb-4#position-comments
+  .row
+    .col-12.col-lg-8
+      %h2.h5.mb-2 Position
+      - if @position.combined_summary.present?
+        .markdown-content.small= render_markdown(@position.combined_summary)
+      - else
+        %p.text-muted.small.mb-0 No position summary provided.
+    .col-12.col-lg-4
+      %h3.h6 Comments
+      = render "organizations/position_suggestions/comment_block",
+               commentable: @position,
+               comments: @position_comments,
+               suggestion: @suggestion,
+               organization: @organization,
+               return_to: @return_to,
+               disabled: !@suggestion.open?
+
+- @position_assignments.each do |position_assignment|
+  - assignment = position_assignment.assignment
+  - comments = @assignment_comments[assignment.id] || []
+  .border.rounded.p-3.mb-4{id: "assignment-#{assignment.id}"}
+    .row.mb-3.pb-3.border-bottom
+      .col-12.col-lg-8
+        - assignment_popover_html = position_suggestion_assignment_popover_html(assignment)
+        %h2.mb-2
+          = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "bottom", bs_title: assignment.title, bs_custom_class: "position-suggestion-assignment-popover", bs_content: assignment_popover_html }
+        %span.badge.text-bg-light.mb-3= position_assignment.assignment_type.titleize
+        - if assignment.assignment_outcomes.any?
+          %h3.h6 Outcomes
+          %ul.mb-0
+            - assignment.assignment_outcomes.each do |outcome|
+              %li
+                .markdown-content.small= render_markdown(outcome.description)
+        - elsif assignment.tagline.present?
+          .markdown-content.small.text-muted= render_markdown(assignment.tagline)
+      .col-12.col-lg-4
+        %h3.h6 Comments
+        = render "organizations/position_suggestions/comment_block",
+                 commentable: assignment,
+                 comments: comments,
+                 suggestion: @suggestion,
+                 organization: @organization,
+                 return_to: @return_to,
+                 disabled: !@suggestion.open?
+
+    - if assignment.assignment_abilities.any?
+      - assignment.assignment_abilities.sort_by { |aa| aa.ability.name }.each_with_index do |aa, index|
+        - suggestion_milestone = @milestones_by_key[["AssignmentAbility", aa.id]]
+        .row.py-3{class: ("border-top" if index.positive?)}
+          .col-12.col-lg-8
+            %h3.h6.mb-1
+              = link_to aa.ability.name, organization_ability_path(@organization, aa.ability), class: "text-decoration-none"
+            - if aa.ability.description.present?
+              .markdown-content.small.text-muted.mb-0= render_markdown(aa.ability.description)
+            - else
+              %p.text-muted.small.mb-0 No ability description.
+          .col-12.col-lg-4
+            = render "organizations/position_suggestions/milestone_suggest_control",
+                     ability: aa.ability,
+                     assignment_ability: aa,
+                     suggestion_milestone: suggestion_milestone,
+                     organization: @organization,
+                     suggestion: @suggestion,
+                     can_suggest: @suggestion.open?
+    - else
+      %p.text-muted.small.mb-0.pt-2 No abilities linked to this assignment yet.

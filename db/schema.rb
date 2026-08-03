@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_29_080055) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_03_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -427,10 +427,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_080055) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "slack_message_id"
+    t.bigint "position_suggestion_id"
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable_type_and_commentable_id"
     t.index ["creator_id"], name: "index_comments_on_creator_id"
     t.index ["organization_id"], name: "index_comments_on_organization_id"
+    t.index ["position_suggestion_id"], name: "index_comments_on_position_suggestion_id"
     t.index ["resolved_at"], name: "index_comments_on_resolved_at"
   end
 
@@ -1427,6 +1429,48 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_080055) do
     t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
   end
 
+  create_table "position_suggestion_milestones", force: :cascade do |t|
+    t.bigint "position_suggestion_id", null: false
+    t.string "milestoneable_type", null: false
+    t.bigint "milestoneable_id", null: false
+    t.integer "suggested_milestone_level", null: false
+    t.bigint "last_modified_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_modified_by_id"], name: "index_position_suggestion_milestones_on_last_modified_by_id"
+    t.index ["milestoneable_type", "milestoneable_id"], name: "index_position_suggestion_milestones_on_milestoneable"
+    t.index ["position_suggestion_id", "milestoneable_type", "milestoneable_id"], name: "index_position_suggestion_milestones_unique", unique: true
+    t.index ["position_suggestion_id"], name: "index_position_suggestion_milestones_on_position_suggestion_id"
+  end
+
+  create_table "position_suggestion_participants", force: :cascade do |t|
+    t.bigint "position_suggestion_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.string "participation_status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_position_suggestion_participants_on_company_teammate_id"
+    t.index ["position_suggestion_id", "company_teammate_id"], name: "index_position_suggestion_participants_unique", unique: true
+    t.index ["position_suggestion_id"], name: "idx_on_position_suggestion_id_17f889e33c"
+  end
+
+  create_table "position_suggestions", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.bigint "organization_id", null: false
+    t.string "status", default: "open", null: false
+    t.bigint "opened_by_id", null: false
+    t.bigint "closed_by_id"
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["closed_by_id"], name: "index_position_suggestions_on_closed_by_id"
+    t.index ["opened_by_id"], name: "index_position_suggestions_on_opened_by_id"
+    t.index ["organization_id"], name: "index_position_suggestions_on_organization_id"
+    t.index ["position_id", "status"], name: "index_position_suggestions_one_open_per_position", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["position_id"], name: "index_position_suggestions_on_position_id"
+    t.index ["status"], name: "index_position_suggestions_on_status"
+  end
+
   create_table "positions", force: :cascade do |t|
     t.bigint "title_id", null: false
     t.bigint "position_level_id", null: false
@@ -2016,6 +2060,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_080055) do
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "manager_teammate_id"
   add_foreign_key "comments", "organizations"
   add_foreign_key "comments", "people", column: "creator_id"
+  add_foreign_key "comments", "position_suggestions"
   add_foreign_key "company_label_preferences", "organizations", column: "company_id"
   add_foreign_key "departments", "departments", column: "parent_department_id"
   add_foreign_key "departments", "organizations", column: "company_id"
@@ -2118,6 +2163,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_29_080055) do
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_clarity_results", "og_consultations"
   add_foreign_key "position_levels", "position_major_levels"
+  add_foreign_key "position_suggestion_milestones", "position_suggestions"
+  add_foreign_key "position_suggestion_milestones", "teammates", column: "last_modified_by_id"
+  add_foreign_key "position_suggestion_participants", "position_suggestions"
+  add_foreign_key "position_suggestion_participants", "teammates", column: "company_teammate_id"
+  add_foreign_key "position_suggestions", "organizations"
+  add_foreign_key "position_suggestions", "positions"
+  add_foreign_key "position_suggestions", "teammates", column: "closed_by_id"
+  add_foreign_key "position_suggestions", "teammates", column: "opened_by_id"
   add_foreign_key "positions", "position_eligibility_requirements"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "titles"

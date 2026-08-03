@@ -566,7 +566,11 @@ module OrganizationSitemap
           beta_page(:goal_impact_scanner, "Goal Impact Scanner", "bi-diagram-3", :organization_goal_impact_scanner_path,
             policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
             goal: "Scan company-visible goals and descendant confidence to judge higher-level impact.",
-            synonyms: %w[goal impact scanner company goals hierarchy confidence rollup rocks])
+            synonyms: %w[goal impact scanner company goals hierarchy confidence rollup rocks]),
+          beta_page(:position_suggestions, "Position Suggestions", "bi-chat-left-quote", :organization_position_suggestions_path,
+            policy: ->(ctx) { ctx.policy(PositionSuggestion).index? },
+            goal: "Suggest assignment and milestone changes on positions without editing MAAP directly.",
+            synonyms: %w[position suggestions maap feedback manager suggestions assignment milestones])
         ]
       }
     end

@@ -1,7 +1,7 @@
 - commentable = local_assigns[:commentable]
 - organization = local_assigns[:organization]
 - behavior = Comments::CommentableBehavior.for(commentable)
-- comments = commentable.comments.includes(:creator).ordered
+- comments = commentable.comments.without_position_suggestion.includes(:creator).ordered
 - unresolved_count = behavior.allows_resolve? ? comments.unresolved.count : 0
 - total_count = comments.count
 - latest_comment = comments.last

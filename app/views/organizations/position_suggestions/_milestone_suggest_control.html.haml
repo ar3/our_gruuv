@@ -1,0 +1,53 @@
+-# Locals:
+-#   ability, assignment_ability, suggestion_milestone, organization, suggestion, can_suggest
+-# Right-column control only — ability name/description live on the left of the row.
+- ability = local_assigns[:ability]
+- assignment_ability = local_assigns[:assignment_ability]
+- suggestion_milestone = local_assigns[:suggestion_milestone]
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+- can_suggest = local_assigns.fetch(:can_suggest, false)
+- current_level = assignment_ability.milestone_level
+- selected_level = suggestion_milestone&.suggested_milestone_level || current_level
+- form_prefix = "suggestion_milestone_#{assignment_ability.id}"
+
+%small.text-muted.d-block.mb-2
+  Current:
+  %strong= "#{current_level} — #{milestone_level_display(current_level)}"
+  - if suggestion_milestone
+    %span.mx-1 ·
+    Suggested:
+    %strong= "#{suggestion_milestone.suggested_milestone_level} — #{milestone_level_display(suggestion_milestone.suggested_milestone_level)}"
+    by
+    = suggestion_milestone.last_modified_by.person.display_name
+    = link_to "history",
+              organization_paper_trail_path(organization, item_type: "PositionSuggestionMilestone", item_id: suggestion_milestone.id),
+              class: "ms-1"
+
+- if can_suggest
+  = form_with url: upsert_milestone_organization_position_suggestion_path(organization, suggestion), method: :patch, local: true, html: { class: "milestone-suggest-form" } do
+    = hidden_field_tag :milestoneable_type, "AssignmentAbility"
+    = hidden_field_tag :milestoneable_id, assignment_ability.id
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Suggested milestone for #{ability.name}"}
+      - [1, 2, 3, 4, 5].each do |level|
+        - radio_id = "#{form_prefix}_level_#{level}"
+        - pop_html = ability_milestone_level_popover_html(ability, level)
+        - popover_title = "Milestone #{level} (#{milestone_level_display(level)}) for #{ability.name}"
+        - is_current = level == current_level
+        - label_class = ["btn", "btn-outline-primary", ("border-2" if is_current)].compact.join(" ")
+        = radio_button_tag :suggested_milestone_level, level, (selected_level == level), class: "btn-check", id: radio_id, onchange: "this.form.requestSubmit()"
+        = label_tag radio_id, nil, class: label_class, role: "button", title: (is_current ? "Current MAAP requirement" : nil), data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: popover_title, bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
+          = level
+- else
+  .btn-group.btn-group-sm{role: "group", "aria-label": "Milestone levels for #{ability.name}"}
+    - [1, 2, 3, 4, 5].each do |level|
+      - radio_id = "#{form_prefix}_readonly_#{level}"
+      - pop_html = ability_milestone_level_popover_html(ability, level)
+      - popover_title = "Milestone #{level} (#{milestone_level_display(level)}) for #{ability.name}"
+      - selected = selected_level == level
+      - is_current = level == current_level
+      - base = selected ? "btn btn-primary" : "btn btn-outline-primary"
+      - label_class = is_current ? "#{base} border-2" : base
+      = radio_button_tag "#{form_prefix}_ro", level, selected, class: "btn-check", id: radio_id, disabled: true
+      = label_tag radio_id, nil, class: label_class, role: "button", style: "pointer-events: auto; cursor: help;", tabindex: "0", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "top", bs_title: popover_title, bs_custom_class: "complete-picture-milestone-popover", bs_content: pop_html } do
+        = level

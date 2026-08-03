@@ -590,6 +590,13 @@ module NavigationHelper
             path: organization_goal_impact_scanner_path(current_organization),
             policy_check: -> { policy(current_company).view_goals? },
             coming_soon: false
+          },
+          {
+            label: 'Position Suggestions',
+            icon: 'bi-chat-left-quote',
+            path: organization_position_suggestions_path(current_organization),
+            policy_check: -> { policy(PositionSuggestion).index? },
+            coming_soon: false
           }
         ]
       },

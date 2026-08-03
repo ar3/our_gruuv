@@ -174,6 +174,16 @@ Rails.application.routes.draw do
     end
     resource :position_comparison, module: :organizations, only: [:show]
 
+    resources :position_suggestions, module: :organizations, only: [:index, :show, :create] do
+      member do
+        post :join
+        patch :update_participation
+        patch :close
+        post :create_comment
+        patch :upsert_milestone
+      end
+    end
+
     resource :position_eligibility_defaults, only: [:show], module: :organizations, controller: 'position_eligibility_defaults' do
       get 'minors/:minor/edit', action: :edit_minor, as: :edit_minor
       patch 'minors/:minor', action: :update_minor, as: :update_minor

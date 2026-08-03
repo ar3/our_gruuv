@@ -1,13 +1,20 @@
 class Comments::CreateService
-  def self.call(comment:, commentable:, organization:, creator:)
-    new(comment: comment, commentable: commentable, organization: organization, creator: creator).call
+  def self.call(comment:, commentable:, organization:, creator:, position_suggestion: nil)
+    new(
+      comment: comment,
+      commentable: commentable,
+      organization: organization,
+      creator: creator,
+      position_suggestion: position_suggestion
+    ).call
   end
 
-  def initialize(comment:, commentable:, organization:, creator:)
+  def initialize(comment:, commentable:, organization:, creator:, position_suggestion: nil)
     @comment = comment
     @commentable = commentable
     @organization = organization
     @creator = creator
+    @position_suggestion = position_suggestion
     @behavior = Comments::CommentableBehavior.for(commentable)
   end
 
@@ -18,6 +25,7 @@ class Comments::CreateService
       @comment.commentable = @commentable
       @comment.organization = @organization
       @comment.creator = @creator
+      @comment.position_suggestion = @position_suggestion if @position_suggestion
 
       if @comment.valid? && @comment.save
         @behavior.notify_after_create(@comment)

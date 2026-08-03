@@ -1563,6 +1563,15 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
+.popover.position-suggestion-assignment-popover {
+  max-width: min(36rem, 92vw);
+
+  .popover-body {
+    max-height: min(70vh, 32rem);
+    overflow-y: auto;
+  }
+}
+
 // Organizations PaperTrail: legacy popover wrapper (if reused elsewhere)
 .popover.paper-trail-version-popover-wrap {
   max-width: min(38rem, 92vw);

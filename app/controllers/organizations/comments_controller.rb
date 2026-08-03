@@ -15,6 +15,7 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
 
     root_comments_scope = Comment
       .for_commentable(@commentable)
+      .without_position_suggestion
       .root_comments
       .ordered
       .includes(:creator, :organization)
@@ -153,14 +154,13 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     root_commentable = @comment.root_commentable
     redirect_params = { commentable_type: root_commentable.class.name, commentable_id: root_commentable.id }
     redirect_params[:show_resolved] = 'true' if params[:show_resolved] == 'true'
+    path = comment_redirect_path(@comment.organization, redirect_params)
 
     if result.ok?
-      redirect_to organization_comments_path(@comment.organization, redirect_params),
-                  notice: 'Comment was successfully resolved.'
+      redirect_to path, notice: 'Comment was successfully resolved.'
     else
       error_msg = result.error.is_a?(Array) ? result.error.join(', ') : result.error
-      redirect_to organization_comments_path(@comment.organization, redirect_params),
-                  alert: "Failed to resolve comment: #{error_msg}"
+      redirect_to path, alert: "Failed to resolve comment: #{error_msg}"
     end
   end
 
@@ -172,18 +172,25 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     root_commentable = @comment.root_commentable
     redirect_params = { commentable_type: root_commentable.class.name, commentable_id: root_commentable.id }
     redirect_params[:show_resolved] = 'true' if params[:show_resolved] == 'true'
+    path = comment_redirect_path(@comment.organization, redirect_params)
 
     if result.ok?
-      redirect_to organization_comments_path(@comment.organization, redirect_params),
-                  notice: 'Comment was successfully unresolved.'
+      redirect_to path, notice: 'Comment was successfully unresolved.'
     else
       error_msg = result.error.is_a?(Array) ? result.error.join(', ') : result.error
-      redirect_to organization_comments_path(@comment.organization, redirect_params),
-                  alert: "Failed to unresolve comment: #{error_msg}"
+      redirect_to path, alert: "Failed to unresolve comment: #{error_msg}"
     end
   end
 
   private
+
+  def comment_redirect_path(organization, redirect_params)
+    return_to = params[:return_to].to_s
+    return return_to if return_to.start_with?("/")
+
+    organization_comments_path(organization, redirect_params)
+  end
+
 
   def set_comment
     @comment = Comment.find(params[:id])
@@ -210,6 +217,7 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     @show_resolved = @commentable_behavior.allows_resolve? && params[:show_resolved] == 'true'
     root_comments_scope = Comment
       .for_commentable(@commentable)
+      .without_position_suggestion
       .root_comments
       .ordered
       .includes(:creator, :organization)

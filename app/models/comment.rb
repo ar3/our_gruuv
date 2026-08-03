@@ -3,6 +3,7 @@ class Comment < ApplicationRecord
   belongs_to :commentable, polymorphic: true
   belongs_to :organization
   belongs_to :creator, class_name: 'Person'
+  belongs_to :position_suggestion, optional: true
 
   # Self-referential association for nested comments
   has_many :comments, as: :commentable, dependent: :destroy
@@ -22,6 +23,9 @@ class Comment < ApplicationRecord
   scope :for_commentable, ->(commentable) { where(commentable_type: commentable.class.name, commentable_id: commentable.id) }
   scope :root_comments, -> { where.not(commentable_type: 'Comment') }
   scope :ordered, -> { order(created_at: :asc) }
+  # Default MAAP/object comment UIs exclude suggestion-session threads.
+  scope :without_position_suggestion, -> { where(position_suggestion_id: nil) }
+  scope :for_position_suggestion, ->(suggestion) { where(position_suggestion_id: suggestion.id) }
 
   # Instance methods
   def resolved?

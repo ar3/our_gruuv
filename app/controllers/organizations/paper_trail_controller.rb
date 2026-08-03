@@ -25,6 +25,7 @@ class Organizations::PaperTrailController < Organizations::OrganizationNamespace
     'Observation' => Observation,
     'Organization' => Organization,
     'Position' => Position,
+    'PositionSuggestionMilestone' => PositionSuggestionMilestone,
     'Title' => Title
   }.freeze
 
@@ -51,6 +52,8 @@ class Organizations::PaperTrailController < Organizations::OrganizationNamespace
               klass.where(company_id: org.id)
             when 'Position'
               klass.for_company(org)
+            when 'PositionSuggestionMilestone'
+              klass.joins(:position_suggestion).where(position_suggestions: { organization_id: org.id })
             when 'GoalCheckIn'
               klass.joins(:goal).where(goals: { company_id: org.id })
             else

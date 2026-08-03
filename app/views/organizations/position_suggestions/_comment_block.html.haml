@@ -1,0 +1,34 @@
+- commentable = local_assigns[:commentable]
+- comments = local_assigns[:comments] || []
+- suggestion = local_assigns[:suggestion]
+- organization = local_assigns[:organization]
+- return_to = local_assigns[:return_to]
+- disabled = local_assigns.fetch(:disabled, false)
+
+- if comments.any?
+  .d-flex.flex-column.gap-2.mb-3
+    - comments.each do |comment|
+      .border.rounded.p-2.bg-light
+        .d-flex.justify-content-between.align-items-start.gap-2
+          %div
+            %strong= comment.creator.display_name
+            %small.text-muted.ms-1= l(comment.created_at, format: :short) rescue comment.created_at.to_fs(:short)
+            - if comment.resolved?
+              %span.badge.bg-success.ms-1 Resolved
+            %p.mb-0.mt-1.small= simple_format(comment.body)
+          - if !comment.resolved? && comment.creator == current_person
+            = button_to "Resolve",
+                        resolve_organization_comment_path(organization, comment, return_to: return_to),
+                        method: :patch,
+                        class: "btn btn-sm btn-outline-success",
+                        form: { data: { turbo: false } }
+- else
+  %p.text-muted.small.mb-2 No comments yet.
+
+- unless disabled
+  = form_with url: create_comment_organization_position_suggestion_path(organization, suggestion), method: :post, local: true do |f|
+    = hidden_field_tag :commentable_type, commentable.class.name
+    = hidden_field_tag :commentable_id, commentable.id
+    .mb-2
+      = text_area_tag "comment[body]", nil, class: "form-control form-control-sm", rows: 3, placeholder: "Add a comment…", required: true
+    = f.submit "Add comment", class: "btn btn-sm btn-primary"
