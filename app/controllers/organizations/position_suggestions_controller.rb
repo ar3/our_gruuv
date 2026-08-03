@@ -10,23 +10,37 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
   def index
     authorize PositionSuggestion
 
-    @positions = Position.for_company(company).unarchived.ordered.includes(:title, :position_level)
+    @positions = Position.for_company(company).unarchived.includes(:position_level, title: :department)
     @open_suggestions = PositionSuggestion
       .for_organization(organization)
       .open_sessions
-      .includes(:position, :participants, position: [:title, :position_level])
+      .includes(:participants, position: [:position_level, { title: :department }])
       .recent_first
     @my_participations = PositionSuggestionParticipant
       .joins(:position_suggestion)
       .where(company_teammate: current_company_teammate)
       .where(position_suggestions: { organization_id: organization.id })
-      .includes(position_suggestion: { position: [:title, :position_level] })
+      .includes(position_suggestion: { position: [:position_level, { title: :department }] })
 
-    @actively_reviewing = @my_participations.select(&:active?).map(&:position_suggestion)
+    @actively_reviewing = sort_suggestions_by_department(
+      @my_participations.select(&:active?).map(&:position_suggestion)
+    )
     @done_contributing = @my_participations.select(&:done_contributing?).map(&:position_suggestion)
     actively_reviewing_ids = @actively_reviewing.map(&:id)
-    @other_open_suggestions = @open_suggestions.reject { |suggestion| actively_reviewing_ids.include?(suggestion.id) }
+    @other_open_suggestions = sort_suggestions_by_department(
+      @open_suggestions.reject { |suggestion| actively_reviewing_ids.include?(suggestion.id) }
+    )
+
+    occupied_position_ids = @open_suggestions.map(&:position_id).to_set
+    available_positions = @positions.reject { |position| occupied_position_ids.include?(position.id) }
+    available_positions = sort_positions_by_department(available_positions)
+
     @interested_position_ids = interested_position_ids
+    @interested_start_positions = available_positions.select { |p| @interested_position_ids.include?(p.id) }
+    @other_start_positions = available_positions.reject { |p| @interested_position_ids.include?(p.id) }
+    @completed_suggestions = sort_suggestions_by_department(
+      @my_participations.select { |p| p.position_suggestion.completed? }.map(&:position_suggestion).uniq
+    )
   end
 
   def show
@@ -274,9 +288,27 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
       )
     end
 
-    ids.merge(@open_suggestions.map(&:position_id))
     ids.to_a
   rescue StandardError
-    @open_suggestions.map(&:position_id)
+    []
+  end
+
+  def sort_suggestions_by_department(suggestions)
+    suggestions.sort_by do |suggestion|
+      position_department_sort_key(suggestion.position)
+    end
+  end
+
+  def sort_positions_by_department(positions)
+    positions.sort_by { |position| position_department_sort_key(position) }
+  end
+
+  def position_department_sort_key(position)
+    department_name = position.title&.department&.name.to_s.downcase
+    [
+      department_name.present? ? 0 : 1,
+      department_name,
+      position.display_name.to_s.downcase
+    ]
   end
 end

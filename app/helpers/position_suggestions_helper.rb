@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module PositionSuggestionsHelper
+  def position_suggestion_department_label(position)
+    position.title&.department&.name.presence || "Company-wide"
+  end
+
   # Hover preview for assignment titles on the position suggestions show page.
   def position_suggestion_assignment_popover_html(assignment)
     parts = []

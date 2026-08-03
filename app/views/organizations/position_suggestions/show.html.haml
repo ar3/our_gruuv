@@ -1,6 +1,9 @@
 - content_for :title, "Position Suggestions — #{@position.display_name}"
 - page_help_id = "positionSuggestionShowHelp"
 
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position Suggestions", url: organization_position_suggestions_path(@organization) }, { label: @position.display_name, url: nil }])
+
 - content_for :header do
   .d-flex.flex-wrap.align-items-center.gap-2
     %h1.mb-0.d-flex.align-items-center.gap-2
@@ -20,7 +23,6 @@
   = render "organizations/position_suggestions/page_help"
 
 .d-flex.flex-wrap.gap-2.mb-4
-  = link_to "All position suggestions", organization_position_suggestions_path(@organization), class: "btn btn-outline-secondary btn-sm"
   - if @suggestion.open? && @participant
     - if @participant.active?
       = button_to "Save and mark as complete",

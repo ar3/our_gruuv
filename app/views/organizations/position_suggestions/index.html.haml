@@ -1,6 +1,9 @@
 - content_for :title, "Position Suggestions"
 - page_help_id = "positionSuggestionsHelp"
 
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position Suggestions", url: nil }])
+
 - content_for :header do
   .d-flex.flex-wrap.align-items-center.gap-2
     %h1.mb-0.d-flex.align-items-center.gap-2
@@ -15,79 +18,79 @@
 .collapse.mb-4{id: page_help_id}
   = render "organizations/position_suggestions/page_help"
 
-.row.g-4
-  .col-12.col-xl-8
-    %section.mb-4
-      %h2.h4 I'm actively reviewing
-      - if @actively_reviewing.any?
-        %ul.list-group
-          - @actively_reviewing.each do |suggestion|
-            %li.list-group-item.d-flex.justify-content-between.align-items-center
-              %div
-                %strong= suggestion.position.display_name
-                %span.badge.text-bg-primary.ms-2 Open
-              = link_to "Continue", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-primary"
-      - else
-        %p.text-muted.mb-0 No positions in your active review queue.
+.col-12
+  %section.mb-4
+    %h2.h4 I'm actively reviewing
+    - if @actively_reviewing.any?
+      %ul.list-group
+        - @actively_reviewing.each do |suggestion|
+          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+            %div
+              %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
+              %strong= suggestion.position.display_name
+              %span.badge.text-bg-primary.ms-2 Open
+            = link_to "Continue", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-primary"
+    - else
+      %p.text-muted.mb-0 No positions in your active review queue.
 
-    %section.mb-4
-      %h2.h4 Open suggestion sessions
-      - if @other_open_suggestions.any?
-        %ul.list-group
-          - @other_open_suggestions.each do |suggestion|
-            - mine = @my_participations.find { |p| p.position_suggestion_id == suggestion.id }
-            %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-              %div
-                %strong= suggestion.position.display_name
-                %small.text-muted.ms-2
-                  = pluralize(suggestion.participants.not_withdrawn.count, "participant")
-                - if mine&.done_contributing?
-                  %span.badge.text-bg-secondary.ms-2 Done contributing
-              = link_to "Open", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-primary"
-      - else
-        %p.text-muted.mb-0 No other open sessions right now.
+.col-12
+  %section.mb-4
+    %h2.h4 Open suggestion sessions
+    - if @other_open_suggestions.any?
+      %ul.list-group
+        - @other_open_suggestions.each do |suggestion|
+          - mine = @my_participations.find { |p| p.position_suggestion_id == suggestion.id }
+          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+            %div
+              %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
+              %strong= suggestion.position.display_name
+              %small.text-muted.ms-2
+                = pluralize(suggestion.participants.not_withdrawn.count, "participant")
+              - if mine&.done_contributing?
+                %span.badge.text-bg-secondary.ms-2 Done contributing
+            = link_to "Join & make suggestions", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-primary"
+    - else
+      %p.text-muted.mb-0 No other open sessions right now.
 
-    - completed = @my_participations.select { |p| p.position_suggestion.completed? }.map(&:position_suggestion).uniq
-    %section.mb-4
-      %h2.h4 Completed sessions I joined
-      - if completed.any?
-        %ul.list-group
-          - completed.each do |suggestion|
-            %li.list-group-item.d-flex.justify-content-between.align-items-center
-              %div
-                %strong= suggestion.position.display_name
-                %span.badge.text-bg-success.ms-2 Completed
-              = link_to "View", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-secondary"
-      - else
-        %p.text-muted.mb-0 No completed sessions yet.
+- completed = @completed_suggestions
+.col-12
+  %section.mb-4
+    %h2.h4 Completed sessions I joined
+    - if completed.any?
+      %ul.list-group
+        - completed.each do |suggestion|
+          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+            %div
+              %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
+              %strong= suggestion.position.display_name
+              %span.badge.text-bg-success.ms-2 Completed
+            = link_to "View", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-secondary"
+    - else
+      %p.text-muted.mb-0 No completed sessions yet.
 
-  .col-12.col-xl-4
-    %section
-      %h2.h4 Start or join by position
-      %p.text-muted.small
-        Anyone in the company can open feedback on any position. First joiner opens the session; it stays open until a MAAP manager closes it.
-      - interested = @positions.select { |p| @interested_position_ids.include?(p.id) }
-      - other = @positions.reject { |p| @interested_position_ids.include?(p.id) }
-
-      - if interested.any?
-        %h3.h6 Interest / related
-        %ul.list-group.mb-3
-          - interested.each do |position|
-            - open_s = @open_suggestions.find { |s| s.position_id == position.id }
-            %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2
+.col-12
+  %section.mb-4
+    %h2.h4 Start by position
+    %p.text-muted.small
+      Positions that already have an open suggestion session are listed above. Starting here opens a new session and adds you as a participant.
+    - if @interested_start_positions.any?
+      %h3.h6 Interest / related
+      %ul.list-group.mb-3
+        - @interested_start_positions.each do |position|
+          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+            %div
+              %small.text-muted.d-block= position_suggestion_department_label(position)
               %span= position.display_name
-              - if open_s
-                = link_to "Open", organization_position_suggestion_path(@organization, open_s), class: "btn btn-sm btn-outline-primary"
-              - else
-                = button_to "Start", organization_position_suggestions_path(@organization), params: { position_id: position.id }, method: :post, class: "btn btn-sm btn-primary"
+            = button_to "Start suggesting", organization_position_suggestions_path(@organization), params: { position_id: position.id }, method: :post, class: "btn btn-sm btn-primary"
 
-      %h3.h6 All positions
-      .list-group{style: "max-height: 28rem; overflow-y: auto;"}
-        - other.each do |position|
-          - open_s = @open_suggestions.find { |s| s.position_id == position.id }
-          .list-group-item.d-flex.justify-content-between.align-items-center.gap-2
-            %span.small= position.display_name
-            - if open_s
-              = link_to "Open", organization_position_suggestion_path(@organization, open_s), class: "btn btn-sm btn-outline-primary"
-            - else
-              = button_to "Start", organization_position_suggestions_path(@organization), params: { position_id: position.id }, method: :post, class: "btn btn-sm btn-outline-secondary"
+    %h3.h6 All other positions
+    - if @other_start_positions.any?
+      %ul.list-group
+        - @other_start_positions.each do |position|
+          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+            %div
+              %small.text-muted.d-block= position_suggestion_department_label(position)
+              %span= position.display_name
+            = button_to "Start suggesting", organization_position_suggestions_path(@organization), params: { position_id: position.id }, method: :post, class: "btn btn-sm btn-outline-secondary"
+    - else
+      %p.text-muted.mb-0 No other positions available to start.
