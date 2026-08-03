@@ -6,6 +6,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   helper EmployeesHelper
   helper AssignmentEnergyAllocationHelper
+  helper MyGrowthExperiencesHelper
+  helper OgTipsHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -59,6 +61,12 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         organization: organization
       )
     end
+
+    @my_growth_experiences_summary = MyGrowth::ExperiencesSummary.for_teammate(
+      @teammate,
+      organization: organization,
+      viewer_teammate: current_company_teammate
+    )
   end
 
   def review_most_recent

@@ -7,7 +7,7 @@ RSpec.describe OgTipsHelper, type: :helper do
     let(:summary) do
       instance_double(
         MyGrowth::ExperiencesSummary,
-        show_inflight_viewer_rating_chart: show_inflight
+        show_inflight_rating_chart: show_inflight
       )
     end
 
@@ -17,7 +17,7 @@ RSpec.describe OgTipsHelper, type: :helper do
       it 'references the in-flight chart and position form rating labels with color dots' do
         html = helper.og_tip_position_assignment_energy_rating_body(summary: summary)
 
-        expect(html).to include('your in-flight check-in ratings chart')
+        expect(html).to include('the latest in-flight ratings chart')
         expect(html).to include('og-tip-rating-dot')
         expect(html).to include('background-color: #ffc107') # Working to Meet / Developing
         expect(html).to include('background-color: #198754') # Exceeding / Exceptional
@@ -36,11 +36,11 @@ RSpec.describe OgTipsHelper, type: :helper do
     context 'when only the finalized chart is available' do
       let(:show_inflight) { false }
 
-      it 'references the latest finalized chart' do
+      it 'references the finalized chart' do
         html = helper.og_tip_position_assignment_energy_rating_body(summary: summary)
 
-        expect(html).to include('the latest finalized check-in ratings chart')
-        expect(html).not_to include('in-flight check-in ratings chart')
+        expect(html).to include('the finalized (official) ratings chart')
+        expect(html).not_to include('in-flight ratings chart')
       end
     end
   end

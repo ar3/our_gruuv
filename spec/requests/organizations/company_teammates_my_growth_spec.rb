@@ -60,12 +60,14 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           expect(response.body).to include('add up to 100%')
           expect(response.body).to include('my-growth-experiences-energy-pie-chart')
           expect(response.body).to include('my-growth-experiences-rating-pie-chart')
-          expect(response.body).not_to include('my-growth-experiences-inflight-rating-pie-chart')
+          expect(response.body).to include('my-growth-experiences-inflight-rating-pie-chart')
+          expect(response.body).to include('Energy by finalized (official) ratings')
+          expect(response.body).to include('Energy by latest in-flight ratings')
           expect(response.body).to include('Delivery Lead')
           expect(response.body).to include('Team Coach')
         end
 
-        it 'shows the in-flight rating pie when the managerial viewer completed their open side' do
+        it 'includes manager-completed open ratings in the in-flight rating pie' do
           create(
             :assignment_check_in,
             teammate: employee_teammate,
@@ -79,7 +81,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
 
-          expect(response.body).to include('Energy by your in-flight check-in ratings')
+          expect(response.body).to include('Energy by latest in-flight ratings')
           expect(response.body).to include('my-growth-experiences-inflight-rating-pie-chart')
         end
 
@@ -490,8 +492,11 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('alert-danger')
         expect(response.body).to include('add up to 50%')
-        expect(response.body).not_to include('assignment_tenure_check_in_bypass')
         expect(response.body).to include('managerial hierarchy')
+
+        # View switcher may still deep-link Set Assignments; the energy alert itself must not.
+        alert_html = Nokogiri::HTML(response.body).at_css('.my-growth-experiences-summary-alert')&.to_html.to_s
+        expect(alert_html).not_to include('assignment_tenure_check_in_bypass')
       end
     end
 

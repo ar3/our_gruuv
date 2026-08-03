@@ -1,0 +1,57 @@
+-# Shared position-rating research accordion (bulk check-in, 1-by-1 Position, Review/finalization).
+-# locals:
+-#   summary:, teammate:, organization:, chart_id_prefix:, context: (:check_in | :finalization)
+- summary = local_assigns.fetch(:summary)
+- teammate = local_assigns.fetch(:teammate)
+- organization = local_assigns.fetch(:organization)
+- chart_id_prefix = local_assigns.fetch(:chart_id_prefix)
+- context = local_assigns.fetch(:context, :check_in).to_sym
+- frame_id = "position_assignment_ratings_research_#{teammate.id}"
+- accordion_id = "position-assignment-ratings-research-accordion-#{teammate.id}"
+- collapse_id = "position-assignment-ratings-research-collapse-#{teammate.id}"
+- refresh_path = position_assignment_ratings_research_organization_company_teammate_path(organization, teammate, context: context, chart_id_prefix: chart_id_prefix)
+
+= turbo_frame_tag frame_id do
+  .accordion.mb-4{id: accordion_id}
+    .accordion-item
+      %h2.accordion-header{id: "#{accordion_id}-heading"}
+        %button.accordion-button.collapsed{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id}
+          Assignment ratings research
+          %span.text-muted.fw-normal.ms-2.small (energy mix + rating guidance — optional)
+      .accordion-collapse.collapse{id: collapse_id, "aria-labelledby" => "#{accordion_id}-heading", "data-bs-parent" => "##{accordion_id}"}
+        .accordion-body
+          .alert.alert-light.border.mb-3{role: "note"}
+            - if context == :finalization
+              %p.mb-2
+                These charts use the most recently
+                %strong saved
+                assignment data in the database — not unsaved official ratings or energy values you may be editing on this Review page.
+              %p.mb-2
+                Best practice: uncheck the Position row, finalize/save the rest, then return to this page and refresh so the charts reflect the latest saved assignment ratings.
+              %p.mb-0
+                = link_to "Made changes just now? Click here to refresh", refresh_path
+            - else
+              %p.mb-2
+                These charts use the most recently
+                %strong saved
+                assignment data — not edits still sitting unsaved on this page.
+              %p.mb-0
+                Save your check-in changes first, then
+                = link_to "click here to refresh", refresh_path
+                \.
+
+          = render "organizations/company_teammates/my_growth/experiences_summary",
+            summary: summary,
+            teammate: teammate,
+            organization: organization,
+            chart_id_prefix: chart_id_prefix,
+            show_divider: false
+
+          .mt-3
+            = render "shared/og_tips/callout",
+              tip_id: "og-tip-position-assignment-energy-ratings-#{chart_id_prefix}",
+              title: "OG pro tip",
+              tone: :loud,
+              expanded: true,
+              collapsible: false,
+              body: og_tip_position_assignment_energy_rating_body(summary: summary)

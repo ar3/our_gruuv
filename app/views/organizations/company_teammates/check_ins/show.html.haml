@@ -290,6 +290,15 @@
         = f.submit save_all_proceed_review_clarity_check_ins_label, class: 'btn btn-primary btn-lg'
   
   -# Position Section
+  - if @my_growth_experiences_summary
+    #research-assignment-ratings
+      = render 'shared/check_ins/position_assignment_ratings_research',
+        summary: @my_growth_experiences_summary,
+        teammate: @teammate,
+        organization: organization,
+        chart_id_prefix: 'bulk-check-in-experiences',
+        context: :check_in
+
   = render 'shared/section_header', 
            title: 'Position/Overall', 
            icon: 'bi-briefcase', 

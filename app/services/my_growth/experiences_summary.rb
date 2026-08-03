@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
 module MyGrowth
-  # Energy total, alert band, and Highcharts pie payloads for My Growth > Experiences summary.
+  # Energy total, alert band, and Highcharts pie payloads for assignment energy / rating mix.
+  #
+  # Official rating pie: active tenure energy × latest finalized official_rating.
+  # In-flight pies / alert: per active assignment —
+  #   energy: open CI + employee completed → actual_energy_percentage; else tenure anticipated
+  #   rating: open CI + manager completed → manager_rating; else tenure official_rating
   class ExperiencesSummary
     RATING_BUCKETS = {
       'working_to_meet' => { label: 'Working to Meet expectations', color: '#ffc107' },
@@ -10,12 +15,18 @@ module MyGrowth
       'no_check_in' => { label: 'No finalized check-in', color: '#6c757d' }
     }.freeze
 
+    INFLIGHT_NO_RATING_LABEL = 'No rating yet'
+
     attr_reader :total_energy_percentage,
                 :alert_band,
                 :energy_by_assignment_chart,
                 :energy_by_rating_chart,
-                :energy_by_inflight_viewer_rating_chart,
-                :show_inflight_viewer_rating_chart
+                :energy_by_inflight_rating_chart,
+                :show_inflight_rating_chart
+
+    # Legacy aliases used by existing views/specs.
+    alias energy_by_inflight_viewer_rating_chart energy_by_inflight_rating_chart
+    alias show_inflight_viewer_rating_chart show_inflight_rating_chart
 
     def self.build(teammate:, latest_finalized_check_ins_by_assignment_id:, viewer_teammate: nil,
                    open_check_ins_by_assignment_id: {})
@@ -62,23 +73,31 @@ module MyGrowth
                    open_check_ins_by_assignment_id: {})
       @teammate = teammate
       @latest_finalized_check_ins_by_assignment_id = latest_finalized_check_ins_by_assignment_id || {}
-      @viewer_teammate = viewer_teammate
+      @viewer_teammate = viewer_teammate # retained for call-site compatibility; unused by in-flight rules
       @open_check_ins_by_assignment_id = open_check_ins_by_assignment_id || {}
-      @show_inflight_viewer_rating_chart = false
+      @show_inflight_rating_chart = false
     end
 
     def compute!
       tenures = @teammate.active_assignment_tenures.includes(:assignment).to_a
-      @total_energy_percentage = tenures.sum { |t| t.anticipated_energy_percentage.to_i }
-      @alert_band = alert_band_for(@total_energy_percentage)
-      @energy_by_assignment_chart = tenures.map do |tenure|
-        {
+
+      @energy_by_assignment_chart = []
+      @total_energy_percentage = 0
+      tenures.each do |tenure|
+        energy = inflight_energy_for(tenure)
+        @total_energy_percentage += energy
+        next if energy <= 0
+
+        @energy_by_assignment_chart << {
           name: tenure.assignment.title,
-          y: tenure.anticipated_energy_percentage.to_i
+          y: energy
         }
       end
-      @energy_by_rating_chart = build_rating_chart(tenures)
-      @energy_by_inflight_viewer_rating_chart = build_inflight_viewer_rating_chart(tenures)
+
+      @alert_band = alert_band_for(@total_energy_percentage)
+      @energy_by_rating_chart = build_official_rating_chart(tenures)
+      @energy_by_inflight_rating_chart = build_inflight_rating_chart(tenures)
+      @show_inflight_rating_chart = chart_data_present?
       self
     end
 
@@ -95,80 +114,69 @@ module MyGrowth
       :danger
     end
 
-    def viewer_perspective
-      return nil if @viewer_teammate.blank?
-      return :employee if @viewer_teammate.id == @teammate.id
-      return :manager if @viewer_teammate.in_managerial_hierarchy_of?(@teammate)
+    def open_check_in_for(tenure)
+      check_in = @open_check_ins_by_assignment_id[tenure.assignment_id]
+      return nil if check_in.blank? || !check_in.open?
 
-      nil
+      check_in
     end
 
-    def viewer_completed_open_side?(check_in, perspective)
-      return false if check_in.blank? || !check_in.open?
-
-      case perspective
-      when :employee then check_in.employee_completed?
-      when :manager then check_in.manager_completed?
-      else false
+    def inflight_energy_for(tenure)
+      open = open_check_in_for(tenure)
+      if open&.employee_completed? && !open.actual_energy_percentage.nil?
+        open.actual_energy_percentage.to_i
+      else
+        tenure.anticipated_energy_percentage.to_i
       end
     end
 
-    def viewer_open_rating(check_in, perspective)
-      case perspective
-      when :employee then check_in.employee_rating
-      when :manager then check_in.manager_rating
+    def inflight_rating_for(tenure)
+      open = open_check_in_for(tenure)
+      if open&.manager_completed? && open.manager_rating.present?
+        open.manager_rating
+      else
+        tenure.official_rating
       end
     end
 
-    def build_rating_chart(tenures)
+    def build_official_rating_chart(tenures)
       buckets = RATING_BUCKETS.keys.index_with { 0 }
 
       tenures.each do |tenure|
+        energy = tenure.anticipated_energy_percentage.to_i
+        next if energy <= 0
+
         check_in = @latest_finalized_check_ins_by_assignment_id[tenure.assignment_id]
         rating = check_in&.official_rating
-        key = RATING_BUCKETS.key?(rating) ? rating : 'no_check_in'
-        buckets[key] += tenure.anticipated_energy_percentage.to_i
-      end
-
-      chart_points_from_buckets(buckets)
-    end
-
-    # Same active-tenure energy set as the finalized rating chart, but assignments where the
-    # viewer completed their open (unfinalized) side use the viewer's rating instead.
-    def build_inflight_viewer_rating_chart(tenures)
-      perspective = viewer_perspective
-      return [] if perspective.blank?
-
-      swapped_any = false
-      buckets = RATING_BUCKETS.keys.index_with { 0 }
-
-      tenures.each do |tenure|
-        open_check_in = @open_check_ins_by_assignment_id[tenure.assignment_id]
-        energy = tenure.anticipated_energy_percentage.to_i
-
-        if viewer_completed_open_side?(open_check_in, perspective)
-          swapped_any = true
-          rating = viewer_open_rating(open_check_in, perspective)
-        else
-          rating = @latest_finalized_check_ins_by_assignment_id[tenure.assignment_id]&.official_rating
-        end
-
         key = RATING_BUCKETS.key?(rating) ? rating : 'no_check_in'
         buckets[key] += energy
       end
 
-      @show_inflight_viewer_rating_chart = swapped_any
-      return [] unless swapped_any
-
       chart_points_from_buckets(buckets)
     end
 
-    def chart_points_from_buckets(buckets)
+    def build_inflight_rating_chart(tenures)
+      buckets = RATING_BUCKETS.keys.index_with { 0 }
+
+      tenures.each do |tenure|
+        energy = inflight_energy_for(tenure)
+        next if energy <= 0
+
+        rating = inflight_rating_for(tenure)
+        key = RATING_BUCKETS.key?(rating) ? rating : 'no_check_in'
+        buckets[key] += energy
+      end
+
+      chart_points_from_buckets(buckets, no_rating_label: INFLIGHT_NO_RATING_LABEL)
+    end
+
+    def chart_points_from_buckets(buckets, no_rating_label: nil)
       RATING_BUCKETS.filter_map do |key, meta|
         energy = buckets[key]
         next if energy.zero?
 
-        { name: meta[:label], y: energy, color: meta[:color] }
+        label = key == 'no_check_in' && no_rating_label.present? ? no_rating_label : meta[:label]
+        { name: label, y: energy, color: meta[:color] }
       end
     end
   end

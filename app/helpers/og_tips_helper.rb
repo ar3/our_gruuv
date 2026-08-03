@@ -18,12 +18,13 @@ module OgTipsHelper
      3 => '#198754'  # Exceptional 🟢
   }.freeze
 
-  # Position 1-by-1 research tip: map assignment energy mix → likely position rating.
+  # Position research tip: map assignment energy mix → likely position rating.
+  # Prefer the in-flight chart when present; otherwise the finalized (official) chart.
   def og_tip_position_assignment_energy_rating_body(summary:)
-    chart_phrase = if summary&.show_inflight_viewer_rating_chart
-                     'your in-flight check-in ratings chart'
+    chart_phrase = if summary&.show_inflight_rating_chart
+                     'the latest in-flight ratings chart'
                    else
-                     'the latest finalized check-in ratings chart'
+                     'the finalized (official) ratings chart'
                    end
 
     safe_join(

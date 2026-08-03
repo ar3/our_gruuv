@@ -2,6 +2,8 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
   include Organizations::AssignsViewableTeammates
 
   helper AssignmentEnergyAllocationHelper
+  helper MyGrowthExperiencesHelper
+  helper OgTipsHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -64,6 +66,12 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
       teammate: @teammate,
       assignment_check_ins: assignment_check_ins_for_energy,
       organization: organization
+    )
+
+    @my_growth_experiences_summary = MyGrowth::ExperiencesSummary.for_teammate(
+      @teammate,
+      organization: organization,
+      viewer_teammate: current_company_teammate
     )
   end
   

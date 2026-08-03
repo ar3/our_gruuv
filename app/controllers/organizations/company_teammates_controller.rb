@@ -5,6 +5,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   helper MyGrowthExperiencesHelper
   helper MyGrowthAbilitiesHelper
   helper AssignmentEnergyAllocationHelper
+  helper OgTipsHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -161,6 +162,29 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @current_organization = organization
     load_my_growth_employment_context
     load_my_growth_experiences_rows
+  end
+
+  def position_assignment_ratings_research
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    summary = MyGrowth::ExperiencesSummary.for_teammate(
+      @teammate,
+      organization: organization,
+      viewer_teammate: current_company_teammate
+    )
+    context = params[:context].to_s
+    context = %w[check_in finalization].include?(context) ? context.to_sym : :check_in
+    chart_id_prefix = params[:chart_id_prefix].presence || 'position-assignment-ratings-research'
+
+    render partial: 'shared/check_ins/position_assignment_ratings_research',
+           locals: {
+             summary: summary,
+             teammate: @teammate,
+             organization: organization,
+             chart_id_prefix: chart_id_prefix,
+             context: context
+           },
+           layout: false
   end
 
   def my_growth_abilities

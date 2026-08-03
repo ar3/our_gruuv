@@ -8,7 +8,7 @@ RSpec.describe MyGrowth::ExperiencesSummary do
   let(:assignment_a) { create(:assignment, company: organization, title: 'Alpha Work') }
   let(:assignment_b) { create(:assignment, company: organization, title: 'Beta Work') }
 
-  def build_summary(energy_by_assignment:, check_ins: {})
+  def build_summary(energy_by_assignment:, check_ins: {}, open: {})
     energy_by_assignment.each do |assignment, energy|
       create(
         :assignment_tenure,
@@ -21,13 +21,14 @@ RSpec.describe MyGrowth::ExperiencesSummary do
 
     described_class.build(
       teammate: teammate.reload,
-      latest_finalized_check_ins_by_assignment_id: check_ins
+      latest_finalized_check_ins_by_assignment_id: check_ins,
+      open_check_ins_by_assignment_id: open
     )
   end
 
   describe '.for_teammate' do
     it 'loads latest finalized check-ins and builds summary data' do
-      check_in = create(
+      create(
         :assignment_check_in,
         :officially_completed,
         teammate: teammate,
@@ -39,7 +40,8 @@ RSpec.describe MyGrowth::ExperiencesSummary do
         teammate: teammate,
         assignment: assignment_a,
         anticipated_energy_percentage: 100,
-        ended_at: nil
+        ended_at: nil,
+        official_rating: 'exceeding'
       )
 
       summary = described_class.for_teammate(teammate.reload)
@@ -47,6 +49,10 @@ RSpec.describe MyGrowth::ExperiencesSummary do
       expect(summary.total_energy_percentage).to eq(100)
       expect(summary.alert_band).to eq(:success)
       expect(summary.energy_by_rating_chart).to include(
+        hash_including(name: 'Exceeding Expectations', y: 100)
+      )
+      expect(summary.show_inflight_rating_chart).to eq(true)
+      expect(summary.energy_by_inflight_rating_chart).to include(
         hash_including(name: 'Exceeding Expectations', y: 100)
       )
     end
@@ -102,10 +108,38 @@ RSpec.describe MyGrowth::ExperiencesSummary do
       summary = build_summary(energy_by_assignment: { assignment_b => 50 })
       expect(summary.energy_by_assignment_chart).to eq([{ name: 'Beta Work', y: 50 }])
     end
+
+    it 'prefers employee-completed actual energy on an open check-in' do
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_a,
+        anticipated_energy_percentage: 40,
+        ended_at: nil
+      )
+      open_a = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment_a,
+        employee_completed_at: Time.current,
+        actual_energy_percentage: 55,
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+
+      summary = described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: {},
+        open_check_ins_by_assignment_id: { assignment_a.id => open_a }
+      )
+
+      expect(summary.total_energy_percentage).to eq(55)
+      expect(summary.energy_by_assignment_chart).to eq([{ name: 'Alpha Work', y: 55 }])
+    end
   end
 
   describe 'energy_by_rating_chart' do
-    it 'groups energy by latest finalized official rating' do
+    it 'groups tenure energy by latest finalized official rating' do
       check_in = create(
         :assignment_check_in,
         :officially_completed,
@@ -125,7 +159,7 @@ RSpec.describe MyGrowth::ExperiencesSummary do
     end
   end
 
-  describe 'energy_by_inflight_viewer_rating_chart' do
+  describe 'energy_by_inflight_rating_chart' do
     let(:manager_person) { create(:person) }
     let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
 
@@ -135,102 +169,77 @@ RSpec.describe MyGrowth::ExperiencesSummary do
              manager_teammate: manager_teammate)
     end
 
-    def build_with_viewer(energy_by_assignment:, finalized: {}, open: {}, viewer:)
-      energy_by_assignment.each do |assignment, energy|
-        create(
-          :assignment_tenure,
-          teammate: teammate,
-          assignment: assignment,
-          anticipated_energy_percentage: energy,
-          ended_at: nil
-        )
-      end
-
-      described_class.build(
-        teammate: teammate.reload,
-        latest_finalized_check_ins_by_assignment_id: finalized,
-        open_check_ins_by_assignment_id: open,
-        viewer_teammate: viewer
-      )
-    end
-
-    it 'hides the chart when the viewer has not completed any open side' do
-      summary = build_with_viewer(
-        energy_by_assignment: { assignment_a => 100 },
-        viewer: teammate
-      )
-
-      expect(summary.show_inflight_viewer_rating_chart).to eq(false)
-      expect(summary.energy_by_inflight_viewer_rating_chart).to eq([])
-    end
-
-    it 'swaps employee open ratings into the hybrid chart for the employee viewer' do
-      finalized_a = create(
-        :assignment_check_in,
-        :officially_completed,
+    it 'uses manager-completed open rating with in-flight energy, else tenure official_rating' do
+      create(
+        :assignment_tenure,
         teammate: teammate,
         assignment: assignment_a,
+        anticipated_energy_percentage: 40,
+        ended_at: nil,
         official_rating: 'meeting'
+      )
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_b,
+        anticipated_energy_percentage: 60,
+        ended_at: nil,
+        official_rating: nil
       )
       open_a = create(
         :assignment_check_in,
         teammate: teammate,
         assignment: assignment_a,
         employee_completed_at: Time.current,
-        employee_rating: 'exceeding',
-        manager_completed_at: nil,
-        official_check_in_completed_at: nil
-      )
-      open_b = create(
-        :assignment_check_in,
-        teammate: teammate,
-        assignment: assignment_b,
-        employee_completed_at: nil,
-        employee_rating: nil,
-        manager_completed_at: nil,
+        actual_energy_percentage: 35,
+        manager_completed_at: Time.current,
+        manager_completed_by_teammate: manager_teammate,
+        manager_rating: 'exceeding',
         official_check_in_completed_at: nil
       )
 
-      summary = build_with_viewer(
-        energy_by_assignment: { assignment_a => 40, assignment_b => 60 },
-        finalized: { assignment_a.id => finalized_a },
-        open: { assignment_a.id => open_a, assignment_b.id => open_b },
-        viewer: teammate
+      summary = described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: {},
+        open_check_ins_by_assignment_id: { assignment_a.id => open_a }
       )
 
-      expect(summary.show_inflight_viewer_rating_chart).to eq(true)
-      expect(summary.energy_by_inflight_viewer_rating_chart).to contain_exactly(
-        hash_including(name: 'Exceeding Expectations', y: 40),
-        hash_including(name: 'No finalized check-in', y: 60)
+      expect(summary.show_inflight_rating_chart).to eq(true)
+      expect(summary.energy_by_inflight_rating_chart).to contain_exactly(
+        hash_including(name: 'Exceeding Expectations', y: 35),
+        hash_including(name: 'No rating yet', y: 60)
       )
       expect(summary.energy_by_rating_chart).to contain_exactly(
-        hash_including(name: 'Meeting expectations', y: 40),
-        hash_including(name: 'No finalized check-in', y: 60)
+        hash_including(name: 'No finalized check-in', y: 100)
       )
     end
 
-    it 'swaps manager open ratings for a managerial viewer' do
+    it 'falls back to tenure energy and tenure official_rating when open sides are incomplete' do
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_a,
+        anticipated_energy_percentage: 100,
+        ended_at: nil,
+        official_rating: 'working_to_meet'
+      )
       open_a = create(
         :assignment_check_in,
         teammate: teammate,
         assignment: assignment_a,
         employee_completed_at: nil,
-        manager_completed_at: Time.current,
-        manager_completed_by_teammate: manager_teammate,
-        manager_rating: 'working_to_meet',
+        manager_completed_at: nil,
         official_check_in_completed_at: nil
       )
 
-      summary = build_with_viewer(
-        energy_by_assignment: { assignment_a => 55, assignment_b => 45 },
-        open: { assignment_a.id => open_a },
-        viewer: manager_teammate
+      summary = described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: {},
+        open_check_ins_by_assignment_id: { assignment_a.id => open_a }
       )
 
-      expect(summary.show_inflight_viewer_rating_chart).to eq(true)
-      expect(summary.energy_by_inflight_viewer_rating_chart).to contain_exactly(
-        hash_including(name: 'Working to Meet expectations', y: 55),
-        hash_including(name: 'No finalized check-in', y: 45)
+      expect(summary.energy_by_inflight_rating_chart).to contain_exactly(
+        hash_including(name: 'Working to Meet expectations', y: 100)
       )
     end
   end

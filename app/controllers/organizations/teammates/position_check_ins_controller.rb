@@ -2,6 +2,7 @@
 
 class Organizations::Teammates::PositionCheckInsController < Organizations::OrganizationNamespaceBaseController
   helper MyGrowthExperiencesHelper
+  helper OgTipsHelper
 
   before_action :authenticate_person!
   before_action :set_teammate

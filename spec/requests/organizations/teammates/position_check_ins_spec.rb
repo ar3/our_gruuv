@@ -119,7 +119,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       end
     end
 
-    context "Research: Latest Finalized Assignment Ratings" do
+    context "Research: Assignment ratings" do
       let(:assignment) { create(:assignment, company: organization, title: "Core Delivery") }
 
       before do
@@ -132,44 +132,48 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         )
       end
 
-      it "renders the assignment ratings research section below existing cards" do
+      it "renders the assignment ratings research accordion below existing cards" do
         get position_check_in_organization_teammate_path(organization, teammate)
 
-        expect(response.body).to include("Research: Latest Finalized Assignment Ratings")
+        expect(response.body).to include("Assignment ratings research")
+        expect(response.body).to include("accordion-button collapsed")
         expect(response.body).to include("position-check-in-experiences-energy-pie-chart")
         expect(response.body).to include("position-check-in-experiences-rating-pie-chart")
+        expect(response.body).to include("position-check-in-experiences-inflight-rating-pie-chart")
+        expect(response.body).to include("Energy by finalized (official) ratings")
+        expect(response.body).to include("Energy by latest in-flight ratings")
         expect(response.body).to include("add up to 100%")
-        expect(response.body).to include(
-          "In order to have this up-to-date, finalize all assignment check-ins and come back to this page."
-        )
-        expect(response.body).not_to include("position-check-in-experiences-inflight-rating-pie-chart")
+        expect(response.body).to include("click here to refresh")
         expect(response.body).to include("OG pro tip")
         expect(response.body).to include("og-tip--loud")
-        expect(response.body).to include("the latest finalized check-in ratings chart")
+        expect(response.body).to include("the latest in-flight ratings chart")
         expect(response.body).to include("Developing")
         expect(response.body).to include("Accomplished")
         expect(response.body).to include("Exceptional")
 
         body = response.body
-        expect(body.index("finalize all assignment check-ins")).to be < body.index("OG pro tip")
+        expect(body.index("click here to refresh")).to be < body.index("OG pro tip")
       end
 
-      it "references the in-flight chart in the OG tip when shown" do
+      it "uses manager-completed open ratings in the in-flight research chart" do
         create(
           :assignment_check_in,
           teammate: teammate,
           assignment: assignment,
           employee_completed_at: Time.current,
+          actual_energy_percentage: 100,
           employee_rating: "exceeding",
-          manager_completed_at: nil,
+          manager_completed_at: Time.current,
+          manager_completed_by_teammate: create(:teammate, organization: organization),
+          manager_rating: "working_to_meet",
           official_check_in_completed_at: nil
         )
 
         get position_check_in_organization_teammate_path(organization, teammate)
 
-        expect(response.body).to include("Energy by your in-flight check-in ratings")
+        expect(response.body).to include("Energy by latest in-flight ratings")
         expect(response.body).to include("position-check-in-experiences-inflight-rating-pie-chart")
-        expect(response.body).to include("your in-flight check-in ratings chart")
+        expect(response.body).to include("the latest in-flight ratings chart")
       end
     end
 
