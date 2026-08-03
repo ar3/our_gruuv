@@ -61,8 +61,11 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           expect(response.body).to include('my-growth-experiences-energy-pie-chart')
           expect(response.body).to include('my-growth-experiences-rating-pie-chart')
           expect(response.body).to include('my-growth-experiences-inflight-rating-pie-chart')
-          expect(response.body).to include('Energy by finalized (official) ratings')
-          expect(response.body).to include('Energy by latest in-flight ratings')
+          expect(response.body).to include('Energy allocation (official)')
+          expect(response.body).to include('Ratings (official)')
+          expect(response.body).to include('Energy allocation (in-flight)')
+          expect(response.body).to include('Ratings (in-flight)')
+          expect(response.body).to include('my-growth-experiences-inflight-energy-pie-chart')
           expect(response.body).to include('Delivery Lead')
           expect(response.body).to include('Team Coach')
         end
@@ -81,7 +84,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
 
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
 
-          expect(response.body).to include('Energy by latest in-flight ratings')
+          expect(response.body).to include('Ratings (in-flight)')
           expect(response.body).to include('my-growth-experiences-inflight-rating-pie-chart')
         end
 

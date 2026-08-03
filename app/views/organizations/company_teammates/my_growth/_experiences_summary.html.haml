@@ -5,8 +5,9 @@
 - show_divider = local_assigns.fetch(:show_divider, true)
 - energy_chart_id = "#{chart_id_prefix}-energy-pie-chart"
 - rating_chart_id = "#{chart_id_prefix}-rating-pie-chart"
+- inflight_energy_chart_id = "#{chart_id_prefix}-inflight-energy-pie-chart"
 - inflight_rating_chart_id = "#{chart_id_prefix}-inflight-rating-pie-chart"
-- show_inflight = summary.show_inflight_rating_chart && summary.chart_data_present?
+- show_inflight = summary.show_inflight_charts && summary.chart_data_present?
 
 - if show_divider
   %hr.my-4
@@ -14,9 +15,11 @@
 %div{data: {controller: 'experiences-summary-charts',
             experiences_summary_charts_energy_value: summary.energy_by_assignment_chart.to_json,
             experiences_summary_charts_rating_value: summary.energy_by_rating_chart.to_json,
+            experiences_summary_charts_inflight_energy_value: summary.energy_by_inflight_assignment_chart.to_json,
             experiences_summary_charts_inflight_rating_value: summary.energy_by_inflight_rating_chart.to_json,
             experiences_summary_charts_energy_chart_id_value: energy_chart_id,
             experiences_summary_charts_rating_chart_id_value: rating_chart_id,
+            experiences_summary_charts_inflight_energy_chart_id_value: inflight_energy_chart_id,
             experiences_summary_charts_inflight_rating_chart_id_value: inflight_rating_chart_id,
             experiences_summary_charts_show_inflight_value: show_inflight}}
   .row.mb-3
@@ -28,9 +31,9 @@
     .col-lg-6.mb-3.mb-lg-0
       .card.h-100
         .card-body
-          %h6.mb-3 Energy allocation (latest)
+          %h6.mb-3 Energy allocation (official)
           %p.text-muted.small.mb-3
-            Uses employee-completed actual energy on an open check-in when available; otherwise the active assignment tenure percentage.
+            Active assignment tenure percentages.
           - if summary.chart_data_present?
             %div{id: energy_chart_id, style: 'height: 300px;'}
           - else
@@ -38,7 +41,7 @@
     .col-lg-6
       .card.h-100
         .card-body
-          %h6.mb-3 Energy by finalized (official) ratings
+          %h6.mb-3 Ratings (official)
           %p.text-muted.small.mb-3
             Tenure energy mixed by the latest finalized official assignment rating.
           - if summary.chart_data_present?
@@ -48,10 +51,17 @@
 
   - if show_inflight
     .row.mb-3
-      .col-12
-        .card
+      .col-lg-6.mb-3.mb-lg-0
+        .card.h-100
           .card-body
-            %h6.mb-3 Energy by latest in-flight ratings
+            %h6.mb-3 Energy allocation (in-flight)
             %p.text-muted.small.mb-3
-              Latest energy (as above) mixed by manager-completed open ratings when available; otherwise each assignment's current tenure official rating.
+              Uses employee-completed actual energy on an open check-in when available; otherwise the active assignment tenure percentage.
+            %div{id: inflight_energy_chart_id, style: 'height: 300px;'}
+      .col-lg-6
+        .card.h-100
+          .card-body
+            %h6.mb-3 Ratings (in-flight)
+            %p.text-muted.small.mb-3
+              In-flight energy mixed by manager-completed open ratings when available; otherwise each assignment's current tenure official rating.
             %div{id: inflight_rating_chart_id, style: 'height: 300px;'}

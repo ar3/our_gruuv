@@ -109,7 +109,7 @@ RSpec.describe MyGrowth::ExperiencesSummary do
       expect(summary.energy_by_assignment_chart).to eq([{ name: 'Beta Work', y: 50 }])
     end
 
-    it 'prefers employee-completed actual energy on an open check-in' do
+    it 'prefers employee-completed actual energy on the in-flight energy chart only' do
       create(
         :assignment_tenure,
         teammate: teammate,
@@ -133,8 +133,9 @@ RSpec.describe MyGrowth::ExperiencesSummary do
         open_check_ins_by_assignment_id: { assignment_a.id => open_a }
       )
 
-      expect(summary.total_energy_percentage).to eq(55)
-      expect(summary.energy_by_assignment_chart).to eq([{ name: 'Alpha Work', y: 55 }])
+      expect(summary.total_energy_percentage).to eq(40)
+      expect(summary.energy_by_assignment_chart).to eq([{ name: 'Alpha Work', y: 40 }])
+      expect(summary.energy_by_inflight_assignment_chart).to eq([{ name: 'Alpha Work', y: 55 }])
     end
   end
 
@@ -204,10 +205,18 @@ RSpec.describe MyGrowth::ExperiencesSummary do
         open_check_ins_by_assignment_id: { assignment_a.id => open_a }
       )
 
-      expect(summary.show_inflight_rating_chart).to eq(true)
+      expect(summary.show_inflight_charts).to eq(true)
+      expect(summary.energy_by_inflight_assignment_chart).to contain_exactly(
+        hash_including(name: 'Alpha Work', y: 35),
+        hash_including(name: 'Beta Work', y: 60)
+      )
       expect(summary.energy_by_inflight_rating_chart).to contain_exactly(
         hash_including(name: 'Exceeding Expectations', y: 35),
         hash_including(name: 'No rating yet', y: 60)
+      )
+      expect(summary.energy_by_assignment_chart).to contain_exactly(
+        hash_including(name: 'Alpha Work', y: 40),
+        hash_including(name: 'Beta Work', y: 60)
       )
       expect(summary.energy_by_rating_chart).to contain_exactly(
         hash_including(name: 'No finalized check-in', y: 100)

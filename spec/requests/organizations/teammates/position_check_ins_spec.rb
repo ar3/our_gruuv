@@ -140,8 +140,11 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
         expect(response.body).to include("position-check-in-experiences-energy-pie-chart")
         expect(response.body).to include("position-check-in-experiences-rating-pie-chart")
         expect(response.body).to include("position-check-in-experiences-inflight-rating-pie-chart")
-        expect(response.body).to include("Energy by finalized (official) ratings")
-        expect(response.body).to include("Energy by latest in-flight ratings")
+        expect(response.body).to include("position-check-in-experiences-inflight-energy-pie-chart")
+        expect(response.body).to include("Energy allocation (official)")
+        expect(response.body).to include("Ratings (official)")
+        expect(response.body).to include("Energy allocation (in-flight)")
+        expect(response.body).to include("Ratings (in-flight)")
         expect(response.body).to include("add up to 100%")
         expect(response.body).to include("click here to refresh")
         expect(response.body).to include("OG pro tip")
@@ -171,7 +174,8 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
 
         get position_check_in_organization_teammate_path(organization, teammate)
 
-        expect(response.body).to include("Energy by latest in-flight ratings")
+        expect(response.body).to include("Ratings (in-flight)")
+        expect(response.body).to include("Energy allocation (in-flight)")
         expect(response.body).to include("position-check-in-experiences-inflight-rating-pie-chart")
         expect(response.body).to include("the latest in-flight ratings chart")
       end

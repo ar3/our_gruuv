@@ -6,9 +6,11 @@ export default class extends Controller {
   static values = {
     energy: { type: Array, default: [] },
     rating: { type: Array, default: [] },
+    inflightEnergy: { type: Array, default: [] },
     inflightRating: { type: Array, default: [] },
     energyChartId: String,
     ratingChartId: String,
+    inflightEnergyChartId: String,
     inflightRatingChartId: String,
     showInflight: { type: Boolean, default: false }
   }
@@ -28,50 +30,62 @@ export default class extends Controller {
 
     this.destroyCharts()
 
-    const energyEl = document.getElementById(this.energyChartIdValue)
-    if (energyEl && this.energyValue.length > 0) {
-      this.charts.push(
-        hc.chart(this.energyChartIdValue, {
-          chart: { type: "pie" },
-          title: { text: null },
-          accessibility: { enabled: false },
-          plotOptions: {
-            pie: {
-              allowPointSelect: true,
-              cursor: "pointer",
-              dataLabels: {
-                enabled: true,
-                format: "<b>{point.name}</b>: {point.y}% ({point.percentage:.1f}%)"
-              }
-            }
-          },
-          series: [{
-            name: "Energy",
-            colorByPoint: true,
-            data: this.energyValue
-          }]
-        })
-      )
-    }
+    this.renderAssignmentPie(this.energyChartIdValue, this.energyValue)
+    this.renderRatingPie(this.ratingChartIdValue, this.ratingValue)
 
-    const ratingEl = document.getElementById(this.ratingChartIdValue)
-    if (ratingEl && this.ratingValue.length > 0) {
-      this.charts.push(hc.chart(this.ratingChartIdValue, this.pieChartOptions(this.ratingValue)))
-    } else if (ratingEl) {
-      ratingEl.innerHTML = '<p class="text-muted mb-0">No rating data to chart.</p>'
-    }
-
-    if (this.showInflightValue && this.hasInflightRatingChartIdValue) {
-      const inflightEl = document.getElementById(this.inflightRatingChartIdValue)
-      if (inflightEl && this.inflightRatingValue.length > 0) {
-        this.charts.push(
-          hc.chart(this.inflightRatingChartIdValue, this.pieChartOptions(this.inflightRatingValue))
-        )
-      }
+    if (this.showInflightValue) {
+      this.renderAssignmentPie(this.inflightEnergyChartIdValue, this.inflightEnergyValue)
+      this.renderRatingPie(this.inflightRatingChartIdValue, this.inflightRatingValue)
     }
   }
 
-  pieChartOptions(data) {
+  renderAssignmentPie(chartId, data) {
+    if (!chartId) return
+
+    const el = document.getElementById(chartId)
+    if (!el) return
+    if (!data || data.length === 0) return
+
+    const hc = window.Highcharts
+    this.charts.push(
+      hc.chart(chartId, {
+        chart: { type: "pie" },
+        title: { text: null },
+        accessibility: { enabled: false },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: "pointer",
+            dataLabels: {
+              enabled: true,
+              format: "<b>{point.name}</b>: {point.y}% ({point.percentage:.1f}%)"
+            }
+          }
+        },
+        series: [{
+          name: "Energy",
+          colorByPoint: true,
+          data: data
+        }]
+      })
+    )
+  }
+
+  renderRatingPie(chartId, data) {
+    if (!chartId) return
+
+    const el = document.getElementById(chartId)
+    if (!el) return
+
+    if (!data || data.length === 0) {
+      el.innerHTML = '<p class="text-muted mb-0">No rating data to chart.</p>'
+      return
+    }
+
+    this.charts.push(window.Highcharts.chart(chartId, this.ratingPieOptions(data)))
+  }
+
+  ratingPieOptions(data) {
     return {
       chart: { type: "pie" },
       title: { text: null },
