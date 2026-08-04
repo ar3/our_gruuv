@@ -160,5 +160,39 @@ RSpec.describe Comments::PostNotificationJob, type: :job do
         expect(main_text).to include("~#{root_comment.body.split("\n").first}~")
       end
     end
+    context 'with position suggestion-scoped comment' do
+      let(:title) { create(:title, company: company) }
+      let(:position_level) { create(:position_level, position_major_level: title.position_major_level, level: "1.1") }
+      let(:position) { create(:position, title: title, position_level: position_level) }
+      let(:opened_by) { company.teammates.find_by(person: person) }
+      let(:suggestion) do
+        create(:position_suggestion, position: position, organization: company, opened_by: opened_by)
+      end
+      let(:root_comment) do
+        create(
+          :comment,
+          :on_assignment,
+          organization: organization,
+          creator: person,
+          commentable: assignment,
+          position_suggestion: suggestion,
+          body: "Milestone should change"
+        )
+      end
+
+      it 'mentions the position suggestion with a link next to the starter line' do
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1234567890.123456' })
+
+        described_class.new.perform(root_comment.id)
+
+        notification = root_comment.notifications.last
+        text = notification.rich_message.first['text']['text']
+        expect(text).to include("Started by")
+        expect(text).to include("a part of the suggestions regarding")
+        expect(text).to include(position.display_name)
+        expect(text).to include("position_suggestions/#{suggestion.id}")
+        expect(notification.fallback_text).to include("a part of the suggestions regarding #{position.display_name}")
+      end
+    end
   end
 end

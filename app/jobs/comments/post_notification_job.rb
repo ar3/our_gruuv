@@ -2,7 +2,13 @@ class Comments::PostNotificationJob < ApplicationJob
   queue_as :default
 
   def perform(comment_id)
-    comment = Comment.find(comment_id)
+    comment = Comment
+      .includes(
+        :creator,
+        :organization,
+        position_suggestion: { position: [:title, :position_level] }
+      )
+      .find(comment_id)
 
     # Observation (and other non-MAAP) comments must not post to the MAAP comment channel
     return unless Comments::CommentableBehavior.for(comment).slack_channel_notify?
@@ -124,6 +130,7 @@ class Comments::PostNotificationJob < ApplicationJob
     commentable_link = commentable_url ? "<#{commentable_url}|#{commentable_name}>" : commentable_name
     main_text = "*New comment on #{commentable_type} #{commentable_link}*\n\n"
     main_text += "Started by #{creator_mention}"
+    main_text += suggestion_context_suffix(comment, company)
     
     # Add comment body/content
     comment_body = comment.body
@@ -190,7 +197,25 @@ class Comments::PostNotificationJob < ApplicationJob
   def build_fallback_text(comment)
     root_commentable = comment.root_commentable
     commentable_name = root_commentable.respond_to?(:title) ? root_commentable.title : root_commentable.respond_to?(:name) ? root_commentable.name : root_commentable.class.name
-    "New comment on #{root_commentable.class.name} #{commentable_name} by #{comment.creator.display_name}"
+    text = "New comment on #{root_commentable.class.name} #{commentable_name} by #{comment.creator.display_name}"
+    if comment.position_suggestion.present?
+      position_name = comment.position_suggestion.position.display_name
+      text += " (a part of the suggestions regarding #{position_name})"
+    end
+    text
+  end
+
+  def suggestion_context_suffix(comment, company)
+    suggestion = comment.position_suggestion
+    return "" unless suggestion
+
+    position = suggestion.position
+    position_name = position.display_name
+    suggestion_url = Rails.application.routes.url_helpers.organization_position_suggestion_url(
+      company,
+      suggestion
+    )
+    " (a part of the suggestions regarding <#{suggestion_url}|#{position_name}>)"
   end
 
   def truncate_slack_text(text, max_length: 3000)
