@@ -62,7 +62,8 @@
 .border.rounded.p-3.mb-4#position-comments
   .row
     .col-12.col-lg-8
-      %h2.h5.mb-2 Position
+      %h2.h5.mb-2
+        = link_to @position.display_name, organization_position_path(@organization, @position), class: "text-decoration-none"
       - if @position.combined_summary.present?
         .markdown-content.small= render_markdown(@position.combined_summary)
       - else
