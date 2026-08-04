@@ -28,9 +28,32 @@ class PositionSuggestions::UpsertMilestoneService
     record.last_modified_by = @modified_by
 
     if record.save
+      notify_if_assignment_ability!(record)
       Result.ok(record)
     else
       Result.err(record.errors.full_messages)
     end
+  end
+
+  private
+
+  def notify_if_assignment_ability!(record)
+    return unless @milestoneable.is_a?(AssignmentAbility)
+    return unless record.saved_change_to_suggested_milestone_level? || record.id_previously_changed?
+
+    notify_result = PositionSuggestions::NotifyMilestoneSuggestionService.call(
+      suggestion: @suggestion,
+      assignment_ability: @milestoneable,
+      suggested_milestone_level: record.suggested_milestone_level,
+      modified_by: @modified_by
+    )
+
+    return if notify_result.ok?
+
+    Rails.logger.error(
+      "Failed to post milestone suggestion comment for " \
+      "position_suggestion=#{@suggestion.id} assignment_ability=#{@milestoneable.id}: " \
+      "#{Array(notify_result.error).join(', ')}"
+    )
   end
 end

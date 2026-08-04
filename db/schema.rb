@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_03_150000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_04_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -428,12 +428,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_03_150000) do
     t.datetime "updated_at", null: false
     t.string "slack_message_id"
     t.bigint "position_suggestion_id"
+    t.string "suggestion_thread_subject_type"
+    t.bigint "suggestion_thread_subject_id"
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable_type_and_commentable_id"
     t.index ["creator_id"], name: "index_comments_on_creator_id"
     t.index ["organization_id"], name: "index_comments_on_organization_id"
     t.index ["position_suggestion_id"], name: "index_comments_on_position_suggestion_id"
     t.index ["resolved_at"], name: "index_comments_on_resolved_at"
+    t.index ["suggestion_thread_subject_type", "suggestion_thread_subject_id"], name: "index_comments_on_suggestion_thread_subject"
   end
 
   create_table "company_label_preferences", force: :cascade do |t|

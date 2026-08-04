@@ -4,6 +4,9 @@ class Comment < ApplicationRecord
   belongs_to :organization
   belongs_to :creator, class_name: 'Person'
   belongs_to :position_suggestion, optional: true
+  # Keys system suggestion threads under a session (e.g. AssignmentAbility for bag milestones).
+  # Hang point remains commentable (Assignment/Position/Comment); this is the sub-key for "one root per AA".
+  belongs_to :suggestion_thread_subject, polymorphic: true, optional: true
 
   # Self-referential association for nested comments
   has_many :comments, as: :commentable, dependent: :destroy
@@ -26,6 +29,12 @@ class Comment < ApplicationRecord
   # Default MAAP/object comment UIs exclude suggestion-session threads.
   scope :without_position_suggestion, -> { where(position_suggestion_id: nil) }
   scope :for_position_suggestion, ->(suggestion) { where(position_suggestion_id: suggestion.id) }
+  scope :for_suggestion_thread_subject, ->(subject) {
+    where(
+      suggestion_thread_subject_type: subject.class.name,
+      suggestion_thread_subject_id: subject.id
+    )
+  }
 
   # Instance methods
   def resolved?

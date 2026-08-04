@@ -60,17 +60,25 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
     let(:assignment_ability) { assignment.assignment_abilities.first }
 
     it "upserts a bag-scoped milestone suggestion" do
-      patch upsert_milestone_organization_position_suggestion_path(organization, suggestion),
-            params: {
-              milestoneable_type: "AssignmentAbility",
-              milestoneable_id: assignment_ability.id,
-              suggested_milestone_level: 3
-            }
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+
+      expect do
+        patch upsert_milestone_organization_position_suggestion_path(organization, suggestion),
+              params: {
+                milestoneable_type: "AssignmentAbility",
+                milestoneable_id: assignment_ability.id,
+                suggested_milestone_level: 3
+              }
+      end.to change(Comment, :count).by(1)
 
       expect(response).to redirect_to(organization_position_suggestion_path(organization, suggestion, anchor: "assignment-#{assignment.id}"))
       milestone = suggestion.milestones.find_by!(milestoneable: assignment_ability)
       expect(milestone.suggested_milestone_level).to eq(3)
       expect(assignment_ability.reload.milestone_level).to eq(2)
+
+      comment = Comment.for_position_suggestion(suggestion).for_suggestion_thread_subject(assignment_ability).root_comments.first
+      expect(comment.body).to include("Milestone 3")
+      expect(comment.commentable).to eq(assignment)
     end
 
     it "marks the participant done contributing" do
