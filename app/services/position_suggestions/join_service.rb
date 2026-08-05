@@ -11,7 +11,7 @@ class PositionSuggestions::JoinService
   end
 
   def call
-    return Result.err("Suggestion session is closed") unless @suggestion.open?
+    return Result.err("Suggestion round is closed") unless @suggestion.open?
 
     participant = @suggestion.participants.find_or_initialize_by(company_teammate: @company_teammate)
     participant.participation_status = "active" if participant.new_record? || participant.withdrawn?

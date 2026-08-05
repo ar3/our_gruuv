@@ -62,7 +62,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
 
     if result.ok?
       redirect_to organization_position_suggestion_path(organization, result.value),
-                  notice: "Opened suggestion session for #{position.display_name}."
+                  notice: "Opened suggestion round for #{position.display_name}."
     else
       redirect_to organization_position_suggestions_path(organization),
                   alert: Array(result.error).join(", ")
@@ -79,7 +79,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
 
     if result.ok?
       redirect_to organization_position_suggestion_path(organization, @suggestion),
-                  notice: "You joined this suggestion session."
+                  notice: "You joined this suggestion round."
     else
       redirect_to organization_position_suggestion_path(organization, @suggestion),
                   alert: Array(result.error).join(", ")
@@ -92,19 +92,27 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     participant = @suggestion.participant_for(current_company_teammate)
     unless participant
       redirect_to organization_position_suggestion_path(organization, @suggestion),
-                  alert: "Join this session before updating your status." and return
+                  alert: "Join this round before updating your status." and return
     end
 
     case params[:participation_status]
     when "done_contributing"
+      unless @suggestion.has_made_suggestions_for?(current_company_teammate)
+        redirect_to organization_position_suggestion_path(organization, @suggestion),
+                    alert: "Make at least one suggestion before marking this round done." and return
+      end
       participant.mark_done_contributing!
-      notice = "Marked as done contributing. Your queue is clear for this position."
+      notice = "Marked as done making suggestions for this round."
     when "active"
       participant.mark_active!
-      notice = "You are actively reviewing again."
+      notice = "You are making suggestions again."
     when "withdrawn"
+      if @suggestion.has_made_suggestions_for?(current_company_teammate)
+        redirect_to organization_position_suggestion_path(organization, @suggestion),
+                    alert: "You already made suggestions in this round; mark done instead of withdrawing." and return
+      end
       participant.withdraw!
-      notice = "You withdrew from this suggestion session."
+      notice = "You withdrew from this suggestion round."
     else
       redirect_to organization_position_suggestion_path(organization, @suggestion),
                   alert: "Unknown participation status." and return
@@ -119,7 +127,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     begin
       @suggestion.complete!(closed_by: current_company_teammate)
       redirect_to organization_position_suggestions_path(organization),
-                  notice: "Suggestion session completed."
+                  notice: "Suggestion round completed."
     rescue ArgumentError => e
       redirect_to organization_position_suggestion_path(organization, @suggestion),
                   alert: e.message
@@ -214,6 +222,11 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
       .group_by(&:commentable_id)
     @can_manage_maap = current_company_teammate.can_manage_maap?
     @return_to = organization_position_suggestion_path(organization, @suggestion)
+    @viewer_has_made_suggestions = @suggestion.has_made_suggestions_for?(current_company_teammate)
+    summary = PositionSuggestions::RoundSummaryBuilder.call(suggestion: @suggestion)
+    @round_timeline = summary[:timeline]
+    @process_rows = summary[:process_rows]
+    @viewer_casual_name = current_person.casual_name
   end
 
   def find_suggestion_commentable!

@@ -43,6 +43,7 @@ class PositionSuggestion < ApplicationRecord
 
   def unresolved_root_comments_by_active_participants
     active_person_ids = active_participants.includes(company_teammate: :person).map { |p| p.company_teammate.person_id }
+    # Includes free-text roots and ability-milestone system threads — resolving those marks suggestions handled.
     comments.root_comments.unresolved.where(creator_id: active_person_ids)
   end
 
@@ -61,6 +62,32 @@ class PositionSuggestion < ApplicationRecord
     )
   end
 
+  # A1: authored free-text comments (non–ability-milestone system threads) OR last-changed a bag milestone.
+  def has_made_suggestions_for?(company_teammate)
+    return false if company_teammate.blank?
+
+    milestones.where(last_modified_by_id: company_teammate.id).exists? ||
+      free_text_comment_authored_by?(company_teammate.person)
+  end
+
+  def free_text_root_comments
+    comments.root_comments.where(suggestion_thread_subject_type: nil)
+  end
+
+  def free_text_comment_authored_by?(person)
+    return false if person.blank?
+
+    free_root_scope = free_text_root_comments
+    return true if free_root_scope.where(creator_id: person.id).exists?
+
+    free_root_ids = free_root_scope.pluck(:id)
+    return false if free_root_ids.empty?
+
+    comments
+      .where(commentable_type: "Comment", commentable_id: free_root_ids, creator_id: person.id)
+      .exists?
+  end
+
   private
 
   def position_belongs_to_organization
@@ -76,6 +103,6 @@ class PositionSuggestion < ApplicationRecord
     return unless open? && position_id.present?
     return unless self.class.open_sessions.where(position_id: position_id).where.not(id: id).exists?
 
-    errors.add(:position, "already has an open suggestion session")
+    errors.add(:position, "already has an open suggestion round")
   end
 end

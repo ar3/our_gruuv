@@ -1,0 +1,160 @@
+-# Locals: organization, suggestion, position, participant, can_manage_maap,
+-#         viewer_has_made_suggestions, viewer_casual_name, round_timeline, process_rows,
+-#         return_to, panel_id (unique suffix: top/bottom)
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+- position = local_assigns[:position]
+- participant = local_assigns[:participant]
+- can_manage_maap = local_assigns.fetch(:can_manage_maap, false)
+- viewer_has_made = local_assigns.fetch(:viewer_has_made_suggestions, false)
+- viewer_name = local_assigns[:viewer_casual_name]
+- timeline = local_assigns[:round_timeline] || []
+- process_rows = local_assigns[:process_rows] || []
+- return_to = local_assigns[:return_to]
+- panel_id = local_assigns.fetch(:panel_id, "top")
+- open = suggestion.open?
+- position_name = position.display_name
+- joined = participant.present? && !participant.withdrawn?
+- me_done = participant&.done_contributing?
+- me_step = if me_done then 3 elsif joined then 2 else 1 end
+- # Step 2 when any active-participant root is unresolved (free-text + ability-milestone threads).
+- # Same gate as "Mark this round complete".
+- maap_step = if !open || suggestion.can_complete? then 3 else 2 end
+
+.row.g-3.mb-4{id: "round-actions-#{panel_id}"}
+  .col-12.col-lg-4
+    .border.rounded.p-3.h-100
+      %h2.h6.mb-2 Suggestion summary
+      - if timeline.any?
+        %ul.small.mb-0.ps-3
+          - timeline.each do |event|
+            %li.mb-1
+              = event.text
+              - if event.at
+                %span.text-muted
+                  at
+                  = position_suggestion_relative_time(event.at)
+      - else
+        %p.text-muted.small.mb-0 No activity yet.
+
+  .col-12.col-lg-4
+    .border.rounded.p-3.h-100
+      %h2.h6.mb-2
+        = "#{viewer_name}'s participation in the #{position_name} suggestion"
+      %ol.list-unstyled.small.mb-3
+        %li.mb-2.d-flex.align-items-start
+          = position_suggestion_round_step_icon(joined || me_done ? :done : (me_step == 1 ? :current : :todo))
+          %span
+            Join this round
+            - if open && !joined && !me_done
+              .mt-1
+                = button_to "Join round",
+                            join_organization_position_suggestion_path(organization, suggestion),
+                            method: :post,
+                            class: "btn btn-sm btn-primary",
+                            form: { data: { turbo: false } }
+        %li.mb-2.d-flex.align-items-start
+          = position_suggestion_round_step_icon(me_done ? :done : (me_step == 2 ? :current : :todo))
+          %span Make a series of suggestions
+        %li.mb-0.d-flex.align-items-start
+          = position_suggestion_round_step_icon(me_done ? :done : (me_step == 3 ? :current : :todo))
+          %span
+            When all suggestions are done, say you're done making suggestions for this round
+      - if open && participant&.active?
+        .d-flex.flex-wrap.gap-2
+          - if viewer_has_made
+            = button_to "I'm done making suggestions for this round",
+                        update_participation_organization_position_suggestion_path(organization, suggestion),
+                        method: :patch,
+                        params: { participation_status: "done_contributing" },
+                        class: "btn btn-primary btn-sm",
+                        form: { data: { turbo: false } }
+          - else
+            %button.btn.btn-primary.btn-sm{type: "button", disabled: true, title: "Add a comment or milestone suggestion first"}
+              I'm done making suggestions for this round
+            = button_to "I actually don't want to make any suggestions",
+                        update_participation_organization_position_suggestion_path(organization, suggestion),
+                        method: :patch,
+                        params: { participation_status: "withdrawn" },
+                        class: "btn btn-outline-danger btn-sm",
+                        form: { data: { turbo: false } }
+      - elsif open && (participant&.done_contributing? || participant&.withdrawn?)
+        = button_to "Resume making suggestions",
+                    update_participation_organization_position_suggestion_path(organization, suggestion),
+                    method: :patch,
+                    params: { participation_status: "active" },
+                    class: "btn btn-outline-primary btn-sm",
+                    form: { data: { turbo: false } }
+
+  .col-12.col-lg-4
+    .border.rounded.p-3.h-100
+      %h2.h6.mb-2 MAAP Managers Review Suggestions
+      - unless can_manage_maap
+        .alert.alert-warning.small.py-2.mb-3{role: "status"}
+          %i.bi.bi-exclamation-triangle-fill.me-1{aria: { hidden: true }}
+          Only MAAP managers can perform these operations.
+      %ol.list-unstyled.small.mb-3
+        %li.mb-2.d-flex.align-items-start
+          = position_suggestion_round_step_icon(maap_step > 1 || !open ? :done : (maap_step == 1 ? :current : :todo))
+          %span All comments must be reviewed
+        %li.mb-2
+          .d-flex.align-items-start
+            = position_suggestion_round_step_icon(maap_step > 2 || !open ? :done : (maap_step == 2 ? :current : :todo))
+            %span All comments must be resolved
+          .ms-4.mt-2
+            - accordion_id = "process-suggestions-#{panel_id}"
+            .accordion.accordion-flush{id: accordion_id}
+              .accordion-item
+                %h3.accordion-header
+                  %button.accordion-button.collapsed.py-2.px-2.small{type: "button", data: { bs_toggle: "collapse", bs_target: "##{accordion_id}-body" }, aria: { expanded: "false", controls: "#{accordion_id}-body" }}
+                    Process all suggestions
+                    %span.badge.text-bg-secondary.ms-2= process_rows.size
+                .accordion-collapse.collapse{id: "#{accordion_id}-body", data: { bs_parent: "##{accordion_id}" }}
+                  .accordion-body.px-0.pt-2
+                    - if process_rows.empty?
+                      %p.text-muted.small.mb-0 No open suggestion items yet.
+                    - else
+                      %ul.list-unstyled.mb-0
+                        - process_rows.each do |row|
+                          %li.border.rounded.p-2.mb-2
+                            .small.mb-2
+                              = row.label
+                              - if row.resolved
+                                %span.badge.bg-success.ms-1 Resolved
+                            .btn-group.btn-group-sm{role: "group"}
+                              - if can_manage_maap
+                                = link_to "Comment", "##{row.anchor}", class: "btn btn-outline-primary"
+                              - else
+                                %button.btn.btn-outline-primary{type: "button", disabled: true} Comment
+                              - if row.kind == :free_text
+                                - if row.comment && !row.resolved && can_manage_maap
+                                  = button_to "Resolve",
+                                              resolve_organization_comment_path(organization, row.comment, return_to: return_to),
+                                              method: :patch,
+                                              class: "btn btn-outline-success",
+                                              form: { class: "d-contents", data: { turbo: false } }
+                                - elsif row.resolved
+                                  %button.btn.btn-outline-success{type: "button", disabled: true} Resolved
+                                - else
+                                  %button.btn.btn-outline-success{type: "button", disabled: true} Resolve
+                              - else
+                                %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Accept Change
+                                %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Reject Change
+        %li.mb-0.d-flex.align-items-start
+          = position_suggestion_round_step_icon(!open ? :done : (maap_step == 3 ? :current : :todo))
+          %span
+            Mark this suggestion round complete!
+            - if open
+              - complete_blocked_reason = (!can_manage_maap ? "Only MAAP managers can mark a suggestion round complete." : (!suggestion.can_complete? ? "Resolve all unresolved root comments from active participants (including ability-milestone suggestion threads) before completing this round." : nil))
+              .mt-2.d-flex.align-items-center.gap-2
+                - if can_manage_maap && suggestion.can_complete?
+                  = button_to "Mark this round complete",
+                              close_organization_position_suggestion_path(organization, suggestion),
+                              method: :patch,
+                              class: "btn btn-success btn-sm",
+                              form: { data: { turbo: false, confirm: "Close this suggestion round? A new round can be opened later." } }
+                - else
+                  %button.btn.btn-success.btn-sm{type: "button", disabled: true, title: complete_blocked_reason}
+                    Mark this round complete
+                  - if complete_blocked_reason.present?
+                    %i.bi.bi-exclamation-triangle-fill.text-warning{aria: { label: complete_blocked_reason }, data: { bs_toggle: "tooltip", bs_title: complete_blocked_reason }, title: complete_blocked_reason}

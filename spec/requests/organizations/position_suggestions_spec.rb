@@ -28,7 +28,7 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
   end
 
   describe "POST create + show flow" do
-    it "opens a session and shows assignments with milestone controls" do
+    it "opens a round and shows assignments with milestone controls and action panels" do
       expect do
         post organization_position_suggestions_path(organization), params: { position_id: position.id }
       end.to change(PositionSuggestion, :count).by(1)
@@ -41,7 +41,14 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(response.body).to include("Client Discovery")
       expect(response.body).to include("Communication")
       expect(response.body).to include("Beta")
-      expect(response.body).to include("Save and mark as complete")
+      expect(response.body).to include("Open round")
+      expect(response.body).to include("Suggestion summary")
+      expect(response.body).to include("done making suggestions for this round")
+      expect(response.body).to include("I actually don")
+      expect(response.body).to include("MAAP Managers Review Suggestions")
+      expect(response.body).to include("Only MAAP managers can perform these operations")
+      expect(response.body).to include("round-actions-top")
+      expect(response.body).to include("round-actions-bottom")
       expect(response.body).to include("Comments")
       expect(response.body).to include('data-bs-toggle="popover"')
       expect(response.body).to include(organization_ability_path(organization, ability))
@@ -81,7 +88,23 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(comment.commentable).to eq(assignment)
     end
 
-    it "marks the participant done contributing" do
+    it "blocks done contributing before any suggestions" do
+      patch update_participation_organization_position_suggestion_path(organization, suggestion),
+            params: { participation_status: "done_contributing" }
+
+      expect(response).to redirect_to(organization_position_suggestion_path(organization, suggestion))
+      expect(suggestion.participant_for(teammate).reload).to be_active
+    end
+
+    it "marks the participant done contributing after a free-text comment" do
+      Comment.create!(
+        commentable: assignment,
+        organization: organization,
+        creator: person,
+        position_suggestion: suggestion,
+        body: "Needs clearer outcomes"
+      )
+
       patch update_participation_organization_position_suggestion_path(organization, suggestion),
             params: { participation_status: "done_contributing" }
 
@@ -89,7 +112,7 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(suggestion.participant_for(teammate).reload).to be_done_contributing
     end
 
-    it "adds a session-scoped assignment comment" do
+    it "adds a round-scoped assignment comment" do
       expect do
         post create_comment_organization_position_suggestion_path(organization, suggestion),
              params: {
@@ -127,7 +150,7 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(suggestion.reload).to be_completed
     end
 
-    it "blocks complete when an active participant has an unresolved root comment" do
+    it "blocks complete when an active participant has an unresolved free-text root comment" do
       Comment.create!(
         commentable: assignment,
         organization: organization,
@@ -141,6 +164,62 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
 
       expect(response).to redirect_to(organization_position_suggestion_path(organization, suggestion))
       expect(suggestion.reload).to be_open
+    end
+
+    it "blocks complete for unresolved ability-milestone system roots" do
+      aa = assignment.assignment_abilities.first
+      Comment.create!(
+        commentable: assignment,
+        organization: organization,
+        creator: person,
+        position_suggestion: suggestion,
+        suggestion_thread_subject: aa,
+        body: "system milestone thread"
+      )
+      sign_in_as_teammate_for_request(maap_person, organization)
+
+      patch close_organization_position_suggestion_path(organization, suggestion)
+
+      expect(response).to redirect_to(organization_position_suggestion_path(organization, suggestion))
+      expect(suggestion.reload).to be_open
+      expect(suggestion.can_complete?).to be false
+    end
+
+    it "shows the complete action disabled with a warning when unresolved roots remain" do
+      Comment.create!(
+        commentable: assignment,
+        organization: organization,
+        creator: person,
+        position_suggestion: suggestion,
+        body: "Please lower this milestone"
+      )
+      sign_in_as_teammate_for_request(maap_person, organization)
+
+      get organization_position_suggestion_path(organization, suggestion)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Mark this round complete")
+      expect(response.body).to include("bi-exclamation-triangle-fill")
+      expect(response.body).to include("including ability-milestone suggestion threads")
+      expect(response.body).to include("bi-arrow-right-circle-fill")
+      expect(response.body).not_to include(close_organization_position_suggestion_path(organization, suggestion))
+    end
+
+    it "lets a MAAP manager resolve free-text comments from the process list path" do
+      comment = Comment.create!(
+        commentable: assignment,
+        organization: organization,
+        creator: person,
+        position_suggestion: suggestion,
+        body: "Please lower this milestone"
+      )
+      sign_in_as_teammate_for_request(maap_person, organization)
+      return_to = organization_position_suggestion_path(organization, suggestion)
+
+      patch resolve_organization_comment_path(organization, comment, return_to: return_to)
+
+      expect(response).to redirect_to(return_to)
+      expect(comment.reload).to be_resolved
     end
   end
 end

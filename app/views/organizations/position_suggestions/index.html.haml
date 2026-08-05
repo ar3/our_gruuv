@@ -35,7 +35,7 @@
 
 .col-12
   %section.mb-4
-    %h2.h4 Open suggestion sessions
+    %h2.h4 Open suggestion rounds
     - if @other_open_suggestions.any?
       %ul.list-group
         - @other_open_suggestions.each do |suggestion|
@@ -50,12 +50,12 @@
                 %span.badge.text-bg-secondary.ms-2 Done contributing
             = link_to "Join & make suggestions", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-primary"
     - else
-      %p.text-muted.mb-0 No other open sessions right now.
+      %p.text-muted.mb-0 No other open rounds right now.
 
 - completed = @completed_suggestions
 .col-12
   %section.mb-4
-    %h2.h4 Completed sessions I joined
+    %h2.h4 Completed rounds I joined
     - if completed.any?
       %ul.list-group
         - completed.each do |suggestion|
@@ -66,13 +66,13 @@
               %span.badge.text-bg-success.ms-2 Completed
             = link_to "View", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-secondary"
     - else
-      %p.text-muted.mb-0 No completed sessions yet.
+      %p.text-muted.mb-0 No completed rounds yet.
 
 .col-12
   %section.mb-4
     %h2.h4 Start by position
     %p.text-muted.small
-      Positions that already have an open suggestion session are listed above. Starting here opens a new session and adds you as a participant.
+      Positions that already have an open suggestion round are listed above. Starting here opens a new round and adds you as a participant.
     - if @interested_start_positions.any?
       %h3.h6 Interest / related
       %ul.list-group.mb-3

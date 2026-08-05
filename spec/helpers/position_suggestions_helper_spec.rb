@@ -17,6 +17,16 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
     create(:assignment_outcome, assignment: assignment, description: "Capture top priorities")
   end
 
+  describe "#position_suggestion_relative_time" do
+    it "returns relative text with absolute title for hover" do
+      time = 2.days.ago
+      html = helper.position_suggestion_relative_time(time, viewer: create(:person))
+
+      expect(html).to include("ago")
+      expect(html).to include("title=")
+    end
+  end
+
   describe "#position_suggestion_assignment_popover_html" do
     it "includes tagline, outcomes, required activities, and a handbook visit note" do
       html = helper.position_suggestion_assignment_popover_html(assignment)

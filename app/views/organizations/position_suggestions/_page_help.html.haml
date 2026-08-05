@@ -1,7 +1,7 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    Replace spreadsheet MAAP feedback with structured suggestion sessions so managers can comment on Assignments and propose Ability milestones — without granting MAAP edit access.
+    Replace spreadsheet MAAP feedback with structured suggestion rounds so managers can comment on Assignments and propose Ability milestones — without granting MAAP edit access.
 
   %h3.fw-semibold.mb-2 Context
   = render "shared/maap/definition"
@@ -18,13 +18,13 @@
 
   %h3.fw-semibold.mb-2 Specifics of this page
   %ul.mb-3
-    %li One open suggestion session per Position. First joiner opens it; a MAAP manager closes it. A later joiner can open a new session after close.
-    %li Comments are person-scoped inside the session (visible to anyone using this UI). Suggested Assignment–Ability milestones are shared on the session bag, with who last changed them and PaperTrail history.
+    %li One open suggestion round per Position. First joiner opens it; a MAAP manager closes it. A later joiner can open a new round after close. Rounds support the MAAP cadence of revisiting each position regularly (ideally at least every six months).
+    %li Comments are person-scoped inside the round (visible to anyone using this UI). Suggested Assignment–Ability milestones are shared on the round bag, with who last changed them and PaperTrail history.
     %li
-      %strong Save / done contributing
+      %strong Done making suggestions
       clears your personal queue — it does not accept changes into MAAP.
-    %li Milestone suggestions are proposals only in this beta; MAAP managers apply real milestone changes elsewhere.
+    %li Milestone suggestions are proposals only in this beta; MAAP managers apply real milestone changes elsewhere (Accept/Reject coming soon).
     %li
-      Review Completed requires no unresolved
+      Completing a round requires no unresolved
       %em root
-      comments from active (non-withdrawn) participants. Replies do not need individual resolve.
+      comments from active (non-withdrawn) participants — including ability-milestone suggestion threads (resolving that comment is how a milestone suggestion is marked handled). Replies do not need individual resolve.

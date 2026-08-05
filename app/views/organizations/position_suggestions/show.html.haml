@@ -15,45 +15,25 @@
       %i.bi.bi-flask.me-1
       Beta
     - if @suggestion.open?
-      %span.badge.text-bg-primary Open session
+      %span.badge.text-bg-primary Open round
     - else
       %span.badge.text-bg-success Completed
 
 .collapse.mb-4{id: page_help_id}
   = render "organizations/position_suggestions/page_help"
 
-.d-flex.flex-wrap.gap-2.mb-4
-  - if @suggestion.open? && @participant
-    - if @participant.active?
-      = button_to "Save and mark as complete",
-                  update_participation_organization_position_suggestion_path(@organization, @suggestion),
-                  method: :patch,
-                  params: { participation_status: "done_contributing" },
-                  class: "btn btn-primary btn-sm",
-                  form: { data: { turbo: false } }
-      = button_to "Withdraw",
-                  update_participation_organization_position_suggestion_path(@organization, @suggestion),
-                  method: :patch,
-                  params: { participation_status: "withdrawn" },
-                  class: "btn btn-outline-danger btn-sm",
-                  form: { data: { turbo: false } }
-    - elsif @participant.done_contributing? || @participant.withdrawn?
-      = button_to "Resume reviewing",
-                  update_participation_organization_position_suggestion_path(@organization, @suggestion),
-                  method: :patch,
-                  params: { participation_status: "active" },
-                  class: "btn btn-outline-primary btn-sm",
-                  form: { data: { turbo: false } }
-  - if @suggestion.open? && @can_manage_maap
-    - if @suggestion.can_complete?
-      = button_to "Mark review completed",
-                  close_organization_position_suggestion_path(@organization, @suggestion),
-                  method: :patch,
-                  class: "btn btn-success btn-sm",
-                  form: { data: { turbo: false, confirm: "Close this suggestion session? A new session can be opened later." } }
-    - else
-      %span.badge.text-bg-warning.align-self-center
-        Resolve active participants' root comments before completing
+= render "organizations/position_suggestions/round_action_panels",
+         organization: @organization,
+         suggestion: @suggestion,
+         position: @position,
+         participant: @participant,
+         can_manage_maap: @can_manage_maap,
+         viewer_has_made_suggestions: @viewer_has_made_suggestions,
+         viewer_casual_name: @viewer_casual_name,
+         round_timeline: @round_timeline,
+         process_rows: @process_rows,
+         return_to: @return_to,
+         panel_id: "top"
 
 - if @suggestion.open?
   %p.text-muted.small.mb-4
@@ -109,7 +89,7 @@
     - if assignment.assignment_abilities.any?
       - assignment.assignment_abilities.sort_by { |aa| aa.ability.name }.each_with_index do |aa, index|
         - suggestion_milestone = @milestones_by_key[["AssignmentAbility", aa.id]]
-        .row.py-3{class: ("border-top" if index.positive?)}
+        .row.py-3{class: ("border-top" if index.positive?), id: "assignment-ability-#{aa.id}"}
           .col-12.col-lg-8
             %h3.h6.mb-1
               = link_to aa.ability.name, organization_ability_path(@organization, aa.ability), class: "text-decoration-none"
@@ -127,3 +107,16 @@
                      can_suggest: @suggestion.open?
     - else
       %p.text-muted.small.mb-0.pt-2 No abilities linked to this assignment yet.
+
+= render "organizations/position_suggestions/round_action_panels",
+         organization: @organization,
+         suggestion: @suggestion,
+         position: @position,
+         participant: @participant,
+         can_manage_maap: @can_manage_maap,
+         viewer_has_made_suggestions: @viewer_has_made_suggestions,
+         viewer_casual_name: @viewer_casual_name,
+         round_timeline: @round_timeline,
+         process_rows: @process_rows,
+         return_to: @return_to,
+         panel_id: "bottom"

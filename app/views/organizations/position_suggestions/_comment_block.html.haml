@@ -16,7 +16,7 @@
             - if comment.resolved?
               %span.badge.bg-success.ms-1 Resolved
             %p.mb-0.mt-1.small= simple_format(comment.body)
-          - if !comment.resolved? && comment.creator == current_person
+          - if !comment.resolved? && policy(comment).resolve?
             = button_to "Resolve",
                         resolve_organization_comment_path(organization, comment, return_to: return_to),
                         method: :patch,

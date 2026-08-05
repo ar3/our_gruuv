@@ -22,13 +22,13 @@ class CommentPolicy < ApplicationPolicy
   def resolve?
     return false unless behavior.allows_resolve?
 
-    admin_bypass? || is_creator?
+    admin_bypass? || is_creator? || maap_manager_for_suggestion_comment?
   end
 
   def unresolve?
     return false unless behavior.allows_resolve?
 
-    admin_bypass? || is_creator?
+    admin_bypass? || is_creator? || maap_manager_for_suggestion_comment?
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -69,5 +69,17 @@ class CommentPolicy < ApplicationPolicy
     return false unless record&.creator
 
     viewing_teammate.person == record.creator
+  end
+
+  def maap_manager_for_suggestion_comment?
+    return false unless viewing_teammate&.can_manage_maap?
+    return false unless record&.position_suggestion_id.present?
+
+    org = record.organization
+    return false unless org
+
+    company = org.root_company || org
+    teammate_company = viewing_teammate.organization.root_company || viewing_teammate.organization
+    company.id == teammate_company.id
   end
 end

@@ -5,6 +5,33 @@ module PositionSuggestionsHelper
     position.title&.department&.name.presence || "Company-wide"
   end
 
+  # Relative time with absolute timestamp (viewer timezone) on hover.
+  def position_suggestion_relative_time(time, viewer: nil)
+    return "" if time.blank?
+
+    viewer ||= current_person if respond_to?(:current_person)
+    absolute = format_time_in_user_timezone(time, viewer)
+    relative =
+      if time > Time.current
+        "in #{time_ago_in_words(time)}"
+      else
+        "#{time_ago_in_words(time)} ago"
+      end
+
+    tag.span(relative, title: absolute, data: { bs_toggle: "tooltip", bs_title: absolute })
+  end
+
+  def position_suggestion_round_step_icon(state)
+    case state
+    when :done
+      tag.i(class: "bi bi-check-circle-fill text-success me-1", aria: { hidden: true })
+    when :current
+      tag.i(class: "bi bi-arrow-right-circle-fill text-primary me-1", aria: { hidden: true })
+    else
+      tag.i(class: "bi bi-circle text-muted me-1", aria: { hidden: true })
+    end
+  end
+
   # Hover preview for assignment titles on the position suggestions show page.
   def position_suggestion_assignment_popover_html(assignment)
     parts = []

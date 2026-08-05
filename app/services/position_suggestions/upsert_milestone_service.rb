@@ -18,7 +18,7 @@ class PositionSuggestions::UpsertMilestoneService
   end
 
   def call
-    return Result.err("Suggestion session is closed") unless @suggestion.open?
+    return Result.err("Suggestion round is closed") unless @suggestion.open?
 
     record = @suggestion.milestones.find_or_initialize_by(
       milestoneable_type: @milestoneable.class.name,
