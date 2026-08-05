@@ -3,8 +3,9 @@
 module AgentTools
   # Org search via GlobalSearchQuery; same surface as Organizations::SearchController.
   class SearchOrganization < Base
-    def call(context:, query:, impersonating_teammate: nil, **_ignored)
+    def call(context:, query:, detail: Detail::DEFAULT, impersonating_teammate: nil, **_ignored)
       context.authorize!(context.organization, :view_search?)
+      detail_level = Detail.normalize(detail)
 
       q = query.to_s.strip
       return err("query is required", code: "validation_failed") if q.blank?
@@ -16,16 +17,27 @@ module AgentTools
         impersonating_teammate: impersonating_teammate
       ).call
 
+      assignments = Array(results[:assignments]).reject(&:archived?).first(10)
+      if Detail.expensive?(detail_level)
+        ActiveRecord::Associations::Preloader.new(
+          records: assignments,
+          associations: :assignment_outcomes
+        ).call
+      end
+
+      abilities = Array(results[:abilities]).reject(&:archived?).first(10)
+
       ok(
         query: q,
+        detail: detail_level,
         total_count: results[:total_count],
         people: summarize_people(context, results[:people]),
         go_to: Array(results[:go_to]).first(10).map { |e| { label: e.label, path: e.path, section: e.section_label } },
-        assignments: Array(results[:assignments]).first(10).map { |a|
-          { title: a.title, path: RecordPaths.assignment_path(context, a) }
+        assignments: assignments.map { |a|
+          MaapSerializers.assignment(context, a, detail: detail_level)
         },
-        abilities: Array(results[:abilities]).first(10).map { |a|
-          { name: a.name, path: RecordPaths.ability_path(context, a) }
+        abilities: abilities.map { |a|
+          MaapSerializers.ability(context, a, detail: detail_level)
         },
         titles: Array(results[:titles]).first(10).map { |t|
           { title: t.external_title, path: RecordPaths.title_path(context, t) }
@@ -36,6 +48,8 @@ module AgentTools
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")
+    rescue ArgumentError => e
+      err(e.message, code: "validation_failed")
     end
 
     private

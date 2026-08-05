@@ -14,12 +14,14 @@ module Assistant
 
     def call
       {
-        search: invoke_data("search_organization", query: @query),
+        search: invoke_data("search_organization", query: @query, detail: "expensive"),
         teammates: invoke_data("list_teammates", query: @query, limit: 15),
         goals_needing_check_in: invoke_data("list_goals", needing_check_in: true, limit: 15),
         goals: invoke_data("list_goals", needing_check_in: false, limit: 15),
         goals_owned_by_me: invoke_data("list_goals", owned_by_me: true, limit: 15),
         goals_created_by_me: invoke_data("list_goals", created_by_me: true, limit: 15),
+        assignments: invoke_data("list_assignments", query: @query, limit: 15, detail: "expensive"),
+        abilities: invoke_data("list_abilities", query: @query, limit: 15, detail: "expensive"),
         sitemap: invoke_data("list_sitemap"),
         observations: invoke_data("list_observations", query: @query, limit: 10)
       }

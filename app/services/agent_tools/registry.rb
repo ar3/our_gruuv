@@ -7,6 +7,8 @@ module AgentTools
     TOOLS = {
       "list_teammates" => "AgentTools::ListTeammates",
       "list_goals" => "AgentTools::ListGoals",
+      "list_assignments" => "AgentTools::ListAssignments",
+      "list_abilities" => "AgentTools::ListAbilities",
       "list_observations" => "AgentTools::ListObservations",
       "list_sitemap" => "AgentTools::ListSitemap",
       "search_organization" => "AgentTools::SearchOrganization",
@@ -74,6 +76,32 @@ module AgentTools
         properties: {},
         additionalProperties: false
       },
+      "list_assignments" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Optional title/body text filter" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          detail: {
+            type: "string",
+            enum: %w[expensive minimal],
+            description: "Field depth. expensive (default): tagline, required_activities, handbook, outcomes. minimal: title+path only."
+          }
+        },
+        additionalProperties: false
+      },
+      "list_abilities" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Optional name/description/milestone text filter" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          detail: {
+            type: "string",
+            enum: %w[expensive minimal],
+            description: "Field depth. expensive (default): description + milestone_1–5 (null if empty). minimal: name+path only."
+          }
+        },
+        additionalProperties: false
+      },
       "list_observations" => {
         type: "object",
         properties: {
@@ -85,7 +113,12 @@ module AgentTools
       "search_organization" => {
         type: "object",
         properties: {
-          query: { type: "string", description: "Search query (required)" }
+          query: { type: "string", description: "Search query (required)" },
+          detail: {
+            type: "string",
+            enum: %w[expensive minimal],
+            description: "Field depth for assignment/ability hits. expensive (default) includes body fields; minimal is name/title+path."
+          }
         },
         required: ["query"],
         additionalProperties: false
@@ -136,9 +169,11 @@ module AgentTools
     DESCRIPTIONS = {
       "list_teammates" => "List teammates in the organization (directory). Prefer paths from results over numeric ids.",
       "list_goals" => "List goals visible to you. Each goal includes owned_by_me, created_by_me, owner (type/name/path), and creator. Optional filters AND together; omit filters for the full labeled list.",
+      "list_assignments" => "List non-archived assignments. Default detail=expensive includes tagline, required_activities, handbook, and outcome description strings.",
+      "list_abilities" => "List non-archived abilities. Default detail=expensive includes description and milestone_1–5_description (null when empty).",
       "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
       "list_observations" => "List published observations (OGOs) visible to you.",
-      "search_organization" => "Search people, assignments, abilities, titles, and observations in the org.",
+      "search_organization" => "Search people, assignments, abilities, titles, and observations in the org. Assignment/ability hits respect detail (default expensive full body fields).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
     }.freeze
@@ -146,6 +181,8 @@ module AgentTools
     TITLES = {
       "list_teammates" => "List teammates",
       "list_goals" => "List goals",
+      "list_assignments" => "List assignments",
+      "list_abilities" => "List abilities",
       "list_sitemap" => "List sitemap",
       "list_observations" => "List observations",
       "search_organization" => "Search organization",
