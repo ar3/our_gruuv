@@ -1,0 +1,13 @@
+-# Locals: collapse_id, count, item_label (e.g. "other open rounds", "other positions")
+-# Use as a layout: render layout: ".../collapsible_list", locals: { ... } do ... end
+- collapse_id = local_assigns[:collapse_id]
+- count = local_assigns[:count].to_i
+- item_label = local_assigns.fetch(:item_label, "items")
+- show_text = "Show the #{count} #{item_label}"
+
+%h3.h5.mb-2
+  %button.btn.btn-link.text-decoration-none.p-0.text-body.fw-normal{type: "button", data: { bs_toggle: "collapse", bs_target: "##{collapse_id}" }, aria: { expanded: "false", controls: collapse_id }, class: "h5 mb-0 d-inline-flex align-items-center gap-2"}
+    %i.bi.bi-chevron-right{aria: { hidden: true }}
+    %span= show_text
+.collapse.mb-4{id: collapse_id}
+  = yield

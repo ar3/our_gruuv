@@ -9,38 +9,15 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
 
   def index
     authorize PositionSuggestion
+    load_list_shared_state
+    partition_open_rounds
+    partition_start_positions
+  end
 
-    @positions = Position.for_company(company).unarchived.includes(:position_level, title: :department)
-    @open_suggestions = PositionSuggestion
-      .for_organization(organization)
-      .open_sessions
-      .includes(:participants, position: [:position_level, { title: :department }])
-      .recent_first
-    @my_participations = PositionSuggestionParticipant
-      .joins(:position_suggestion)
-      .where(company_teammate: current_company_teammate)
-      .where(position_suggestions: { organization_id: organization.id })
-      .includes(position_suggestion: { position: [:position_level, { title: :department }] })
-
-    @actively_reviewing = sort_suggestions_by_department(
-      @my_participations.select(&:active?).map(&:position_suggestion)
-    )
-    @done_contributing = @my_participations.select(&:done_contributing?).map(&:position_suggestion)
-    actively_reviewing_ids = @actively_reviewing.map(&:id)
-    @other_open_suggestions = sort_suggestions_by_department(
-      @open_suggestions.reject { |suggestion| actively_reviewing_ids.include?(suggestion.id) }
-    )
-
-    occupied_position_ids = @open_suggestions.map(&:position_id).to_set
-    available_positions = @positions.reject { |position| occupied_position_ids.include?(position.id) }
-    available_positions = sort_positions_by_department(available_positions)
-
-    @interested_position_ids = interested_position_ids
-    @interested_start_positions = available_positions.select { |p| @interested_position_ids.include?(p.id) }
-    @other_start_positions = available_positions.reject { |p| @interested_position_ids.include?(p.id) }
-    @completed_suggestions = sort_suggestions_by_department(
-      @my_participations.select { |p| p.position_suggestion.completed? }.map(&:position_suggestion).uniq
-    )
+  def closed
+    authorize PositionSuggestion, :closed?
+    load_list_shared_state
+    partition_closed_rounds
   end
 
   def show
@@ -281,47 +258,174 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
   end
 
   def interested_position_ids
-    ids = Set.new
+    relevant_position_ids.to_a
+  end
 
-    tenure_position_ids = EmploymentTenure.active
-      .where(teammate_id: current_company_teammate.id)
+  def load_list_shared_state
+    @positions = Position.for_company(company).unarchived.includes(:position_level, title: :department).to_a
+    @open_suggestions = PositionSuggestion
+      .for_organization(organization)
+      .open_sessions
+      .includes(:participants, position: [:position_level, { title: :department }])
+      .to_a
+    @closed_suggestions = PositionSuggestion
+      .for_organization(organization)
+      .completed_sessions
+      .includes(:participants, position: [:position_level, { title: :department }])
+      .to_a
+    @my_participations = PositionSuggestionParticipant
+      .joins(:position_suggestion)
+      .where(company_teammate: current_company_teammate)
+      .where(position_suggestions: { organization_id: organization.id })
+      .includes(position_suggestion: { position: [:position_level, { title: :department }] })
+      .to_a
+    @participation_by_suggestion_id = @my_participations.index_by(&:position_suggestion_id)
+    load_relevant_scope!
+    @relevant_position_ids = @relevant_position_ids_memo
+    @relevant_department_labels = @relevant_department_labels_memo
+    @closed_rounds_count = @closed_suggestions.size
+  end
+
+  def partition_open_rounds
+    active_ids = Set.new
+    @actively_suggesting = sort_suggestions(
+      @my_participations.select(&:active?).filter_map do |participation|
+        suggestion = participation.position_suggestion
+        next unless suggestion.open?
+
+        active_ids << suggestion.id
+        suggestion
+      end
+    )
+
+    remaining = @open_suggestions.reject { |s| active_ids.include?(s.id) }
+    relevant, others = remaining.partition { |s| relevant_position?(s.position) }
+    @relevant_open_rounds = sort_suggestions(relevant)
+    @other_open_rounds = sort_suggestions(others)
+  end
+
+  def partition_start_positions
+    open_position_ids = @open_suggestions.map(&:position_id).to_set
+    available = @positions.reject { |position| open_position_ids.include?(position.id) }
+    relevant, others = available.partition { |position| relevant_position?(position) }
+    @relevant_start_positions = sort_positions(relevant)
+    @other_start_positions = sort_positions(others)
+  end
+
+  def partition_closed_rounds
+    # Withdrawal is treated like never participating.
+    my_closed = @my_participations
+      .reject(&:withdrawn?)
+      .map(&:position_suggestion)
+      .select(&:completed?)
+      .uniq
+    my_closed_ids = my_closed.map(&:id).to_set
+
+    not_mine = @closed_suggestions.reject { |s| my_closed_ids.include?(s.id) }
+    relevant, others = not_mine.partition { |s| relevant_position?(s.position) }
+
+    @closed_i_joined = sort_suggestions(my_closed)
+    @closed_relevant = sort_suggestions(relevant)
+    @closed_other = sort_suggestions(others)
+  end
+
+  # Departments of titles for: self + direct reports (active employment).
+  # Relevant positions = every unarchived position in those departments
+  # (or company-wide when any source title is company-wide).
+  def load_relevant_scope!
+    return if defined?(@relevant_position_ids_memo)
+
+    teammate_ids = [current_company_teammate.id]
+    teammate_ids.concat(
+      EmploymentTenure.active
+        .where(manager_teammate_id: current_company_teammate.id, company_id: company.id)
+        .pluck(:teammate_id)
+    )
+    teammate_ids.uniq!
+
+    source_positions = EmploymentTenure.active
+      .where(teammate_id: teammate_ids, company_id: company.id)
       .where.not(position_id: nil)
-      .pluck(:position_id)
-    ids.merge(tenure_position_ids)
+      .includes(position: { title: :department })
+      .map(&:position)
+      .compact
 
-    if current_company_teammate.has_direct_reports?
-      report_person_ids = EmployeeHierarchyQuery
-        .new(person: current_person, organization: organization)
-        .call
-        .map { |info| info[:person_id] }
-        .compact
-      report_teammate_ids = CompanyTeammate.where(organization: organization, person_id: report_person_ids).pluck(:id)
-      ids.merge(
-        EmploymentTenure.active.where(teammate_id: report_teammate_ids).where.not(position_id: nil).pluck(:position_id)
-      )
+    department_ids = Set.new
+    includes_company_wide = false
+    source_positions.each do |position|
+      dept_id = position.title&.department_id
+      if dept_id.nil?
+        includes_company_wide = true
+      else
+        department_ids << dept_id
+      end
     end
 
-    ids.to_a
+    departments = Department.where(id: department_ids.to_a).to_a
+    labels = departments.map(&:display_name).sort_by(&:downcase)
+    labels.unshift("Company-wide") if includes_company_wide
+    @relevant_department_labels_memo = labels
+
+    ids = Set.new
+    Position.for_company(company).unarchived.includes(title: :department).find_each do |position|
+      dept_id = position.title&.department_id
+      if dept_id.nil?
+        ids << position.id if includes_company_wide
+      elsif department_ids.include?(dept_id)
+        ids << position.id
+      end
+    end
+
+    @relevant_position_ids_memo = ids
   rescue StandardError
-    []
+    @relevant_position_ids_memo = Set.new
+    @relevant_department_labels_memo = []
   end
 
-  def sort_suggestions_by_department(suggestions)
-    suggestions.sort_by do |suggestion|
-      position_department_sort_key(suggestion.position)
-    end
+  def relevant_position_ids
+    load_relevant_scope!
+    @relevant_position_ids_memo
   end
 
-  def sort_positions_by_department(positions)
-    positions.sort_by { |position| position_department_sort_key(position) }
+  def relevant_position?(position)
+    return false unless position
+
+    relevant_position_ids.include?(position.id)
+  end
+
+  def sort_suggestions(suggestions)
+    suggestions.sort_by { |suggestion| position_sort_key(suggestion.position) }
+  end
+
+  def sort_positions(positions)
+    positions.sort_by { |position| position_sort_key(position) }
+  end
+
+  # Matches Positions index grouping/sort: company-wide first, department display_name,
+  # title external_title, then level / full display name.
+  def position_sort_key(position)
+    return [2, "", "", "", ""] unless position
+
+    title = position.title
+    department = title&.department
+    [
+      department ? 1 : 0,
+      department&.display_name.to_s.downcase,
+      title&.external_title.to_s.downcase,
+      position.position_level&.level.to_s,
+      position.display_name.to_s.downcase
+    ]
   end
 
   def position_department_sort_key(position)
-    department_name = position.title&.department&.name.to_s.downcase
-    [
-      department_name.present? ? 0 : 1,
-      department_name,
-      position.display_name.to_s.downcase
-    ]
+    position_sort_key(position)
+  end
+
+  def sort_suggestions_by_department(suggestions)
+    sort_suggestions(suggestions)
+  end
+
+  def sort_positions_by_department(positions)
+    sort_positions(positions)
   end
 end

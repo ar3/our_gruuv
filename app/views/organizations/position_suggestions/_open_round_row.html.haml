@@ -1,0 +1,24 @@
+-# Locals: organization, suggestion, participation, mode (:active | :relevant | :other)
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+- participation = local_assigns[:participation]
+- mode = local_assigns[:mode]
+-# Withdrawn is treated as never joined.
+- effective = participation && !participation.withdrawn? ? participation : nil
+- participant_count = suggestion.participants.not_withdrawn.count
+
+%li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+  %div
+    %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
+    %strong= suggestion.position.display_name
+    %span.badge.text-bg-primary.ms-2 Open
+    - if mode != :active
+      %small.text-muted.ms-2= pluralize(participant_count, "participant")
+    - if effective&.done_contributing?
+      %span.badge.text-bg-secondary.ms-2 Done suggesting
+  - if mode == :active
+    = link_to "Continue", organization_position_suggestion_path(organization, suggestion), class: "btn btn-sm btn-outline-primary"
+  - elsif effective&.done_contributing?
+    = link_to "Resume making suggestions", organization_position_suggestion_path(organization, suggestion), class: "btn btn-sm btn-outline-primary"
+  - else
+    = link_to "Join & make suggestions", organization_position_suggestion_path(organization, suggestion), class: "btn btn-sm btn-primary"

@@ -175,6 +175,9 @@ Rails.application.routes.draw do
     resource :position_comparison, module: :organizations, only: [:show]
 
     resources :position_suggestions, module: :organizations, only: [:index, :show, :create] do
+      collection do
+        get :closed
+      end
       member do
         post :join
         patch :update_participation

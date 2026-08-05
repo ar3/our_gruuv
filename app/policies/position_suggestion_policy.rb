@@ -5,6 +5,10 @@ class PositionSuggestionPolicy < ApplicationPolicy
     admin_bypass? || viewing_teammate.present?
   end
 
+  def closed?
+    index?
+  end
+
   def show?
     admin_bypass? || same_company?
   end

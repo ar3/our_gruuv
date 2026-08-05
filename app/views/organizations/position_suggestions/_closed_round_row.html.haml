@@ -1,0 +1,10 @@
+-# Locals: organization, suggestion
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+
+%li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+  %div
+    %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
+    %strong= suggestion.position.display_name
+    %span.badge.text-bg-success.ms-2 Completed
+  = link_to "View", organization_position_suggestion_path(organization, suggestion), class: "btn btn-sm btn-outline-secondary"

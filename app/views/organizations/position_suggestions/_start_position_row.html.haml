@@ -1,0 +1,14 @@
+-# Locals: organization, position, primary
+- organization = local_assigns[:organization]
+- position = local_assigns[:position]
+- primary = local_assigns.fetch(:primary, false)
+
+%li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+  %div
+    %small.text-muted.d-block= position_suggestion_department_label(position)
+    %span= position.display_name
+  = button_to "Start suggesting",
+              organization_position_suggestions_path(organization),
+              params: { position_id: position.id },
+              method: :post,
+              class: "btn btn-sm #{primary ? 'btn-primary' : 'btn-outline-secondary'}"

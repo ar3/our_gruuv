@@ -1,0 +1,62 @@
+- content_for :title, "Closed Suggestion Rounds"
+- page_help_id = "positionSuggestionsClosedHelp"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position Suggestions", url: organization_position_suggestions_path(@organization) }, { label: "Closed", url: nil }])
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      Closed suggestion rounds
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Browse completed suggestion rounds. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %p.mb-0
+      Completed suggestion rounds across the organization. “Relevant” uses the departments of titles for you and your direct reports. Withdrawn rounds do not count as rounds you were part of.
+
+%p.text-muted.small.mb-2
+  - if @relevant_department_labels.present?
+    Relevant departments:
+    = @relevant_department_labels.to_sentence
+  - else
+    Relevant departments: none yet (based on active employment for you and your direct reports).
+%p.mb-4
+  = link_to "Back to open rounds", organization_position_suggestions_path(@organization)
+
+%section.mb-4
+  %h2.h4.mb-3 Closed suggestion rounds
+  .ps-3.ps-md-4
+    %h3.h5.mb-2 I was a part of
+    - if @closed_i_joined.any?
+      %ul.list-group.mb-4
+        - @closed_i_joined.each do |suggestion|
+          = render "organizations/position_suggestions/closed_round_row",
+                   organization: @organization,
+                   suggestion: suggestion
+    - else
+      %p.text-muted.mb-4 No completed rounds you were part of.
+
+    %h3.h5.mb-2 Was not a part of, but are relevant to me
+    - if @closed_relevant.any?
+      %ul.list-group.mb-4
+        - @closed_relevant.each do |suggestion|
+          = render "organizations/position_suggestions/closed_round_row",
+                   organization: @organization,
+                   suggestion: suggestion
+    - else
+      %p.text-muted.mb-4 No other relevant completed rounds.
+
+    - if @closed_other.any?
+      = render layout: "organizations/position_suggestions/collapsible_list",
+               locals: { collapse_id: "closedOtherRounds", count: @closed_other.size, item_label: "other closed rounds" } do
+        %ul.list-group.mb-0
+          - @closed_other.each do |suggestion|
+            = render "organizations/position_suggestions/closed_round_row",
+                     organization: @organization,
+                     suggestion: suggestion

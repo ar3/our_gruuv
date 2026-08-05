@@ -1,5 +1,7 @@
 - content_for :title, "Position Suggestions"
 - page_help_id = "positionSuggestionsHelp"
+- closed_count = @closed_rounds_count.to_i
+- closed_link_text = "View #{pluralize(closed_count, "closed suggestion round")}"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position Suggestions", url: nil }])
@@ -18,79 +20,79 @@
 .collapse.mb-4{id: page_help_id}
   = render "organizations/position_suggestions/page_help"
 
-.col-12
-  %section.mb-4
-    %h2.h4 I'm actively reviewing
-    - if @actively_reviewing.any?
-      %ul.list-group
-        - @actively_reviewing.each do |suggestion|
-          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-            %div
-              %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
-              %strong= suggestion.position.display_name
-              %span.badge.text-bg-primary.ms-2 Open
-            = link_to "Continue", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-primary"
+%p.text-muted.small.mb-2
+  - if @relevant_department_labels.present?
+    Relevant departments:
+    = @relevant_department_labels.to_sentence
+  - else
+    Relevant departments: none yet (based on active employment for you and your direct reports).
+%p.mb-4
+  = link_to closed_link_text, closed_organization_position_suggestions_path(@organization)
+
+%section.mb-5
+  %h2.h4.mb-3 Open suggestion rounds
+  %p.text-muted.small.mb-3
+    Rounds that are currently open. Relevant means positions in the departments listed above.
+
+  .ps-3.ps-md-4
+    %h3.h5.mb-2 I'm actively suggesting
+    - if @actively_suggesting.any?
+      %ul.list-group.mb-4
+        - @actively_suggesting.each do |suggestion|
+          = render "organizations/position_suggestions/open_round_row",
+                   organization: @organization,
+                   suggestion: suggestion,
+                   participation: @participation_by_suggestion_id[suggestion.id],
+                   mode: :active
     - else
-      %p.text-muted.mb-0 No positions in your active review queue.
+      %p.text-muted.mb-4 No open rounds in your active suggesting queue.
 
-.col-12
-  %section.mb-4
-    %h2.h4 Open suggestion rounds
-    - if @other_open_suggestions.any?
-      %ul.list-group
-        - @other_open_suggestions.each do |suggestion|
-          - mine = @my_participations.find { |p| p.position_suggestion_id == suggestion.id }
-          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-            %div
-              %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
-              %strong= suggestion.position.display_name
-              %small.text-muted.ms-2
-                = pluralize(suggestion.participants.not_withdrawn.count, "participant")
-              - if mine&.done_contributing?
-                %span.badge.text-bg-secondary.ms-2 Done contributing
-            = link_to "Join & make suggestions", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-primary"
+    %h3.h5.mb-2 Relevant to me
+    - if @relevant_open_rounds.any?
+      %ul.list-group.mb-4
+        - @relevant_open_rounds.each do |suggestion|
+          = render "organizations/position_suggestions/open_round_row",
+                   organization: @organization,
+                   suggestion: suggestion,
+                   participation: @participation_by_suggestion_id[suggestion.id],
+                   mode: :relevant
     - else
-      %p.text-muted.mb-0 No other open rounds right now.
+      %p.text-muted.mb-4 No other open rounds in your relevant departments.
 
-- completed = @completed_suggestions
-.col-12
-  %section.mb-4
-    %h2.h4 Completed rounds I joined
-    - if completed.any?
-      %ul.list-group
-        - completed.each do |suggestion|
-          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-            %div
-              %small.text-muted.d-block= position_suggestion_department_label(suggestion.position)
-              %strong= suggestion.position.display_name
-              %span.badge.text-bg-success.ms-2 Completed
-            = link_to "View", organization_position_suggestion_path(@organization, suggestion), class: "btn btn-sm btn-outline-secondary"
+    - if @other_open_rounds.any?
+      = render layout: "organizations/position_suggestions/collapsible_list",
+               locals: { collapse_id: "otherOpenRounds", count: @other_open_rounds.size, item_label: "other open rounds" } do
+        %ul.list-group.mb-0
+          - @other_open_rounds.each do |suggestion|
+            = render "organizations/position_suggestions/open_round_row",
+                     organization: @organization,
+                     suggestion: suggestion,
+                     participation: @participation_by_suggestion_id[suggestion.id],
+                     mode: :other
+
+%section.mb-5
+  %h2.h4.mb-3 Open a new suggestion round?
+  %p.text-muted.small.mb-3
+    Positions without an open round. Starting here opens a new round and adds you as a participant.
+
+  .ps-3.ps-md-4
+    %h3.h5.mb-2 Positions relevant to me
+    - if @relevant_start_positions.any?
+      %ul.list-group.mb-4
+        - @relevant_start_positions.each do |position|
+          = render "organizations/position_suggestions/start_position_row",
+                   organization: @organization,
+                   position: position,
+                   primary: true
     - else
-      %p.text-muted.mb-0 No completed rounds yet.
+      %p.text-muted.mb-4 No relevant positions available to start.
 
-.col-12
-  %section.mb-4
-    %h2.h4 Start by position
-    %p.text-muted.small
-      Positions that already have an open suggestion round are listed above. Starting here opens a new round and adds you as a participant.
-    - if @interested_start_positions.any?
-      %h3.h6 Interest / related
-      %ul.list-group.mb-3
-        - @interested_start_positions.each do |position|
-          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-            %div
-              %small.text-muted.d-block= position_suggestion_department_label(position)
-              %span= position.display_name
-            = button_to "Start suggesting", organization_position_suggestions_path(@organization), params: { position_id: position.id }, method: :post, class: "btn btn-sm btn-primary"
-
-    %h3.h6 All other positions
     - if @other_start_positions.any?
-      %ul.list-group
-        - @other_start_positions.each do |position|
-          %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-            %div
-              %small.text-muted.d-block= position_suggestion_department_label(position)
-              %span= position.display_name
-            = button_to "Start suggesting", organization_position_suggestions_path(@organization), params: { position_id: position.id }, method: :post, class: "btn btn-sm btn-outline-secondary"
-    - else
-      %p.text-muted.mb-0 No other positions available to start.
+      = render layout: "organizations/position_suggestions/collapsible_list",
+               locals: { collapse_id: "otherStartPositions", count: @other_start_positions.size, item_label: "other positions" } do
+        %ul.list-group.mb-0
+          - @other_start_positions.each do |position|
+            = render "organizations/position_suggestions/start_position_row",
+                     organization: @organization,
+                     position: position,
+                     primary: false

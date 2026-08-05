@@ -17,13 +17,29 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
   end
 
   describe "GET /organizations/:organization_id/position_suggestions" do
-    it "renders the beta index" do
+    it "renders the beta index with open round sections" do
       get organization_position_suggestions_path(organization)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Position Suggestions")
       expect(response.body).to include("Beta")
+      expect(response.body).to include("Open suggestion rounds")
+      expect(response.body).to include("I'm actively suggesting")
+      expect(response.body).to include("Relevant to me")
+      expect(response.body).to include("Open a new suggestion round")
+      expect(response.body).to include("closed suggestion round")
       expect(response.body).to include(position.display_name)
+    end
+  end
+
+  describe "GET closed" do
+    it "renders closed suggestion rounds" do
+      get closed_organization_position_suggestions_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Closed suggestion rounds")
+      expect(response.body).to include("I was a part of")
+      expect(response.body).to include("relevant to me")
     end
   end
 
