@@ -14,10 +14,7 @@
   %span.header-user-name.d-none.d-sm-inline.text-truncate
     = person_label
   - if show_gsd_in_toggle && current_organization && current_company_teammate
-    - pending_count = pending_get_shit_done_count(current_company_teammate)
-    - if pending_count > 0
-      = link_to organization_get_shit_done_path(current_organization), class: "badge bg-danger rounded-pill ms-2 text-decoration-none flex-shrink-0", title: "#{company_label_for('get_shit_done', 'Get Shit Done')} (#{pending_count} items)" do
-        = pending_count
+    = render 'layouts/header_gsd_pill', flex_shrink: true
 %ul{class: menu_class}
   - has_multiple_organizations = current_person.present? && current_person.available_organizations.count > 1
   - if impersonating?

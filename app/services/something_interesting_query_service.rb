@@ -9,6 +9,9 @@ class SomethingInterestingQueryService
     end
   end
 
+  # Header pill cache: SI queries are heavy; 1h is fine, and SI visits reset the entry.
+  HEADER_PENDING_COUNT_CACHE_EXPIRES_IN = 1.hour
+
   attr_reader :teammate, :person, :company, :since
 
   # Last visit to the Something Interesting page (with or without query params).
@@ -23,6 +26,35 @@ class SomethingInterestingQueryService
   # Default window: everything since the last page visit, or the past 7 days if never visited.
   def self.baseline(teammate)
     last_visited_at(teammate) || 7.days.ago
+  end
+
+  def self.header_pending_count_cache_key(teammate)
+    ['header_si_pending_count', teammate.id]
+  end
+
+  # Memoized header badge count (same baseline as the SI tab).
+  def self.header_pending_count(teammate)
+    return 0 unless teammate
+
+    Rails.cache.fetch(
+      header_pending_count_cache_key(teammate),
+      expires_in: HEADER_PENDING_COUNT_CACHE_EXPIRES_IN
+    ) do
+      new(teammate: teammate, since: baseline(teammate)).total_count
+    end
+  end
+
+  # After a SI page visit, header should not keep showing a non-zero cached count.
+  # Write 0 rather than delete — PageVisit is recorded async, so a cold recompute
+  # right after visit would still use the pre-visit baseline and re-cache a positive count.
+  def self.bust_header_pending_count_cache!(teammate)
+    return unless teammate
+
+    Rails.cache.write(
+      header_pending_count_cache_key(teammate),
+      0,
+      expires_in: HEADER_PENDING_COUNT_CACHE_EXPIRES_IN
+    )
   end
 
   def initialize(teammate:, since:)

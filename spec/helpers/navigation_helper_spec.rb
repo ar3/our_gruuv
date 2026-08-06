@@ -66,6 +66,56 @@ RSpec.describe NavigationHelper, type: :helper do
       expect(helper_count).to eq(service_count)
       expect(helper_count).to eq(1) # Only draft1 should be counted
     end
+
+    it 'memoizes within the request' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      create(:observation, observer: person, company: company, published_at: nil)
+
+      expect(GetShitDoneQueryService).to receive(:new).once.and_call_original
+      2.times { helper.pending_get_shit_done_count(company_teammate) }
+    end
+  end
+
+  describe '#something_interesting_pending_count' do
+    it 'returns 0 when teammate is nil' do
+      expect(helper.something_interesting_pending_count(nil)).to eq(0)
+    end
+
+    it 'matches SomethingInterestingQueryService baseline total_count' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      report = create(:teammate, organization: company)
+      create(:employment_tenure, company_teammate: report, company: company, manager: company_teammate)
+      create(:goal, owner: report, creator: report, company: company, goal_type: 'quantitative_key_result')
+
+      helper_count = helper.something_interesting_pending_count(company_teammate)
+      baseline = SomethingInterestingQueryService.baseline(company_teammate)
+      service_count = SomethingInterestingQueryService.new(teammate: company_teammate, since: baseline).total_count
+
+      expect(helper_count).to eq(service_count)
+      expect(helper_count).to be >= 1
+    end
+
+    it 'memoizes within the request' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      report = create(:teammate, organization: company)
+      create(:employment_tenure, company_teammate: report, company: company, manager: company_teammate)
+      create(:goal, owner: report, creator: report, company: company, goal_type: 'quantitative_key_result')
+
+      expect(SomethingInterestingQueryService).to receive(:new).once.and_call_original
+      2.times { helper.something_interesting_pending_count(company_teammate) }
+    end
+
+    it 'reads through Rails.cache with a 1-hour TTL' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      allow(Rails.cache).to receive(:fetch).and_call_original
+
+      helper.something_interesting_pending_count(company_teammate)
+
+      expect(Rails.cache).to have_received(:fetch).with(
+        SomethingInterestingQueryService.header_pending_count_cache_key(company_teammate),
+        hash_including(expires_in: 1.hour)
+      )
+    end
   end
 
   describe '#comments_index_parent_crumb' do

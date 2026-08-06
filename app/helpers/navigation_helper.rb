@@ -20,6 +20,14 @@ module NavigationHelper
     @pending_gsd_count ||= GetShitDoneQueryService.new(teammate: teammate).total_pending_count
   end
 
+  # Count of Something Interesting items since last SI visit (same baseline as the SI tab).
+  # Request-memoized; 1h Rails cache on the service side, busted when SI is visited.
+  def something_interesting_pending_count(teammate)
+    return 0 unless teammate
+
+    @something_interesting_pending_count ||= SomethingInterestingQueryService.header_pending_count(teammate)
+  end
+
   # Navigation structure definition
   def navigation_structure
     return [] unless current_organization && current_person

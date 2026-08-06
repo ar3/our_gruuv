@@ -1,0 +1,35 @@
+-# Header attention pill: GSD (red), SI-only (blue), or GSD with SI corner-dot when both.
+-# locals: optional flex_shrink (boolean, default false)
+- return unless current_organization && current_company_teammate
+- pending_count = pending_get_shit_done_count(current_company_teammate)
+- interesting_count = something_interesting_pending_count(current_company_teammate)
+- return if pending_count.zero? && interesting_count.zero?
+
+- gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
+- gsd_path = organization_get_shit_done_path(current_organization)
+- si_path = something_interesting_organization_get_shit_done_path(current_organization)
+- flex_shrink = local_assigns.fetch(:flex_shrink, false)
+- wrap_classes = ['header-gsd-pill', 'ms-2']
+- wrap_classes << 'flex-shrink-0' if flex_shrink
+- interesting_label = interesting_count == 1 ? '1 interesting thing' : "#{interesting_count} interesting things"
+
+- if pending_count.positive?
+  %span{class: wrap_classes.join(' ')}
+    = link_to pending_count,
+      gsd_path,
+      class: 'badge bg-danger rounded-pill text-decoration-none header-gsd-pill__count',
+      title: "#{gsd_label} (#{pending_count} items)",
+      style: 'color: white;'
+    - if interesting_count.positive?
+      = link_to '',
+        si_path,
+        class: 'header-gsd-pill__si-dot',
+        title: interesting_label,
+        aria: { label: interesting_label }
+- else
+  - interesting_classes = ['badge', 'rounded-pill', 'text-bg-info', 'text-decoration-none', 'ms-2', 'header-gsd-pill__interesting']
+  - interesting_classes << 'flex-shrink-0' if flex_shrink
+  = link_to interesting_count,
+    si_path,
+    class: interesting_classes.join(' '),
+    title: "Something Interesting (#{interesting_label})"

@@ -1,10 +1,11 @@
 class Organizations::GetShitDoneController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
   before_action :set_teammate
-  
+  after_action :bust_header_si_pending_count_cache, only: :something_interesting
+
   def show
     authorize @teammate, :view_check_ins?
-    
+
     # Load all pending items using centralized service
     query_service = GetShitDoneQueryService.new(teammate: @teammate)
     @observable_moments = query_service.observable_moments
@@ -44,7 +45,7 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
         SomethingInterestingQueryService.new(teammate: @teammate, since: baseline).total_count
       end
   end
-  
+
   private
 
   def something_interesting_last_visited_at
@@ -55,6 +56,10 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
     SomethingInterestingQueryService.baseline(@teammate)
   end
 
+  def bust_header_si_pending_count_cache
+    SomethingInterestingQueryService.bust_header_pending_count_cache!(@teammate)
+  end
+
   def parsed_since_param
     return nil if params[:since].blank?
 
@@ -62,16 +67,14 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
   rescue ArgumentError, TypeError
     nil
   end
-  
+
   def require_authentication
     unless current_person
       redirect_to root_path, alert: 'Please log in to access the dashboard.'
     end
   end
-  
+
   def set_teammate
     @teammate = current_company_teammate
   end
 end
-
-

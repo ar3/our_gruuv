@@ -175,6 +175,41 @@ h4, h5, h6 {
   line-height: 1;
 }
 
+// Header GSD attention pill: red GSD count, optional SI blue corner-dot (sibling link, not nested).
+.header-gsd-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+
+  .header-gsd-pill__count {
+    line-height: 1;
+  }
+
+  .header-gsd-pill__si-dot {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--bs-info);
+    border: 1.5px solid #fff;
+    box-sizing: border-box;
+    z-index: 1;
+    // Slightly enlarge hit area without moving the visual center much
+    padding: 0;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      outline: 2px solid var(--bs-info);
+      outline-offset: 1px;
+      transform: scale(1.15);
+    }
+  }
+}
+
 @media (max-width: 575.98px) {
   .navbar.navbar-expand-lg.navbar-dark.bg-primary .header-brand-region {
     max-width: min(52vw, 220px);

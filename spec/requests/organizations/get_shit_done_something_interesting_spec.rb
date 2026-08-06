@@ -108,4 +108,66 @@ RSpec.describe 'Organizations::GetShitDone something_interesting', type: :reques
       expect(response.body).not_to include('badge rounded-pill text-bg-info')
     end
   end
+
+  describe 'header attention pill' do
+    it 'shows a blue pill with interesting count when GSD is empty' do
+      report = create(:teammate, organization: company)
+      create(:employment_tenure, company_teammate: report, company: company, manager: teammate)
+      create(:goal, owner: report, creator: report, company: company, goal_type: 'quantitative_key_result')
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('header-gsd-pill__interesting')
+      expect(response.body).to include(something_interesting_organization_get_shit_done_path(company))
+      expect(response.body).not_to include('header-gsd-pill__si-dot')
+    end
+
+    it 'shows a red GSD pill with a clickable blue SI dot when both have items' do
+      create(:observation, observer: person, company: company, published_at: nil)
+      report = create(:teammate, organization: company)
+      create(:employment_tenure, company_teammate: report, company: company, manager: teammate)
+      create(:goal, owner: report, creator: report, company: company, goal_type: 'quantitative_key_result')
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('header-gsd-pill__count')
+      expect(response.body).to include('bg-danger')
+      expect(response.body).to include('header-gsd-pill__si-dot')
+      expect(response.body).to include(organization_get_shit_done_path(company))
+    end
+
+    it 'does not show a header pill when both queues are empty' do
+      create(:page_visit, person: person, url: path, visited_at: Time.current)
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('header-gsd-pill')
+      expect(response.body).not_to include('header-gsd-pill__interesting')
+    end
+
+    it 'clears the cached header SI count after visiting Something Interesting' do
+      previous_cache = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+
+      report = create(:teammate, organization: company)
+      create(:employment_tenure, company_teammate: report, company: company, manager: teammate)
+      create(:goal, owner: report, creator: report, company: company, goal_type: 'quantitative_key_result')
+
+      Rails.cache.write(
+        SomethingInterestingQueryService.header_pending_count_cache_key(teammate),
+        5,
+        expires_in: 1.hour
+      )
+
+      get path
+
+      expect(response).to have_http_status(:success)
+      expect(SomethingInterestingQueryService.header_pending_count(teammate)).to eq(0)
+    ensure
+      Rails.cache = previous_cache
+    end
+  end
 end
