@@ -525,7 +525,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       from: params[:from].presence,
       to: params[:to].presence,
       department_id: Array(params[:department_id]).reject(&:blank?).presence,
-      manager_id: Array(params[:manager_id]).reject(&:blank?).presence
+      manager_id: Array(params[:manager_id]).reject(&:blank?).presence,
+      display: (params[:display].to_s == 'percent' ? 'percent' : nil)
     }.compact
   end
 

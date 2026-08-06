@@ -22,6 +22,7 @@ RSpec.describe Insights::OgScorecardBuilder do
       row = result[:groups].find { |g| g[:title] == 'Teammates' }[:rows].first
 
       expect(row[:weekly_values]).to eq([1, 1])
+      expect(row[:weekly_active_counts]).to eq([1, 1])
       expect(row[:six_week_avg]).to eq(1.0)
     end
 

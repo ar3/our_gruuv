@@ -127,6 +127,7 @@ module Insights
     def build_row(entry, counts_by_week, active_by_week)
       threshold = thresholds_by_key[entry.key] || {}
       weekly_values = week_starts.map { |wk| counts_by_week[wk] || 0 }
+      weekly_active_counts = week_starts.map { |wk| active_by_week[wk] || 0 }
       weekly_cell_statuses = week_starts.map.with_index do |wk, idx|
         OgScorecard::CellStatus.for(
           value: weekly_values[idx],
@@ -153,6 +154,7 @@ module Insights
         green_display: format_threshold(threshold[:green], threshold[:mode]),
         six_week_avg: average_last_n(weekly_values, 6),
         weekly_values: weekly_values,
+        weekly_active_counts: weekly_active_counts,
         weekly_cell_statuses: weekly_cell_statuses
       }
     end

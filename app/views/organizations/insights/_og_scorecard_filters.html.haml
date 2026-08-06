@@ -11,6 +11,8 @@
     = hidden_field_tag :timeframe, timeframe if timeframe.present?
     = hidden_field_tag :from, custom_from if custom_from.present?
     = hidden_field_tag :to, custom_to if custom_to.present?
+    - if og_scorecard_percent_mode?
+      = hidden_field_tag :display, OgScorecardHelper::DISPLAY_PERCENT
 
     .row.g-3.align-items-start
       .col-lg-6
@@ -40,4 +42,4 @@
     .d-flex.flex-wrap.align-items-center.gap-2.mt-3
       = submit_tag 'Apply filters', class: 'btn btn-sm btn-primary'
       - if og_scorecard_filters_active?
-        = link_to 'Clear filters', organization_insights_og_scorecard_path(@organization, timeframe: timeframe, from: custom_from, to: custom_to), class: 'btn btn-sm btn-outline-secondary'
+        = link_to 'Clear filters', og_scorecard_path_with_filters(department_id: nil, manager_id: nil), class: 'btn btn-sm btn-outline-secondary'

@@ -168,12 +168,25 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
       expect(response.body).to include('Custom')
+      expect(response.body).to include('Show real values')
+      expect(response.body).to include('Show percentage of teammates')
       expect(response.body).to include('Show Yellow / Green thresholds and')
       expect(response.body).to include('More or less is better')
       expect(response.body).to include('in the table')
       expect(response.body).to include('og-scorecard--thresholds-hidden')
       expect(response.body).to match(/data-controller=["']og-scorecard-thresholds["']/)
       expect(response.body).not_to include('og-scorecard-popover-source')
+    end
+
+    it 'shows percentages for unique-teammate rows when display=percent' do
+      create(:teammate, organization: organization, first_employed_at: 1.year.ago, last_terminated_at: nil)
+
+      get organization_insights_og_scorecard_path(organization, display: 'percent', timeframe: '90_days')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('display=percent')
+      # Active teammates stay absolute; percent-capable cells use % suffix
+      expect(response.body).to match(/of \d+ teammates \(\d+%\)/)
+      expect(response.body).to include('%')
     end
 
     it 'renders department and managed-by filter controls' do

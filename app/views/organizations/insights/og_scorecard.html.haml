@@ -29,6 +29,12 @@
       %li
         Use the switch to show or hide Yellow/Green threshold columns and “More or less is better” in the table.
       %li
+        Use
+        %strong Show real values
+        or
+        %strong Show percentage of teammates
+        to switch how unique-teammate metrics appear. Percentages are of that week’s active teammates (0 decimals). Hover a percentage-capable cell for count, headcount, and percentage in either mode. Active teammates and milestone event counts always stay as real values. Cell colors still follow each metric’s threshold unit (absolute or %), not this display toggle.
+      %li
         Weekly cells are shaded
         %span.badge.bg-success
         green,
@@ -86,6 +92,11 @@
         = link_to "Last Year", og_scorecard_path_with_filters(timeframe: 'year'), class: btn_class.call(:year)
         = link_to "All-Time", og_scorecard_path_with_filters(timeframe: 'all_time'), class: btn_class.call(:all_time)
         = link_to "Custom", og_scorecard_path_with_filters(**{ timeframe: 'custom', from: @insights_custom_from, to: @insights_custom_to }.compact), class: btn_class.call(:custom)
+    .og-scorecard-display-mode
+      .btn-group.flex-wrap{role: "group", "aria-label" => "Scorecard value display"}
+        - display_btn = ->(mode) { "btn btn-sm #{og_scorecard_display_mode == mode ? 'btn-primary' : 'btn-outline-primary'}" }
+        = link_to "Show real values", og_scorecard_path_with_filters(display: OgScorecardHelper::DISPLAY_VALUES), class: display_btn.call(OgScorecardHelper::DISPLAY_VALUES)
+        = link_to "Show percentage of teammates", og_scorecard_path_with_filters(display: OgScorecardHelper::DISPLAY_PERCENT), class: display_btn.call(OgScorecardHelper::DISPLAY_PERCENT)
     = render 'og_scorecard_filter_toggle',
       selected_department_ids: @og_scorecard_selected_department_ids,
       selected_manager_ids: @og_scorecard_selected_manager_ids,
@@ -94,7 +105,9 @@
   - if @timeframe == :custom
     = form_tag og_scorecard_path_with_filters(), method: :get, class: "row g-2 align-items-end mt-2" do
       = hidden_field_tag :timeframe, 'custom'
-      - og_scorecard_filter_params.each do |name, value|
+      - if og_scorecard_percent_mode?
+        = hidden_field_tag :display, OgScorecardHelper::DISPLAY_PERCENT
+      - og_scorecard_filter_params.except(:display).each do |name, value|
         - Array(value).each do |item|
           = hidden_field_tag "#{name}[]", item
       .col-sm-auto
@@ -155,12 +168,13 @@
                     - if row[:gruuv_status].present?
                       = og_scorecard_gruuv_status_icon(row[:gruuv_status], row[:gruuv_category])
                     = row[:label]
-                %td.text-end= row[:six_week_avg].nil? ? "—" : row[:six_week_avg]
+                %td.text-end= og_scorecard_six_week_avg_display(row)
                 %td.text-end.og-scorecard-th-col= row[:yellow_display].presence || "—"
                 %td.text-end.og-scorecard-th-col= row[:green_display].presence || "—"
                 %td.og-scorecard-th-col= og_scorecard_direction_label(row[:direction])
-                - row[:weekly_values].reverse.zip(row[:weekly_cell_statuses].reverse).each do |v, status|
-                  %td.text-end{class: og_scorecard_weekly_cell_class(status)}= v
+                - active_counts = Array(row[:weekly_active_counts])
+                - row[:weekly_values].reverse.zip(row[:weekly_cell_statuses].reverse, active_counts.reverse).each do |v, status, active|
+                  %td{og_scorecard_weekly_cell_tag_attrs(v, active, row: row, status: status)}= og_scorecard_weekly_cell_display(v, active, row: row)
 
   = render 'og_scorecard_threshold_configuration',
     organization: @organization,

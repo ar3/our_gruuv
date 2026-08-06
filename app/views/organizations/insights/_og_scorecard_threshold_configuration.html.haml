@@ -8,12 +8,14 @@
     #ogScorecardThresholdCollapse.accordion-collapse.collapse{'data-bs-parent': '#ogScorecardThresholdAccordion'}
       .accordion-body
         %p.text-muted.small
-          Set yellow and green targets per metric. Weekly cells use these targets for background color (green = on target, yellow = between, red = off target). For unique-teammate metrics you can use % of that week’s active teammates; the table still shows raw counts.
+          Set yellow and green targets per metric. Weekly cells use these targets for background color (green = on target, yellow = between, red = off target). For unique-teammate metrics you can use % of that week’s active teammates as the threshold unit — that is independent of the Show real values / Show percentage of teammates display toggle at the top.
 
         = form_with url: organization_insights_og_scorecard_thresholds_path(organization), method: :patch, local: true do |f|
           = hidden_field_tag :timeframe, timeframe if timeframe.present?
           = hidden_field_tag :from, custom_from if custom_from.present?
           = hidden_field_tag :to, custom_to if custom_to.present?
+          - if og_scorecard_percent_mode?
+            = hidden_field_tag :display, OgScorecardHelper::DISPLAY_PERCENT
           - selected_department_ids = local_assigns.fetch(:selected_department_ids, [])
           - selected_manager_ids = local_assigns.fetch(:selected_manager_ids, [])
           - selected_department_ids.each do |department_id|
