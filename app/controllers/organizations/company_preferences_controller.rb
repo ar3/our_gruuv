@@ -45,7 +45,6 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
       'prompt' => @company.company_label_preferences.find_by(label_key: 'prompt')&.label_value || '',
       'kudos_point' => @company.company_label_preferences.find_by(label_key: 'kudos_point')&.label_value || '',
       'get_shit_done' => @company.company_label_preferences.find_by(label_key: 'get_shit_done')&.label_value || '',
-      'encourage_goal_and_observation' => @company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')&.label_value || 'true',
       Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY => acknowledgement_explanation_for_form
     }
   end
@@ -83,12 +82,7 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
       
       # Handle boolean preferences (checkboxes)
       # Rails checkboxes send 'true' when checked, 'false' when unchecked (via hidden field)
-      if key.to_s == 'encourage_goal_and_observation'
-        preference.label_value = (value == 'true' || value == '1') ? 'true' : 'false'
-        unless preference.save
-          success = false
-        end
-      elsif key.to_s == Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY
+      if key.to_s == Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY
         if acknowledgement_explanation_blank_or_default?(value)
           preference.destroy if preference.persisted?
         else

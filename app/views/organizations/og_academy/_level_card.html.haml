@@ -1,0 +1,26 @@
+- level = local_assigns.fetch(:level)
+- progress = local_assigns.fetch(:progress)
+- visible = progress.visible_for?(level)
+.card.mb-3{class: (level.complete? ? "border-success" : (level.placeholder ? "border-secondary" : ""))}
+  .card-body
+    .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2.mb-2
+      %div
+        %span.badge.me-2{class: (level.complete? ? "text-bg-success" : (level.placeholder ? "text-bg-secondary" : "text-bg-light border"))}
+          M#{level.level}
+        %span.fw-semibold= level.title
+        - unless visible
+          %span.badge.text-bg-light.border.ms-1 not your track yet
+        - if level.placeholder
+          %span.badge.text-bg-secondary.ms-1 coming soon
+      %span.small.text-muted
+        = "#{level.done_count}/#{level.total_count}"
+    - if level.marketing_why.present? && !level.complete?
+      %p.small.fst-italic.text-muted.mb-2= level.marketing_why
+    %ul.list-unstyled.mb-0
+      - level.criteria.each do |c|
+        %li.d-flex.align-items-start.gap-2.mb-1
+          - if c.done
+            %i.bi.bi-check-circle-fill.text-success
+          - else
+            %i.bi.bi-circle.text-muted
+          %span.small{class: (c.done ? "text-muted" : "")}= c.label

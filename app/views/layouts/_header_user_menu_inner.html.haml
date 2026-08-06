@@ -85,6 +85,11 @@
       = link_to switch_organizations_path, class: "dropdown-item" do
         %i.bi.bi-arrow-left-right.me-2
         Switch Organizations
+  - if current_organization
+    %li
+      = link_to organization_og_academy_path(current_organization), class: "dropdown-item" do
+        %i.bi.bi-mortarboard.me-2
+        OG Academy
   %li
     = link_to interest_submissions_path, class: "dropdown-item" do
       %i.bi.bi-lightbulb.me-2

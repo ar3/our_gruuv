@@ -70,20 +70,6 @@
                      disabled: !can_customize
 
   .row.mb-4
-    .col-6
-      %h5.mb-3 Encourage Everyone to have a goal and an observation
-      %p.text-muted.small
-        When enabled, teammates viewing their own "About Me" page will see an onboarding section encouraging them to create a goal and an observation if they haven't done so yet.
-    .col-6
-      .form-check.form-switch
-        = f.check_box "preferences[encourage_goal_and_observation]",
-                      { checked: @preferences['encourage_goal_and_observation'] == 'true',
-                        class: 'form-check-input',
-                        disabled: !can_customize },
-                      'true',
-                      'false'
-
-  .row.mb-4
     .col-12.col-md-6
       %h5.mb-3 Company logo
       %p.text-muted.small

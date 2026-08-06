@@ -123,6 +123,11 @@ Rails.application.routes.draw do
     post 'start_here/update_start_page', to: 'organizations/start_here#update_start_page', as: :start_here_update_start_page
     post 'start_here/update_vertical_nav_mode', to: 'organizations/start_here#update_vertical_nav_mode', as: :start_here_update_vertical_nav_mode
     post 'start_here/widget_dashboards', to: 'organizations/start_here#widget_dashboards', as: :start_here_widget_dashboards
+
+    # OG Academy (orientation lander / practice milestones — Beta)
+    get 'og_academy', to: 'organizations/og_academy#show', as: :og_academy
+    post 'og_academy/update_start_page', to: 'organizations/og_academy#update_start_page', as: :og_academy_update_start_page
+
     get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
 
     # Get Shit Done Dashboard

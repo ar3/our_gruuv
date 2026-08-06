@@ -19,10 +19,6 @@
 -#     %i.bi.bi-arrow-left.me-2
 -#     Back to Profile
 
--# Onboarding Spotlight (only shown when viewing own page and no observations/goals yet)
-- if @show_onboarding_spotlight
-  = render partial: 'organizations/company_teammates/about_me/onboarding_spotlight'
-
 = render 'shared/teammate_context/manager_lite_and_weekly_digest',
          organization: organization,
          teammate: @selected_teammate

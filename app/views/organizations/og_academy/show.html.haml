@@ -1,0 +1,152 @@
+- content_for :title, "OG Academy"
+- org_name = current_organization&.name || "Organization"
+- progress = @academy_progress
+- casual = current_company_teammate.person.casual_name
+- academy_return = organization_og_academy_path(current_organization)
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2.w-100
+    %div
+      %h1.mb-0 OG Academy
+      %p.lead.text-muted.mb-0
+        Learn OurGruuv by doing — quick wins now, deeper mastery over months.
+
+%p.mb-4
+  OG Academy is your orientation home. Use
+  %strong Quick Start
+  to act, earn
+  %strong practice milestones
+  that teach how real Ability milestones feel, then set a preferred home when you're ready for Start Here or another page.
+
+-# ——— 1. Quick Start ———
+%section.mb-5{role: "region", "aria-labelledby": "og-academy-quick-start"}
+  %h2#og-academy-quick-start.mb-3 Quick Start
+  %p.text-muted.mb-3
+    Pick a person and take one of the big three actions. Names open their One Thing.
+
+  .d-grid.gap-3
+    - @quick_start_people.each do |tm|
+      - person = tm.person
+      - is_self = tm.id == current_company_teammate.id
+      - one_thing_path = organization_company_teammate_one_on_one_link_path(current_organization, tm)
+      - check_in_path = organization_company_teammate_check_ins_path(current_organization, tm)
+      - observe_path = select_type_organization_observations_path(current_organization, observee_ids: [tm.id], return_url: academy_return, return_text: "Back to OG Academy")
+      - goals_path = organization_goals_path(current_organization, owner_id: "CompanyTeammate_#{tm.id}")
+      .card.border-0.shadow-sm
+        .card-body
+          .row.g-3.align-items-center
+            .col-12.col-lg-3
+              = link_to one_thing_path, class: "fs-4 fw-semibold text-decoration-none" do
+                = person.casual_name
+                - if is_self
+                  %span.badge.text-bg-secondary.ms-1 you
+              %div.small.text-muted= one_thing_label_for(tm, viewer: current_company_teammate)
+            .col-12.col-lg-9
+              .row.g-2
+                .col-12.col-md-4
+                  = link_to check_in_path, class: "btn btn-primary btn-lg w-100 py-3 fw-semibold" do
+                    %i.bi.bi-chat-square-text.me-1
+                    Check-in
+                .col-12.col-md-4
+                  = link_to observe_path, class: "btn btn-outline-primary btn-lg w-100 py-3 fw-semibold" do
+                    %i.bi.bi-eye.me-1
+                    Observe
+                .col-12.col-md-4
+                  = link_to goals_path, class: "btn btn-outline-primary btn-lg w-100 py-3 fw-semibold" do
+                    %i.bi.bi-bullseye.me-1
+                    Goal confidence
+
+-# ——— 2. Practice milestones ———
+%section.mb-5{role: "region", "aria-labelledby": "og-academy-milestones"}
+  %h2#og-academy-milestones.mb-2 Earn your OG Academy milestones
+  .alert.alert-light.border.mb-4
+    %p.mb-1
+      %strong Practice track — not a company Ability.
+    %p.mb-0.small.text-muted
+      These levels look and feel like Ability milestones so new OGs learn the ceremony, but they are
+      %em not
+      official certifications on your company's MAAP. Real job milestones are still awarded by managers on real abilities.
+
+  - core_levels = progress.levels.select { |l| l.level < OgAcademy::ProgressService::ADVANCED_FROM_LEVEL }
+  - advanced_levels = progress.levels.select { |l| l.level >= OgAcademy::ProgressService::ADVANCED_FROM_LEVEL }
+
+  - current = progress.current_level
+  - if current
+    .card.border-primary.shadow-sm.mb-4
+      .card-body
+        %span.badge.text-bg-primary.mb-2
+          - if current.complete?
+            Current highest
+          - else
+            Going for M#{current.level}
+        %h3.card-title.h4 M#{current.level}: #{current.title}
+        - if current.marketing_why.present?
+          %p.fst-italic.mb-3= current.marketing_why
+        %ul.list-unstyled.mb-0
+          - current.criteria.each do |c|
+            %li.d-flex.align-items-start.gap-2.mb-2
+              - if c.done
+                %i.bi.bi-check-circle-fill.text-success.mt-1
+              - else
+                %i.bi.bi-circle.text-muted.mt-1
+              %div
+                %span{class: (c.done ? "text-decoration-line-through text-muted" : "fw-semibold")}= c.label
+                - unless c.done
+                  %div.small.text-muted= c.hint
+
+  - if progress.earned_levels.any?
+    %h3.h5.mb-3 Earned so far
+    .row.g-3.mb-4
+      - progress.earned_levels.each do |lvl|
+        .col-12.col-md-6.col-lg-4
+          .card.h-100.border-success
+            .card-body
+              %span.badge.text-bg-success.mb-2 M#{lvl.level} earned
+              %h4.h6.card-title= lvl.title
+              - if lvl.marketing_why.present?
+                %p.small.mb-0= lvl.marketing_why
+
+  %h3.h5.mb-3 All levels
+  - core_levels.each do |lvl|
+    = render "organizations/og_academy/level_card", level: lvl, progress: progress
+
+  - if advanced_levels.any?
+    - if progress.collapsed_advanced?
+      .mt-3
+        %button.btn.btn-outline-secondary{type: "button", data: { bs_toggle: "collapse", bs_target: "#og-academy-advanced-levels" }, aria: { expanded: "false", controls: "og-academy-advanced-levels" }}
+          Manager & admin levels (M3+)
+        .collapse#og-academy-advanced-levels.mt-3
+          .alert.alert-secondary.small
+            These levels are for people with direct reports (M3) or employment/admin responsibility (M4+). You can explore the criteria anytime; they are not required for every teammate.
+          - advanced_levels.each do |lvl|
+            = render "organizations/og_academy/level_card", level: lvl, progress: progress
+    - else
+      - advanced_levels.each do |lvl|
+        = render "organizations/og_academy/level_card", level: lvl, progress: progress
+
+-# ——— 3. Home page ———
+%section.mb-5{role: "region", "aria-labelledby": "og-academy-home"}
+  %h2#og-academy-home.mb-3 Choose your home base
+  %p.text-muted.mb-3
+    Advanced users often land on a customized
+    %strong Start Here
+    dashboard. You can always return to OG Academy from your profile menu.
+
+  .row.g-3
+    - home_options = og_academy_home_options(current_organization, current_company_teammate, casual)
+    - current_start = start_page_preference(current_organization, current_person)
+    - allowed = start_page_options_for_select(current_organization, current_company_teammate).map(&:last)
+    - home_options.each do |value, label, icon, blurb|
+      - next unless allowed.include?(value) || value == "og_academy"
+      .col-12.col-md-6.col-lg-4
+        .card.h-100.border-0.shadow-sm
+          .card-body.d-flex.flex-column
+            %h3.h5.card-title
+              %i.bi{class: icon, aria: { hidden: true }}
+              = label
+            %p.small.text-muted.flex-grow-1= blurb
+            - if current_start == value
+              %span.badge.text-bg-success.align-self-start Current start page
+            - else
+              = button_to organization_og_academy_update_start_page_path(current_organization), method: :post, params: { start_page: value }, class: "btn btn-outline-primary w-100" do
+                Make this my start page

@@ -707,7 +707,7 @@ module ApplicationHelper
   end
 
   # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
-  START_PAGE_VALUES = %w[start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done protect_flow goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
+  START_PAGE_VALUES = %w[og_academy start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done protect_flow goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
 
   def start_page_preference_key(organization)
     "start_page_#{organization.id}"
@@ -727,6 +727,8 @@ module ApplicationHelper
 
   def start_page_value_to_path(value, organization, company_teammate)
     case value.to_s
+    when 'og_academy'
+      organization_og_academy_path(organization)
     when 'start_here'
       organization_start_here_path(organization)
     when 'about_me'
@@ -762,6 +764,7 @@ module ApplicationHelper
     gsd_label = company_label_for('get_shit_done', 'Get Shit Done')
     org_name = organization.name.presence || 'Organization'
     [
+      ['OG Academy', 'og_academy'],
       ['Start Here page', 'start_here'],
       ["About #{casual}", 'about_me'],
       ["#{casual}'s One Thing", 'one_on_one_hub'],
