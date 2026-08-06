@@ -53,6 +53,12 @@
                   %div.mt-1
                     %span.badge.bg-success
                       Active Assignment - #{check_in.assignment_tenure.anticipated_energy_percentage}%
+                - else
+                  - visibility_reason = bulk_check_in_assignment_visibility_reason(check_in, organization: organization, required_assignment_ids: (local_assigns[:required_assignment_ids] || @required_assignment_ids), employee_name: (local_assigns[:employee_name] || @teammate&.person&.casual_name), manager_name: (local_assigns[:manager_name] || (@teammate&.current_manager&.casual_name.presence || 'Manager')))
+                  - if visibility_reason
+                    %div.mt-1
+                      %span.badge{class: visibility_reason[:badge_class], tabindex: "0", style: "cursor: pointer;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => visibility_reason[:popover_html]}
+                        = visibility_reason[:label]
               = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode, latest_finalized: latest_finalized
 - else
   .alert.alert-info

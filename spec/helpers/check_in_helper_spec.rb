@@ -657,4 +657,150 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)).to eq(false)
     end
   end
+
+  describe "#bulk_check_in_assignment_visibility_reason" do
+    let(:organization) { create(:organization) }
+    let(:employee_person) { create(:person, first_name: "Alex") }
+    let(:manager_person) { create(:person, first_name: "Casey") }
+    let(:teammate) { create(:teammate, person: employee_person, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization, title: "Legacy Project") }
+    let(:check_in) do
+      create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment,
+        employee_rating: nil,
+        manager_rating: nil,
+        employee_personal_alignment: nil,
+        employee_private_notes: nil,
+        manager_private_notes: nil,
+        shared_notes: nil,
+        actual_energy_percentage: nil
+      )
+    end
+
+    before do
+      allow(check_in).to receive(:assignment_tenure).and_return(nil)
+      create(
+        :employment_tenure,
+        teammate: teammate,
+        company: organization,
+        manager: manager_person,
+        started_at: 1.year.ago,
+        ended_at: nil
+      )
+    end
+
+    it "returns nil when the tenure is active" do
+      tenure = build_stubbed(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment,
+        anticipated_energy_percentage: 40,
+        ended_at: nil
+      )
+      allow(tenure).to receive(:active?).and_return(true)
+      allow(check_in).to receive(:assignment_tenure).and_return(tenure)
+
+      reason = helper.bulk_check_in_assignment_visibility_reason(
+        check_in,
+        organization: organization,
+        required_assignment_ids: []
+      )
+      expect(reason).to be_nil
+    end
+
+    it "labels required-for-position rows" do
+      reason = helper.bulk_check_in_assignment_visibility_reason(
+        check_in,
+        organization: organization,
+        required_assignment_ids: [assignment.id],
+        employee_name: "Alex",
+        manager_name: "Casey"
+      )
+
+      expect(reason[:label]).to eq("Required for position")
+      expect(reason[:badge_class]).to include("bg-info")
+      expect(reason[:popover_html]).to include("required by Alex")
+      expect(reason[:popover_html]).not_to include("one-by-one")
+    end
+
+    it "labels draft-started rows and names who started plus recovery path" do
+      check_in.update!(employee_rating: "meeting", manager_rating: nil, manager_private_notes: nil)
+
+      reason = helper.bulk_check_in_assignment_visibility_reason(
+        check_in,
+        organization: organization,
+        required_assignment_ids: [],
+        employee_name: "Alex",
+        manager_name: "Casey"
+      )
+
+      expect(reason[:label]).to eq("Draft started")
+      expect(reason[:badge_class]).to include("bg-warning")
+      expect(reason[:popover_html]).to include("started by Alex")
+      expect(reason[:popover_html]).to include("one-by-one check-in for this assignment")
+      expect(reason[:popover_html]).to include(
+        helper.organization_teammate_assignment_path(organization, teammate, assignment)
+      )
+      expect(reason[:popover_html]).to include("clear your responses")
+      expect(reason[:popover_html]).to include("delete that check-in")
+    end
+
+    it "prefers required over draft when both apply" do
+      check_in.update!(employee_rating: "meeting")
+
+      reason = helper.bulk_check_in_assignment_visibility_reason(
+        check_in,
+        organization: organization,
+        required_assignment_ids: [assignment.id],
+        employee_name: "Alex",
+        manager_name: "Casey"
+      )
+
+      expect(reason[:label]).to eq("Required for position")
+    end
+
+    it "labels recently added non-required empty drafts" do
+      check_in.update!(check_in_started_on: Date.current)
+
+      reason = helper.bulk_check_in_assignment_visibility_reason(
+        check_in,
+        organization: organization,
+        required_assignment_ids: [],
+        employee_name: "Alex",
+        manager_name: "Casey"
+      )
+
+      expect(reason[:label]).to eq("Recently added")
+      expect(reason[:popover_html]).to include("last 7 days")
+    end
+
+    it "labels older non-active rows as not currently assigned" do
+      check_in.update!(check_in_started_on: 14.days.ago)
+
+      reason = helper.bulk_check_in_assignment_visibility_reason(
+        check_in,
+        organization: organization,
+        required_assignment_ids: [],
+        employee_name: "Alex",
+        manager_name: "Casey"
+      )
+
+      expect(reason[:label]).to eq("Not currently assigned")
+      expect(reason[:popover_html]).to include("not currently an active assignment")
+    end
+
+    it "says both people started when both sides have draft input" do
+      check_in.update!(employee_rating: "meeting", manager_rating: "meeting")
+
+      sentence = helper.bulk_check_in_draft_started_by_sentence(
+        check_in,
+        employee_name: "Alex",
+        manager_name: "Casey"
+      )
+
+      expect(sentence).to include("both Alex and Casey")
+    end
+  end
 end

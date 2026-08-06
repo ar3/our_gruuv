@@ -766,6 +766,158 @@ module CheckInHelper
     end
   end
 
+  # Bulk clarity check-in: named reason when a row has no active assignment tenure.
+  # Returns nil for active tenures (caller shows Active Assignment - N% instead).
+  # Keys: :label, :badge_class, :popover_html
+  def bulk_check_in_assignment_visibility_reason(
+    check_in,
+    organization:,
+    required_assignment_ids: [],
+    employee_name: nil,
+    manager_name: nil
+  )
+    return nil if check_in.blank?
+    return nil if check_in.assignment_tenure&.active?
+
+    required_ids = Array(required_assignment_ids).map(&:to_i).to_set
+    required = required_ids.include?(check_in.assignment_id.to_i)
+    employee_name = employee_name.presence || check_in.teammate.person.casual_name.presence || "Employee"
+    manager_name = manager_name.presence || check_in.teammate.current_manager&.casual_name.presence || "Manager"
+
+    kind =
+      if required
+        :required_for_position
+      elsif check_in.has_meaningful_input?
+        :draft_started
+      elsif bulk_check_in_assignment_recently_added?(check_in)
+        :recently_added
+      else
+        :not_currently_assigned
+      end
+
+    {
+      label: bulk_check_in_assignment_visibility_label(kind),
+      badge_class: bulk_check_in_assignment_visibility_badge_class(kind),
+      popover_html: bulk_check_in_assignment_visibility_popover_html(
+        kind,
+        check_in,
+        organization: organization,
+        employee_name: employee_name,
+        manager_name: manager_name
+      )
+    }
+  end
+
+  def bulk_check_in_assignment_visibility_label(kind)
+    case kind.to_sym
+    when :required_for_position then "Required for position"
+    when :draft_started then "Draft started"
+    when :recently_added then "Recently added"
+    else "Not currently assigned"
+    end
+  end
+
+  def bulk_check_in_assignment_visibility_badge_class(kind)
+    case kind.to_sym
+    when :required_for_position then "bg-info text-dark"
+    when :draft_started then "bg-warning text-dark"
+    when :recently_added then "bg-secondary"
+    else "bg-secondary"
+    end
+  end
+
+  def bulk_check_in_assignment_recently_added?(check_in)
+    added_on = check_in.assignment_added_on
+    return false unless added_on
+
+    cutoff = Organizations::CompanyTeammates::CheckInsController::RECENTLY_ADDED_DAYS.days.ago.to_date
+    added_on >= cutoff
+  end
+
+  def bulk_check_in_draft_started_by_sentence(check_in, employee_name:, manager_name:)
+    employee_side = bulk_check_in_assignment_employee_has_draft_input?(check_in)
+    manager_side = bulk_check_in_assignment_manager_has_draft_input?(check_in)
+    emp = ERB::Util.html_escape(employee_name)
+    mgr = ERB::Util.html_escape(manager_name)
+
+    if employee_side && manager_side
+      "Draft input is present from both #{emp} and #{mgr}."
+    elsif employee_side
+      "Draft input was started by #{emp}."
+    elsif manager_side
+      "Draft input was started by #{mgr}."
+    else
+      "This open check-in has draft input."
+    end
+  end
+
+  def bulk_check_in_assignment_employee_has_draft_input?(check_in)
+    check_in.employee_rating.present? ||
+      check_in.employee_completed? ||
+      check_in.employee_private_notes.to_s.strip.present? ||
+      check_in.actual_energy_percentage.present?
+  end
+
+  def bulk_check_in_assignment_manager_has_draft_input?(check_in)
+    check_in.manager_rating.present? ||
+      check_in.manager_completed? ||
+      check_in.manager_private_notes.to_s.strip.present?
+  end
+
+  def bulk_check_in_assignment_visibility_popover_html(
+    kind,
+    check_in,
+    organization:,
+    employee_name:,
+    manager_name:
+  )
+    emp = ERB::Util.html_escape(employee_name)
+    days = Organizations::CompanyTeammates::CheckInsController::RECENTLY_ADDED_DAYS
+
+    body =
+      case kind.to_sym
+      when :required_for_position
+        "This assignment is required by #{emp}'s current position, even though it is not an active assignment tenure for them. Checking in is about role expectations, not whether they currently hold energy on it.".html_safe
+      when :draft_started
+        who = bulk_check_in_draft_started_by_sentence(
+          check_in,
+          employee_name: employee_name,
+          manager_name: manager_name
+        )
+        one_by_one_link = link_to(
+          "one-by-one check-in for this assignment",
+          organization_teammate_assignment_path(organization, check_in.teammate, check_in.assignment),
+          class: "alert-link"
+        )
+        safe_join(
+          [
+            content_tag(
+              :p,
+              "#{who} Because there is draft input, this row stays on bulk check-in so work is not lost—even without an active assignment.".html_safe,
+              class: "mb-2"
+            ),
+            content_tag(
+              :p,
+              safe_join(
+                [
+                  "If that was accidental: open ".html_safe,
+                  one_by_one_link,
+                  ", clear your responses, then delete that check-in. It should leave this list when nothing else is keeping it here.".html_safe
+                ]
+              ),
+              class: "mb-0"
+            )
+          ]
+        )
+      when :recently_added
+        "This assignment was added for check-in in the last #{days} days and is not an active assignment yet. It appears here so you can check in while it is still new.".html_safe
+      else
+        "This is not currently an active assignment for #{emp}. It still appears so they can check in on unique-to-them work (for example a former assignment or one they may be starting). It does not mean it is still part of their day-to-day active assignments.".html_safe
+      end
+
+    content_tag(:div, body, class: "text-start")
+  end
+
   private
 
   def check_in_counterparty_completion_detail_context(check_in, teammate: nil, current_person: nil)

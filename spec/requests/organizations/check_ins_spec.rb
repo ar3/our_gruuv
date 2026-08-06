@@ -441,6 +441,42 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(response.body).to match(/save_and_view_position/)
       end
 
+      it "shows named visibility reason pills for non-active assignment rows" do
+        draft_assignment = create(:assignment, company: organization, title: "Stale Draft Assignment")
+        create(
+          :assignment_check_in,
+          teammate: employee_teammate,
+          assignment: draft_assignment,
+          employee_rating: "meeting",
+          manager_rating: nil,
+          employee_personal_alignment: nil,
+          employee_private_notes: nil,
+          manager_private_notes: nil,
+          shared_notes: nil,
+          actual_energy_percentage: nil,
+          check_in_started_on: 20.days.ago
+        )
+
+        required_inactive = create(:assignment, company: organization, title: "Required But Not Active")
+        # employment_tenure factory overwrites :position in after(:build); use the actual held position
+        create(:position_assignment, :required, position: employment_tenure.position, assignment: required_inactive)
+        AssignmentCheckIn.find_or_create_open_for(employee_teammate, required_inactive)
+
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Active Assignment -")
+        expect(response.body).to include("Draft started")
+        expect(response.body).to include("Required for position")
+        expect(response.body).to include("Stale Draft Assignment")
+        expect(response.body).to include("Required But Not Active")
+        expect(response.body).to include('data-bs-toggle="popover"')
+        expect(response.body).to include("one-by-one check-in for this assignment")
+        expect(response.body).to include(
+          organization_teammate_assignment_path(organization, employee_teammate, draft_assignment)
+        )
+      end
+
       it "redirects to the 1-by-1 position check-in page after save when using the position name submit" do
         position_label = position.display_name
         patch organization_company_teammate_check_ins_path(organization, employee_teammate),

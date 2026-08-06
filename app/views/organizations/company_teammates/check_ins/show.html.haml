@@ -251,7 +251,10 @@
     = render 'assignment_check_ins_table',
              assignment_check_ins: @active_assignment_check_ins,
              form: f,
-             view_mode: @view_mode
+             view_mode: @view_mode,
+             required_assignment_ids: @required_assignment_ids,
+             employee_name: @teammate.person.casual_name,
+             manager_name: (@teammate.current_manager&.casual_name.presence || 'Manager')
 
     -# Recently added assignments (non-active, non-required, added within last 7 days) — outside Unique-to-You
     - if @recently_added_assignment_check_ins&.any?
@@ -265,7 +268,10 @@
           = render 'assignment_check_ins_table',
                    assignment_check_ins: @recently_added_assignment_check_ins,
                    form: f,
-                   view_mode: @view_mode
+                   view_mode: @view_mode,
+                   required_assignment_ids: @required_assignment_ids,
+                   employee_name: @teammate.person.casual_name,
+                   manager_name: (@teammate.current_manager&.casual_name.presence || 'Manager')
 
     -# Collapsible section for Unique-to-You assignments (non-active, required or added more than 7 days ago)
     - if @non_active_assignment_check_ins&.any?
@@ -281,7 +287,10 @@
             = render 'assignment_check_ins_table',
                      assignment_check_ins: @non_active_assignment_check_ins,
                      form: f,
-                     view_mode: @view_mode
+                     view_mode: @view_mode,
+                     required_assignment_ids: @required_assignment_ids,
+                     employee_name: @teammate.person.casual_name,
+                     manager_name: (@teammate.current_manager&.casual_name.presence || 'Manager')
   
   .row.mt-4
     .col-12

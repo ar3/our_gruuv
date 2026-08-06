@@ -39,6 +39,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @non_active_assignment_check_ins = assignment_check_ins_data[:non_active_tenure_check_ins]
     # Keep @assignment_check_ins for backward compatibility (combined list)
     @assignment_check_ins = @active_assignment_check_ins + @recently_added_assignment_check_ins + @non_active_assignment_check_ins
+    @required_assignment_ids = required_assignment_ids_for_teammate
     preload_assignment_check_in_associations!
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     preload_aspiration_check_in_associations!
@@ -693,7 +694,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     active_employment = @teammate.employment_tenures.active.where(company: organization).first
     return [] unless active_employment&.position
 
-    active_employment.position.required_assignments.pluck(:assignment_id)
+    # Avoid ordered joins on required_assignments (can make pluck ambiguous); IDs only.
+    active_employment.position.position_assignments.required.pluck(:assignment_id)
   end
 
   def filter_active_required_assignment_check_ins
