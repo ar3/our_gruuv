@@ -896,6 +896,34 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(assigns(:observation).observees.first.teammate_id).to eq(observee_teammate.id)
     end
 
+    it 'pre-attaches active assignments and relevant abilities for preselected observees' do
+      assignment = create(:assignment, company: company)
+      ability = create(:ability, company: company)
+      create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 1)
+      create(:assignment_tenure,
+             teammate: observee_teammate,
+             assignment: assignment,
+             started_at: 1.month.ago,
+             ended_at: nil,
+             anticipated_energy_percentage: 50)
+
+      get :new, params: {
+        organization_id: company.id,
+        observee_ids: [observee_teammate.id]
+      }
+
+      observation = assigns(:observation)
+      assignment_rating = observation.observation_ratings.detect { |r| r.rateable_type == 'Assignment' && r.rateable_id == assignment.id }
+      ability_rating = observation.observation_ratings.detect { |r| r.rateable_type == 'Ability' && r.rateable_id == ability.id }
+
+      expect(assignment_rating).to be_present
+      expect(assignment_rating.rating).to eq('na')
+      expect(assignment_rating.rateable).to eq(assignment)
+      expect(ability_rating).to be_present
+      expect(ability_rating.rating).to eq('na')
+      expect(ability_rating.rateable).to eq(ability)
+    end
+
     it 'assigns available rateables for the organization' do
       assignment = create(:assignment, company: company)
       get :new, params: { organization_id: company.id }

@@ -1,0 +1,12 @@
+-# Muted context callout: optional detail the eye can skip.
+-# locals:
+-#   body: (optional) HTML-safe or plain string; or pass block content
+-#   margin_class: (optional) default "mb-4"
+- body = local_assigns[:body]
+- margin_class = local_assigns.fetch(:margin_class, "mb-4")
+
+.context-callout{class: margin_class, role: "note"}
+  - if body.present?
+    = body
+  - else
+    = yield

@@ -1,26 +1,50 @@
 - level = local_assigns.fetch(:level)
 - progress = local_assigns.fetch(:progress)
+- casual = local_assigns.fetch(:casual)
+- open = og_academy_level_open?(level, progress)
 - visible = progress.visible_for?(level)
-.card.mb-3{class: (level.complete? ? "border-success" : (level.placeholder ? "border-secondary" : ""))}
-  .card-body
-    .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2.mb-2
-      %div
-        %span.badge.me-2{class: (level.complete? ? "text-bg-success" : (level.placeholder ? "text-bg-secondary" : "text-bg-light border"))}
-          M#{level.level}
-        %span.fw-semibold= level.title
-        - unless visible
-          %span.badge.text-bg-light.border.ms-1 not your track yet
-        - if level.placeholder
-          %span.badge.text-bg-secondary.ms-1 coming soon
-      %span.small.text-muted
-        = "#{level.done_count}/#{level.total_count}"
-    - if level.marketing_why.present? && !level.complete?
-      %p.small.fst-italic.text-muted.mb-2= level.marketing_why
-    %ul.list-unstyled.mb-0
-      - level.criteria.each do |c|
-        %li.d-flex.align-items-start.gap-2.mb-1
-          - if c.done
-            %i.bi.bi-check-circle-fill.text-success
-          - else
-            %i.bi.bi-circle.text-muted
-          %span.small{class: (c.done ? "text-muted" : "")}= c.label
+- collapse_id = "og-academy-level-#{level.level}"
+- heading = og_academy_milestone_heading(level)
+
+.card.mb-3{class: (level.complete? ? "border-success" : (open ? "border-primary" : ""))}
+  .card-header.bg-white{id: "#{collapse_id}-header"}
+    %button.btn.btn-link.text-decoration-none.text-body.w-100.p-0{type: "button", data: { bs_toggle: "collapse", bs_target: "##{collapse_id}" }, aria: { expanded: open.to_s, controls: collapse_id }}
+      .og-academy-level-header.d-flex.flex-nowrap.align-items-start.justify-content-between.gap-3.text-start
+        .og-academy-level-header__main
+          .d-flex.align-items-center.gap-2.flex-wrap
+            %span.fw-semibold= heading
+            - if level.complete?
+              %span.badge.text-bg-success earned
+            - unless visible
+              %span.badge.text-bg-light.border not your track yet
+          %p.small.text-muted.mb-0.mt-1.og-academy-level-header__caption= og_academy_milestone_trust_caption(level, casual)
+        %span.small.text-muted.text-nowrap.og-academy-level-header__count.pt-1
+          = "#{level.done_count}/#{level.total_count}"
+          %i.bi.bi-chevron-down.ms-1
+
+  .collapse{id: collapse_id, class: (open ? "show" : nil), "aria-labelledby": "#{collapse_id}-header"}
+    .card-body.border-top
+      - if level.marketing_why.present?
+        %p.fst-italic.mb-3= level.marketing_why
+      %ul.list-unstyled.mb-3
+        - level.criteria.each do |c|
+          - action_path = og_academy_criterion_path_for(c, organization: current_organization, company_teammate: current_company_teammate)
+          %li.d-flex.align-items-start.gap-2.mb-2
+            - if c.done
+              %i.bi.bi-check-circle-fill.text-success.mt-1{"aria-hidden" => "true"}
+            - else
+              %i.bi.bi-circle.text-muted.mt-1{"aria-hidden" => "true"}
+            .flex-grow-1.min-w-0
+              - if !c.done && action_path.present?
+                = link_to c.label, action_path, class: "fw-semibold text-decoration-none"
+              - else
+                %span{class: (c.done ? "text-decoration-line-through text-muted" : "fw-semibold")}= c.label
+            - unless c.done
+              - if action_path.present?
+                = link_to action_path, class: "btn btn-sm btn-outline-primary flex-shrink-0", "aria-label": "Go: #{c.label}" do
+                  %i.bi.bi-arrow-right-circle{"aria-hidden" => "true"}
+              - else
+                %span.flex-shrink-0.text-muted.mt-1{role: "button", tabindex: "0", "aria-label": c.hint, data: { bs_toggle: "tooltip", bs_placement: "left", bs_title: c.hint }}
+                  %i.bi.bi-question-circle{"aria-hidden" => "true"}
+      = render "shared/context_callout", margin_class: "mb-0" do
+        = og_academy_milestone_examples_caption

@@ -2330,4 +2330,41 @@ $likert-colors: (
   }
 }
 
+// Soft context callout — skip-friendly secondary reading (left rail + light surface)
+.context-callout {
+  border-left: 0.25rem solid #ced4da;
+  background-color: #f8f9fa;
+  color: #495057;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  border-radius: 0 0.25rem 0.25rem 0;
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  strong {
+    color: #343a40;
+    font-weight: 600;
+  }
+}
+
+// OG Academy milestone accordion header: caption wraps; X/Y stays on the first line
+.og-academy-level-header {
+  .og-academy-level-header__main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 3.5rem);
+  }
+
+  .og-academy-level-header__count {
+    flex: 0 0 auto;
+  }
+
+  .og-academy-level-header__caption {
+    max-width: 100%;
+  }
+}
+
 @import 'marketing';

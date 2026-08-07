@@ -1,0 +1,17 @@
+- value = local_assigns.fetch(:value)
+- label = local_assigns.fetch(:label)
+- icon = local_assigns.fetch(:icon)
+- blurb = local_assigns.fetch(:blurb)
+- current_start = local_assigns.fetch(:current_start)
+
+.card.h-100.border-0.shadow-sm
+  .card-body.d-flex.flex-column
+    %h3.h5.card-title
+      %i.bi{class: icon, aria: { hidden: true }}
+      = label
+    %p.small.text-muted.flex-grow-1= blurb
+    - if current_start == value
+      %span.badge.text-bg-success.align-self-start Current start page
+    - else
+      = button_to organization_og_academy_update_start_page_path(current_organization), method: :post, params: { start_page: value }, class: "btn btn-outline-primary w-100" do
+        Make this my start page

@@ -271,9 +271,13 @@ RSpec.describe NavigationHelper, type: :helper do
     end
 
     describe 'About Me section' do
-      it 'includes Start Here first, then About Me in navigation structure' do
+      it 'includes OG Academy first, then Dashboard, then About Me' do
         structure = helper.navigation_structure
-        expect(structure.first[:label]).to eq('Start Here')
+        expect(structure[0][:label]).to eq('OG Academy')
+        expect(structure[0][:beta]).to eq(true)
+        expect(structure[0][:path]).to eq(helper.organization_og_academy_path(company))
+        expect(structure[1][:label]).to eq("#{person.casual_name}'s Dashboard")
+        expect(structure[1][:path]).to eq(helper.organization_start_here_path(company))
         about_me_section = structure.find { |item| item[:label] == 'About Me' }
         expect(about_me_section).to be_present
         expect(about_me_section[:section]).to eq('about_me')
@@ -525,6 +529,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Eligibility Requirements')
         expect(labels).to include('Goal Impact Scanner')
         expect(labels).to include('Position Suggestions')
+        expect(labels).not_to include("#{person.casual_name}'s Dashboard")
         expect(labels).not_to include('Start Here')
         expect(labels).not_to include('Something Interesting')
         expect(labels).not_to include('Notifications')
@@ -532,11 +537,16 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Bulk award milestones')
       end
 
-      it 'includes Start Here as a standalone nav link' do
+      it 'includes OG Academy top-level and Dashboard as standalone nav links' do
         structure = helper.navigation_structure
-        start_here = structure.find { |item| item[:label] == 'Start Here' && item[:section].nil? }
-        expect(start_here).to be_present
-        expect(start_here[:path]).to eq(helper.organization_start_here_path(company))
+        og_academy = structure.find { |item| item[:label] == 'OG Academy' && item[:section].nil? }
+        expect(og_academy).to be_present
+        expect(og_academy[:beta]).to eq(true)
+        expect(og_academy[:path]).to eq(helper.organization_og_academy_path(company))
+
+        dashboard = structure.find { |item| item[:label] == "#{person.casual_name}'s Dashboard" && item[:section].nil? }
+        expect(dashboard).to be_present
+        expect(dashboard[:path]).to eq(helper.organization_start_here_path(company))
       end
 
       it 'includes graduated About Me items outside Beta' do
@@ -639,15 +649,17 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(highlights_item[:label]).to eq('Acme Corp Kudos')
       end
 
-      it 'places Start Here first, About Me second, and Observations (OGO) third in navigation' do
+      it 'places OG Academy first, Dashboard second, About Me third, and Observations (OGO) fourth' do
         structure = helper.navigation_structure
-        start_here_index = structure.find_index { |item| item[:label] == 'Start Here' }
+        og_academy_index = structure.find_index { |item| item[:label] == 'OG Academy' && item[:section].nil? }
+        dashboard_index = structure.find_index { |item| item[:label] == "#{person.casual_name}'s Dashboard" }
         about_me_index = structure.find_index { |item| item[:label] == 'About Me' }
         ogo_index = structure.find_index { |item| item[:label] == 'Observations (OGO)' }
 
-        expect(start_here_index).to eq(0)
-        expect(about_me_index).to eq(1)
-        expect(ogo_index).to eq(2)
+        expect(og_academy_index).to eq(0)
+        expect(dashboard_index).to eq(1)
+        expect(about_me_index).to eq(2)
+        expect(ogo_index).to eq(3)
       end
     end
   end

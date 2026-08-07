@@ -18,17 +18,50 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('OG Academy')
       expect(response.body).to include('Quick Start')
-      expect(response.body).to include('Earn your OG Academy milestones')
+      expect(response.body).to include('OG Mastery milestones')
       expect(response.body).to include('Practice track')
       expect(response.body).to include('Choose your home base')
       expect(response.body).to include('Check-in')
       expect(response.body).to include('Observe')
-      expect(response.body).to include('Goal confidence')
+      expect(response.body).to include('Goals')
+      expect(response.body).to include('OGO')
+      expect(response.body).to include('active and healthy')
+      expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(company, teammate))
+      expect(response.body).to include(my_growth_goals_organization_company_teammate_path(company, teammate))
+      expect(response.body).to include(ogos_organization_company_teammate_path(company, teammate))
+      # Quick Start row order: Observe → Goals → Check-in (by hrefs after name link)
+      quick_start = response.body[%r{og-academy-quick-start.*?</section>}m]
+      expect(quick_start).to be_present
+      ogo_path = ogos_organization_company_teammate_path(company, teammate)
+      growth_path = my_growth_goals_organization_company_teammate_path(company, teammate)
+      up_next_path = up_next_organization_company_teammate_check_ins_path(company, teammate)
+      expect(quick_start.index(ogo_path)).to be < quick_start.index(growth_path)
+      expect(quick_start.index(growth_path)).to be < quick_start.index(up_next_path)
+      expect(response.body).to include('Learn OurGruuv by doing... quick start now...')
+      expect(response.body).to include('Welcome to OG Academy')
+      expect(response.body).to include('continuous clarity and unfading growth')
+      expect(response.body).to include('Goal of this page')
+      expect(response.body).to include('My Growth · Experiences')
+      expect(response.body).to include('Celebrate Milestones')
+      expect(response.body).to include('OG Mastery @ Milestone')
+      expect(response.body).to include('context-callout')
+      expect(response.body).not_to include('coming soon')
     end
 
     it 'includes the viewer in Quick Start' do
       get organization_og_academy_path(company)
       expect(response.body).to include(person.casual_name)
+    end
+
+    it 'links incomplete criteria that have a destination and tooltips the rest' do
+      get organization_og_academy_path(company)
+      body = response.body
+      expect(body).to include(select_type_organization_observations_path(company))
+      expect(body).to include(new_organization_goal_path(company, owner_id: "CompanyTeammate_#{teammate.id}"))
+      expect(body).to include(organization_company_teammate_notifications_path(company, teammate))
+      expect(body).to include('bi-question-circle')
+      expect(body).to include('Have a manager certify a milestone on a company Ability.')
+      expect(body).to include('data-bs-toggle="tooltip"')
     end
 
     it 'collapses manager/admin levels when the viewer has no reports' do

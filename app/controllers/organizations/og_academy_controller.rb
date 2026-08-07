@@ -5,6 +5,7 @@ class Organizations::OgAcademyController < Organizations::OrganizationNamespaceB
     authorize current_organization, :show?
 
     @quick_start_people = quick_start_people
+    load_quick_start_health_data!
     @academy_progress = OgAcademy::ProgressService.new(
       organization: current_organization,
       company_teammate: current_company_teammate
@@ -38,5 +39,22 @@ class Organizations::OgAcademyController < Organizations::OrganizationNamespaceB
       people += CompanyTeammate.where(id: report_ids).includes(:person).order(:id).to_a
     end
     people.uniq
+  end
+
+  def load_quick_start_health_data!
+    teammate_ids = @quick_start_people.map(&:id)
+    @quick_start_row_data_by_teammate_id = ManagersViewCardDataService.load(
+      teammates: @quick_start_people,
+      organization: current_organization,
+      viewing_teammate: current_company_teammate
+    )
+    @quick_start_clarity_eh_by_teammate_id = CheckInsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: current_organization,
+      teammate_ids: teammate_ids
+    )
+    @quick_start_goals_eh_by_teammate_id = GoalsHealthEngagementHealthSupport.records_by_teammate_id(
+      organization: current_organization,
+      teammate_ids: teammate_ids
+    )
   end
 end

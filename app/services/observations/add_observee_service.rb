@@ -6,20 +6,18 @@ module Observations
     end
 
     def call
-      # Ensure observation is loaded with company
+      # Ensure observation is loaded with company when already saved
       @observation.reload if @observation.persisted?
-      
-      # Check if observee already exists
-      observee = existing_observee if observee_exists?
-      
-      # Create the observee if it doesn't exist
-      observee ||= @observation.observees.create!(teammate_id: @teammate_id)
+
+      observee = find_or_add_observee
+      teammate = observee.teammate || CompanyTeammate.find_by(id: @teammate_id)
+      return observee unless teammate
 
       # Add active assignments with given energy as 'na' ratings
-      add_active_assignments_as_ratings(observee.teammate)
+      add_active_assignments_as_ratings(teammate)
 
       # Add ability ratings for abilities from required/active assignments and position direct milestones
-      add_relevant_abilities_as_ratings(observee.teammate)
+      add_relevant_abilities_as_ratings(teammate)
 
       observee
     end
@@ -28,24 +26,30 @@ module Observations
 
     attr_reader :observation, :teammate_id
 
-    def observee_exists?
-      @observation.observees.exists?(teammate_id: @teammate_id)
+    def find_or_add_observee
+      existing = existing_observee
+      return existing if existing
+
+      if @observation.persisted?
+        @observation.observees.create!(teammate_id: @teammate_id)
+      else
+        @observation.observees.build(teammate_id: @teammate_id)
+      end
     end
 
     def existing_observee
-      @observation.observees.find_by(teammate_id: @teammate_id)
+      if @observation.persisted?
+        @observation.observees.find_by(teammate_id: @teammate_id)
+      else
+        @observation.observees.detect { |o| o.teammate_id.to_s == @teammate_id.to_s }
+      end
     end
 
     def add_relevant_abilities_as_ratings(teammate)
-      ability_ids = relevant_ability_ids_for_observee(teammate)
-      ability_ids.each do |ability_id|
-        next if rating_exists_for_ability?(ability_id)
+      relevant_ability_ids_for_observee(teammate).each do |ability_id|
+        next if rating_exists?('Ability', ability_id)
 
-        @observation.observation_ratings.create!(
-          rateable_type: 'Ability',
-          rateable_id: ability_id,
-          rating: 'na'
-        )
+        add_rating('Ability', ability_id)
       end
     end
 
@@ -83,13 +87,6 @@ module Observations
       ids.to_a
     end
 
-    def rating_exists_for_ability?(ability_id)
-      @observation.observation_ratings.exists?(
-        rateable_type: 'Ability',
-        rateable_id: ability_id
-      )
-    end
-
     def add_active_assignments_as_ratings(teammate)
       # Find all active assignment tenures with given energy for this teammate
       active_tenures = teammate.assignment_tenures
@@ -99,23 +96,41 @@ module Observations
                                 .includes(:assignment)
 
       active_tenures.each do |tenure|
-        # Only create rating if one doesn't already exist for this assignment
-        next if rating_exists_for_assignment?(tenure.assignment)
+        next if rating_exists?('Assignment', tenure.assignment_id)
 
-        @observation.observation_ratings.create!(
-          rateable_type: 'Assignment',
-          rateable_id: tenure.assignment_id,
-          rating: 'na'
-        )
+        add_rating('Assignment', tenure.assignment_id, rateable: tenure.assignment)
       end
     end
 
-    def rating_exists_for_assignment?(assignment)
-      @observation.observation_ratings.exists?(
-        rateable_type: 'Assignment',
-        rateable_id: assignment.id
-      )
+    def rating_exists?(rateable_type, rateable_id)
+      if @observation.persisted?
+        @observation.observation_ratings.exists?(
+          rateable_type: rateable_type,
+          rateable_id: rateable_id
+        )
+      else
+        @observation.observation_ratings.any? do |rating|
+          rating.rateable_type == rateable_type && rating.rateable_id.to_s == rateable_id.to_s
+        end
+      end
+    end
+
+    def add_rating(rateable_type, rateable_id, rateable: nil)
+      if @observation.persisted?
+        @observation.observation_ratings.create!(
+          rateable_type: rateable_type,
+          rateable_id: rateable_id,
+          rating: 'na'
+        )
+      else
+        rating = @observation.observation_ratings.build(
+          rateable_type: rateable_type,
+          rateable_id: rateable_id,
+          rating: 'na'
+        )
+        rating.rateable = rateable || rateable_type.constantize.find_by(id: rateable_id)
+        rating
+      end
     end
   end
 end
-

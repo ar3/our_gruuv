@@ -15,7 +15,13 @@ RSpec.describe OgAcademy::ProgressService do
         levels = service.levels
         expect(levels.map(&:level)).to eq([1, 2, 3, 4, 5])
         expect(levels.first.criteria.map(&:key)).to include(:logged_in, :zero_actions, :published_ogo)
-        expect(levels.last.placeholder).to eq(true)
+        expect(levels.last.placeholder).to eq(false)
+        expect(levels.last.criteria.map(&:key)).to eq(%i[
+          published_position_other_orgs
+          published_assignment_other_orgs
+          published_ability_other_orgs
+        ])
+        expect(levels.last.criteria.map(&:done)).to all(eq(false))
       }.not_to change(TeammateMilestone, :count)
     end
 

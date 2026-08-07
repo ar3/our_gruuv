@@ -430,13 +430,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         load_observable_moment_context(@observable_moment)
       end
       
-      # Set observees from params (may override moment suggestions)
-      observee_ids = params[:observee_ids] || []
-      observee_ids.each do |teammate_id|
-        next if teammate_id.blank?
-        @observation.observees.build(teammate_id: teammate_id)
-      end
-      
       # Set defaults (not saved yet - will be saved when user clicks "Add Assignments" or "Publish")
       @observation.story = params[:story] || ''
       @observation.privacy_level = params[:privacy_level] || 'observed_and_managers'
@@ -466,6 +459,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           # Pre-load the rateable association so it's available for @observation.aspirations
           rating.rateable = aspiration
         end
+      end
+
+      # Pre-select observees and attach their active assignments / relevant abilities
+      # (same path as Manage Observees via Observations::AddObserveeService)
+      observee_ids = Array(params[:observee_ids]).reject(&:blank?)
+      observee_ids.each do |teammate_id|
+        Observations::AddObserveeService.new(observation: @observation, teammate_id: teammate_id).call
       end
 
       assign_goal_from_params_to_observation(@observation)
@@ -1855,17 +1855,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     else
       # Create new draft
       @observation = organization.observations.build(observer: current_person, observation_type: type, created_as_type: type)
-      
-      # Set observees from params
-      observee_ids = params[:observee_ids] || []
-      observee_ids.each do |teammate_id|
-        next if teammate_id.blank?
-        @observation.observees.build(teammate_id: teammate_id)
-      end
-      
+
       @observation.privacy_level = params[:privacy_level] || default_privacy
       @observation.observed_at ||= Time.current
-      
+
       # Add initial rateable if provided (build in memory, not saved)
       if params[:rateable_type].present? && params[:rateable_id].present?
         rateable = params[:rateable_type].constantize.find(params[:rateable_id])
@@ -1886,6 +1879,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           )
           rating.rateable = aspiration
         end
+      end
+
+      # Pre-select observees and attach their active assignments / relevant abilities
+      Array(params[:observee_ids]).reject(&:blank?).each do |teammate_id|
+        Observations::AddObserveeService.new(observation: @observation, teammate_id: teammate_id).call
       end
 
       assign_goal_from_params_to_observation(@observation)

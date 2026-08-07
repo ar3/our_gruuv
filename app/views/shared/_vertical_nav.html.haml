@@ -26,10 +26,14 @@
     %nav.nav.flex-column
       - nav_structure.each do |section|
         - if section[:section].nil?
-          / Dashboard link (no section)
+          / Standalone top-level links (OG Academy, Dashboard)
           = link_to section[:path], class: "nav-link #{'active' if nav_item_active?(section[:path])}" do
             %i.bi{class: section[:icon]}
             = section[:label]
+            - if section[:beta]
+              %span.badge.bg-secondary.ms-2 Beta
+            - if section[:coming_soon]
+              %span.badge.bg-secondary.ms-2 Coming Soon
         - else
           / Section with items
           - visible_items = section[:items]

@@ -23,11 +23,13 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("OGO health (last 30 days)")
     end
 
-    it "includes a link to all observations involving the teammate" do
+    it "includes a giant add-OGO CTA that skips type selection and preselects the teammate" do
       get ogos_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to include("All OGOs involving #{person.casual_name}")
-      expect(response.body).to include("involving_teammate_id=#{teammate.id}")
-      expect(response.body).to include("view=large_list")
+      expect(response.body).to include("Add an OGO about #{person.casual_name}")
+      expect(response.body).to include(new_organization_observation_path(organization))
+      expect(response.body).to include("observee_ids")
+      expect(response.body).to include(teammate.id.to_s)
+      expect(response.body).not_to include(select_type_organization_observations_path(organization) + "?")
     end
 
     it "includes the Source from Slack tab on the OGOs page" do

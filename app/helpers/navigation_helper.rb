@@ -31,10 +31,21 @@ module NavigationHelper
   # Navigation structure definition
   def navigation_structure
     return [] unless current_organization && current_person
-    
+
+    casual = current_company_teammate&.person&.casual_name.presence || "My"
+    dashboard_label = casual == "My" ? "My Dashboard" : "#{casual}'s Dashboard"
+
     [
       {
-        label: 'Start Here',
+        label: 'OG Academy',
+        icon: 'bi-mortarboard',
+        path: organization_og_academy_path(current_organization),
+        section: nil,
+        beta: true,
+        policy_check: -> { policy(current_organization).show? }
+      },
+      {
+        label: dashboard_label,
         icon: 'bi-house-door',
         path: organization_start_here_path(current_organization),
         section: nil,

@@ -157,21 +157,35 @@ module OgAcademy
     end
 
     def level_five
+      global_repo_hint = "When the global MAAP repository ships, we'll check this automatically if other organizations adopt your published work. Until then this stays open."
+      criteria = [
+        criterion(
+          :published_position_other_orgs,
+          "Published a Position that is in use by other organizations",
+          false,
+          global_repo_hint
+        ),
+        criterion(
+          :published_assignment_other_orgs,
+          "Published an Assignment that is in use by other organizations",
+          false,
+          global_repo_hint
+        ),
+        criterion(
+          :published_ability_other_orgs,
+          "Published an Ability that is in use by other organizations",
+          false,
+          global_repo_hint
+        )
+      ]
       Level.new(
         level: 5,
-        title: "Cross-company adoption (coming soon)",
+        title: "Cross-company adoption",
         audience: :future,
         complete: false,
-        criteria: [
-          criterion(
-            :cross_company,
-            "Publish a Position, Assignment, or Ability adopted by another company",
-            false,
-            "Not available yet — placeholder for industry-level sharing."
-          )
-        ],
-        marketing_why: nil,
-        placeholder: true
+        criteria: criteria,
+        marketing_why: why_for(criteria, "contributing MAAP pieces that scale beyond one company"),
+        placeholder: false
       )
     end
 

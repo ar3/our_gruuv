@@ -188,6 +188,49 @@ RSpec.describe Observations::AddObserveeService, type: :service do
       end
     end
 
+    context 'when the observation is not yet persisted' do
+      let(:unsaved_observation) do
+        Observation.new(
+          observer: observer,
+          company: company,
+          story: 'Unsaved draft',
+          privacy_level: :observed_only,
+          observed_at: Time.current
+        )
+      end
+      let(:assignment) { create(:assignment, company: company) }
+      let(:ability) { create(:ability, company: company) }
+      let!(:assignment_ability) do
+        create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 1)
+      end
+      let!(:active_tenure) do
+        create(:assignment_tenure,
+               teammate: teammate,
+               assignment: assignment,
+               started_at: 1.month.ago,
+               ended_at: nil,
+               anticipated_energy_percentage: 50)
+      end
+
+      it 'builds observee and rateables in memory without saving' do
+        service = described_class.new(observation: unsaved_observation, teammate_id: teammate.id)
+        expect { service.call }.not_to change { Observation.count }
+        expect(unsaved_observation).to be_new_record
+        expect(unsaved_observation.observees.size).to eq(1)
+        expect(unsaved_observation.observees.first.teammate_id).to eq(teammate.id)
+
+        assignment_rating = unsaved_observation.observation_ratings.detect { |r| r.rateable_type == 'Assignment' }
+        ability_rating = unsaved_observation.observation_ratings.detect { |r| r.rateable_type == 'Ability' }
+
+        expect(assignment_rating.rateable_id).to eq(assignment.id)
+        expect(assignment_rating.rating).to eq('na')
+        expect(assignment_rating.rateable).to eq(assignment)
+        expect(ability_rating.rateable_id).to eq(ability.id)
+        expect(ability_rating.rating).to eq('na')
+        expect(ability_rating.rateable).to eq(ability)
+      end
+    end
+
     context 'when observee has position with direct milestone requirements (position_abilities)' do
       let(:title) { create(:title, company: company) }
       let(:position_level) { create(:position_level, position_major_level: title.position_major_level) }

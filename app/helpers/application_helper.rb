@@ -707,7 +707,11 @@ module ApplicationHelper
   end
 
   # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
-  START_PAGE_VALUES = %w[og_academy start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done protect_flow goals observations_involving_me my_teams kudos celebrate_milestones insights].freeze
+  START_PAGE_VALUES = %w[
+    og_academy start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done protect_flow
+    goals company_goals my_growth_experiences my_growth_abilities my_growth_goals
+    observations_involving_me my_teams kudos celebrate_milestones insights
+  ].freeze
 
   def start_page_preference_key(organization)
     "start_page_#{organization.id}"
@@ -743,6 +747,14 @@ module ApplicationHelper
       organization_protect_flow_path(organization)
     when 'goals'
       organization_goals_path(organization, owner_id: "CompanyTeammate_#{company_teammate.id}")
+    when 'company_goals'
+      organization_goals_path(organization, owner_id: 'everyone_in_company', view: 'hierarchical-collapsible-hidden-checks')
+    when 'my_growth_experiences'
+      my_growth_experiences_organization_company_teammate_path(organization, company_teammate)
+    when 'my_growth_abilities'
+      my_growth_abilities_organization_company_teammate_path(organization, company_teammate)
+    when 'my_growth_goals'
+      my_growth_goals_organization_company_teammate_path(organization, company_teammate)
     when 'observations_involving_me'
       organization_observations_path(organization, involving_teammate_id: company_teammate.id)
     when 'my_teams'
@@ -772,6 +784,10 @@ module ApplicationHelper
       ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
       (company_teammate.has_direct_reports? ? ['Protect Flow', 'protect_flow'] : nil),
       ["#{casual}'s Goals", 'goals'],
+      ["#{org_name} Goals", 'company_goals'],
+      ['My Growth · Experiences', 'my_growth_experiences'],
+      ['My Growth · Abilities', 'my_growth_abilities'],
+      ['My Growth · Goals', 'my_growth_goals'],
       ["Observations involving #{casual}", 'observations_involving_me'],
       ["#{casual}'s teams", 'my_teams'],
       ["#{org_name} Kudos", 'kudos'],
