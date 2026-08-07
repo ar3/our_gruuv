@@ -51,6 +51,7 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
     it 'includes the viewer in Quick Start' do
       get organization_og_academy_path(company)
       expect(response.body).to include(person.casual_name)
+      expect(response.body).to include('rounded-circle')
     end
 
     it 'links incomplete criteria that have a destination and tooltips the rest' do
