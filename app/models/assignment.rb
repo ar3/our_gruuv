@@ -207,6 +207,9 @@ class Assignment < ApplicationRecord
   end
   
   # pg_search configuration
+  # Multisearch store content comes from {#searchable_text} (includes outcomes).
+  # Override rebuild so we do not use the default SQL rebuild (which only
+  # concatenates :against columns and would omit association text).
   pg_search_scope :search_by_full_text,
     against: {
       title: 'A',
@@ -214,11 +217,28 @@ class Assignment < ApplicationRecord
       required_activities: 'B',
       handbook: 'B'
     },
+    associated_against: {
+      assignment_outcomes: [:description]
+    },
     using: {
       tsearch: { prefix: true, any_word: true }
     }
   
   multisearchable against: [:title, :tagline, :required_activities, :handbook]
+
+  def self.rebuild_pg_search_documents
+    find_each { |assignment| assignment.update_pg_search_document }
+  end
+
+  def searchable_text
+    [
+      title,
+      tagline,
+      required_activities,
+      handbook,
+      assignment_outcomes.map { |outcome| outcome.description.to_s }.join(" ")
+    ].compact.join(" ")
+  end
 
   # True when this assignment is marked required on the teammate's active position in +organization+.
   def required_on_position_for_teammate?(teammate, organization)

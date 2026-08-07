@@ -208,13 +208,26 @@ has_many :goal_associations, as: :associable, dependent: :destroy
   pg_search_scope :search_by_full_text,
     against: {
       name: 'A',
-      description: 'B'
+      description: 'B',
+      milestone_1_description: 'C',
+      milestone_2_description: 'C',
+      milestone_3_description: 'C',
+      milestone_4_description: 'C',
+      milestone_5_description: 'C'
     },
     using: {
       tsearch: { prefix: true, any_word: true }
     }
   
-  multisearchable against: [:name, :description]
+  multisearchable against: [
+    :name,
+    :description,
+    :milestone_1_description,
+    :milestone_2_description,
+    :milestone_3_description,
+    :milestone_4_description,
+    :milestone_5_description
+  ]
 
   private
 

@@ -184,5 +184,90 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results).to have_key(:people)
       end
     end
+
+    context 'searching assignments by outcome description' do
+      let!(:assignment_with_outcome) do
+        create(
+          :assignment,
+          company: organization,
+          title: 'Quiet Ops Role',
+          tagline: 'Keep systems running',
+          handbook: 'Standard handbook'
+        )
+      end
+      let!(:matching_outcome) do
+        create(
+          :assignment_outcome,
+          assignment: assignment_with_outcome,
+          description: 'Customers report UniqueOutcomeZebra satisfaction'
+        )
+      end
+      let!(:other_assignment) do
+        create(
+          :assignment,
+          company: organization,
+          title: 'Other Quiet Role',
+          tagline: 'Other tagline'
+        )
+      end
+      let(:query) do
+        GlobalSearchQuery.new(
+          query: 'UniqueOutcomeZebra',
+          current_organization: organization,
+          current_teammate: teammate
+        )
+      end
+
+      before do
+        PgSearch::Multisearch.rebuild(Assignment)
+      end
+
+      it 'finds the assignment via outcome description text' do
+        results = query.call
+        expect(results[:assignments]).to include(assignment_with_outcome)
+        expect(results[:assignments]).not_to include(other_assignment)
+      end
+    end
+
+    context 'searching abilities by milestone description' do
+      let!(:ability_with_milestone) do
+        create(
+          :ability,
+          company: organization,
+          created_by: person,
+          updated_by: person,
+          name: 'Quiet Ability Name',
+          description: 'A generic description without the token',
+          milestone_3_description: 'Demonstrates UniqueMilestoneQuokka under pressure'
+        )
+      end
+      let!(:other_ability) do
+        create(
+          :ability,
+          company: organization,
+          created_by: person,
+          updated_by: person,
+          name: 'Another Quiet Ability',
+          description: 'Another generic description'
+        )
+      end
+      let(:query) do
+        GlobalSearchQuery.new(
+          query: 'UniqueMilestoneQuokka',
+          current_organization: organization,
+          current_teammate: teammate
+        )
+      end
+
+      before do
+        PgSearch::Multisearch.rebuild(Ability)
+      end
+
+      it 'finds the ability via milestone text' do
+        results = query.call
+        expect(results[:abilities]).to include(ability_with_milestone)
+        expect(results[:abilities]).not_to include(other_ability)
+      end
+    end
   end
 end

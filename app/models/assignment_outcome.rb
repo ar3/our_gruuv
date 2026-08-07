@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 class AssignmentOutcome < ApplicationRecord
   # Associations
   belongs_to :assignment
-  
+
   # Validations
   validates :description, presence: true
   validates :assignment, presence: true
@@ -9,13 +11,17 @@ class AssignmentOutcome < ApplicationRecord
   validates :management_relationship_filter, inclusion: { in: %w[direct_employee direct_manager no_relationship] }, allow_blank: true
   validates :team_relationship_filter, inclusion: { in: %w[same_team different_team] }, allow_blank: true
   validates :consumer_assignment_filter, inclusion: { in: %w[active_consumer not_consumer] }, allow_blank: true
-  
+
+  # Keep Assignment multisearch content in sync when outcome text changes
+  # (pg_search only refreshes the parent document on parent save by default).
+  after_commit :refresh_assignment_pg_search_document
+
   # Constants
   TYPES = %w[quantitative sentiment].freeze
-  
+
   # Scopes
   scope :ordered, -> { order(:created_at) }
-  
+
   # Instance methods
   def display_name
     description
@@ -37,9 +43,20 @@ class AssignmentOutcome < ApplicationRecord
   # Returns the first quoted string found, or nil if none found
   def extract_quoted_content
     return nil if description.blank?
-    
+
     # Match content between single or double quotes
     match = description.match(/["']([^"']+)["']/)
     match ? match[1] : nil
+  end
+
+  private
+
+  def refresh_assignment_pg_search_document
+    parent = assignment
+    return if parent.blank?
+    return if parent.destroyed? || !parent.persisted?
+
+    parent.assignment_outcomes.reload
+    parent.update_pg_search_document
   end
 end

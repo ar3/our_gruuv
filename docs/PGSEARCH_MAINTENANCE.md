@@ -63,6 +63,10 @@ You should rebuild indexes when:
 
 1. **After bulk data imports** - If you import data via SQL or bulk operations
 2. **After migrations that modify searchable fields** - If you change columns used in `multisearchable`
+   - **Deploy note (2026-08):** Assignment multisearch content now includes outcome descriptions via
+     `Assignment#searchable_text` / `rebuild_pg_search_documents`, and Ability indexes all five
+     milestone description fields. Rebuild with `bundle exec rake pg_search:rebuild` (or rebuild
+     Assignment + Ability only) after deploy so existing documents pick up the new fields.
 3. **When search results are incomplete** - If users report missing results
 4. **After manual database operations** - If you run SQL updates directly
 5. **Periodically in production** - Consider scheduling a weekly check
@@ -134,8 +138,8 @@ The following models use `multisearchable`:
 - **Person**: `first_name`, `last_name`, `email`
 - **Organization**: `name`, `type`
 - **Observation**: `story`, `primary_feeling`, `secondary_feeling`
-- **Assignment**: `title`, `tagline`, `required_activities`, `handbook`
-- **Ability**: `name`, `description`
+- **Assignment**: `title`, `tagline`, `required_activities`, `handbook`, plus outcome descriptions via `Assignment#searchable_text` (refreshed when outcomes change)
+- **Ability**: `name`, `description`, `milestone_1_description` … `milestone_5_description`
 - **Title**: `external_title`
 
 ## Implementation Details
