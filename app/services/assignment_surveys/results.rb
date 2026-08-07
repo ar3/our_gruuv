@@ -6,11 +6,20 @@ module AssignmentSurveys
       relevant: :relevant_rating
     }.freeze
 
-    attr_reader :organization, :teammates
+    ASSIGNMENT_SORTS = %w[name average responses].freeze
+    DEFAULT_ASSIGNMENT_SORT = "name"
 
-    def initialize(organization:, teammates:)
+    attr_reader :organization, :teammates, :assignment_sort
+
+    def initialize(organization:, teammates:, assignment_sort: DEFAULT_ASSIGNMENT_SORT)
       @organization = organization
       @teammates = teammates.includes(:person).order("people.last_name ASC", "people.first_name ASC").references(:person).to_a
+      @assignment_sort = self.class.normalize_assignment_sort(assignment_sort)
+    end
+
+    def self.normalize_assignment_sort(value)
+      sort = value.to_s.presence
+      ASSIGNMENT_SORTS.include?(sort) ? sort : DEFAULT_ASSIGNMENT_SORT
     end
 
     def participation_rows
@@ -40,15 +49,18 @@ module AssignmentSurveys
     end
 
     def assignment_rows
-      latest_responses.group_by(&:assignment_id).values.map do |responses|
+      rows = latest_responses.group_by(&:assignment_id).values.map do |responses|
         latest_response = responses.max_by(&:created_at)
+        distributions = distributions_for(responses)
         {
           assignment_id: latest_response.assignment_id,
           title: latest_response.snapshot_title,
           response_count: responses.size,
-          distributions: distributions_for(responses)
+          distributions: distributions,
+          overall_average: overall_average_for(distributions)
         }
-      end.sort_by { |row| row[:title].downcase }
+      end
+      sort_assignment_rows(rows)
     end
 
     def finalized_teammate_count
@@ -96,6 +108,26 @@ module AssignmentSurveys
         end
         average = values.any? ? (values.sum.to_f / values.size).round(2) : nil
         [ dimension, { counts: counts, average: average, total: values.size, rating_sets: rating_sets } ]
+      end
+    end
+
+    def overall_average_for(distributions)
+      averages = DIMENSIONS.keys.filter_map { |dimension| distributions.dig(dimension, :average) }
+      return nil if averages.empty?
+
+      (averages.sum / averages.size.to_f).round(2)
+    end
+
+    def sort_assignment_rows(rows)
+      case assignment_sort
+      when "average"
+        # Lowest overall average first so problems scan to the top; missing averages last.
+        rows.sort_by { |row| [ row[:overall_average].nil? ? 1 : 0, row[:overall_average] || 0, row[:title].downcase ] }
+      when "responses"
+        # Most responses first; title as stable secondary key.
+        rows.sort_by { |row| [ -row[:response_count], row[:title].downcase ] }
+      else
+        rows.sort_by { |row| row[:title].downcase }
       end
     end
   end

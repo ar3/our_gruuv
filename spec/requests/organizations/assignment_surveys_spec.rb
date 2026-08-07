@@ -152,7 +152,23 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     expect(response.body).to include("data-bs-toggle=\"popover\"")
     expect(response.body).to include("make up these responses")
     expect(response.body).to include("represented")
+    expect(response.body).to include("OG thinks this is Healthy.")
+    expect(response.body).to include("OG thinks this is Strained.")
+    expect(response.body).to include("OG thinks this is Incredible.")
+    expect(response.body).to include("Small sample: only 1 response")
+    expect(response.body).to include("assignment-survey-quality-healthy")
+    expect(response.body).to include("assignment-survey-quality-strained")
+    expect(response.body).to include("assignment-survey-quality-incredible")
+    expect(response.body).to include("Sort by")
+    expect(response.body).to include(results_organization_assignment_survey_path(organization, sort: "average"))
+    expect(response.body).to include(results_organization_assignment_survey_path(organization, sort: "responses"))
     expect(response.body).to include(person.display_name)
+
+    get results_organization_assignment_survey_path(organization, sort: "average")
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include('aria-current="true"')
+    expect(response.body).to include("Average")
 
     get export_organization_assignment_survey_path(organization)
 

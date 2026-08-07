@@ -1,0 +1,11 @@
+.assignment-survey-quality-legend.small
+  %p.text-muted.mb-2
+    OG grades each average so you can scan healthy vs at risk. Hover an icon for details, including disagree-side counts and small-sample notes.
+  .d-flex.flex-wrap.gap-3
+    - AssignmentSurveys::QualitySignal::BANDS.each do |band|
+      %span.d-inline-flex.align-items-center.gap-1
+        %i.bi{class: [band[:icon], "assignment-survey-quality-icon", "assignment-survey-quality-#{band[:key]}"], "aria-hidden": "true"}
+        %span= band[:label]
+    %span.d-inline-flex.align-items-center.gap-1
+      %i.bi.bi-exclamation-triangle-fill.assignment-survey-quality-caution{"aria-hidden": "true"}
+      %span Healthy/Incredible mean with disagree-side responses

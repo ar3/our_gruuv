@@ -2174,6 +2174,57 @@ body:has(.vertical-nav.open) .floating-toggle {
   max-width: 44rem;
 }
 
+// Opinionated average quality bands on Assignment Experience Survey results.
+// Aligns with the 1–6 Likert ramp; "strained" stays amber so somewhat-agree
+// does not read as fully healthy.
+$assignment-survey-quality-colors: (
+  critical: #a02734,
+  poor: #ca3b49,
+  concerning: #d97706,
+  strained: #c9a227,
+  healthy: #2f9e69,
+  incredible: #14764a
+);
+
+.assignment-survey-quality-signal {
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.assignment-survey-quality-icon {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.assignment-survey-quality-caution {
+  color: #c9a227;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+@each $name, $color in $assignment-survey-quality-colors {
+  .assignment-survey-quality-#{$name} {
+    color: $color;
+  }
+}
+
+.assignment-survey-quality-legend {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  margin-bottom: 1rem;
+}
+
+// Prevent nested interactive popover triggers from expanding assignment rows.
+.list-group-item details summary .assignment-survey-quality-signal {
+  pointer-events: auto;
+}
+
+
 // Six-point Likert buttons: disagree side tinted increasingly red,
 // agree side increasingly green, so polarity is scannable by color.
 $likert-colors: (

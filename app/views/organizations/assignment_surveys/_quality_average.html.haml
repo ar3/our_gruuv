@@ -1,0 +1,14 @@
+-# locals: distributions, dimension, title (optional), show_label (optional)
+- title ||= nil
+- show_label = local_assigns.fetch(:show_label, false)
+- data = distributions.fetch(dimension)
+- average = data[:average]
+- signal = assignment_survey_quality_signal(data)
+%span.assignment-survey-quality-average.d-inline-flex.align-items-center.gap-1
+  - if show_label && title.present?
+    %span.text-muted= title
+  - if average.present?
+    %span.fw-semibold.text-body= average
+    = render "quality_signal", signal: signal, dimension_title: title if signal
+  - else
+    %span.fw-semibold.text-body —

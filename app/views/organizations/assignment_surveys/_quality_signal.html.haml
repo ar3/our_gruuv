@@ -1,0 +1,15 @@
+-# locals: signal, dimension_title (optional)
+- dimension_title ||= nil
+%span.assignment-survey-quality-signal{
+  role: "button",
+  tabindex: "0",
+  "aria-label": assignment_survey_quality_aria_label(signal, dimension_title: dimension_title),
+  "data-bs-toggle": "popover",
+  "data-bs-trigger": "hover focus",
+  "data-bs-placement": "top",
+  "data-bs-html": "true",
+  "data-bs-content": assignment_survey_quality_popover_content(signal),
+  onclick: "event.preventDefault(); event.stopPropagation();"}
+  %i.bi{class: [signal.icon, "assignment-survey-quality-icon", "assignment-survey-quality-#{signal.key}"], "aria-hidden": "true"}
+  - if signal.show_caution?
+    %i.bi.bi-exclamation-triangle-fill.assignment-survey-quality-caution{"aria-hidden": "true", title: "Dissenting responses present"}

@@ -79,7 +79,12 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
 
   def results
     authorize @organization, :assignment_survey_results?
-    @results = AssignmentSurveys::Results.new(organization: @organization, teammates: visible_teammates)
+    @assignment_sort = AssignmentSurveys::Results.normalize_assignment_sort(params[:sort])
+    @results = AssignmentSurveys::Results.new(
+      organization: @organization,
+      teammates: visible_teammates,
+      assignment_sort: @assignment_sort
+    )
   end
 
   def submission

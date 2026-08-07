@@ -13,6 +13,19 @@ ngrok http --domain=crappie-saved-absolutely.ngrok-free.app 3000
 
 # Deploy to production
 git push origin main && railway up
+
+
+
+alias rc-prod='railway run bash -c "DATABASE_URL=\$DATABASE_PUBLIC_URL bin/rails console"'
+rc-prod
+
+
+alias rm-prod='railway run --service our_gruuv-web --environment production bash -c "DATABASE_URL=\$DATABASE_PUBLIC_URL bin/rails db:migrate"'
+rm-prod
+
+
+
+
 ```
 
 ## 📚 Documentation Hub

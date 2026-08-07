@@ -36,8 +36,9 @@
       %h2.h4.mb-0 Current overall results
     .card-body
       %p.text-muted
-        Uses only each teammate's latest finalized survey. Distributions are primary; averages are provided as a quick reference.
-      .row.g-4
+        Uses only each teammate's latest finalized survey. Distributions are primary; averages are a quick OG-graded reference.
+      = render "quality_legend"
+      .row.g-4.mt-1
         .col-12.col-lg-4
           = render "distribution",
             distributions: @results.overall_distributions,
@@ -55,8 +56,17 @@
             title: "Relevant"
 
   .card.mb-4
-    .card-header
+    .card-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
       %h2.h4.mb-0 Results by assignment
+      .d-flex.align-items-center.gap-2.flex-wrap
+        %span.small.text-muted Sort by
+        .btn-group.btn-group-sm{role: "group", "aria-label": "Sort assignments"}
+          - [{ key: "name", label: "Name" }, { key: "average", label: "Average" }, { key: "responses", label: "Responses" }].each do |option|
+            - active = @assignment_sort == option[:key]
+            = link_to results_organization_assignment_survey_path(organization, sort: option[:key]),
+              class: "btn #{active ? 'btn-primary' : 'btn-outline-secondary'}",
+              "aria-current": (active ? "true" : nil) do
+              = option[:label]
     .list-group.list-group-flush
       - @results.assignment_rows.each do |row|
         .list-group-item
@@ -65,15 +75,21 @@
               %span.fw-semibold= row[:title]
               .d-flex.align-items-center.gap-3.ms-auto.flex-wrap
                 .d-flex.align-items-center.gap-3.small.text-muted
-                  %span
-                    Understandable
-                    %span.fw-semibold.text-body= row[:distributions].dig(:understandable, :average) || "—"
-                  %span
-                    Possible
-                    %span.fw-semibold.text-body= row[:distributions].dig(:possible, :average) || "—"
-                  %span
-                    Relevant
-                    %span.fw-semibold.text-body= row[:distributions].dig(:relevant, :average) || "—"
+                  = render "quality_average",
+                    distributions: row[:distributions],
+                    dimension: :understandable,
+                    title: "Understandable",
+                    show_label: true
+                  = render "quality_average",
+                    distributions: row[:distributions],
+                    dimension: :possible,
+                    title: "Possible",
+                    show_label: true
+                  = render "quality_average",
+                    distributions: row[:distributions],
+                    dimension: :relevant,
+                    title: "Relevant",
+                    show_label: true
                 %span.badge.text-bg-secondary #{row[:response_count]} responses
             .row.g-4.mt-2
               .col-12.col-lg-4
