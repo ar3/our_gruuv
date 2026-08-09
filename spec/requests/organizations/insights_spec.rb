@@ -58,6 +58,14 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('No qualifying goal activity in this timeframe')
     end
 
+    it 'renders Shared goals board when board=org_goals' do
+      get organization_insights_real_og_leaders_path(organization, board: 'org_goals')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Shared goals')
+      expect(response.body).to include('Confidence checks')
+      expect(response.body).to include('No qualifying shared goal activity in this timeframe')
+    end
+
     it 'renders Check-ins board by department sorted by % clear' do
       get organization_insights_real_og_leaders_path(organization, board: 'check_ins')
       expect(response).to have_http_status(:success)

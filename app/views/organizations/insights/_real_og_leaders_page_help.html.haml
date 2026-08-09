@@ -16,7 +16,7 @@
 
   %h3.fw-semibold.mb-2 Specifics of this page
   - if board == "goals"
-    %h5.fw-semibold.mb-2 Goals board
+    %h5.fw-semibold.mb-2 Goals board (personal)
     %ul.mb-3
       %li
         %strong Confidence checks
@@ -33,6 +33,25 @@
     %h5.fw-semibold.mb-2 Sort order
     %p.mb-0
       Most confidence checks first, then most connected goals, then most completions, then latest confidence check, then name.
+  - elsif board == "org_goals"
+    %h5.fw-semibold.mb-2 Shared goals board (team / department / company)
+    %ul.mb-3
+      %li Same three signals as personal goals, but rows are the owners of shared goals (Team, Department, or Company)—not people
+      %li
+        %strong Confidence checks
+        — checks on that owner’s shared goals
+      %li
+        %strong Connected
+        — shared goals linked to a prompt, assignment, ability, aspiration, a personal goal, or another shared goal
+      %li
+        %strong Completed
+        — shared goals completed in the timeframe
+      %li
+        %i.bi.bi-star-fill.text-warning.me-1
+        when all three are present for that owner
+    %h5.fw-semibold.mb-2 Sort order
+    %p.mb-0
+      Same as personal goals: confidence checks, then connections, then completions, then latest check, then name.
   - elsif board == "check_ins"
     %h5.fw-semibold.mb-2 Check-ins board
     %ul.mb-3

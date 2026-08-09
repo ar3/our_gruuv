@@ -15,7 +15,9 @@
                tooltip: "Who is practicing real OG habits — OGOs, goals, and clear check-ins. Click for details."
   %p.text-muted.mb-0
     - if board == "goals"
-      Goal confidence checks, connections to meaningful work, and completions in this timeframe.
+      Personal goals — confidence checks, connections, and completions in this timeframe.
+    - elsif board == "org_goals"
+      Team, department, and company goals — same signals as personal goals, by shared owner.
     - elsif board == "check_ins"
       Department clarity — who is most clear on required check-in action slots (% clear).
     - else
@@ -34,16 +36,20 @@
     wrapper_class: 'mb-3',
     form_hidden_fields: { board: board }
 
-%ul.nav.nav-tabs.mb-3{role: "tablist"}
+%ul.nav.nav-tabs.mb-3.flex-wrap{role: "tablist"}
   %li.nav-item{role: "presentation"}
     = link_to "OGOs", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "ogos")), class: "nav-link#{' active' if board == 'ogos'}", role: "tab"
   %li.nav-item{role: "presentation"}
     = link_to "Goals", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "goals")), class: "nav-link#{' active' if board == 'goals'}", role: "tab"
   %li.nav-item{role: "presentation"}
+    = link_to "Shared goals", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "org_goals")), class: "nav-link#{' active' if board == 'org_goals'}", role: "tab"
+  %li.nav-item{role: "presentation"}
     = link_to "Check-ins", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "check_ins")), class: "nav-link#{' active' if board == 'check_ins'}", role: "tab"
 
 - if board == "goals"
   = render "organizations/insights/real_og_leaders_goals_table"
+- elsif board == "org_goals"
+  = render "organizations/insights/real_og_leaders_org_goals_table"
 - elsif board == "check_ins"
   = render "organizations/insights/real_og_leaders_check_ins_table"
 - else

@@ -1,37 +1,47 @@
 .border-bottom.py-2.mb-3.small.text-muted
-  In this timeframe (#{@insights_chart_period_label}): #{number_with_delimiter(@real_og_leaders_goals.size)}
-  #{'person'.pluralize(@real_og_leaders_goals.size)} with at least one confidence check, connected goal, or completion on personal goals.
+  In this timeframe (#{@insights_chart_period_label}): #{number_with_delimiter(@real_og_leaders_org_goals.size)}
+  team/department/company #{'owner'.pluralize(@real_og_leaders_org_goals.size)} with at least one confidence check, connected goal, or completion on shared goals.
 
 .table-responsive
   %table.table.table-hover.align-middle
     %thead
       %tr
         %th.text-end{style: "width: 3rem;"} #
-        %th Person
+        %th Owner
         %th.text-center
-          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Goal confidence checks reported in this timeframe"}
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Confidence checks on team, department, or company goals in this timeframe"}
             Confidence checks
         %th.text-center
-          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Personal goals connected to a prompt, assignment, ability, aspiration, or a team/department/company goal (not only another personal goal)"}
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Shared goals connected to a prompt, assignment, ability, aspiration, a personal goal, or another team/department/company goal"}
             Connected
         %th.text-center
-          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Personal goals completed in this timeframe"}
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Team, department, or company goals completed in this timeframe"}
             Completed
         %th.text-center
-          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Star when this person has confidence checks, a connected goal, and a completion in the timeframe"}
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Star when this owner has confidence checks, a connected goal, and a completion in the timeframe"}
             All three
     %tbody
-      - if @real_og_leaders_goals.empty?
+      - if @real_og_leaders_org_goals.empty?
         %tr
-          %td.text-muted{colspan: 6} No qualifying goal activity in this timeframe.
-      - @real_og_leaders_goals.each_with_index do |entry, index|
+          %td.text-muted{colspan: 6} No qualifying shared goal activity in this timeframe.
+      - @real_og_leaders_org_goals.each_with_index do |entry, index|
         %tr
           %td.text-end.text-muted= index + 1
           %td
-            - if entry.company_teammate
-              = link_to entry.display_name, internal_organization_company_teammate_path(@organization, entry.company_teammate), class: 'text-decoration-none'
+            - case entry.owner_type
+            - when "Department"
+              = link_to entry.display_name, organization_department_path(@organization, entry.owner), class: "text-decoration-none"
+            - when "Team"
+              = link_to entry.display_name, organization_team_path(@organization, entry.owner), class: "text-decoration-none"
+            - when "Organization"
+              - if entry.owner_id == @organization.id
+                %span.fw-medium= entry.display_name
+              - else
+                = link_to entry.display_name, organization_path(entry.owner), class: "text-decoration-none"
             - else
               = entry.display_name
+            %br
+            %small.text-muted= entry.owner_kind_label
           %td.text-center
             - if entry.has_confidence_check
               %span.text-success{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.confidence_check_count} confidence #{'check'.pluralize(entry.confidence_check_count)}", tabindex: "0", role: "img", "aria-label" => "#{entry.confidence_check_count} confidence checks"}
