@@ -3,16 +3,16 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    See who is building real OG habits — writing useful OGOs and working goals with check-ins, connections, and completions.
+    See who is building real OG habits — useful OGOs, goal practice, and departments getting clear on check-ins.
 
   %h3.fw-semibold.mb-2 Context
   %p.mb-3
-    Real OG Leaders has boards for different clarity practices. Use the tabs to switch boards; the timeframe applies to whichever board is open.
+    Real OG Leaders has boards for different clarity practices. Use the tabs to switch boards.
     Observations insights talks about the ratio of
     %strong kudos
     to
     %strong constructive feedback
-    OGOs. Goals practice is a steady cadence of confidence checks, linking goals to meaningful work, and completing what you start.
+    OGOs. Goals practice is confidence checks, linking goals to meaningful work, and completing what you start. Check-in clarity is aggregated by department so progress stays collective rather than naming individuals.
 
   %h3.fw-semibold.mb-2 Specifics of this page
   - if board == "goals"
@@ -33,6 +33,17 @@
     %h5.fw-semibold.mb-2 Sort order
     %p.mb-0
       Most confidence checks first, then most connected goals, then most completions, then latest confidence check, then name.
+  - elsif board == "check_ins"
+    %h5.fw-semibold.mb-2 Check-ins board
+    %ul.mb-3
+      %li One row per department (including “No Department”) with active employees
+      %li Stacked bars show Gruuv Health required clarity across aspirations, assignments, and position check-ins
+      %li
+        %strong % clear
+        is the overall share of required clarity action slots that are healthy
+    %h5.fw-semibold.mb-2 Sort order
+    %p.mb-0
+      Always sorted by % clear (highest first). Unlike Check-ins Progress, name sort is not available here so the board stays a clarity race among teams.
   - else
     %h5.fw-semibold.mb-2 OGOs board
     %ul.mb-3

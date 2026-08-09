@@ -50,73 +50,13 @@
             %i.bi.bi-trophy.me-2
             Department leaderboard
         .card-body
-          %p.small.text-muted.mb-3
-            Aggregated Gruuv Health Required Clarity by department (% clear across required clarity action slots).
-          - if @department_health_rows.any?
-            .d-flex.align-items-center.mb-3
-              %span.me-2.fw-medium Sort by
-              .btn-group{role: "group"}
-                = link_to "Name", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "name"), class: "btn btn-sm #{@sort_by == 'name' ? 'btn-primary' : 'btn-outline-primary'}"
-                = link_to "% clear", organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "completion_rate"), class: "btn btn-sm #{@sort_by == 'completion_rate' ? 'btn-primary' : 'btn-outline-primary'}"
-            .table-responsive
-              %table.table.table-hover.table-layout-fixed
-                %colgroup
-                  %col{style: "width: 25%"}
-                  %col{style: "width: 25%"}
-                  %col{style: "width: 35%"}
-                  %col{style: "width: 15%"}
-                %thead
-                  %tr
-                    %th Department
-                    %th Aspirations
-                    %th Assignments
-                    %th Position
-                %tbody
-                  - @department_health_rows.each do |row|
-                    - segments_asp = check_ins_health_engagement_stacked_bar_segments(row[:aspiration_status_counts])
-                    - segments_assign = check_ins_health_engagement_stacked_bar_segments(row[:assignment_status_counts], display: :assignment)
-                    - segments_pos = check_ins_health_engagement_stacked_bar_segments(row[:position_status_counts])
-                    %tr
-                      %td
-                        - if row[:department].present?
-                          = link_to row[:department_name], organization_department_path(@organization, row[:department]), class: "text-decoration-none fw-bold"
-                        - else
-                          %span.fw-bold= row[:department_name]
-                        %br
-                        %small.text-muted
-                          #{row[:employee_count]} employee#{'s' if row[:employee_count] != 1}
-                          · #{row[:completion_rate]}% clear
-                      %td
-                        - if segments_asp.any?
-                          - total = segments_asp.sum { |s| s[:count] }
-                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
-                            - segments_asp.each do |seg|
-                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_ins_health_engagement_segment_tooltip(seg, total, "aspirations")}
-                        - else
-                          %span.text-muted No aspirations
-                      %td
-                        - if segments_assign.any?
-                          - total = segments_assign.sum { |s| s[:count] }
-                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 80px;"}
-                            - segments_assign.each do |seg|
-                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_ins_health_engagement_segment_tooltip(seg, total, "assignments")}
-                        - else
-                          %span.text-muted No assignments
-                      %td
-                        - if segments_pos.any?
-                          - total = segments_pos.sum { |s| s[:count] }
-                          .check-in-health-bar.d-flex.rounded.overflow-hidden{style: "height: 24px; min-width: 60px;"}
-                            - segments_pos.each do |seg|
-                              .flex-grow-0{style: "width: #{seg[:pct]}%;", class: seg[:css], "data-bs-toggle" => "tooltip", "data-bs-title" => check_ins_health_engagement_segment_tooltip(seg, total, "position")}
-                        - else
-                          %span.text-muted —
-          - else
-            .alert.alert-info
-              %h6.mb-2
-                %i.bi.bi-info-circle.me-2
-                No department data
-              %p.mb-0
-                There are no active employees in scope, or no check-in health data is available yet.
+          = render "organizations/insights/department_clarity_leaderboard",
+            organization: @organization,
+            rows: @department_health_rows,
+            show_sort: true,
+            sort_by: @sort_by,
+            sort_url_name: organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "name"),
+            sort_url_completion_rate: organization_insights_check_ins_progress_path(@organization, timeframe: params[:timeframe], sort: "completion_rate")
 
 :javascript
   (function() {

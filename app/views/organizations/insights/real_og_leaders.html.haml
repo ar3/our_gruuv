@@ -12,32 +12,39 @@
       Real OG Leaders
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
-               tooltip: "Who is practicing real OG habits — OGOs and goals. Click for details."
+               tooltip: "Who is practicing real OG habits — OGOs, goals, and clear check-ins. Click for details."
   %p.text-muted.mb-0
     - if board == "goals"
       Goal confidence checks, connections to meaningful work, and completions in this timeframe.
+    - elsif board == "check_ins"
+      Department clarity — who is most clear on required check-in action slots (% clear).
     - else
       Published, shared OGOs about others — kudos and constructive feedback in this timeframe.
 
 .collapse.mb-4{id: page_help_id}
   = render "organizations/insights/real_og_leaders_page_help", board: board
 
-= render 'timeframe_selector',
-  timeframe: @timeframe,
-  path_for: path_for_timeframe,
-  show_custom: true,
-  custom_from: @insights_custom_from,
-  custom_to: @insights_custom_to,
-  wrapper_class: 'mb-3',
-  form_hidden_fields: { board: board }
+- unless board == "check_ins"
+  = render 'timeframe_selector',
+    timeframe: @timeframe,
+    path_for: path_for_timeframe,
+    show_custom: true,
+    custom_from: @insights_custom_from,
+    custom_to: @insights_custom_to,
+    wrapper_class: 'mb-3',
+    form_hidden_fields: { board: board }
 
 %ul.nav.nav-tabs.mb-3{role: "tablist"}
   %li.nav-item{role: "presentation"}
     = link_to "OGOs", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "ogos")), class: "nav-link#{' active' if board == 'ogos'}", role: "tab"
   %li.nav-item{role: "presentation"}
     = link_to "Goals", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "goals")), class: "nav-link#{' active' if board == 'goals'}", role: "tab"
+  %li.nav-item{role: "presentation"}
+    = link_to "Check-ins", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "check_ins")), class: "nav-link#{' active' if board == 'check_ins'}", role: "tab"
 
 - if board == "goals"
   = render "organizations/insights/real_og_leaders_goals_table"
+- elsif board == "check_ins"
+  = render "organizations/insights/real_og_leaders_check_ins_table"
 - else
   = render "organizations/insights/real_og_leaders_ogos_table"
