@@ -30,6 +30,7 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
     allow(view).to receive(:render).with('page_visit_stats').and_return('')
     allow(view).to receive(:share_publicly_organization_observation_path).and_return("#")
     allow(view).to receive(:share_privately_organization_observation_path).and_return("#")
+    allow(view).to receive(:post_to_slack_organization_observation_path).and_return("#")
     allow(view).to receive(:award_kudos_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/award_kudos")
     allow(view).to receive(:kudos_points_display).with(25).and_return('25 Kudos Points')
     allow(view).to receive(:company_label_plural).with('kudos_point', 'Kudos Point').and_return('Kudos Points')
@@ -258,6 +259,39 @@ RSpec.describe 'organizations/observations/_nudge_to_notify_observation', type: 
       render partial: 'organizations/observations/nudge_to_notify_observation'
       expect(rendered).not_to include('Award from')
       expect(rendered).not_to include('award_celebratory_kudos')
+    end
+  end
+
+  context 'when public observation has a single unsent kudos channel' do
+    let(:public_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      assign(:observation, public_observation)
+      assign(:kudos_channel_organizations, [
+        { organization: company, channel: nil, display_name: 'Acme - #kudos', already_sent: false }
+      ])
+      allow(view).to receive(:post_to_slack_organization_observation_path)
+        .with(company, public_observation)
+        .and_return("/organizations/#{company.id}/observations/#{public_observation.id}/post_to_slack")
+    end
+
+    it 'renders a direct post button for that channel' do
+      render partial: 'organizations/observations/nudge_to_notify_observation'
+      expect(rendered).to have_button('Post to Acme - #kudos')
+      expect(rendered).to have_css(
+        "form[action='/organizations/#{company.id}/observations/#{public_observation.id}/post_to_slack']"
+      )
+      expect(rendered).to have_css(
+        "input[type='hidden'][name='kudos_channel_organization_id'][value='#{company.id}']",
+        visible: :hidden
+      )
+      expect(rendered).not_to include('Select the channel to post the celebration')
     end
   end
 end

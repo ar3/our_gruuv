@@ -117,7 +117,16 @@
                   or one of the other #{other_count} public kudos channels
             
             - if can_send_public
-              = link_to 'Select the channel to post the celebration', share_publicly_organization_observation_path(@organization, @observation), class: 'btn btn-sm btn-outline-primary mt-2'
+              - sole_channel = @kudos_channel_organizations&.size == 1 ? @kudos_channel_organizations.first : nil
+              - if sole_channel && !sole_channel[:already_sent]
+                = button_to "Post to #{sole_channel[:display_name]}",
+                  post_to_slack_organization_observation_path(@organization, @observation),
+                  method: :post,
+                  params: { kudos_channel_organization_id: sole_channel[:organization].id },
+                  class: 'btn btn-sm btn-outline-primary mt-2',
+                  form: { class: 'd-inline' }
+              - else
+                = link_to 'Select the channel to post the celebration', share_publicly_organization_observation_path(@organization, @observation), class: 'btn btn-sm btn-outline-primary mt-2'
             - else
               = link_to 'Select the channel to post the celebration', '#', class: 'btn btn-sm btn-outline-secondary mt-2', disabled: true, onclick: 'return false;'
           - else

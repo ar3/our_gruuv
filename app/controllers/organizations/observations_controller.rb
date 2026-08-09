@@ -279,8 +279,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       CelebratoryAwardTransaction.find_by(observable_moment: @observation.observable_moment)
     end
 
-    # Load data for the "great observation" section (only shown when published, no notifications, not journal, and observer)
-    if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
+    # Load data for the "great observation" section (only shown when published, no successful notifications yet, not journal, and observer)
+    if @observation.published? && @observation.notifications.successful.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
       # Load organizations with kudos channels (company + descendants)
       company = @observation.company
       organizations_with_channels = ([company] + company.descendants.to_a)

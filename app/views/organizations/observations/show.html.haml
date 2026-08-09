@@ -48,8 +48,8 @@
   .row
     .col-12
       = render 'nudge_to_publish_draft'
-/ Share prompt section - shown when observation is published, has no notifications, is not journal, and user is the observer
-- if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
+/ Share prompt section - shown when observation is published, no successful notifications yet, is not journal, and user is the observer
+- if @observation.published? && @observation.notifications.successful.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
   .row
     .col-12 
       = render 'nudge_to_notify_observation'
@@ -277,8 +277,8 @@
           - else
             = link_to 'Send Private', share_privately_organization_observation_path(@organization, @observation), class: 'btn btn-outline-primary'
         
-        / Public notifications list
-        - public_notifications = @observation.notifications.where(notification_type: 'observation_channel', status: 'sent_successfully')
+        / Public notifications list (all root attempts: success, failed, preparing)
+        - public_notifications = observation_root_notification_attempts(@observation.notifications, type: 'observation_channel')
         - if public_notifications.any?
           .mb-4
             %h6.mb-3
@@ -286,41 +286,32 @@
               Public Notifications
             - public_notifications.each do |notification|
               .d-flex.align-items-center.mb-2
-                %i.bi.bi-check-circle.text-success.me-2
+                %i.bi.me-2{class: observation_notification_status_icon_class(notification.status)}
                 %span
-                  - org_id = notification.metadata['organization_id']
-                  - if org_id.present?
-                    - org = Organization.find_by(id: org_id)
-                    - if org
-                      = org.display_name
-                      - if notification.metadata['channel'].present?
-                        %span.text-muted
-                          - # Channel ID is stored in metadata, need to get channel name
-                          - channel_id = notification.metadata['channel']
-                          - channel = org.third_party_objects.slack_channels.find_by(third_party_id: channel_id)
-                          - if channel
-                            = " - #{channel.display_name}"
-                  - if notification.slack_url.present?
+                  = "#{observation_notification_status_phrase(notification.status)} #{observation_notification_destination_label(notification)}"
+                  - if notification.status == 'sent_successfully' && notification.slack_url.present?
                     = link_to 'View Message', notification.slack_url, target: '_blank', class: 'ms-2 text-decoration-none'
                     %i.bi.bi-box-arrow-up-right.ms-1
                 %small.text-muted.ms-auto
                   = format_time_in_user_timezone(notification.created_at, format: '%m/%d/%y %l:%M %p')
         
-        / Private notifications list
-        - private_notifications = @observation.notifications.where(notification_type: 'observation_dm', status: 'sent_successfully').order(created_at: :desc)
+        / Private notifications list (all root attempts: success, failed, preparing)
+        - private_notifications = observation_root_notification_attempts(@observation.notifications, type: 'observation_dm')
         - if private_notifications.any?
           .mb-4
             %h6.mb-3
               %i.bi.bi-envelope.me-2
               Private Notifications
-            - private_notifications.group_by { |n| n.created_at.to_date }.each do |date, notifications|
-              .mb-2
-                %small.text-muted
-                  Shared privately on #{date.strftime('%B %d, %Y')}
-                - notifications.each do |notification|
-                  - if notification.slack_url.present?
+            - private_notifications.each do |notification|
+              .d-flex.align-items-center.mb-2
+                %i.bi.me-2{class: observation_notification_status_icon_class(notification.status)}
+                %span
+                  = "#{observation_notification_status_phrase(notification.status)} #{observation_notification_destination_label(notification)}"
+                  - if notification.status == 'sent_successfully' && notification.slack_url.present?
                     = link_to 'View Message', notification.slack_url, target: '_blank', class: 'ms-2 text-decoration-none'
                     %i.bi.bi-box-arrow-up-right.ms-1
+                %small.text-muted.ms-auto
+                  = format_time_in_user_timezone(notification.created_at, format: '%m/%d/%y %l:%M %p')
 
     / Debug Section
     - if params[:debug] == 'true' && @debug_data

@@ -213,5 +213,75 @@ module ObservationsHelper
       '#'
     end
   end
+
+  # Root send attempts for OGO show (excludes thread replies and edit/update rows).
+  def observation_root_notification_attempts(notifications, type:)
+    notifications
+      .where(notification_type: type)
+      .where(original_message_id: nil)
+      .order(created_at: :desc)
+      .reject { |n| observation_notification_thread_reply?(n) }
+  end
+
+  def observation_notification_thread_reply?(notification)
+    flag = notification.metadata&.dig('is_thread_reply')
+    flag == true || flag.to_s == 'true'
+  end
+
+  def observation_notification_destination_label(notification)
+    case notification.notification_type
+    when 'observation_channel'
+      observation_channel_notification_destination(notification)
+    when 'observation_dm'
+      observation_dm_notification_destination(notification)
+    else
+      'Slack'
+    end
+  end
+
+  def observation_notification_status_phrase(status)
+    case status
+    when 'sent_successfully' then 'Sent to'
+    when 'send_failed' then 'Tried to send to'
+    when 'preparing_to_send' then 'Sending to'
+    else 'Notification for'
+    end
+  end
+
+  def observation_notification_status_icon_class(status)
+    case status
+    when 'sent_successfully' then 'bi-check-circle text-success'
+    when 'send_failed' then 'bi-x-circle text-danger'
+    when 'preparing_to_send' then 'bi-hourglass-split text-warning'
+    else 'bi-question-circle text-muted'
+    end
+  end
+
+  def observation_channel_notification_destination(notification)
+    org_id = notification.metadata&.dig('organization_id')
+    org = Organization.find_by(id: org_id) if org_id.present?
+    return 'kudos channel' unless org
+
+    channel_id = notification.metadata&.dig('channel')
+    channel = org.third_party_objects.slack_channels.find_by(third_party_id: channel_id) if channel_id.present?
+    if channel
+      "#{org.display_name} - #{channel.display_name}"
+    else
+      org.display_name
+    end
+  end
+
+  def observation_dm_notification_destination(notification)
+    ids = Array(notification.metadata&.dig('teammate_ids')).map(&:to_i).reject(&:zero?)
+    if ids.any?
+      people = CompanyTeammate.where(id: ids).includes(:person).map { |t| t.person.casual_name }.compact
+      return people.to_sentence if people.any?
+    end
+
+    channel = notification.metadata&.dig('channel')
+    return "Slack DM (#{channel})" if channel.present?
+
+    'private Slack DM'
+  end
 end
 

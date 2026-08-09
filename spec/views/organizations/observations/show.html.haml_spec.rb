@@ -360,7 +360,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         obs_observer = observation.observer
         view.instance_variable_set(:@current_person, obs_observer)
         view.define_singleton_method(:current_person) { obs_observer }
-        
+
         # Mock instance variables that would be set in controller
         allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}")
         assign(:kudos_channel_organizations, [])
@@ -369,11 +369,13 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         assign(:observee_names, [observee_person.casual_name])
         assign(:direct_manager_names, [])
         assign(:other_manager_names, [])
-        
+
         # Mock route helpers
         allow(view).to receive(:share_publicly_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
         allow(view).to receive(:share_privately_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/share_privately")
-        
+        allow(view).to receive(:post_to_slack_organization_observation_path)
+          .and_return("/organizations/#{company.id}/observations/#{observation.id}/post_to_slack")
+
         # Mock policy
         allow(view).to receive(:policy) do |obj|
           if obj == observation
@@ -389,51 +391,53 @@ RSpec.  describe 'organizations/observations/show', type: :view do
             double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
           end
         end
-        
-        render
       end
 
-      it 'displays the personalized heading' do
-        expect(rendered).to have_content('🎉GREAT Observation... almost done!')
-        expect(rendered).to have_content("#{observer.casual_name} helping #{company.name} grow with one great story at a time 📖")
-      end
+      context 'with default (empty) kudos channel list' do
+        before { render }
 
-      it 'displays two-column layout' do
-        expect(rendered).to have_css('.row .col-md-4')
-        expect(rendered).to have_css('.row .col-md-8')
-      end
-
-      it 'displays privacy selector with all buttons disabled' do
-        Observation.privacy_levels.keys.each do |key|
-          expect(rendered).to have_css("input[type='radio'][name='privacy_level_display'][value='#{key}'][disabled]")
+        it 'displays the personalized heading' do
+          expect(rendered).to have_content('🎉GREAT Observation... almost done!')
+          expect(rendered).to have_content("#{observer.casual_name} helping #{company.name} grow with one great story at a time 📖")
         end
-      end
 
-      it 'displays current privacy level as checked' do
-        expect(rendered).to have_css("input[type='radio'][name='privacy_level_display'][value='#{observation.privacy_level}'][checked]")
-      end
+        it 'displays two-column layout' do
+          expect(rendered).to have_css('.row .col-md-4')
+          expect(rendered).to have_css('.row .col-md-8')
+        end
 
-      it 'displays page visit statistics' do
-        expect(rendered).to have_content('Observation has been viewed 5 times by 3 teammates')
-        expect(rendered).to have_css('.text-muted.caption-text')
-      end
+        it 'displays privacy selector with all buttons disabled' do
+          Observation.privacy_levels.keys.each do |key|
+            expect(rendered).to have_css("input[type='radio'][name='privacy_level_display'][value='#{key}'][disabled]")
+          end
+        end
 
-      it 'displays Slack celebration section header' do
-        expect(rendered).to have_content('📣Celebrate with a Slack Post 📢')
-      end
+        it 'displays current privacy level as checked' do
+          expect(rendered).to have_css("input[type='radio'][name='privacy_level_display'][value='#{observation.privacy_level}'][checked]")
+        end
 
-      it 'displays private notification section header' do
-        expect(rendered).to have_content('Notify people privately')
-      end
+        it 'displays page visit statistics' do
+          expect(rendered).to have_content('Observation has been viewed 5 times by 3 teammates')
+          expect(rendered).to have_css('.text-muted.caption-text')
+        end
 
-      it 'displays OR divider' do
-        expect(rendered).to have_content('OR')
-        expect(rendered).to have_css('hr')
-      end
+        it 'displays Slack celebration section header' do
+          expect(rendered).to have_content('📣Celebrate with a Slack Post 📢')
+        end
 
-      it 'displays correct link texts' do
-        expect(rendered).to have_link('Select the channel to post the celebration', href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
-        expect(rendered).to have_link('Select who to send private notification', href: "/organizations/#{company.id}/observations/#{observation.id}/share_privately")
+        it 'displays private notification section header' do
+          expect(rendered).to have_content('Notify people privately')
+        end
+
+        it 'displays OR divider' do
+          expect(rendered).to have_content('OR')
+          expect(rendered).to have_css('hr')
+        end
+
+        it 'displays correct link texts' do
+          expect(rendered).to have_link('Select the channel to post the celebration', href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
+          expect(rendered).to have_link('Select who to send private notification', href: "/organizations/#{company.id}/observations/#{observation.id}/share_privately")
+        end
       end
 
       context 'when there is one company kudos channel' do
@@ -447,6 +451,35 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         it 'displays only the company channel name' do
           expect(rendered).to have_content('Acme - #kudos')
           expect(rendered).not_to have_content('or one of the other')
+        end
+
+        it 'posts directly to that channel instead of opening the channel picker' do
+          expect(rendered).to have_button('Post to Acme - #kudos')
+          expect(rendered).to have_css(
+            "form[action='/organizations/#{company.id}/observations/#{observation.id}/post_to_slack'][method='post']"
+          )
+          expect(rendered).to have_css(
+            "input[type='hidden'][name='kudos_channel_organization_id'][value='#{company.id}']",
+            visible: :hidden
+          )
+          expect(rendered).not_to have_link('Select the channel to post the celebration')
+        end
+      end
+
+      context 'when the only kudos channel was already sent' do
+        before do
+          assign(:kudos_channel_organizations, [
+            { organization: company, channel: nil, display_name: 'Acme - #kudos', already_sent: true }
+          ])
+          render
+        end
+
+        it 'keeps the channel selection link' do
+          expect(rendered).to have_link(
+            'Select the channel to post the celebration',
+            href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly"
+          )
+          expect(rendered).not_to have_button('Post to Acme - #kudos')
         end
       end
 
@@ -468,6 +501,13 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         it 'does not list the other channel names' do
           expect(rendered).not_to have_content('Team A - #kudos')
           expect(rendered).not_to have_content('Team B - #kudos')
+        end
+
+        it 'keeps the channel selection link' do
+          expect(rendered).to have_link(
+            'Select the channel to post the celebration',
+            href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly"
+          )
         end
       end
     end
@@ -841,11 +881,46 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
       it 'displays public notifications section' do
         expect(rendered).to include('Public Notifications')
-        expect(rendered).to include(company.display_name)
+        expect(rendered).to include("Sent to #{company.display_name} - #{kudos_channel.display_name}")
       end
 
       it 'displays link to Slack message' do
         expect(rendered).to have_link('View Message', href: 'https://slack.com/archives/C123456/p1234567890123456')
+      end
+    end
+
+    context 'when a public notification failed' do
+      let(:kudos_channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999', display_name: 'kudos') }
+      let!(:failed_notification) do
+        Notification.create!(
+          notifiable: observation,
+          notification_type: 'observation_channel',
+          status: 'send_failed',
+          metadata: {
+            'channel' => kudos_channel.third_party_id,
+            'organization_id' => company.id.to_s,
+            'is_main_message' => true
+          }
+        )
+      end
+
+      before do
+        company.update!(kudos_channel_id: kudos_channel.third_party_id)
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        render
+      end
+
+      it 'shows tried-to-send destination and time' do
+        expect(rendered).to include('Public Notifications')
+        expect(rendered).to include("Tried to send to #{company.display_name} - #{kudos_channel.display_name}")
+        expect(rendered).to have_css('i.bi-x-circle.text-danger')
+        expect(rendered).not_to have_link('View Message')
+      end
+
+      it 'still shows the celebrate share prompt for retry' do
+        expect(rendered).to have_content('🎉GREAT Observation... almost done!')
       end
     end
 
@@ -855,7 +930,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           notifiable: observation,
           notification_type: 'observation_dm',
           status: 'sent_successfully',
-          metadata: { 'channel' => 'U789012' },
+          metadata: {
+            'channel' => 'U789012',
+            'teammate_ids' => [observee_teammate.id]
+          },
           message_id: '9876543210.987654',
           created_at: 1.day.ago
         )
@@ -873,17 +951,38 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
       it 'displays private notifications section' do
         expect(rendered).to include('Private Notifications')
-        expect(rendered).to include('Shared privately on')
+        expect(rendered).to include("Sent to #{observee_person.casual_name}")
       end
 
       it 'displays link to Slack message' do
         expect(rendered).to have_link('View Message', href: 'https://slack.com/archives/D123456/p9876543210987654')
       end
+    end
 
-      it 'groups notifications by date' do
-        # Should show date once for grouped notifications
-        # Note: This test may need adjustment if the view structure changes
-        expect(rendered.scan(/Shared privately on/).count).to be >= 1
+    context 'when a private notification failed' do
+      let!(:failed_private) do
+        Notification.create!(
+          notifiable: observation,
+          notification_type: 'observation_dm',
+          status: 'send_failed',
+          metadata: {
+            'channel' => 'U789012',
+            'teammate_ids' => [observee_teammate.id]
+          }
+        )
+      end
+
+      before do
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        render
+      end
+
+      it 'shows tried-to-send destination for the private attempt' do
+        expect(rendered).to include('Private Notifications')
+        expect(rendered).to include("Tried to send to #{observee_person.casual_name}")
+        expect(rendered).to have_css('i.bi-x-circle.text-danger')
       end
     end
   end
