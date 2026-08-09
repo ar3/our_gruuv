@@ -540,7 +540,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
   end
 
   describe 'top bar create control' do
-    it 'shows a plus dropdown with Goal and Observation options' do
+    it 'shows a plus dropdown with Goal and typed Observation options' do
       get dashboard_organization_path(organization)
       follow_redirect! if response.redirect?
 
@@ -552,10 +552,13 @@ RSpec.describe 'Vertical Navigation', type: :request do
       goals_path = organization_goals_path(organization, owner_id: 'my_relevant_goals', view: 'hierarchical-collapsible-hidden-checks')
       expect(response.body).to include("href=\"#{ERB::Util.html_escape(goals_path)}\"")
       expect(response.body).to include('Goal (confidence check)')
-      # Observation branch -> unchanged select type overlay
-      select_type_path = select_type_organization_observations_path(organization)
-      expect(response.body).to include("href=\"#{select_type_path}\"")
-      expect(response.body).to include('Observation')
+      # Observation options skip type selection and go straight to each typed new page
+      expect(response.body).to include("href=\"#{new_kudos_organization_observations_path(organization)}\"")
+      expect(response.body).to include('New Kudos')
+      expect(response.body).to include("href=\"#{new_feedback_organization_observations_path(organization)}\"")
+      expect(response.body).to include('New Constructive Feedback')
+      expect(response.body).to include("href=\"#{new_organization_observation_path(organization)}\"")
+      expect(response.body).to include('New Observation')
     end
   end
 end
