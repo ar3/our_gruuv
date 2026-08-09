@@ -44,7 +44,18 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Custom')
       expect(response.body).to include('Kudos')
       expect(response.body).to include('Constructive feedback')
+      expect(response.body).to include('OGOs')
+      expect(response.body).to include('Goals')
       expect(response.body).to include('No qualifying OGOs in this timeframe')
+    end
+
+    it 'renders Goals board when board=goals' do
+      get organization_insights_real_og_leaders_path(organization, board: 'goals')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Confidence checks')
+      expect(response.body).to include('Connected')
+      expect(response.body).to include('Completed')
+      expect(response.body).to include('No qualifying goal activity in this timeframe')
     end
 
     it 'returns success with timeframe=custom and from/to dates' do

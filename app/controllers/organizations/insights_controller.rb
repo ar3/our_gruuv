@@ -65,7 +65,14 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
     @insights_chart_period_label = insights_chart_title_period(@timeframe, range, chart_range)
-    @real_og_leaders = Insights::RealOgLeadersBuilder.new(company: company, range: range).call
+    @board = %w[ogos goals].include?(params[:board].to_s) ? params[:board].to_s : 'ogos'
+
+    case @board
+    when 'goals'
+      @real_og_leaders_goals = Insights::RealOgLeadersGoalsBuilder.new(company: company, range: range).call
+    else
+      @real_og_leaders = Insights::RealOgLeadersBuilder.new(company: company, range: range).call
+    end
   end
 
   def seats_titles_positions

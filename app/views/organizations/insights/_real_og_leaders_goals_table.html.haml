@@ -1,0 +1,62 @@
+.border-bottom.py-2.mb-3.small.text-muted
+  In this timeframe (#{@insights_chart_period_label}): #{number_with_delimiter(@real_og_leaders_goals.size)}
+  #{'person'.pluralize(@real_og_leaders_goals.size)} with at least one confidence check, connected goal, or completion.
+
+.table-responsive
+  %table.table.table-hover.align-middle
+    %thead
+      %tr
+        %th.text-end{style: "width: 3rem;"} #
+        %th Person
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Goal confidence checks reported in this timeframe"}
+            Confidence checks
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Personal goals connected to a prompt, assignment, ability, aspiration, or a team/department/company goal (not only another personal goal)"}
+            Connected
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Personal goals completed in this timeframe"}
+            Completed
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Star when this person has confidence checks, a connected goal, and a completion in the timeframe"}
+            All three
+    %tbody
+      - if @real_og_leaders_goals.empty?
+        %tr
+          %td.text-muted{colspan: 6} No qualifying goal activity in this timeframe.
+      - @real_og_leaders_goals.each_with_index do |entry, index|
+        %tr
+          %td.text-end.text-muted= index + 1
+          %td
+            - if entry.company_teammate
+              = link_to entry.display_name, internal_organization_company_teammate_path(@organization, entry.company_teammate), class: 'text-decoration-none'
+            - else
+              = entry.display_name
+          %td.text-center
+            - if entry.has_confidence_check
+              %span.text-success{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.confidence_check_count} confidence #{'check'.pluralize(entry.confidence_check_count)}", tabindex: "0", role: "img", "aria-label" => "#{entry.confidence_check_count} confidence checks"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_connection
+              %span.text-primary{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.connection_count} connected #{'goal'.pluralize(entry.connection_count)}", tabindex: "0", role: "img", "aria-label" => "#{entry.connection_count} connected goals"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_completion
+              %span.text-info{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.completion_count} completed #{'goal'.pluralize(entry.completion_count)}", tabindex: "0", role: "img", "aria-label" => "#{entry.completion_count} completed goals"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_all_three
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Has confidence checks, connected goals, and completions in this timeframe", tabindex: "0", role: "img", "aria-label" => "All three"}
+                %i.bi.bi-star-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-star.fs-5

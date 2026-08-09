@@ -1,38 +1,58 @@
+- board = local_assigns.fetch(:board, "ogos")
+
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    See who is writing real OGOs — published observations about others that contribute to a healthy mix of kudos and constructive feedback.
+    See who is building real OG habits — writing useful OGOs and working goals with check-ins, connections, and completions.
 
   %h3.fw-semibold.mb-2 Context
   %p.mb-3
+    Real OG Leaders has boards for different clarity practices. Use the tabs to switch boards; the timeframe applies to whichever board is open.
     Observations insights talks about the ratio of
     %strong kudos
     to
     %strong constructive feedback
-    OGOs. Kudos-style OGOs celebrate strong performance (all-positive ratings). Constructive feedback OGOs document room to improve (at least one negative rating). A healthy culture uses both.
+    OGOs. Goals practice is a steady cadence of confidence checks, linking goals to meaningful work, and completing what you start.
 
   %h3.fw-semibold.mb-2 Specifics of this page
-  %h5.fw-semibold.mb-2 Who appears
-  %ul.mb-3
-    %li Author of a published, non-journal OGO about someone else (the author is not on the observee list)
-    %li At least one qualifying kudos OGO and/or constructive feedback OGO in the selected timeframe
-
-  %h5.fw-semibold.mb-2 How to read each row
-  %ul.mb-3
-    %li
-      %i.bi.bi-check-circle-fill.text-success.me-1
-      under
-      %strong Kudos
-      means ≥1 kudos OGO — hover for the count
-    %li
-      %i.bi.bi-check-circle-fill.text-primary.me-1
-      under
-      %strong Constructive feedback
-      means ≥1 constructive feedback OGO — hover for the count
-    %li
-      %i.bi.bi-star-fill.text-warning.me-1
-      means both checks in this timeframe
-
-  %h5.fw-semibold.mb-2 Sort order
-  %p.mb-0
-    Both (star) first, then constructive only, then kudos only. Within a group: more total OGOs first, then most recent qualifying OGO, then name.
+  - if board == "goals"
+    %h5.fw-semibold.mb-2 Goals board
+    %ul.mb-3
+      %li
+        %strong Confidence checks
+        — goal confidence checks reported in the timeframe (hover for count)
+      %li
+        %strong Connected
+        — personal goals linked in the timeframe to a prompt, assignment, ability, aspiration, or a team/department/company goal (not only another personal goal)
+      %li
+        %strong Completed
+        — personal goals completed in the timeframe
+      %li
+        %i.bi.bi-star-fill.text-warning.me-1
+        when all three checks are present
+    %h5.fw-semibold.mb-2 Sort order
+    %p.mb-0
+      Most confidence checks first, then most connected goals, then most completions, then latest confidence check, then name.
+  - else
+    %h5.fw-semibold.mb-2 OGOs board
+    %ul.mb-3
+      %li Author of a published, non-journal OGO about someone else (the author is not on the observee list)
+      %li At least one qualifying kudos OGO and/or constructive feedback OGO in the selected timeframe
+    %h5.fw-semibold.mb-2 How to read each row
+    %ul.mb-3
+      %li
+        %i.bi.bi-check-circle-fill.text-success.me-1
+        under
+        %strong Kudos
+        means ≥1 kudos OGO — hover for the count
+      %li
+        %i.bi.bi-check-circle-fill.text-primary.me-1
+        under
+        %strong Constructive feedback
+        means ≥1 constructive feedback OGO — hover for the count
+      %li
+        %i.bi.bi-star-fill.text-warning.me-1
+        means both checks in this timeframe
+    %h5.fw-semibold.mb-2 Sort order
+    %p.mb-0
+      Both (star) first, then constructive only, then kudos only. Within a group: more total OGOs first, then most recent qualifying OGO, then name.
