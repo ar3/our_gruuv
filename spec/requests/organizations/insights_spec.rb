@@ -25,6 +25,36 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Insights')
       expect(response.body).to include('Charts and reports')
       expect(response.body).to include('OG Scorecard')
+      expect(response.body).to include('Real OG Leaders')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/insights/real_og_leaders' do
+    it 'returns http success' do
+      get organization_insights_real_og_leaders_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders Real OG Leaders with timeframe filters and empty state' do
+      get organization_insights_real_og_leaders_path(organization)
+      expect(response.body).to include('Real OG Leaders')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+      expect(response.body).to include('Custom')
+      expect(response.body).to include('Kudos')
+      expect(response.body).to include('Constructive feedback')
+      expect(response.body).to include('No qualifying OGOs in this timeframe')
+    end
+
+    it 'returns success with timeframe=custom and from/to dates' do
+      get organization_insights_real_og_leaders_path(
+        organization,
+        timeframe: 'custom',
+        from: 30.days.ago.to_date.iso8601,
+        to: Time.zone.today.iso8601
+      )
+      expect(response).to have_http_status(:success)
     end
   end
 

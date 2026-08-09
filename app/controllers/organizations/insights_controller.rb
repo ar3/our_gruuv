@@ -57,6 +57,17 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     ), notice: 'Scorecard thresholds saved.'
   end
 
+  def real_og_leaders
+    authorize company, :view_observations?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @insights_chart_period_label = insights_chart_title_period(@timeframe, range, chart_range)
+    @real_og_leaders = Insights::RealOgLeadersBuilder.new(company: company, range: range).call
+  end
+
   def seats_titles_positions
     authorize company, :view_seats?
     
@@ -533,6 +544,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   def build_insight_links
     links = []
     links << { label: 'OG Scorecard', path: organization_insights_og_scorecard_path(organization) } if policy(company).view_observations?
+    links << { label: 'Real OG Leaders', path: organization_insights_real_og_leaders_path(organization) } if policy(company).view_observations?
     links << { label: 'Observations', path: organization_insights_observations_path(organization) } if policy(company).view_observations?
     links << { label: 'Who is doing what', path: organization_insights_who_is_doing_what_path(organization) } if policy(company).view_observations?
     links << { label: 'Feedback Requests', path: organization_insights_feedback_requests_path(organization) } if policy(company).view_feedback_requests?

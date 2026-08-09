@@ -1,0 +1,79 @@
+- content_for :title, "Insights: Real OG Leaders"
+- page_help_id = "realOgLeadersPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-stars.me-2
+      Real OG Leaders
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Who is giving real kudos and constructive feedback OGOs. Click for details."
+  %p.text-muted.mb-0
+    Published, shared OGOs about others — kudos and constructive feedback in this timeframe.
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/insights/real_og_leaders_page_help"
+
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_real_og_leaders_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-3'
+
+.border-bottom.py-2.mb-3.small.text-muted
+  In this timeframe (#{@insights_chart_period_label}): #{number_with_delimiter(@real_og_leaders.size)}
+  #{'person'.pluralize(@real_og_leaders.size)} with at least one kudos or constructive feedback OGO about someone else.
+
+.table-responsive
+  %table.table.table-hover.align-middle
+    %thead
+      %tr
+        %th.text-end{style: "width: 3rem;"} #
+        %th Person
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "All-positive ratings OGOs about others (kudos side of the kudos : constructive mix)"}
+            Kudos
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "OGOs about others with at least one negative rating (constructive feedback side of the mix)"}
+            Constructive feedback
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Star when this person has both kudos and constructive feedback OGOs in the timeframe"}
+            Both
+        %th.text-end Total
+    %tbody
+      - if @real_og_leaders.empty?
+        %tr
+          %td.text-muted{colspan: 6} No qualifying OGOs in this timeframe.
+      - @real_og_leaders.each_with_index do |entry, index|
+        %tr
+          %td.text-end.text-muted= index + 1
+          %td
+            - if entry.company_teammate
+              = link_to entry.display_name, internal_organization_company_teammate_path(@organization, entry.company_teammate), class: 'text-decoration-none'
+            - else
+              = entry.display_name
+          %td.text-center
+            - if entry.has_kudos
+              %span.text-success{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.kudos_count} kudos #{'OGO'.pluralize(entry.kudos_count)}", tabindex: "0", role: "img", "aria-label" => "#{entry.kudos_count} kudos OGOs"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_constructive
+              %span.text-primary{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.constructive_count} constructive feedback #{'OGO'.pluralize(entry.constructive_count)}", tabindex: "0", role: "img", "aria-label" => "#{entry.constructive_count} constructive feedback OGOs"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_both
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Has both kudos and constructive feedback OGOs in this timeframe", tabindex: "0", role: "img", "aria-label" => "Both kudos and constructive feedback"}
+                %i.bi.bi-star-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-star.fs-5
+          %td.text-end= entry.total_count

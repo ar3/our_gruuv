@@ -299,6 +299,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Real OG Leaders',
+            icon: 'bi-stars',
+            path: organization_insights_real_og_leaders_path(current_organization),
+            policy_check: -> { policy(current_company).view_observations? },
+            coming_soon: false
+          },
+          {
             label: 'Who is doing what',
             icon: 'bi-pie-chart',
             path: organization_insights_who_is_doing_what_path(current_organization),
