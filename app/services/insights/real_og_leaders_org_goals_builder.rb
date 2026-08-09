@@ -82,7 +82,7 @@ module Insights
           latest_confidence_check_at: stats[:latest_confidence_check_at],
           display_name: owner_display_name(owner)
         )
-      end.sort_by { |entry| sort_key(entry) }
+      end.sort_by { |entry| Insights::RealOgLeadersGoalsSort.sort_key(entry) }
     end
 
     private
@@ -212,16 +212,6 @@ module Insights
         completion_count: 0,
         latest_confidence_check_at: nil
       }
-    end
-
-    def sort_key(entry)
-      [
-        -entry.confidence_check_count,
-        -entry.connection_count,
-        -entry.completion_count,
-        -(entry.latest_confidence_check_at&.to_i || 0),
-        entry.display_name.to_s.downcase
-      ]
     end
   end
 end

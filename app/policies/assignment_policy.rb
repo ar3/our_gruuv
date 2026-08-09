@@ -38,6 +38,15 @@ class AssignmentPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || user_has_maap_permission_for_record?
   end
 
+  def manage_maintainers?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    return false unless record&.company_id
+    return false unless viewing_teammate.organization_id == record.company_id
+
+    user_has_maap_permission_for_record? || record.maintained_by?(viewing_teammate)
+  end
+
   def update_cytoscape_graph_layout?
     update?
   end

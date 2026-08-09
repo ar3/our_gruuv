@@ -3,40 +3,50 @@
 
 .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-4
   %p.text-muted.mb-0
-    Showing people you are authorized to support. Draft answers are included only in individual results.
-  = link_to export_organization_assignment_survey_path(organization), class: "btn btn-outline-primary" do
-    %i.bi.bi-download.me-1
-    Export CSV
+    - if @results.show_people_results?
+      Showing people you are authorized to support. Draft answers are included only in individual results.
+    - else
+      Showing org-wide score cards for assignments you maintain. Individual answers stay with the managerial hierarchy.
+    - if @maintained_assignment_ids.present?
+      %span.ms-1
+        Assignment score cards you maintain include
+        %strong org-wide finalized responses
+        (not only people in your hierarchy).
+  - if @results.show_people_results?
+    = link_to export_organization_assignment_survey_path(organization), class: "btn btn-outline-primary" do
+      %i.bi.bi-download.me-1
+      Export CSV
 
-.row.g-3.mb-4
-  .col-12.col-md-3
-    .card.h-100
-      .card-body
-        .text-muted People in view
-        .display-6= @results.teammates.size
-  .col-12.col-md-3
-    .card.h-100.border-success
-      .card-body
-        .text-muted Finalized
-        .display-6.text-success= @results.finalized_teammate_count
-  .col-12.col-md-3
-    .card.h-100.border-warning
-      .card-body
-        .text-muted Draft
-        .display-6.text-warning= @results.draft_teammate_count
-  .col-12.col-md-3
-    .card.h-100.border-secondary
-      .card-body
-        .text-muted Not started
-        .display-6.text-secondary= @results.not_started_teammate_count
+- if @results.show_people_results?
+  .row.g-3.mb-4
+    .col-12.col-md-3
+      .card.h-100
+        .card-body
+          .text-muted People in view
+          .display-6= @results.teammates.size
+    .col-12.col-md-3
+      .card.h-100.border-success
+        .card-body
+          .text-muted Finalized
+          .display-6.text-success= @results.finalized_teammate_count
+    .col-12.col-md-3
+      .card.h-100.border-warning
+        .card-body
+          .text-muted Draft
+          .display-6.text-warning= @results.draft_teammate_count
+    .col-12.col-md-3
+      .card.h-100.border-secondary
+        .card-body
+          .text-muted Not started
+          .display-6.text-secondary= @results.not_started_teammate_count
 
-- if @results.finalized_teammate_count.positive?
+- if @results.show_overall_results?
   .card.mb-4
     .card-header
       %h2.h4.mb-0 Current overall results
     .card-body
       %p.text-muted
-        Uses only each teammate's latest finalized survey. Distributions are primary; averages are a quick OG-graded reference.
+        Uses only each teammate's latest finalized survey among people you support. Distributions are primary; averages are a quick OG-graded reference.
       = render "quality_legend"
       .row.g-4.mt-1
         .col-12.col-lg-4
@@ -55,6 +65,7 @@
             dimension: :relevant,
             title: "Relevant"
 
+- if @results.show_assignment_score_results?
   .card.mb-4
     .card-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
       %h2.h4.mb-0 Results by assignment
@@ -72,7 +83,10 @@
         .list-group-item
           %details
             %summary.d-flex.justify-content-between.align-items-center.gap-3.flex-wrap
-              %span.fw-semibold= row[:title]
+              %span.fw-semibold
+                = row[:title]
+                - if row[:org_wide]
+                  %span.badge.text-bg-info.ms-2 Org-wide (maintainer)
               .d-flex.align-items-center.gap-3.ms-auto.flex-wrap
                 .d-flex.align-items-center.gap-3.small.text-muted
                   = render "quality_average",
@@ -107,46 +121,47 @@
                   distributions: row[:distributions],
                   dimension: :relevant,
                   title: "Relevant"
-- else
+- elsif !@results.show_overall_results?
   .alert.alert-info
-    No finalized surveys are available yet. Draft participation appears below.
+    No finalized survey scores are available yet for the people or assignments you can see.
 
-.card.mb-4
-  .card-header
-    %h2.h4.mb-0 Individual results
-  .table-responsive
-    %table.table.table-hover.align-middle.mb-0
-      %thead
-        %tr
-          %th Teammate
-          %th Current status
-          %th Finalized versions
-          %th Latest finalized
-          %th
-      %tbody
-        - @results.participation_rows.each do |row|
+- if @results.show_people_results?
+  .card.mb-4
+    .card-header
+      %h2.h4.mb-0 Individual results
+    .table-responsive
+      %table.table.table-hover.align-middle.mb-0
+        %thead
           %tr
-            %td.fw-semibold= row[:teammate].person.display_name
-            %td
-              - case row[:status]
-              - when :draft
-                %span.badge.text-bg-warning Draft
-              - when :finalized
-                %span.badge.text-bg-success Finalized
-              - else
-                %span.badge.text-bg-secondary Not started
-            %td= row[:submission_count]
-            %td
-              - if row[:latest_finalized]
-                = l(row[:latest_finalized].finalized_at, format: :short)
-              - else
-                %span.text-muted —
-            %td.text-end
-              - if row[:draft]
-                = link_to "View draft",
-                  submission_organization_assignment_survey_path(organization, row[:draft].id),
-                  class: "btn btn-sm btn-outline-warning"
-              - elsif row[:latest_finalized]
-                = link_to "View responses",
-                  submission_organization_assignment_survey_path(organization, row[:latest_finalized].id),
-                  class: "btn btn-sm btn-outline-primary"
+            %th Teammate
+            %th Current status
+            %th Finalized versions
+            %th Latest finalized
+            %th
+        %tbody
+          - @results.participation_rows.each do |row|
+            %tr
+              %td.fw-semibold= row[:teammate].person.display_name
+              %td
+                - case row[:status]
+                - when :draft
+                  %span.badge.text-bg-warning Draft
+                - when :finalized
+                  %span.badge.text-bg-success Finalized
+                - else
+                  %span.badge.text-bg-secondary Not started
+              %td= row[:submission_count]
+              %td
+                - if row[:latest_finalized]
+                  = l(row[:latest_finalized].finalized_at, format: :short)
+                - else
+                  %span.text-muted —
+              %td.text-end
+                - if row[:draft]
+                  = link_to "View draft",
+                    submission_organization_assignment_survey_path(organization, row[:draft].id),
+                    class: "btn btn-sm btn-outline-warning"
+                - elsif row[:latest_finalized]
+                  = link_to "View responses",
+                    submission_organization_assignment_survey_path(organization, row[:latest_finalized].id),
+                    class: "btn btn-sm btn-outline-primary"

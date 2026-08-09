@@ -142,4 +142,46 @@ RSpec.describe AssignmentSurveys::Results do
       expect(titles_for("responses")).to eq([ "Middle role", "Alpha role", "Zeta role" ])
     end
   end
+
+  it "uses org-wide responses for maintained assignment score cards" do
+    other = create(:teammate, :assigned_employee, organization: organization)
+    other_assignment = create(:assignment, company: organization, title: "Other role")
+
+    [ teammate, other ].each do |survey_teammate|
+      submission = create(:assignment_survey_submission, company_teammate: survey_teammate)
+      create(
+        :assignment_survey_response,
+        submission: submission,
+        assignment: assignment,
+        snapshot_title: assignment.title,
+        understandable_rating: 6,
+        possible_rating: 6,
+        relevant_rating: 6
+      )
+      create(
+        :assignment_survey_response,
+        submission: submission,
+        assignment: other_assignment,
+        snapshot_title: other_assignment.title,
+        understandable_rating: 1,
+        possible_rating: 1,
+        relevant_rating: 1
+      )
+      submission.finalize!
+    end
+
+    results = described_class.new(
+      organization: organization,
+      teammates: CompanyTeammate.where(id: teammate.id),
+      maintained_assignment_ids: [ assignment.id ]
+    )
+
+    maintained_row = results.assignment_rows.find { |row| row[:assignment_id] == assignment.id }
+    other_row = results.assignment_rows.find { |row| row[:assignment_id] == other_assignment.id }
+
+    expect(maintained_row[:org_wide]).to eq(true)
+    expect(maintained_row[:response_count]).to eq(2)
+    expect(other_row[:org_wide]).to eq(false)
+    expect(other_row[:response_count]).to eq(1)
+  end
 end

@@ -27,6 +27,14 @@ class AbilityPolicy < ApplicationPolicy
     update?
   end
 
+  def manage_maintainers?
+    return true if admin_bypass?
+    return false unless teammate_in_ability_company?
+    return true if user_has_maap_permission_for_record?
+
+    record.maintained_by?(viewing_teammate)
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

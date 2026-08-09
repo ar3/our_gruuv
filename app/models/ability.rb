@@ -1,6 +1,7 @@
 class Ability < ApplicationRecord
   include PgSearch::Model
   include ModelSemanticVersionable
+  include Maintainable
 
   belongs_to :company, class_name: 'Organization'
   belongs_to :department, optional: true

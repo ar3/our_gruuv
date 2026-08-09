@@ -43,6 +43,15 @@ class PositionPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || can_manage_maap_for_position_company?
   end
 
+  def manage_maintainers?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    return false unless show?
+    return true if can_manage_maap_for_position_company?
+
+    record.maintained_by?(viewing_teammate)
+  end
+
   def archive?
     update?
   end

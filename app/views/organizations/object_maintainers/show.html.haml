@@ -1,0 +1,76 @@
+- content_for :title, "Manage Maintainers - #{@maintainable_label}"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-people.me-2
+    Manage Maintainers
+    %small.text-muted — #{@maintainable_label}
+
+- content_for :return_url do
+  = @return_url
+
+- content_for :return_text do
+  = @return_text
+
+= form_with url: @update_path, method: :patch, local: true do |form|
+  .row
+    .col-12
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-list-check.me-2
+            Select Maintainers
+        .card-body
+          %p.text-muted.mb-2
+            Maintainers are responsible for keeping this #{@maintainable.class.name.downcase} clear and up to date.
+            Capabilities (like Assignment Experience score visibility) hang off this label over time.
+          - unless @unrestricted_maintainer_admin
+            %p.small.text-muted.mb-3
+              You can add or remove other maintainers. You cannot remove yourself; ask a MAAP admin if you need to leave.
+          - else
+            %p.small.text-muted.mb-3
+              MAAP admins can add or remove any maintainers, including the last remaining person.
+
+          - if @candidate_teammates.any?
+            .mb-3{data: {controller: "selection-toolbar options-filter"}}
+              = render "shared/selection_pages/toolbar",
+                form: form,
+                save_label: "Save Maintainers",
+                can_manage: @can_manage_maintainers,
+                search_placeholder: "Search people...",
+                search_aria_label: "Filter teammates",
+                disabled_tooltip: "You do not have permission to manage maintainers",
+                large_save: true
+
+              .selection-page-columns{data: {options_filter_target: "list"}}
+                - @candidate_teammates.each do |teammate|
+                  - locked_self = !@unrestricted_maintainer_admin && teammate.id == current_company_teammate.id && @existing_maintainer_ids.include?(teammate.id)
+                  .filterable-option
+                    .form-check
+                      = check_box_tag "maintainer_teammate_ids[]",
+                        teammate.id,
+                        @existing_maintainer_ids.include?(teammate.id),
+                        class: "form-check-input",
+                        id: "maintainer_teammate_#{teammate.id}",
+                        disabled: locked_self,
+                        data: {selection_toolbar_label: teammate.person.display_name}
+                      - if locked_self
+                        = hidden_field_tag "maintainer_teammate_ids[]", teammate.id
+                      = label_tag "maintainer_teammate_#{teammate.id}", class: "form-check-label" do
+                        %strong= teammate.person.display_name
+                        - if locked_self
+                          %br
+                          %small.text-muted You (cannot remove yourself)
+          - else
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              No employed teammates found to assign as maintainers.
+
+      .card.mb-4
+        .card-body
+          = render "shared/selection_pages/save_button",
+            form: form,
+            label: "Save Maintainers",
+            can_manage: @can_manage_maintainers,
+            large: true,
+            disabled_tooltip: "You do not have permission to manage maintainers"

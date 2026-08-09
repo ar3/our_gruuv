@@ -80,9 +80,11 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
   def results
     authorize @organization, :assignment_survey_results?
     @assignment_sort = AssignmentSurveys::Results.normalize_assignment_sort(params[:sort])
+    @maintained_assignment_ids = ObjectMaintainer.maintained_assignment_ids_for(current_company_teammate)
     @results = AssignmentSurveys::Results.new(
       organization: @organization,
       teammates: visible_teammates,
+      maintained_assignment_ids: @maintained_assignment_ids,
       assignment_sort: @assignment_sort
     )
   end
@@ -127,7 +129,13 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
   end
 
   def visible_teammates
-    @visible_teammates ||= if policy(@organization).manage_employment?
+    @visible_teammates ||= people_results_visible_teammates
+  end
+
+  # Individual results / free-text stay hierarchy (or employment-admin) scoped.
+  # Maintainers do not expand this set — they get org-wide score cards only.
+  def people_results_visible_teammates
+    if policy(@organization).manage_employment?
       @organization.company_teammates.employed
     else
       CompanyTeammate.self_and_reporting_hierarchy(current_company_teammate, @organization).employed

@@ -9,11 +9,12 @@ module AssignmentSurveys
     ASSIGNMENT_SORTS = %w[name average responses].freeze
     DEFAULT_ASSIGNMENT_SORT = "name"
 
-    attr_reader :organization, :teammates, :assignment_sort
+    attr_reader :organization, :teammates, :assignment_sort, :maintained_assignment_ids
 
-    def initialize(organization:, teammates:, assignment_sort: DEFAULT_ASSIGNMENT_SORT)
+    def initialize(organization:, teammates:, maintained_assignment_ids: [], assignment_sort: DEFAULT_ASSIGNMENT_SORT)
       @organization = organization
       @teammates = teammates.includes(:person).order("people.last_name ASC", "people.first_name ASC").references(:person).to_a
+      @maintained_assignment_ids = Array(maintained_assignment_ids).map(&:to_i).uniq
       @assignment_sort = self.class.normalize_assignment_sort(assignment_sort)
     end
 
@@ -49,18 +50,36 @@ module AssignmentSurveys
     end
 
     def assignment_rows
-      rows = latest_responses.group_by(&:assignment_id).values.map do |responses|
-        latest_response = responses.max_by(&:created_at)
-        distributions = distributions_for(responses)
-        {
-          assignment_id: latest_response.assignment_id,
-          title: latest_response.snapshot_title,
-          response_count: responses.size,
-          distributions: distributions,
-          overall_average: overall_average_for(distributions)
-        }
+      hierarchy_rows = rows_from_responses(latest_responses).index_by { |row| row[:assignment_id] }
+      org_wide_rows = rows_from_responses(org_wide_responses_for_maintained).index_by { |row| row[:assignment_id] }
+
+      assignment_ids = hierarchy_rows.keys | org_wide_rows.keys | maintained_assignment_ids
+      rows = assignment_ids.filter_map do |assignment_id|
+        if maintained_assignment_ids.include?(assignment_id)
+          row = org_wide_rows[assignment_id]
+          next unless row
+
+          row.merge(org_wide: true)
+        else
+          row = hierarchy_rows[assignment_id]
+          next unless row
+
+          row.merge(org_wide: false)
+        end
       end
       sort_assignment_rows(rows)
+    end
+
+    def show_people_results?
+      teammates.any?
+    end
+
+    def show_overall_results?
+      finalized_teammate_count.positive?
+    end
+
+    def show_assignment_score_results?
+      assignment_rows.any?
     end
 
     def finalized_teammate_count
@@ -89,6 +108,38 @@ module AssignmentSurveys
 
     def latest_responses
       @latest_responses ||= latest_finalized_submissions.flat_map(&:responses)
+    end
+
+    def org_wide_responses_for_maintained
+      return [] if maintained_assignment_ids.empty?
+
+      @org_wide_responses_for_maintained ||= begin
+        submissions = AssignmentSurveySubmission
+          .where(organization: organization)
+          .finalized
+          .latest_first
+          .includes(:responses)
+          .to_a
+
+        latest_by_teammate = submissions.group_by(&:teammate_id).transform_values(&:first)
+        latest_by_teammate.values.flat_map(&:responses).select do |response|
+          maintained_assignment_ids.include?(response.assignment_id)
+        end
+      end
+    end
+
+    def rows_from_responses(responses)
+      responses.group_by(&:assignment_id).values.map do |grouped|
+        latest_response = grouped.max_by(&:created_at)
+        distributions = distributions_for(grouped)
+        {
+          assignment_id: latest_response.assignment_id,
+          title: latest_response.snapshot_title,
+          response_count: grouped.size,
+          distributions: distributions,
+          overall_average: overall_average_for(distributions)
+        }
+      end
     end
 
     def distributions_for(responses)

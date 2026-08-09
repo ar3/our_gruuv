@@ -45,6 +45,11 @@
             - else
               %em.text-muted No description provided
 
+    = render "shared/object_maintainers",
+      maintainable: @ability,
+      organization: @organization,
+      manage_path: organization_ability_maintainers_path(@organization, @ability)
+
     .card.mb-4{ role: "region", "aria-labelledby": "milestone-descriptions" }
       .card-header
         %h5.mb-0{ id: "milestone-descriptions" }
@@ -178,6 +183,19 @@
                 %i.bi.bi-link-45deg.me-2
                 Manage assignment milestones
             %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to manage assignment milestones"}}
+
+        / Manage maintainers
+        - if policy(@ability).manage_maintainers?
+          = link_to organization_ability_maintainers_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
+            %i.bi.bi-people.me-2
+            Manage maintainers
+        - else
+          .d-flex.align-items-center.gap-2.mb-2
+            .flex-grow-1
+              %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+                %i.bi.bi-people.me-2
+                Manage maintainers
+            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP admin or existing maintainer access"}}
 
         / Archive or restore
         - if @ability.archived?

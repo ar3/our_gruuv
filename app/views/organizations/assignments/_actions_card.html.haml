@@ -4,9 +4,10 @@
 - is_person_view = @person.present? && !@teammate.present? && request.path.include?('/people/')
 - is_ability_milestones_view = request.path.include?('/ability_milestones')
 - is_consumer_assignments_view = request.path.include?('/consumer_assignments')
+- is_maintainers_view = request.path.include?('/maintainers')
 - is_maap_clarity_view = controller_path == 'organizations/assignments/maap_clarity'
 - is_edit_view = action_name == 'edit' && controller_name == 'assignments'
-- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && !is_maap_clarity_view && (@organization.present? || (@assignment && @assignment.company.present?))
+- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_maintainers_view && !is_edit_view && !is_maap_clarity_view && (@organization.present? || (@assignment && @assignment.company.present?))
 - created_name, created_at = assignment_audit_created_meta(@assignment)
 - updated_name, updated_at = assignment_audit_last_updated_meta(@assignment)
 
@@ -128,6 +129,24 @@
             %i.bi.bi-arrow-down-circle.me-2
             Manage Consumer Assignments
           %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+            %i.bi.bi-exclamation-triangle
+
+      - if is_maintainers_view
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-people.me-2
+            Manage Maintainers (Active)
+      - elsif @assignment && assignment_org && policy(@assignment).manage_maintainers?
+        .d-flex.align-items-center.gap-2
+          = link_to organization_assignment_maintainers_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
+            %i.bi.bi-people.me-2
+            Manage Maintainers
+      - else
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-people.me-2
+            Manage Maintainers
+          %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP admin or existing maintainer access", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
             %i.bi.bi-exclamation-triangle
 
       - if is_edit_view

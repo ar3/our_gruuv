@@ -109,7 +109,8 @@ RSpec.describe Insights::RealOgLeadersOrgGoalsBuilder do
       expect(row.has_connection).to be true
     end
 
-    it "sorts by confidence checks then connections then completions" do
+    it "sorts two signals above one signal" do
+      # Department: confidence only (one signal)
       high = dept_goal!(attrs: { title: "High checks" })
       2.times do |i|
         create(
@@ -121,7 +122,8 @@ RSpec.describe Insights::RealOgLeadersOrgGoalsBuilder do
         )
       end
 
-      low = team_goal!(attrs: { title: "Low checks" })
+      # Team: confidence + connection (two signals)
+      low = team_goal!(attrs: { title: "Two signals" })
       create(
         :goal_check_in,
         goal: low,
@@ -137,7 +139,7 @@ RSpec.describe Insights::RealOgLeadersOrgGoalsBuilder do
       )
 
       rows = described_class.new(company: company, range: nil).call
-      expect(rows.map(&:owner_type)).to eq(%w[Department Team])
+      expect(rows.map(&:owner_type)).to eq(%w[Team Department])
     end
   end
 end

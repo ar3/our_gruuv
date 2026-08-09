@@ -1,0 +1,28 @@
+-# Locals: maintainable, organization, manage_path (optional)
+- maintainers = maintainable.maintainers.includes(:person).sort_by { |t| [ t.person.last_name.to_s, t.person.first_name.to_s ] }
+- can_manage = policy(maintainable).manage_maintainers?
+- manage_path = local_assigns[:manage_path]
+
+.card.mb-4
+  .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+    %h5.mb-0
+      %i.bi.bi-people.me-2
+      Maintainers
+    - if can_manage && manage_path.present?
+      = link_to manage_path, class: "btn btn-sm btn-outline-primary" do
+        %i.bi.bi-pencil.me-1
+        Manage
+  .card-body
+    - if maintainers.any?
+      %ul.list-unstyled.mb-0
+        - maintainers.each do |teammate|
+          %li.py-1
+            %i.bi.bi-person.me-1.text-muted
+            = teammate.person.display_name
+    - else
+      %p.text-muted.mb-0
+        No maintainers yet.
+        - if can_manage && manage_path.present?
+          = link_to "Add maintainers", manage_path, class: "text-decoration-none ms-1"
+      %p.small.text-muted.mb-0.mt-1
+        Maintainers are responsible for keeping this #{maintainable.class.name.downcase} clear and up to date.

@@ -111,36 +111,41 @@ RSpec.describe Insights::RealOgLeadersGoalsBuilder do
       expect(rows.first.has_connection).to be true
     end
 
-    it "sorts by confidence checks, then connections, then completions, then latest check" do
-      high_checks = create(:person, first_name: "High", last_name: "Checks")
-      high_tm = create(:teammate, person: high_checks, organization: company)
-      linked = create(:person, first_name: "Linked", last_name: "One")
-      linked_tm = create(:teammate, person: linked, organization: company)
+    it "sorts all-three first, then singles by confidence over connection" do
+      all_person = create(:person, first_name: "All", last_name: "Three")
+      all_tm = create(:teammate, person: all_person, organization: company)
+      conf_person = create(:person, first_name: "Conf", last_name: "Only")
+      conf_tm = create(:teammate, person: conf_person, organization: company)
+      conn_person = create(:person, first_name: "Conn", last_name: "Only")
+      conn_tm = create(:teammate, person: conn_person, organization: company)
 
-      g1 = personal_goal!(owner: high_tm)
-      2.times do |i|
-        create(
-          :goal_check_in,
-          goal: g1,
-          confidence_reporter: high_checks,
-          created_at: (i + 1).days.ago,
-          check_in_week_start: (Date.current - (i + 1).weeks).beginning_of_week(:monday)
-        )
-      end
-
-      g2 = personal_goal!(owner: linked_tm)
+      g_all = personal_goal!(owner: all_tm)
       create(
         :goal_check_in,
-        goal: g2,
-        confidence_reporter: linked,
+        goal: g_all,
+        confidence_reporter: all_person,
+        created_at: 3.days.ago,
+        check_in_week_start: 3.days.ago.to_date.beginning_of_week(:monday)
+      )
+      create(:goal_association, goal: g_all, associable: create(:ability, company: company), created_at: 2.days.ago)
+      g_all.update!(completed_at: 1.day.ago, started_at: 2.weeks.ago)
+
+      g_conf = personal_goal!(owner: conf_tm)
+      create(
+        :goal_check_in,
+        goal: g_conf,
+        confidence_reporter: conf_person,
         created_at: 1.hour.ago,
         check_in_week_start: Date.current.beginning_of_week(:monday)
       )
-      create(:goal_association, goal: g2, associable: create(:ability, company: company), created_at: 1.day.ago)
+
+      g_conn = personal_goal!(owner: conn_tm)
+      create(:goal_association, goal: g_conn, associable: create(:assignment, company: company), created_at: 1.day.ago)
 
       names = described_class.new(company: company, range: nil).call.map(&:display_name)
-      expect(names.first).to include("High")
-      expect(names.second).to include("Linked")
+      expect(names.first).to include("All")
+      expect(names.second).to include("Conf")
+      expect(names.third).to include("Conn")
     end
 
     it "respects the timeframe for confidence checks and completions" do

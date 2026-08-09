@@ -1,6 +1,7 @@
 class Position < ApplicationRecord
   include PgSearch::Model
   include ModelSemanticVersionable
+  include Maintainable
 
   # Associations
   belongs_to :title

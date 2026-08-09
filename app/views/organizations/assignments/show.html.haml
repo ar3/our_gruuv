@@ -122,6 +122,11 @@
                           %i.bi.bi-file-earmark-text.me-1
                           Draft Version
 
+                = render "shared/object_maintainers",
+                  maintainable: @assignment,
+                  organization: @organization,
+                  manage_path: organization_assignment_maintainers_path(@organization, @assignment)
+
       .col-lg-4.d-flex.flex-column.gap-4
         = render "organizations/assignments/actions_card"
         = render "organizations/assignments/maap_clarity_spotlight"

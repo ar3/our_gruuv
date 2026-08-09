@@ -77,6 +77,11 @@
 
     / Comments Section
     = render 'shared/comment_summary', commentable: @position, organization: @organization
+
+    = render "shared/object_maintainers",
+      maintainable: @position,
+      organization: @organization,
+      manage_path: organization_position_maintainers_path(@organization, @position)
   .col-md-4.col-12
     / Actions Section
     .card.border.mb-4
@@ -187,6 +192,20 @@
                   %i.bi.bi-check2-circle.me-2
                   Manage Eligibility
               %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission on your company teammate record for this position's company to manage eligibility"}}
+
+          / Manage Maintainers
+          - can_manage_maintainers = policy(@position).manage_maintainers?
+          - if can_manage_maintainers
+            = link_to organization_position_maintainers_path(@organization, @position), class: "btn btn-outline-primary w-100" do
+              %i.bi.bi-people.me-2
+              Manage Maintainers
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                = link_to organization_position_maintainers_path(@organization, @position), class: "btn btn-outline-secondary w-100", disabled: true, style: "pointer-events: none;" do
+                  %i.bi.bi-people.me-2
+                  Manage Maintainers
+              %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP admin or existing maintainer access"}}
           
           / Archive Position (links to confirmation page)
           - if policy(@position).archive?

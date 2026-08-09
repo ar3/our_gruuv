@@ -32,7 +32,7 @@
         when all three checks are present
     %h5.fw-semibold.mb-2 Sort order
     %p.mb-0
-      Most confidence checks first, then most connected goals, then most completions, then latest confidence check, then name.
+      All three signals first, then two of three, then one of three. Among singles (and pairs), prefer confidence checks, then connected, then completed. Within each band, most recent confidence check first.
   - elsif board == "org_goals"
     %h5.fw-semibold.mb-2 Shared goals board (team / department / company)
     %ul.mb-3
@@ -51,7 +51,7 @@
         when all three are present for that owner
     %h5.fw-semibold.mb-2 Sort order
     %p.mb-0
-      Same as personal goals: confidence checks, then connections, then completions, then latest check, then name.
+      Same as personal goals: all three first, then two, then one; within those bands confidence → connected → completed; then most recent confidence check.
   - elsif board == "check_ins"
     %h5.fw-semibold.mb-2 Check-ins board
     %ul.mb-3

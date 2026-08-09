@@ -205,4 +205,44 @@ RSpec.describe "Assignment Experience Survey", type: :request do
       expect(response.body).not_to include(peer_person.display_name)
     end
   end
+
+  context "when signed in as a pure assignment maintainer" do
+    let(:maintainer_person) { create(:person) }
+    let(:maintainer) do
+      create(:teammate, :assigned_employee, person: maintainer_person, organization: organization)
+    end
+    let(:assignment_with_scores) { create(:assignment, company: organization, title: "Maintained Role") }
+    let(:other_rater) { create(:teammate, :assigned_employee, organization: organization) }
+
+    before do
+      create(:employment_tenure, company_teammate: maintainer, company: organization)
+      create(:employment_tenure, company_teammate: other_rater, company: organization)
+      create(:object_maintainer, maintainable: assignment_with_scores, company_teammate: maintainer)
+
+      submission = create(:assignment_survey_submission, company_teammate: other_rater, organization: organization)
+      create(
+        :assignment_survey_response,
+        submission: submission,
+        assignment: assignment_with_scores,
+        snapshot_title: assignment_with_scores.title,
+        understandable_rating: 6,
+        possible_rating: 5,
+        relevant_rating: 4
+      )
+      submission.finalize!
+
+      sign_in_as_teammate_for_request(maintainer_person, organization)
+    end
+
+    it "shows org-wide assignment score cards without individual people from outside hierarchy" do
+      get results_organization_assignment_survey_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Results by assignment")
+      expect(response.body).to include("Maintained Role")
+      expect(response.body).to include("Org-wide (maintainer)")
+      expect(response.body).not_to include("View responses")
+      expect(response.body).not_to include(other_rater.person.display_name)
+    end
+  end
 end

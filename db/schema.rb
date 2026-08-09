@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_04_130000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_09_182522) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1060,6 +1060,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_04_130000) do
     t.index ["main_thread_id"], name: "index_notifications_on_main_thread_id"
     t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
     t.index ["original_message_id"], name: "index_notifications_on_original_message_id"
+  end
+
+  create_table "object_maintainers", force: :cascade do |t|
+    t.string "maintainable_type", null: false
+    t.bigint "maintainable_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.bigint "added_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["added_by_id"], name: "index_object_maintainers_on_added_by_id"
+    t.index ["company_teammate_id", "maintainable_type"], name: "index_object_maintainers_on_teammate_and_type"
+    t.index ["company_teammate_id"], name: "index_object_maintainers_on_company_teammate_id"
+    t.index ["maintainable_type", "maintainable_id", "company_teammate_id"], name: "index_object_maintainers_unique_membership", unique: true
+    t.index ["maintainable_type", "maintainable_id"], name: "index_object_maintainers_on_maintainable"
   end
 
   create_table "observable_moments", force: :cascade do |t|
@@ -2130,6 +2144,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_04_130000) do
   add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
   add_foreign_key "notifications", "notifications", column: "original_message_id"
+  add_foreign_key "object_maintainers", "teammates", column: "added_by_id"
+  add_foreign_key "object_maintainers", "teammates", column: "company_teammate_id"
   add_foreign_key "observable_moments", "organizations", column: "company_id"
   add_foreign_key "observable_moments", "people", column: "created_by_id"
   add_foreign_key "observable_moments", "teammates", column: "primary_potential_observer_id"

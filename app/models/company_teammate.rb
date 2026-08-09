@@ -22,6 +22,8 @@ class CompanyTeammate < ApplicationRecord
   has_many :huddle_feedbacks, foreign_key: 'teammate_id', dependent: :nullify
   has_many :huddle_participants, foreign_key: 'teammate_id', dependent: :nullify
   has_many :assignment_survey_submissions, foreign_key: :teammate_id, dependent: :destroy
+  has_many :object_maintainers, foreign_key: :company_teammate_id, dependent: :destroy, inverse_of: :company_teammate
+  has_many :object_maintainers_added, class_name: "ObjectMaintainer", foreign_key: :added_by_id, dependent: :nullify, inverse_of: :added_by
 
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
   has_many :og_consultations, as: :subject, dependent: :destroy

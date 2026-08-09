@@ -1,6 +1,7 @@
 class Assignment < ApplicationRecord
   include PgSearch::Model
   include ModelSemanticVersionable
+  include Maintainable
   
   # Associations
   belongs_to :company, class_name: 'Organization'

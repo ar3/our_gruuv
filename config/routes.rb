@@ -326,6 +326,7 @@ Rails.application.routes.draw do
         post :associate_existing_goals
       end
       resource :assignment_milestones, only: [:show, :update], module: :abilities
+      resource :maintainers, only: [:show, :update], module: :abilities
       resources :goal_associations, module: :abilities, only: [:create, :destroy]
     end
     
@@ -385,6 +386,7 @@ Rails.application.routes.draw do
       resource :ability_milestones, only: [:show, :update], module: :assignments
       resources :assignment_outcomes, only: [:edit, :update], module: :assignments
       resource :consumer_assignments, only: [:show, :update], module: :assignments
+      resource :maintainers, only: [:show, :update], module: :assignments
       resources :goal_associations, module: :assignments, only: [:create, :destroy]
       resource :cytoscape_graph_layout,
                only: %i[show update destroy],
@@ -573,6 +575,7 @@ Rails.application.routes.draw do
         patch :update_eligibility
       end
       resource :ability_milestones, only: [:show, :update], module: :positions
+      resource :maintainers, only: [:show, :update], module: :positions
       resource :cytoscape_graph_layout,
                only: %i[show update destroy],
                controller: "cytoscape_graph_layouts",
