@@ -1,0 +1,45 @@
+- case item[:kind]
+- when :active_assignments_without_employment
+  = link_to "Assignment management",
+            assignment_selection_organization_company_teammate_path(organization, item[:teammate]),
+            class: "btn btn-sm btn-outline-primary"
+- when :archived_assignment_open_check_in
+  = link_to "Check-ins",
+            organization_company_teammate_check_ins_path(organization, item[:teammate]),
+            class: "btn btn-sm btn-outline-primary me-1"
+  = link_to "Assignment",
+            organization_assignment_path(organization, item[:check_in].assignment),
+            class: "btn btn-sm btn-outline-secondary"
+- when :archived_aspiration_open_check_in
+  = link_to "Check-ins",
+            organization_company_teammate_check_ins_path(organization, item[:teammate]),
+            class: "btn btn-sm btn-outline-primary me-1"
+  - aspiration = item[:aspiration] || item[:check_in].aspiration
+  - if aspiration
+    = link_to "Aspiration",
+              organization_aspiration_path(organization, aspiration),
+              class: "btn btn-sm btn-outline-secondary"
+- when :archived_position_open_check_in
+  = link_to "Check-ins",
+            organization_company_teammate_check_ins_path(organization, item[:teammate]),
+            class: "btn btn-sm btn-outline-primary me-1"
+  - position = item[:check_in].employment_tenure&.position
+  - if position
+    = link_to "Position",
+              organization_position_path(organization, position),
+              class: "btn btn-sm btn-outline-secondary"
+- when :teammate_without_slack, :slack_without_teammate
+  = link_to "Slack teammate associations",
+            teammates_organization_slack_path(organization),
+            class: "btn btn-sm btn-outline-primary"
+- when :multiple_open_position_check_ins, :position_check_in_wrong_tenure
+  - if item[:teammate]
+    = link_to "Check-ins",
+              organization_company_teammate_check_ins_path(organization, item[:teammate]),
+              class: "btn btn-sm btn-outline-primary"
+- when :employment_state_drift
+  = link_to "About teammate",
+            about_me_organization_company_teammate_path(organization, item[:teammate]),
+            class: "btn btn-sm btn-outline-primary"
+- else
+  %span.text-muted —

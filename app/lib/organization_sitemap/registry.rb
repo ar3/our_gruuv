@@ -537,7 +537,11 @@ module OrganizationSitemap
             synonyms: %w[slack settings slack integration slack config]),
           admin_page(:value_billing, "Value / Billing", "bi-cash-coin", :organization_value_billing_path,
             goal: "Review value metrics and billing information for the organization.",
-            synonyms: %w[value billing billing subscription plan])
+            synonyms: %w[value billing billing subscription plan]),
+          admin_page(:debug, "Debug", "bi-bug", :organization_debug_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).manage_employment? },
+            goal: "Read-only integrity checklist: stale assignment tenures, archived records with open check-ins, Slack linking gaps, and nightly-healed check-in/employment drift.",
+            synonyms: %w[debug integrity data health stale check-ins slack linking employment reconciliation])
         ]
       }
     end

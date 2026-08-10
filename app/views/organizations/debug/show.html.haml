@@ -1,0 +1,72 @@
+- content_for :title, "Debug - #{@organization.display_name}"
+- page_help_id = "orgDebugPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      Debug
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Data integrity checklist for this organization. Click for details."
+  %p.text-muted.mb-0
+    Read-only integrity findings. Follow links to fix issues; some rows clear themselves overnight.
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p.mb-0
+      See employment, check-in, and Slack mismatches in one place so admins and support can triage quickly without digging through each tool.
+
+    %h3.fw-semibold.mb-2.mt-3 Context
+    %p.mb-0
+      Nightly operational cleanup already merges/repoints some position check-ins and reconciles employment-state fields.
+      Other issues need a person (assignment management, Slack linking, or finishing a check-in).
+
+    %h3.fw-semibold.mb-2.mt-3 Specifics of this page
+    %ul.mb-0
+      %li Every section always appears; a zero count means that class of issue is currently clear.
+      %li
+        %span.badge.text-bg-secondary.me-1 Needs person
+        needs a human via the linked page.
+      %li
+        %span.badge.text-bg-info.me-1 Clears nightly
+        should auto-heal via daily operational cleanup—use this page to verify.
+      %li This page does not change data; it only lists findings and links.
+
+- total_findings = @sections.sum { |s| s.items.size }
+.alert.alert-light.border.mb-4
+  %strong #{total_findings}
+  finding#{'s' unless total_findings == 1} across #{@sections.size} checks
+  - unless @slack_configured
+    %span.text-muted
+      · Slack not configured — Slack sections will stay empty until you connect it.
+
+- @sections.each do |section|
+  .card.mb-3
+    .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+      .d-flex.align-items-center.gap-2
+        %h2.h5.mb-0= section.title
+        %span.badge{class: (section.items.any? ? 'text-bg-warning' : 'text-bg-success')}
+          = section.items.size
+      - if section.heals_nightly
+        %span.badge.text-bg-info Clears nightly
+      - else
+        %span.badge.text-bg-secondary Needs person
+    .card-body
+      %p.text-muted.small.mb-3= section.resolve_note
+      - if section.items.empty?
+        %p.mb-0.text-muted None right now.
+      - else
+        .table-responsive
+          %table.table.table-sm.table-hover.mb-0
+            %thead
+              %tr
+                %th Finding
+                %th Links
+            %tbody
+              - section.items.each do |item|
+                %tr
+                  %td
+                    = render "organizations/debug/item_label", item: item, organization: @organization
+                  %td
+                    = render "organizations/debug/item_links", item: item, organization: @organization, section: section

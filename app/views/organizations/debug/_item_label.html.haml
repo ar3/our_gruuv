@@ -1,0 +1,35 @@
+- case item[:kind]
+- when :active_assignments_without_employment
+  %strong= item[:teammate].person.display_name
+  %span.text-muted
+    — #{item[:count]} active assignment tenure#{'s' unless item[:count] == 1}:
+    = item[:assignment_titles].join(', ')
+- when :archived_assignment_open_check_in, :archived_aspiration_open_check_in, :archived_position_open_check_in
+  %strong= item[:record_type]
+  = item[:record_title]
+  %span.text-muted
+    — open check-in for
+    = item[:teammate].person.display_name
+- when :teammate_without_slack
+  %strong= item[:teammate].person.display_name
+  %span.text-muted — no Slack identity
+- when :slack_without_teammate
+  %strong= item[:name].presence || item[:slack_user_id]
+  - if item[:email].present?
+    %span.text-muted
+      = "(#{item[:email]})"
+  %span.text-muted.ms-1 — not linked
+- when :multiple_open_position_check_ins
+  %strong= item[:teammate]&.person&.display_name || "Teammate ##{item[:teammate]&.id}"
+  %span.text-muted
+    — #{item[:count]} open position check-ins
+- when :position_check_in_wrong_tenure
+  %strong= item[:teammate].person.display_name
+  %span.text-muted
+    — open check-in on tenure ##{item[:open_employment_tenure_id]} (active is ##{item[:active_employment_tenure_id]})
+- when :employment_state_drift
+  %strong= item[:teammate].person.display_name
+  %span.text-muted
+    — would update #{item[:changed_fields].map(&:to_s).join(', ')}
+- else
+  = item.inspect

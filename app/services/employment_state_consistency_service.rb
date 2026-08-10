@@ -3,6 +3,11 @@ class EmploymentStateConsistencyService
     new(teammate: teammate).call
   end
 
+  # Read-only preview of what #call would change (no write).
+  def self.preview(teammate:)
+    new(teammate: teammate).preview
+  end
+
   def initialize(teammate:)
     @teammate = teammate
   end
@@ -21,6 +26,14 @@ class EmploymentStateConsistencyService
     Result.err(e.record.errors.full_messages.join(', '))
   rescue => e
     Result.err("Failed to sync employment state: #{e.message}")
+  end
+
+  def preview
+    return Result.err('Teammate is required') unless teammate
+
+    attrs = desired_attributes
+    changed_fields = attrs.keys.select { |key| teammate.public_send(key) != attrs[key] }
+    Result.ok(changed_fields: changed_fields, attributes: attrs)
   end
 
   private
