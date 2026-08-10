@@ -9,7 +9,7 @@
                collapse_id: page_help_id,
                tooltip: "Data integrity checklist for this organization. Click for details."
   %p.text-muted.mb-0
-    Read-only integrity findings. Follow links to fix issues; some rows clear themselves overnight.
+    Integrity findings for this organization. Follow links to fix issues; employment end dates can be set in-place on the state-drift section.
 
 .collapse.mb-4{id: page_help_id}
   .alert.alert-light.border
@@ -31,7 +31,8 @@
       %li
         %span.badge.text-bg-info.me-1 Clears nightly
         should auto-heal via daily operational cleanup—use this page to verify.
-      %li This page does not change data; it only lists findings and links.
+      %li Most sections are read-only links. Employment state drift also lets you set an end date on the last tenure (ended_at + last_terminated_at).
+      %li Empty sections with count 0 are healthy for that check.
 
 - total_findings = @sections.sum { |s| s.items.size }
 .alert.alert-light.border.mb-4

@@ -138,8 +138,10 @@ Rails.application.routes.draw do
     # Protect Flow — manager weekly focus across direct reports
     resource :protect_flow, only: [:show], controller: 'organizations/protect_flow'
 
-    # Org data integrity debug (employment managers; read-only)
-    resource :debug, only: [:show], controller: 'organizations/debug'
+    # Org data integrity debug (employment managers)
+    resource :debug, only: [:show], controller: 'organizations/debug' do
+      post :set_employment_end_date
+    end
 
     # PaperTrail version history for auditable records (authorization uses each record's show? policy)
     get 'paper_trail', to: 'organizations/paper_trail#show', as: :paper_trail

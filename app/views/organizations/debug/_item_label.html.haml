@@ -31,5 +31,14 @@
   %strong= item[:teammate].person.display_name
   %span.text-muted
     — would update #{item[:changed_fields].map(&:to_s).join(', ')}
+  - if item[:last_employment_tenure]
+    %div.small.text-muted.mt-1
+      Last tenure started
+      = item[:last_employment_tenure].started_at.to_date
+      - if item[:last_employment_tenure].ended_at.present?
+        · ended
+        = item[:last_employment_tenure].ended_at.to_date
+      - else
+        · still active
 - else
   = item.inspect

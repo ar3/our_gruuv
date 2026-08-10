@@ -40,6 +40,17 @@
 - when :employment_state_drift
   = link_to "About teammate",
             about_me_organization_company_teammate_path(organization, item[:teammate]),
-            class: "btn btn-sm btn-outline-primary"
+            class: "btn btn-sm btn-outline-secondary me-2 mb-1"
+  - if item[:last_employment_tenure]
+    - end_date_dom_id = "employment_end_date_#{item[:teammate].id}"
+    - confirm_msg = "Set this teammate’s last employment tenure ended_at and last_terminated_at to the chosen date? Active assignment tenures are also closed if employment ends."
+    = form_with url: set_employment_end_date_organization_debug_path(organization), method: :post, local: true, html: { class: "d-inline-flex flex-wrap align-items-center gap-2" } do |f|
+      = hidden_field_tag :teammate_id, item[:teammate].id
+      = label_tag end_date_dom_id, "End date", class: "visually-hidden"
+      = date_field_tag :end_date, item[:default_end_date], id: end_date_dom_id, class: "form-control form-control-sm", required: true, style: "width: auto; min-width: 10rem;"
+      = f.submit "Set end / terminated", class: "btn btn-sm btn-primary", data: { turbo_confirm: confirm_msg }
+  - else
+    %span.text-muted.small No tenure to end
 - else
   %span.text-muted —
+

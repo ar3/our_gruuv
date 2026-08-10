@@ -302,18 +302,21 @@ module Organizations
           next unless preview.ok?
           next if preview.value[:changed_fields].empty?
 
+          last_tenure = SetEmploymentEndDateService.last_employment_tenure_for(teammate, organization)
           {
             kind: :employment_state_drift,
             teammate: teammate,
             changed_fields: preview.value[:changed_fields],
-            desired: preview.value[:attributes]
+            desired: preview.value[:attributes],
+            last_employment_tenure: last_tenure,
+            default_end_date: SetEmploymentEndDateService.default_end_date_for(teammate, organization)
           }
         end
 
         Section.new(
           key: :employment_state_drift,
           title: "Employment state fields out of sync with tenures",
-          resolve_note: "first_employed_at / last_terminated_at do not match tenure reality. Daily operational cleanup runs EmploymentStateReconciliation and corrects these.",
+          resolve_note: "first_employed_at / last_terminated_at do not match tenure reality. Nightly cleanup can auto-correct, or set employment end date here on the last tenure (updates ended_at and last_terminated_at).",
           heals_nightly: true,
           slack_required: false,
           items: items
