@@ -1,5 +1,5 @@
 - casual_name = @teammate.person.casual_name
-- content_for :title, "#{casual_name} - Teammate View"
+- content_for :title, "#{casual_name}'s #{true_jd_teammate_view_suffix}"
 - internal_page_help_id = 'teammateViewPageHelp'
 :ruby
   internal_nav_links = [
@@ -12,24 +12,28 @@
   ]
 
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      = render "shared/teammate_context/title_dropdown",
-               organization: @current_organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { internal_organization_company_teammate_path(@current_organization, tm) },
-               switch_aria_label: "Switch teammate for Teammate View"
-      %span= " - Teammate View"
-      = render 'shared/page_help/header_info_button',
-               collapse_id: internal_page_help_id,
-               tooltip: 'Teammate overview: role, assignments, teams, OGOs, and public goals. Click for details.'
+  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+    = render "shared/teammate_context/title_dropdown",
+             organization: @current_organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { internal_organization_company_teammate_path(@current_organization, tm) },
+             switch_aria_label: "Switch teammate for #{true_jd_teammate_view_suffix}"
+    %span= "'s #{true_jd_teammate_view_suffix}"
+    = render 'shared/page_help/header_info_button',
+             collapse_id: internal_page_help_id,
+             tooltip: 'True JD (teammate view): role, assignments, teams, OGOs, and public goals. Click for details.'
 
 - content_for :header_action do
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: "Teammate View", url: nil }])
+  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: true_jd_teammate_view_suffix, url: nil }])
+
+.d-flex.justify-content-end.mb-3.w-100
+  = link_to "Print / clean view",
+            true_jd_print_organization_company_teammate_path(@current_organization, @teammate),
+            class: "text-muted small text-decoration-none"
 
 .collapse.mb-4{id: internal_page_help_id}
   = render 'organizations/company_teammates/internal_page_help',
@@ -306,7 +310,7 @@
 - set_day_to_day_disabled_tooltip = "You must be in this teammate's managerial hierarchy or have the manage employment permission to set day to day assignments."
 
 = render 'shared/single_item_check_in/page_wrapper',
-         nav_title: "#{casual_name} — Teammate View",
+         nav_title: "#{casual_name} — #{true_jd_teammate_view_suffix}",
          nav_links: internal_nav_links,
          initial_section: 'home' do
   %section#home.mb-4{role: "region", "aria-labelledby": "teammate-home-heading"}

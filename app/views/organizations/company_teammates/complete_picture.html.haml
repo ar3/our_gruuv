@@ -1,24 +1,27 @@
 - casual = @selected_teammate.person.casual_name.strip
-- content_for :title, "#{casual}'s True Day-to-Day"
+- content_for :title, "#{casual}'s #{true_jd_manager_view_suffix}"
 
 - content_for :header do
-  .d-flex.flex-column.gap-1
-    .d-flex.align-items-center.flex-wrap.gap-2
-      %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-        = render "shared/teammate_context/title_dropdown",
-                 organization: organization,
-                 selected_teammate: @selected_teammate,
-                 viewable_teammate_groups: @viewable_teammate_groups,
-                 path_for_teammate: ->(tm) { complete_picture_organization_company_teammate_path(organization, tm) },
-                 switch_aria_label: "Switch teammate for True Day-to-Day"
-        %span= "'s True Day-to-Day"
-    %p.text-muted.mb-0.small= "#{casual}'s real job description"
+  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+    = render "shared/teammate_context/title_dropdown",
+             organization: organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { complete_picture_organization_company_teammate_path(organization, tm) },
+             switch_aria_label: "Switch teammate for #{true_jd_manager_view_suffix}"
+    %span= "'s #{true_jd_manager_view_suffix}"
 
 - content_for :header_action do
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: "True Day-to-Day", url: nil }])
+  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: true_jd_manager_view_suffix, url: nil }])
+
+.d-flex.justify-content-between.align-items-baseline.gap-3.mb-3.w-100
+  %p.text-muted.mb-0.small= "#{casual}'s real job description"
+  = link_to "Print / clean view",
+            true_jd_print_organization_company_teammate_path(organization, @selected_teammate),
+            class: "text-muted small text-decoration-none flex-shrink-0 ms-auto"
 
 / Position + spotlight: two cards side by side
 - if @current_employment&.position
@@ -359,7 +362,7 @@
               casual_name: cp_casual,
               counts: cp_footer_counts,
               return_url: cp_return_url,
-              return_text: 'True Day-to-Day'
+              return_text: 'True JD (manager view)'
 
         - if policy(@teammate).manager? || policy(organization).manage_employment?
           .mt-3
@@ -456,7 +459,7 @@
                 casual_name: mp_casual,
                 counts: mp_footer_counts,
                 return_url: mp_return_url,
-                return_text: 'True Day-to-Day'
+                return_text: 'True JD (manager view)'
       - else
         %p.text-muted.mb-0
           %em No ability milestone requirements apply yet for #{@current_organization.display_name}. They appear when this teammate has a position with milestone rules, required assignments, or active assignment tenures that include abilities.
@@ -491,4 +494,4 @@
 
 .mt-5
   %p.text-muted
-    %em This complete picture view provides a comprehensive overview of the person's current position, assignments, and earned milestones for #{@current_organization.display_name} for development planning and performance management.
+    %em This True JD (manager view) provides a comprehensive overview of the person's current position, assignments, and earned milestones for #{@current_organization.display_name} for development planning and performance management.

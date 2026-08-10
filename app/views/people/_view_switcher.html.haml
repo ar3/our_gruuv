@@ -36,6 +36,22 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
 
     %li
+      - if action_name == 'true_jd_print'
+        .dropdown-item.text-muted
+          %i.bi.bi-printer.me-2
+          = "#{true_jd_print_view_label_for(@teammate)} (Active)"
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate && policy(@teammate).true_jd_print?
+        = link_to true_jd_print_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-printer.me-2
+          = true_jd_print_view_label_for(@teammate)
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-printer.me-2
+          = true_jd_print_view_label_for(@teammate)
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the print True JD"}
+
+    %li
       - one_on_one_active = controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)
       - one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
       - if one_on_one_active

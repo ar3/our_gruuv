@@ -22,7 +22,7 @@
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammate View", url: internal_organization_company_teammate_path(@current_organization, @teammate) }, { label: day_to_day_title, url: nil }])
+  = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: true_jd_teammate_view_suffix, url: internal_organization_company_teammate_path(@current_organization, @teammate) }, { label: day_to_day_title, url: nil }])
 
 .collapse.mb-4{id: set_day_to_day_page_help_id}
   = render 'organizations/company_teammates/set_day_to_day_assignments_page_help',

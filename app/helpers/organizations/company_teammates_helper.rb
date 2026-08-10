@@ -23,7 +23,7 @@ module Organizations::CompanyTeammatesHelper
     first_entry =
       if for_one_on_one_hub
         internal_teammate_views_entry(
-          title: "Teammate View",
+          title: teammate_view_label_for(teammate),
           description: "Employment, assignments, observations, goals, and quick navigation for this teammate.",
           path: internal_organization_company_teammate_path(organization, teammate),
           enabled: policy(teammate).internal?,
@@ -204,11 +204,18 @@ module Organizations::CompanyTeammatesHelper
             tooltip: nil
           ),
           internal_teammate_views_entry(
-            title: "True day-to-day",
-            description: "Active job context: position, assignments, milestones, and check-in history.",
+            title: active_job_label_for(teammate),
+            description: "Manager True JD: position, assignments, milestones, and check-in history.",
             path: complete_picture_organization_company_teammate_path(organization, teammate),
             enabled: policy(teammate).complete_picture?,
             tooltip: context[:hierarchy_complete_picture]
+          ),
+          internal_teammate_views_entry(
+            title: true_jd_print_view_label_for(teammate),
+            description: "Clean, browser-printable view of this teammate's actual current job description.",
+            path: true_jd_print_organization_company_teammate_path(organization, teammate),
+            enabled: policy(teammate).true_jd_print?,
+            tooltip: context[:internal_teammate_tooltip]
           ),
           internal_teammate_views_entry(
             title: set_assignments_view_label,

@@ -43,6 +43,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @most_recent_pages = @teammate.person.page_visits.recent.limit(5)
   end
 
+  def true_jd_print
+    authorize @teammate, :true_jd_print?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate, all_active_in_organization: true)
+    @current_organization = organization
+    @person = @teammate.person
+    load_true_jd_print_data
+  end
+
   def complete_picture
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
     assign_viewable_teammates_context!(selected_teammate: @teammate)
@@ -927,6 +935,51 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     slot[:requirements] << { label: label, m: milestone_level.to_i }
   end
 
+  def load_true_jd_print_data
+    @employment_tenures = @teammate&.employment_tenures&.includes(
+      :company,
+      position: [
+        { position_abilities: :ability },
+        { position_assignments: :assignment },
+        :title
+      ]
+    )&.where(company: organization)
+     &.order(started_at: :desc) || []
+    @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
+    @print_position = @current_employment&.position
+
+    assignment_includes = {
+      assignment: [
+        :assignment_outcomes,
+        { assignment_abilities: :ability }
+      ]
+    }
+    @assignment_tenures = @teammate&.assignment_tenures&.active
+                                &.joins(:assignment)
+                                &.where(assignments: { company: organization })
+                                &.includes(assignment_includes)
+                                &.order(Arel.sql('COALESCE(assignment_tenures.anticipated_energy_percentage, 0) DESC, assignments.title ASC')) || []
+
+    position_assignment_by_assignment_id = if @print_position
+      @print_position.position_assignments.index_by(&:assignment_id)
+    else
+      {}
+    end
+
+    required = []
+    optional = []
+    @assignment_tenures.each do |tenure|
+      pa = position_assignment_by_assignment_id[tenure.assignment_id]
+      if pa&.required?
+        required << tenure
+      else
+        optional << tenure
+      end
+    end
+    @true_jd_required_tenures = required
+    @true_jd_optional_tenures = optional
+  end
+
   def load_complete_picture_spotlight_and_observations
     @complete_picture_distinct_position_count = @employment_tenures.map(&:position_id).compact.uniq.size
 
@@ -961,7 +1014,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       involving_teammate_id: @teammate.id,
       timeframe: 'all',
       return_url: return_path,
-      return_text: "Back to #{casual}'s True Day-to-Day"
+      return_text: "Back to #{casual}'s True JD (manager view)"
     )
 
     timeframe_all = { timeframe: 'all' }

@@ -426,6 +426,7 @@ Rails.application.routes.draw do
         get :about_me
         get :complete_picture
         get :internal
+        get :true_jd_print
         get :permissions
         post :update_permissions
         get :assignment_selection

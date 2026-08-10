@@ -1,0 +1,36 @@
+-# locals: tenure, assignment_type ('required' or 'suggested'), organization
+- assignment = tenure.assignment
+- energy = tenure.anticipated_energy_percentage
+
+%h5.mb-0
+  %strong= assignment.title
+  = link_to organization_assignment_path(organization, assignment), target: "_blank", class: "ms-2 text-muted d-print-none" do
+    %i.bi.bi-link-45deg
+
+%p.mb-2
+  %small.text-muted.fst-italic
+    - if energy.present?
+      (#{energy}% of your energy)
+    - else
+      (energy not set)
+
+.assignment-details.ms-4.ps-3.border-start.border-2{class: assignment_type == 'required' ? 'border-primary' : 'border-info'}
+  - if assignment.tagline.present?
+    .markdown-content.mb-2= render_markdown(assignment.tagline)
+
+  %p.mb-1.text-muted
+    %span='… as measured by –'
+    - if assignment.outcomes.any?
+      %ul.mt-0
+        - assignment.outcomes.each do |outcome|
+          %li.text-muted.markdown-content
+            = render_markdown(outcome.description)
+    - else
+      %span.text-muted outcomes to be determined
+
+  %p.mb-2.text-muted
+    = render 'shared/abilities_sentence',
+             assignment_abilities: assignment.assignment_abilities.by_milestone_level,
+             public_view: false,
+             show_milestone_parentheticals: false,
+             include_prefix: true

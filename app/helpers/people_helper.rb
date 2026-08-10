@@ -205,6 +205,8 @@ module PeopleHelper
       teammate_view_label_for(@teammate)
     when 'internal'
       teammate_view_label_for(@teammate)
+    when 'true_jd_print'
+      true_jd_print_view_label_for(@teammate)
     when 'public'
       public_profile_label_for(@teammate)
     when 'complete_picture'

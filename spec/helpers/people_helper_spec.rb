@@ -89,21 +89,29 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Public Profile')
     end
 
-    it 'returns possessive Teammate view for teammate action' do
+    it 'returns possessive True JD teammate view for teammate action' do
       teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
       allow(helper).to receive(:action_name).and_return('teammate')
       allow(helper).to receive(:controller_name).and_return('people')
       allow(helper).to receive(:instance_variable_get).with(:@teammate).and_return(teammate)
       helper.instance_variable_set(:@teammate, teammate)
-      expect(helper.people_current_view_name).to eq("Alex's Teammate view")
+      expect(helper.people_current_view_name).to eq("Alex's True JD (teammate view)")
     end
 
-    it 'returns possessive Active Job for complete_picture action' do
+    it 'returns possessive True JD manager view for complete_picture action' do
       teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
       allow(helper).to receive(:action_name).and_return('complete_picture')
       allow(helper).to receive(:controller_name).and_return('people')
       helper.instance_variable_set(:@teammate, teammate)
-      expect(helper.people_current_view_name).to eq("Alex's Active Job")
+      expect(helper.people_current_view_name).to eq("Alex's True JD (manager view)")
+    end
+
+    it 'returns possessive True JD print view for true_jd_print action' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
+      allow(helper).to receive(:action_name).and_return('true_jd_print')
+      allow(helper).to receive(:controller_name).and_return('company_teammates')
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's True JD (print view)")
     end
 
     it 'returns possessive Growth for my_growth_experiences on company_teammates' do

@@ -1,0 +1,94 @@
+- casual = @teammate.person.casual_name.strip
+- content_for :title, "#{casual}'s #{true_jd_print_view_suffix}"
+
+- content_for :header do
+  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+    = render "shared/teammate_context/title_dropdown",
+             organization: @current_organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { true_jd_print_organization_company_teammate_path(@current_organization, tm) },
+             switch_aria_label: "Switch teammate for #{true_jd_print_view_suffix}"
+    %span.true-jd-print-title-suffix= "'s #{true_jd_print_view_suffix}"
+
+- content_for :header_action do
+  .d-print-none
+    = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  .d-print-none
+    = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: true_jd_print_view_suffix, url: nil }])
+
+.d-flex.justify-content-between.align-items-baseline.gap-3.mb-3.w-100
+  %p.text-muted.mb-0.small.true-jd-print-intro
+    - if @print_position
+      This is #{casual}'s actual current job description.
+      Here is the
+      = link_to "blueprint", job_description_organization_position_path(@current_organization, @print_position), class: "text-decoration-none"
+      of the job description.
+    - else
+      This is #{casual}'s actual current job description. A position blueprint is unavailable.
+  = link_to "Print",
+            "#",
+            class: "text-muted small text-decoration-none flex-shrink-0 ms-auto d-print-none true-jd-print-action",
+            onclick: "window.print(); return false;"
+
+.true-jd-print-document
+  - if @print_position
+    .row.mb-4
+      .col-12
+        %h3
+          %strong Summary:
+        - if @print_position.combined_summary.present?
+          .markdown-content= render_markdown(@print_position.combined_summary)
+        - else
+          %p No summary provided
+  - else
+    .row.mb-4
+      .col-12
+        %h3
+          %strong Summary:
+        %p.text-muted No current position — summary from a position blueprint is not available.
+
+  - if @true_jd_required_tenures.any?
+    %h3.mb-3
+      %strong Required Assignments:
+
+    - @true_jd_required_tenures.each_with_index do |tenure, index|
+      - if index > 0
+        %hr.my-4
+      = render 'organizations/company_teammates/true_jd_print_assignment',
+               tenure: tenure,
+               assignment_type: 'required',
+               organization: @current_organization
+
+  - if @true_jd_optional_tenures.any?
+    %hr.mb-4.mt-4/
+
+    %h3.mb-1.mt-4
+      %strong Optional / Elective / Uniquely-You Assignments
+
+    %p.text-muted.mb-3
+      %em We are all about growth… as such, we do our best to make it possible to successfully complete required Assignments and have room for special/elective/unique-to-you Assignments. These should only be taken on if the required Assignments are being completed and we are meeting expectations across them.
+
+    - @true_jd_optional_tenures.each_with_index do |tenure, index|
+      - if index > 0
+        %hr.my-4
+      = render 'organizations/company_teammates/true_jd_print_assignment',
+               tenure: tenure,
+               assignment_type: 'suggested',
+               organization: @current_organization
+
+  - if @print_position&.position_abilities&.any?
+    = render 'organizations/positions/job_description_direct_milestones',
+             position: @print_position,
+             organization: @current_organization
+
+  - if @true_jd_required_tenures.empty? && @true_jd_optional_tenures.empty?
+    .row.mb-4.mt-4
+      .col-12
+        .alert.alert-info
+          %p.mb-0
+            #{casual} has no active assignments for #{@current_organization.display_name}.
+
+  = render 'organizations/positions/job_description_footer'

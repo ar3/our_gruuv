@@ -54,6 +54,9 @@ class CompanyTeammatePolicy < ApplicationPolicy
     record.organization == viewing_teammate.organization
   end
 
+  # True JD (print view) — same org-peer visibility as teammate /internal.
+  alias_method :true_jd_print?, :internal?
+
   def view_check_ins?
     audit?
   end
