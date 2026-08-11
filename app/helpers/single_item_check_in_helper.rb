@@ -46,9 +46,20 @@ module SingleItemCheckInHelper
     end
   end
 
+  # Health + viewer chips stay for healthy and for the viewer's own turn; hide once the ball has moved on.
+  def single_item_object_queue_show_status_pills?(row)
+    case row[:viewer_state].to_sym
+    when :waiting, :review_together
+      false
+    else
+      true
+    end
+  end
+
+  # Chip hover tooltip (only used when status pills are shown).
   def single_item_object_queue_row_subcopy(row, employee_name:, manager_name:, manager_perspective:)
     other_name = manager_perspective ? employee_name : manager_name
-    case row[:viewer_state]
+    case row[:viewer_state].to_sym
     when :your_turn
       row[:open_check_in_present] ? "I still owe this" : "Start check-in"
     when :waiting
@@ -57,6 +68,19 @@ module SingleItemCheckInHelper
       "Ready to finalize"
     else
       "Nothing owed right now"
+    end
+  end
+
+  # Muted line under the object name. Nil when healthy — leave the row as-is.
+  def single_item_object_queue_row_next_step(row, employee_name:, manager_name:, manager_perspective:)
+    other_name = manager_perspective ? employee_name : manager_name
+    case row[:viewer_state].to_sym
+    when :your_turn
+      "- You need to complete a check-in"
+    when :waiting
+      "- #{other_name} needs to complete a check-in"
+    when :review_together
+      "- next step is to review together"
     end
   end
 

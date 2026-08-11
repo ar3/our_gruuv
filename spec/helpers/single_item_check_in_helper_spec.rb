@@ -29,6 +29,18 @@ RSpec.describe SingleItemCheckInHelper do
     end
   end
 
+  describe "#single_item_object_queue_show_status_pills?" do
+    it "shows pills for your turn and clear" do
+      expect(single_item_object_queue_show_status_pills?({ viewer_state: :your_turn })).to be(true)
+      expect(single_item_object_queue_show_status_pills?({ viewer_state: :clear })).to be(true)
+    end
+
+    it "hides pills when waiting or review together" do
+      expect(single_item_object_queue_show_status_pills?({ viewer_state: :waiting })).to be(false)
+      expect(single_item_object_queue_show_status_pills?({ viewer_state: :review_together })).to be(false)
+    end
+  end
+
   describe "#single_item_object_queue_row_subcopy" do
     it "uses the counterpart name for waiting" do
       expect(
@@ -39,6 +51,63 @@ RSpec.describe SingleItemCheckInHelper do
           manager_perspective: false
         )
       ).to eq("Waiting on Alex")
+    end
+  end
+
+  describe "#single_item_object_queue_row_next_step" do
+    it "tells the viewer to complete when it is their turn" do
+      expect(
+        single_item_object_queue_row_next_step(
+          { viewer_state: :your_turn },
+          employee_name: "Pat",
+          manager_name: "Alex",
+          manager_perspective: false
+        )
+      ).to eq("- You need to complete a check-in")
+    end
+
+    it "names the other person when waiting" do
+      expect(
+        single_item_object_queue_row_next_step(
+          { viewer_state: :waiting },
+          employee_name: "Pat",
+          manager_name: "Alex",
+          manager_perspective: false
+        )
+      ).to eq("- Alex needs to complete a check-in")
+    end
+
+    it "uses employee name when waiting from manager perspective" do
+      expect(
+        single_item_object_queue_row_next_step(
+          { viewer_state: :waiting },
+          employee_name: "Pat",
+          manager_name: "Alex",
+          manager_perspective: true
+        )
+      ).to eq("- Pat needs to complete a check-in")
+    end
+
+    it "points to review together when both sides are done" do
+      expect(
+        single_item_object_queue_row_next_step(
+          { viewer_state: :review_together },
+          employee_name: "Pat",
+          manager_name: "Alex",
+          manager_perspective: false
+        )
+      ).to eq("- next step is to review together")
+    end
+
+    it "is blank when healthy/clear" do
+      expect(
+        single_item_object_queue_row_next_step(
+          { viewer_state: :clear },
+          employee_name: "Pat",
+          manager_name: "Alex",
+          manager_perspective: false
+        )
+      ).to be_nil
     end
   end
 
