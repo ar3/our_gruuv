@@ -24,6 +24,8 @@ class Title < ApplicationRecord
   validate :company_must_be_company_type
   validate :department_must_belong_to_company
 
+  before_validation :normalize_job_description_hr_blanks
+
   # pg_search configuration
   pg_search_scope :search_by_full_text,
     against: { external_title: 'A' },
@@ -76,6 +78,10 @@ class Title < ApplicationRecord
     "#{position_major_level.major_level} #{external_title}"
   end
 
+  def job_description_hr_text
+    JobDescriptionHrText.for(organization: company, title: self)
+  end
+
   # MAAP Maturity methods
   def maap_maturity_phase
     TitleMaturityService.calculate_phase(self)
@@ -111,6 +117,13 @@ class Title < ApplicationRecord
   end
 
   private
+
+  def normalize_job_description_hr_blanks
+    self.job_description_disclaimer = job_description_disclaimer.presence
+    self.work_environment = work_environment.presence
+    self.physical_requirements = physical_requirements.presence
+    self.travel = travel.presence
+  end
 
   def company_must_be_company_type
     return unless company

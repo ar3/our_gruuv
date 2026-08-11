@@ -17,6 +17,7 @@ class Seat < ApplicationRecord
 
   after_save :sync_pending_title_ids
   after_commit :ensure_primary_title_associated, on: [:create, :update]
+  before_validation :normalize_job_description_hr_blanks
 
   # Enums
   enum :state, {
@@ -145,21 +146,25 @@ class Seat < ApplicationRecord
     end
   end
 
-  # HR text defaults - these will use database defaults if nil
+  # HR text cascade: seat → title → organization
+  def job_description_hr_text
+    JobDescriptionHrText.for(organization: title.company, title: title, seat: self)
+  end
+
   def seat_disclaimer_with_default
-    seat_disclaimer || self.class.column_defaults['seat_disclaimer']
+    job_description_hr_text.disclaimer
   end
 
   def work_environment_with_default
-    work_environment || self.class.column_defaults['work_environment']
+    job_description_hr_text.work_environment
   end
 
   def physical_requirements_with_default
-    physical_requirements || self.class.column_defaults['physical_requirements']
+    job_description_hr_text.physical_requirements
   end
 
   def travel_with_default
-    travel || self.class.column_defaults['travel']
+    job_description_hr_text.travel
   end
 
   def has_direct_reports?
@@ -198,6 +203,13 @@ class Seat < ApplicationRecord
   end
 
   private
+
+  def normalize_job_description_hr_blanks
+    self.seat_disclaimer = seat_disclaimer.presence
+    self.work_environment = work_environment.presence
+    self.physical_requirements = physical_requirements.presence
+    self.travel = travel.presence
+  end
 
   def at_least_one_title_selected
     return if associated_title_ids.any?

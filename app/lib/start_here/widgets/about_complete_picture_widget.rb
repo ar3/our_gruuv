@@ -5,12 +5,12 @@ class StartHere::Widgets::AboutCompletePictureWidget < StartHere::Widget::Base
     id: "about_complete_picture",
     group: "About Me",
     icon: "bi-graph-up",
-    selection_title: "True JD (manager view)",
+    selection_title: "True Job Description (JD) (manager view)",
     selection_description: "Role, assignments, and job context.",
-    label: "True JD (manager view)",
+    label: "True Job Description (JD) (manager view)",
     path: ->(c) { c.view.complete_picture_organization_company_teammate_path(c.organization, c.company_teammate) },
     description: nil,
-    button_label: "True JD (manager view)"
+    button_label: "True Job Description (JD) (manager view)"
   }.freeze
 
   def dashboard_content

@@ -19,4 +19,4 @@
 
 = render 'job_description_no_assignments', position: @position, organization: @position.company
 
-= render 'job_description_footer'
+= render 'job_description_footer', organization: @position.company, title: @position.title

@@ -1,27 +1,31 @@
 -# Job Description Footer/Boilerplate Section
--# Usage: = render 'job_description_footer'
+-# Usage: = render 'job_description_footer', organization: organization, title: title (optional), seat: seat (optional)
+- organization = local_assigns[:organization] || local_assigns[:company]
+- title = local_assigns[:title]
+- seat = local_assigns[:seat]
+- hr = JobDescriptionHrText.for(organization: organization, title: title, seat: seat)
 
 .mt-5
   %p.text-muted
-    %em This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time.
-  
+    %em= hr.disclaimer
+
   %p.text-muted
     %strong Work environment:
-    Prolonged periods of sitting at a desk and working on a computer.
-  
+    = hr.work_environment
+
   %p.text-muted
     %strong Physical requirements:
-    While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work.
-  
+    = hr.physical_requirements
+
   %p.text-muted
     %strong Travel:
-    Travel is on a voluntary basis.
-  
+    = hr.travel
+
   %hr.my-4
-  
+
   %p.text-muted
     %em Employee signature below indicates the employee's understanding of the requirements, essential functions and duties of the position.
-  
+
   .row.mt-4
     .col-md-6
       %p.text-muted
@@ -33,5 +37,3 @@
         %strong Date:
         %br
         %small _____________________________
-
-

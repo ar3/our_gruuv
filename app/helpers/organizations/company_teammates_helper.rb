@@ -205,7 +205,7 @@ module Organizations::CompanyTeammatesHelper
           ),
           internal_teammate_views_entry(
             title: active_job_label_for(teammate),
-            description: "Manager True JD: position, assignments, milestones, and check-in history.",
+            description: "Manager True Job Description (JD): position, assignments, milestones, and check-in history.",
             path: complete_picture_organization_company_teammate_path(organization, teammate),
             enabled: policy(teammate).complete_picture?,
             tooltip: context[:hierarchy_complete_picture]

@@ -362,7 +362,7 @@
               casual_name: cp_casual,
               counts: cp_footer_counts,
               return_url: cp_return_url,
-              return_text: 'True JD (manager view)'
+              return_text: 'True Job Description (JD) (manager view)'
 
         - if policy(@teammate).manager? || policy(organization).manage_employment?
           .mt-3
@@ -459,7 +459,7 @@
                 casual_name: mp_casual,
                 counts: mp_footer_counts,
                 return_url: mp_return_url,
-                return_text: 'True JD (manager view)'
+                return_text: 'True Job Description (JD) (manager view)'
       - else
         %p.text-muted.mb-0
           %em No ability milestone requirements apply yet for #{@current_organization.display_name}. They appear when this teammate has a position with milestone rules, required assignments, or active assignment tenures that include abilities.
@@ -494,4 +494,4 @@
 
 .mt-5
   %p.text-muted
-    %em This True JD (manager view) provides a comprehensive overview of the person's current position, assignments, and earned milestones for #{@current_organization.display_name} for development planning and performance management.
+    %em This True Job Description (JD) (manager view) provides a comprehensive overview of the person's current position, assignments, and earned milestones for #{@current_organization.display_name} for development planning and performance management.

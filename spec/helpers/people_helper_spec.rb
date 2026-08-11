@@ -95,7 +95,7 @@ RSpec.describe PeopleHelper, type: :helper do
       allow(helper).to receive(:controller_name).and_return('people')
       allow(helper).to receive(:instance_variable_get).with(:@teammate).and_return(teammate)
       helper.instance_variable_set(:@teammate, teammate)
-      expect(helper.people_current_view_name).to eq("Alex's True JD (teammate view)")
+      expect(helper.people_current_view_name).to eq("Alex's True JD (teammate)")
     end
 
     it 'returns possessive True JD manager view for complete_picture action' do
@@ -103,7 +103,7 @@ RSpec.describe PeopleHelper, type: :helper do
       allow(helper).to receive(:action_name).and_return('complete_picture')
       allow(helper).to receive(:controller_name).and_return('people')
       helper.instance_variable_set(:@teammate, teammate)
-      expect(helper.people_current_view_name).to eq("Alex's True JD (manager view)")
+      expect(helper.people_current_view_name).to eq("Alex's True JD (manager)")
     end
 
     it 'returns possessive True JD print view for true_jd_print action' do
@@ -111,7 +111,7 @@ RSpec.describe PeopleHelper, type: :helper do
       allow(helper).to receive(:action_name).and_return('true_jd_print')
       allow(helper).to receive(:controller_name).and_return('company_teammates')
       helper.instance_variable_set(:@teammate, teammate)
-      expect(helper.people_current_view_name).to eq("Alex's True JD (print view)")
+      expect(helper.people_current_view_name).to eq("Alex's True JD (print)")
     end
 
     it 'returns possessive Growth for my_growth_experiences on company_teammates' do

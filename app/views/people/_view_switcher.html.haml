@@ -49,7 +49,7 @@
         .dropdown-item.text-muted.disabled
           %i.bi.bi-printer.me-2
           = true_jd_print_view_label_for(@teammate)
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the print True JD"}
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the print True Job Description (JD)"}
 
     %li
       - one_on_one_active = controller_name == 'one_on_one_links' && %w[show detailed].include?(action_name)

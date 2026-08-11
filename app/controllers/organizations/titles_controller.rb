@@ -258,6 +258,16 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
   end
 
   def title_params
-    params.require(:title).permit(:position_major_level_id, :external_title, :alternative_titles, :position_summary, :department_id)
+    params.require(:title).permit(
+      :position_major_level_id,
+      :external_title,
+      :alternative_titles,
+      :position_summary,
+      :department_id,
+      :job_description_disclaimer,
+      :work_environment,
+      :physical_requirements,
+      :travel
+    )
   end
 end

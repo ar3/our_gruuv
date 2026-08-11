@@ -938,6 +938,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   def load_true_jd_print_data
     @employment_tenures = @teammate&.employment_tenures&.includes(
       :company,
+      :seat,
       position: [
         { position_abilities: :ability },
         { position_assignments: :assignment },
@@ -1014,7 +1015,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       involving_teammate_id: @teammate.id,
       timeframe: 'all',
       return_url: return_path,
-      return_text: "Back to #{casual}'s True JD (manager view)"
+      return_text: "Back to #{casual}'s True Job Description (JD) (manager view)"
     )
 
     timeframe_all = { timeframe: 'all' }

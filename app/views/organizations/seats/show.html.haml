@@ -194,52 +194,9 @@
   .col-12
     %hr.mb-4.mt-4/
 
-    .mt-5
-      %p.text-muted
-        %em This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time.
-      
-      - if @seat.work_environment.present?
-        %p.text-muted
-          %strong Work environment:
-          = @seat.work_environment
-      - else
-        %p.text-muted
-          %strong Work environment:
-          Prolonged periods of sitting at a desk and working on a computer.
-      
-      - if @seat.physical_requirements.present?
-        %p.text-muted
-          %strong Physical requirements:
-          = @seat.physical_requirements
-      - else
-        %p.text-muted
-          %strong Physical requirements:
-          While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work.
-      
-      - if @seat.travel.present?
-        %p.text-muted
-          %strong Travel:
-          = @seat.travel
-      - else
-        %p.text-muted
-          %strong Travel:
-          Travel is on a voluntary basis.
-      
-      %hr.my-4
-      
-      %p.text-muted
-        %em Employee signature below indicates the employee's understanding of the requirements, essential functions and duties of the position.
-      
-      .row.mt-4
-        .col-md-6
-          %p.text-muted
-            %strong Employee Signature:
-            %br
-            %small _____________________________
-        .col-md-6
-          %p.text-muted
-            %strong Date:
-            %br
-            %small _____________________________
+    = render 'organizations/positions/job_description_footer',
+             organization: @seat.title.company,
+             title: @seat.title,
+             seat: @seat
 
 

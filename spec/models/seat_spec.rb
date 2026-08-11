@@ -232,7 +232,16 @@ RSpec.describe Seat, type: :model do
     end
   end
 
-  describe 'HR text defaults' do
+  describe 'HR text cascade' do
+    before do
+      organization.update!(
+        job_description_disclaimer: 'Org disclaimer',
+        work_environment: 'Org environment',
+        physical_requirements: 'Org physical',
+        travel: 'Org travel'
+      )
+    end
+
     describe '#seat_disclaimer_with_default' do
       context 'when seat_disclaimer is present' do
         let(:seat) { create(:seat, title: title, seat_disclaimer: 'Custom disclaimer') }
@@ -242,11 +251,21 @@ RSpec.describe Seat, type: :model do
         end
       end
 
-      context 'when seat_disclaimer is nil' do
+      context 'when seat_disclaimer is nil and title has a value' do
+        before { title.update!(job_description_disclaimer: 'Title disclaimer') }
+
         let(:seat) { create(:seat, title: title, seat_disclaimer: nil) }
 
-        it 'returns the database default' do
-          expect(seat.seat_disclaimer_with_default).to eq(Seat.column_defaults['seat_disclaimer'])
+        it 'returns the title disclaimer' do
+          expect(seat.seat_disclaimer_with_default).to eq('Title disclaimer')
+        end
+      end
+
+      context 'when seat and title are blank' do
+        let(:seat) { create(:seat, title: title, seat_disclaimer: nil) }
+
+        it 'returns the organization disclaimer' do
+          expect(seat.seat_disclaimer_with_default).to eq('Org disclaimer')
         end
       end
     end
@@ -263,8 +282,8 @@ RSpec.describe Seat, type: :model do
       context 'when work_environment is nil' do
         let(:seat) { create(:seat, title: title, work_environment: nil) }
 
-        it 'returns the database default' do
-          expect(seat.work_environment_with_default).to eq(Seat.column_defaults['work_environment'])
+        it 'returns the organization default' do
+          expect(seat.work_environment_with_default).to eq('Org environment')
         end
       end
     end
@@ -281,8 +300,8 @@ RSpec.describe Seat, type: :model do
       context 'when physical_requirements is nil' do
         let(:seat) { create(:seat, title: title, physical_requirements: nil) }
 
-        it 'returns the database default' do
-          expect(seat.physical_requirements_with_default).to eq(Seat.column_defaults['physical_requirements'])
+        it 'returns the organization default' do
+          expect(seat.physical_requirements_with_default).to eq('Org physical')
         end
       end
     end
@@ -299,8 +318,8 @@ RSpec.describe Seat, type: :model do
       context 'when travel is nil' do
         let(:seat) { create(:seat, title: title, travel: nil) }
 
-        it 'returns the database default' do
-          expect(seat.travel_with_default).to eq(Seat.column_defaults['travel'])
+        it 'returns the organization default' do
+          expect(seat.travel_with_default).to eq('Org travel')
         end
       end
     end

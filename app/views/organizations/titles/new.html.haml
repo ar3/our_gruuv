@@ -68,7 +68,35 @@
                     include_blank: true,
                     include_root_option: false,
                     help_text: "Select the department for this title"
-            
+
+            .row
+              .col-md-12
+                %h5.mt-3.mb-3
+                  %i.bi.bi-file-text.me-2
+                  HR Information (Optional overrides)
+                %p.text-muted.mb-3
+                  %em Leave blank to inherit company defaults. Seats can still override these values.
+
+                .mb-3
+                  = form.label :job_description_disclaimer, "Job Description Disclaimer", class: "form-label"
+                  = form.text_area :job_description_disclaimer, class: "form-control", rows: 2,
+                    placeholder: "Leave blank to inherit company default"
+
+                .mb-3
+                  = form.label :work_environment, "Work Environment", class: "form-label"
+                  = form.text_area :work_environment, class: "form-control", rows: 2,
+                    placeholder: "Leave blank to inherit company default"
+
+                .mb-3
+                  = form.label :physical_requirements, "Physical Requirements", class: "form-label"
+                  = form.text_area :physical_requirements, class: "form-control", rows: 3,
+                    placeholder: "Leave blank to inherit company default"
+
+                .mb-3
+                  = form.label :travel, "Travel Requirements", class: "form-label"
+                  = form.text_area :travel, class: "form-control", rows: 2,
+                    placeholder: "Leave blank to inherit company default"
+
             .row
               .col-md-12
                 .d-flex.justify-content-between

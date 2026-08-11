@@ -80,8 +80,11 @@ class Organization < ApplicationRecord
 
   # Validations
   validates :name, presence: true
+  validates :job_description_disclaimer, :work_environment, :physical_requirements, :travel, presence: true
   validate :observable_moment_notifier_teammate_belongs_to_organization, if: -> { observable_moment_notifier_teammate_id.present? }
   validate :acceptable_logo, if: -> { logo.attached? }
+
+  before_validation :seed_job_description_hr_defaults, on: :create
 
   # Scopes
   scope :ordered, -> { order(:name) }
@@ -402,6 +405,12 @@ class Organization < ApplicationRecord
   end
 
   private
+
+  def seed_job_description_hr_defaults
+    JobDescriptionHrText::DEFAULTS.each do |attribute, default_value|
+      public_send(:"#{attribute}=", default_value) if public_send(attribute).blank?
+    end
+  end
 
   def ensure_position_eligibility_defaults
     Organizations::PositionEligibilityDefaultSeeder.ensure!(self)

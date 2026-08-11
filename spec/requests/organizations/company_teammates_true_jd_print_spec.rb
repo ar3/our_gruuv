@@ -43,7 +43,7 @@ RSpec.describe 'Company teammate True JD print view', type: :request do
       it 'renders the print True JD with exact energy and expanded optionals' do
         get true_jd_print_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('True JD (print view)')
+        expect(response.body).to include('True Job Description (JD) (print view)')
         expect(response.body).to include('Sam C.')
         expect(response.body).to include('actual current job description')
         expect(response.body).to include('blueprint')

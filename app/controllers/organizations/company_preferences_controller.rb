@@ -10,6 +10,13 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
   def update
     authorize @company, :customize_company?
 
+    unless update_job_description_hr_defaults
+      @preferences = load_preferences
+      flash.now[:alert] = @company.errors.full_messages.to_sentence.presence || 'Failed to update job description defaults.'
+      render :edit, status: :unprocessable_entity
+      return
+    end
+
     update_observable_moment_notifier
     unless apply_logo_update
       @preferences = load_preferences
@@ -54,6 +61,27 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
       Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY,
       Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT
     )
+  end
+
+  def update_job_description_hr_defaults
+    return true if params[:organization].blank?
+    return true unless job_description_hr_params_present?
+
+    permitted = params.require(:organization).permit(
+      :job_description_disclaimer,
+      :work_environment,
+      :physical_requirements,
+      :travel
+    )
+    @company.assign_attributes(permitted)
+    @company.save
+  end
+
+  def job_description_hr_params_present?
+    org = params[:organization]
+    %w[job_description_disclaimer work_environment physical_requirements travel].any? do |key|
+      org.key?(key) || org.key?(key.to_sym)
+    end
   end
 
   def update_observable_moment_notifier

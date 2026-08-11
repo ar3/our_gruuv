@@ -70,6 +70,64 @@
                      disabled: !can_customize
 
   .row.mb-4
+    .col-12
+      %h5.mb-3 Job Description HR defaults
+      %p.text-muted.small.mb-3
+        Company-wide defaults used on job descriptions. Titles and seats can override individual fields; blank on title/seat inherits these values. These defaults are required.
+
+  .row.mb-4
+    .col-6
+      %h5.mb-3 Job Description Disclaimer
+      %p.text-muted.small
+        Shown at the bottom of job description views.
+    .col-6
+      = text_area_tag "organization[job_description_disclaimer]",
+                      @company.job_description_disclaimer,
+                      rows: 3,
+                      class: 'form-control',
+                      required: true,
+                      disabled: !can_customize
+
+  .row.mb-4
+    .col-6
+      %h5.mb-3 Work Environment
+      %p.text-muted.small
+        Default work environment language for job descriptions.
+    .col-6
+      = text_area_tag "organization[work_environment]",
+                      @company.work_environment,
+                      rows: 2,
+                      class: 'form-control',
+                      required: true,
+                      disabled: !can_customize
+
+  .row.mb-4
+    .col-6
+      %h5.mb-3 Physical Requirements
+      %p.text-muted.small
+        Default physical requirements language for job descriptions.
+    .col-6
+      = text_area_tag "organization[physical_requirements]",
+                      @company.physical_requirements,
+                      rows: 3,
+                      class: 'form-control',
+                      required: true,
+                      disabled: !can_customize
+
+  .row.mb-4
+    .col-6
+      %h5.mb-3 Travel Requirements
+      %p.text-muted.small
+        Default travel language for job descriptions.
+    .col-6
+      = text_area_tag "organization[travel]",
+                      @company.travel,
+                      rows: 2,
+                      class: 'form-control',
+                      required: true,
+                      disabled: !can_customize
+
+  .row.mb-4
     .col-12.col-md-6
       %h5.mb-3 Company logo
       %p.text-muted.small

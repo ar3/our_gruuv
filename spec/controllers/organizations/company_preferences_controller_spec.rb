@@ -269,6 +269,40 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(flash[:alert]).to be_present
       end
+
+      it 'updates job description HR defaults' do
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { prompt: 'Reflection' },
+          organization: {
+            job_description_disclaimer: 'Custom disclaimer',
+            work_environment: 'Custom environment',
+            physical_requirements: 'Custom physical',
+            travel: 'Custom travel'
+          }
+        }
+        company.reload
+        expect(company.job_description_disclaimer).to eq('Custom disclaimer')
+        expect(company.work_environment).to eq('Custom environment')
+        expect(company.physical_requirements).to eq('Custom physical')
+        expect(company.travel).to eq('Custom travel')
+        expect(response).to redirect_to(edit_organization_company_preference_path(company))
+      end
+
+      it 'rejects blank job description HR defaults' do
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { prompt: 'Reflection' },
+          organization: {
+            job_description_disclaimer: '',
+            work_environment: company.work_environment,
+            physical_requirements: company.physical_requirements,
+            travel: company.travel
+          }
+        }
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(company.reload.job_description_disclaimer).to eq(JobDescriptionHrText::DEFAULT_DISCLAIMER)
+      end
     end
 
     it 'requires customize_company permission (update remains restricted)' do

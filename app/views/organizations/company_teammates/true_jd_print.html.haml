@@ -91,4 +91,7 @@
           %p.mb-0
             #{casual} has no active assignments for #{@current_organization.display_name}.
 
-  = render 'organizations/positions/job_description_footer'
+  = render 'organizations/positions/job_description_footer',
+           organization: @current_organization,
+           title: @print_position&.title,
+           seat: @current_employment&.seat

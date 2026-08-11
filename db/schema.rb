@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_09_182522) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_10_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1251,6 +1251,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_09_182522) do
     t.bigint "minor_1_position_eligibility_requirement_id"
     t.bigint "minor_2_position_eligibility_requirement_id"
     t.bigint "minor_3_position_eligibility_requirement_id"
+    t.text "job_description_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time.", null: false
+    t.text "work_environment", default: "Prolonged periods of sitting at a desk and working on a computer.", null: false
+    t.text "physical_requirements", default: "While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work.", null: false
+    t.text "travel", default: "Travel is on a voluntary basis.", null: false
     t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
     t.index ["kudos_points_economy_config"], name: "index_organizations_on_kudos_points_economy_config", using: :gin
     t.index ["minor_1_position_eligibility_requirement_id"], name: "idx_on_minor_1_position_eligibility_requirement_id_86bf397477"
@@ -1665,16 +1669,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_09_182522) do
     t.string "team"
     t.text "reports"
     t.text "measurable_outcomes"
-    t.text "work_environment", default: "Prolonged periods of sitting at a desk and working on a computer."
-    t.text "physical_requirements", default: "While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work."
-    t.text "travel", default: "Travel is on a voluntary basis."
+    t.text "work_environment"
+    t.text "physical_requirements"
+    t.text "travel"
     t.text "why_needed"
     t.text "why_now"
     t.text "costs_risks"
     t.string "state", default: "draft", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.text "seat_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time."
+    t.text "seat_disclaimer"
     t.bigint "reports_to_seat_id"
     t.bigint "team_id"
     t.index ["reports_to_seat_id"], name: "index_seats_on_reports_to_seat_id"
@@ -1999,6 +2003,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_09_182522) do
     t.datetime "updated_at", null: false
     t.bigint "department_id"
     t.datetime "deleted_at"
+    t.text "job_description_disclaimer"
+    t.text "work_environment"
+    t.text "physical_requirements"
+    t.text "travel"
     t.index ["company_id", "position_major_level_id", "external_title"], name: "index_titles_on_company_level_title_unique", unique: true
     t.index ["company_id"], name: "index_titles_on_company_id"
     t.index ["deleted_at"], name: "index_titles_on_deleted_at"

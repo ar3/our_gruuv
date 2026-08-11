@@ -507,29 +507,30 @@ module TerminologyHelper
   end
 
   # View switcher labels: "{casual}'s …" using the viewed teammate's casual name.
-  # True JD family: teammate (/internal), manager (/complete_picture), print (/true_jd_print).
+  # True Job Description (JD) family: teammate (/internal), manager (/complete_picture), print (/true_jd_print).
+  # Short labels (view switcher / compact nav) vs long suffixes (page headers).
   def teammate_view_label_for(teammate)
-    casual_possessive_label_for(teammate, "True JD (teammate view)")
+    casual_possessive_label_for(teammate, "True JD (teammate)")
   end
 
   def active_job_label_for(teammate)
-    casual_possessive_label_for(teammate, "True JD (manager view)")
+    casual_possessive_label_for(teammate, "True JD (manager)")
   end
 
   def true_jd_print_view_label_for(teammate)
-    casual_possessive_label_for(teammate, "True JD (print view)")
+    casual_possessive_label_for(teammate, "True JD (print)")
   end
 
   def true_jd_teammate_view_suffix
-    "True JD (teammate view)"
+    "True Job Description (JD) (teammate view)"
   end
 
   def true_jd_manager_view_suffix
-    "True JD (manager view)"
+    "True Job Description (JD) (manager view)"
   end
 
   def true_jd_print_view_suffix
-    "True JD (print view)"
+    "True Job Description (JD) (print view)"
   end
 
   def growth_label_for(teammate)
