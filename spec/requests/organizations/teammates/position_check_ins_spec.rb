@@ -63,6 +63,14 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include("on #{title.external_title}")
     end
 
+    it "links Check in in bulk to the teammate bulk clarity check-in page" do
+      get position_check_in_organization_teammate_path(organization, teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Check in in bulk")
+      expect(response.body).to include(organization_company_teammate_check_ins_path(organization, teammate))
+    end
+
     it "shows the object queue and people view switcher instead of the item dropdown" do
       get position_check_in_organization_teammate_path(organization, teammate)
 
@@ -70,6 +78,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include("To get clear on")
       expect(response.body).to include("your turn")
       expect(response.body).to include("Full Up Next")
+      expect(response.body).to include("Bulk Check-in")
       expect(response.body).to include("Currently viewing")
       expect(response.body).not_to include("Checking-in on")
       expect(response.body).to include("1-by-1 clarity check-in")

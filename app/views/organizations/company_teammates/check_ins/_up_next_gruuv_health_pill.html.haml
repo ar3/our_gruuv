@@ -1,12 +1,20 @@
--# Locals: status (healthy | warning | needs_attention | nil), tooltip
+-# Locals: status (healthy | warning | needs_attention | nil), tooltip, url (optional — same target as item name)
 - status = local_assigns[:status]
 - tooltip = local_assigns.fetch(:tooltip)
+- url = local_assigns[:url]
+- pill = capture do
+  %span.badge.rounded-pill{class: up_next_gruuv_health_pill_class(status)}= up_next_gruuv_health_pill_label(status)
+
 %span.d-inline-block{
   "data-bs-toggle" => "tooltip",
   "data-bs-placement" => "top",
   "data-bs-title" => tooltip,
   title: tooltip,
-  style: "cursor: help;",
+  style: (url.present? ? nil : "cursor: help;"),
   tabindex: "0"
 }
-  %span.badge.rounded-pill{class: up_next_gruuv_health_pill_class(status)}= up_next_gruuv_health_pill_label(status)
+  - if url.present?
+    = link_to url, class: "text-decoration-none", style: "cursor: pointer;" do
+      = pill
+  - else
+    = pill

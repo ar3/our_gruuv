@@ -121,6 +121,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("To get clear on")
         expect(response.body).to include("your turn")
         expect(response.body).to include("Full Up Next")
+        expect(response.body).to include("Bulk Check-in")
         expect(response.body).to include("Currently viewing")
         expect(response.body).not_to include("Checking-in on")
         expect(response.body).to include("1-by-1 clarity check-in")

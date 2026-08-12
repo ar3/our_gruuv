@@ -10,6 +10,7 @@
 - total_count = queue[:total_count]
 - review_together_count = rows.count { |row| row[:viewer_state] == :review_together }
 - up_next_url = up_next_organization_company_teammate_check_ins_path(@organization, @teammate)
+- bulk_check_in_url = organization_company_teammate_check_ins_path(@organization, @teammate)
 - finalization_url = organization_company_teammate_finalization_path(@organization, @teammate)
 - hidden_list_id = local_assigns.fetch(:hidden_list_id, "singleItemObjectQueueHidden")
 - hidden_item_class = "#{hidden_list_id}-item"
@@ -27,7 +28,9 @@
         ·
         = total_count
         #{"object".pluralize(total_count)}
-    = link_to "Full Up Next →", up_next_url, class: "small text-decoration-none"
+    .d-flex.flex-column.gap-1
+      = link_to "Full Up Next →", up_next_url, class: "small text-decoration-none"
+      = link_to "Bulk Check-in →", bulk_check_in_url, class: "small text-decoration-none"
   %ul.list-group.list-group-flush.mb-0{aria: { label: "Objects to get clear on" }}
     - visible_rows.each do |row|
       = render "shared/single_item_check_in/object_queue_row",

@@ -12,6 +12,10 @@ RSpec.describe TerminologyHelper, type: :helper do
       expect(helper.bulk_clarity_check_in_label).to eq('Bulk clarity check-in')
     end
 
+    it 'returns switch-to-bulk label' do
+      expect(helper.switch_to_bulk_clarity_check_in_label).to eq('Check in in bulk')
+    end
+
     it 'interpolates review together count' do
       expect(helper.review_clarity_check_ins_together_label(count: 3)).to eq(
         'Review 3 clarity check-ins together'

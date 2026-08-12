@@ -14,7 +14,8 @@
       %i.bi.bi-info-circle.text-muted{aria: {label: "Why this item is on the list"}}
     = render "organizations/company_teammates/check_ins/up_next_gruuv_health_pill",
              status: row[:engagement_health_item]&.status,
-             tooltip: row[:status_explainer]
+             tooltip: row[:status_explainer],
+             url: row[:url]
   %ul.mb-0
     %li= row[:finalized_line]
     = render "organizations/company_teammates/check_ins/up_next_workflow_steps",

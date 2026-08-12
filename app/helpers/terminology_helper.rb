@@ -121,6 +121,10 @@ module TerminologyHelper
     terminology(:go_to_up_next)
   end
 
+  def switch_to_bulk_clarity_check_in_label
+    terminology(:switch_to_bulk_clarity_check_in)
+  end
+
   def clarity_check_in_history_label
     terminology(:clarity_check_in_history)
   end

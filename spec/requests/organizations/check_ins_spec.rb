@@ -789,11 +789,26 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include("If something doesn't look right, first")
       expect(response.body).to include("click here to refresh")
       expect(response.body).to include("last refreshed at:")
+      expect(response.body).to include("Both paths do the same clarity check-in work")
+      expect(response.body).to include("Use the queues")
+      expect(response.body).to include(%(href="#up-next-perspectives"))
+      expect(response.body).to include("... Or")
+      expect(response.body).to include(">switch to bulk</a>")
+      expect(response.body).to include("when you want the full picture or to move faster with less depth")
+      expect(response.body).to include("Bulk clarity check-in")
+      expect(response.body).to include("context-callout")
+      expect(response.body).to include("fs-3")
+      expect(response.body).to include('id="up-next-perspectives"')
+      expect(response.body).to include(organization_company_teammate_check_ins_path(organization, employee_teammate))
+      expect(response.body).to include("One-by-one vs bulk")
       expect(response.body).to include("... meaning;")
       expect(response.body).to include("needed for clarity")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/aspirations/#{aspiration.id}")
       expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
+      # Name and Gruuv Health pill both link to the item check-in
+      assignment_path = "/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}"
+      expect(response.body.scan(%r{href="#{Regexp.escape(assignment_path)}"}).size).to be >= 2
       expect(response.body).to include(
         "Don't see an Assignment that you are ready to start / do a check-in on?"
       )

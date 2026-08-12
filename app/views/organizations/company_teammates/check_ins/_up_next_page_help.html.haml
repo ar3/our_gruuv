@@ -18,6 +18,12 @@
   = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
 
   %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 One-by-one vs bulk
+  %p.mb-2
+    This page is the one-by-one queue. Both one-by-one and
+    = link_to bulk_clarity_check_in_label, organization_company_teammate_check_ins_path(organization, teammate)
+    complete the same clarity check-in work and land in the same place. Prefer one-by-one when you want full context and focus; prefer bulk when you want the full picture or to move faster with less depth.
+
   %h5.fw-semibold.mb-2 Two perspectives
   %p.mb-2
     Each column is the same teammate’s queue computed from that person’s view (employee vs manager completion on the

@@ -12,7 +12,10 @@
         %span.text-muted.small
           = link_to one_by_one_clarity_check_in_label, up_next_organization_company_teammate_check_ins_path(@organization, @teammate), class: "text-muted"
           = " on #{@single_item_name}"
-    .d-flex.align-items-center.gap-2
+    .d-flex.align-items-center.gap-2.flex-wrap
+      = link_to switch_to_bulk_clarity_check_in_label,
+                organization_company_teammate_check_ins_path(@organization, @teammate),
+                class: "small text-muted text-decoration-none d-inline-flex align-items-center gap-1"
       - if current_person == @teammate.person
         %span.badge.bg-secondary Employee View
       - else
