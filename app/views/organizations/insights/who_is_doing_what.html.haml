@@ -33,6 +33,19 @@
           #who-is-doing-what-daily-digest-type-chart{style: "height: 220px;"}
           #who-is-doing-what-digest-medium-chart{style: "height: 220px;"}
 
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-house-door.me-2
+            Start page (home) preference
+        .card-body
+          %p.text-muted.small.mb-3
+            Where active employed teammates land when they log in or click the org Gruuv in the header.
+            “Never set (OG Academy)” means they have not chosen a start page; the product default is OG Academy.
+          #who-is-doing-what-start-page-chart{style: "height: 220px;"}
+
   %hr.my-5
 
   / Search + Ask OG activity
@@ -208,6 +221,7 @@
     var weeklyDigestTypeSeries = #{who_is_doing_what_weekly_digest_type_series.to_json};
     var dailyDigestTypeSeries = #{who_is_doing_what_daily_digest_type_series.to_json};
     var digestMediumSeries = #{who_is_doing_what_digest_medium_series.to_json};
+    var startPageSeries = #{who_is_doing_what_start_page_series.to_json};
     var searchAskOgVolume = #{(@search_ask_og_weekly_charts&.dig(:volume) || { categories: [], series: [] }).to_json};
     var searchAskOgPeople = #{(@search_ask_og_weekly_charts&.dig(:people) || { categories: [], series: [] }).to_json};
 
@@ -329,6 +343,27 @@
       }
     }
 
+    function initializeStartPageChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('who-is-doing-what-start-page-chart');
+      if (!el || !startPageSeries || startPageSeries.length === 0) return;
+
+      Highcharts.chart('who-is-doing-what-start-page-chart', {
+        chart: { type: 'bar' },
+        title: { text: 'Start page preference' },
+        xAxis: { categories: ['Start page'], reversedStacks: false },
+        yAxis: {
+          min: 0,
+          title: { text: 'Active teammate count' },
+          stackLabels: { enabled: true },
+          reversedStacks: false
+        },
+        plotOptions: { series: { stacking: 'normal' } },
+        accessibility: { enabled: false },
+        series: startPageSeries
+      });
+    }
+
     function initializeSearchAskOgCharts() {
       if (typeof Highcharts === 'undefined') return;
 
@@ -386,6 +421,7 @@
       initializePieChart();
       initializeHistogramChart();
       initializeDigestCoverageCharts();
+      initializeStartPageChart();
       initializeSearchAskOgCharts();
     }
 

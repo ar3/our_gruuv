@@ -276,6 +276,33 @@ RSpec.describe InsightsHelper, type: :helper do
     end
   end
 
+  describe '#who_is_doing_what_start_page_series' do
+    it 'returns non-zero start pages with never set distinct and grey' do
+      distribution = ApplicationHelper::START_PAGE_VALUES.index_with { 0 }
+      distribution[ApplicationHelper::START_PAGE_NEVER_SET] = 4
+      distribution['og_academy'] = 2
+      distribution['about_me'] = 1
+      helper.instance_variable_set(:@start_page_distribution, distribution)
+
+      series = helper.who_is_doing_what_start_page_series
+
+      expect(series.map { |s| s[:name] }).to eq([
+        'Never set (OG Academy)',
+        'OG Academy',
+        'About Me'
+      ])
+      expect(series.map { |s| s[:data] }).to eq([[4], [2], [1]])
+      expect(series.first[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
+      expect(series[1][:color]).to be_nil
+    end
+
+    it 'returns empty array when there are no active teammates' do
+      helper.instance_variable_set(:@start_page_distribution, {})
+
+      expect(helper.who_is_doing_what_start_page_series).to eq([])
+    end
+  end
+
   describe '#og_scorecard_weekly_cell_class' do
     it 'maps statuses to Bootstrap table classes' do
       expect(helper.og_scorecard_weekly_cell_class(:success)).to eq('table-success')

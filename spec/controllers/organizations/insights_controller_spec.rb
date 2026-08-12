@@ -579,6 +579,22 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:weekly_digest_day_distribution)['2']).to eq(1)
       expect(assigns(:digest_medium_combinations)['slack+sms']).to eq(1)
     end
+
+    it 'assigns start_page_distribution with never_set distinct from explicit og_academy' do
+      other_person = create(:person)
+      create(:teammate, person: other_person, organization: company, first_employed_at: 1.year.ago)
+      UserPreference.for_person(other_person).update_preference("start_page_#{company.id}", 'og_academy')
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      distribution = assigns(:start_page_distribution)
+      expect(distribution).to be_a(Hash)
+      expect(distribution[ApplicationHelper::START_PAGE_NEVER_SET]).to eq(1)
+      expect(distribution['og_academy']).to eq(1)
+      ApplicationHelper::START_PAGE_VALUES.each do |value|
+        expect(distribution).to have_key(value)
+      end
+    end
   end
 
   describe 'GET #prompts' do

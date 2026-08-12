@@ -452,7 +452,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
 
     teammates.each do |teammate|
       pref = UserPreference.for_person(teammate.person)
-      start_page_value = pref.preference(key).presence || 'about_me'
+      start_page_value = pref.preference(key).presence || ApplicationHelper::DEFAULT_START_PAGE
       @start_page_by_teammate_id[teammate.id] = start_page_value
       @start_page_summary_by_teammate_id[teammate.id] = helpers.start_page_dashboard_summary_for_person(@organization, teammate, teammate.person)
       @can_edit_start_page_by_teammate_id[teammate.id] = allow_start_page_edit_for?(teammate)

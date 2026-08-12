@@ -73,8 +73,8 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
       lock_btn = page.find('.vertical-nav-lock-btn', visible: :all)
       lock_btn.click
       
-      # Dashboard may redirect to about_me; accept either path
-      expect(page).to have_current_path(/organizations\/.+\/(dashboard|company_teammates\/\d+\/about_me)/, wait: 5)
+      # Dashboard may redirect to preferred start page (default OG Academy); accept either path
+      expect(page).to have_current_path(/organizations\/.+\/(dashboard|og_academy)/, wait: 5)
       
       # Verify state persisted in database (poll briefly in case of async persistence)
       locked = nil
@@ -99,7 +99,7 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
     
     it 'highlights dashboard link when on dashboard' do
       nav = page.find('.vertical-nav', visible: true)
-      # Vertical nav shows links (e.g. About Me, My Check-In); dashboard may redirect to about_me
+      # Vertical nav shows links; dashboard may redirect to preferred start page
       expect(nav).to have_css('a.nav-link')
     end
   end
@@ -124,19 +124,19 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
       visit dashboard_organization_path(organization)
     end
     
-    it 'links top bar header to about me page' do
-      about_me_path = about_me_organization_company_teammate_path(organization, teammate)
+    it 'links top bar header to preferred start page' do
+      og_academy_path = organization_og_academy_path(organization)
       top_bar_header = page.find('.vertical-nav-top-bar .navbar-brand')
       
-      expect(top_bar_header['href']).to include(about_me_path)
+      expect(top_bar_header['href']).to include(og_academy_path)
     end
     
-    it 'links vertical nav sidebar header to about me page' do
-      about_me_path = about_me_organization_company_teammate_path(organization, teammate)
+    it 'links vertical nav sidebar header to preferred start page' do
+      og_academy_path = organization_og_academy_path(organization)
       nav_header = page.find('.vertical-nav-header h5')
       nav_header_link = nav_header.find(:xpath, '..')
       
-      expect(nav_header_link['href']).to include(about_me_path)
+      expect(nav_header_link['href']).to include(og_academy_path)
     end
   end
 end

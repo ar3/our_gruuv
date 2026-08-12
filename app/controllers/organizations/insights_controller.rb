@@ -385,6 +385,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     weekly_digest_days = Hash.new(0)
     weekly_digest_types = Hash.new(0)
     daily_digest_types = Hash.new(0)
+    start_page_key = helpers.start_page_preference_key(company)
+    start_pages = ApplicationHelper::START_PAGE_VALUES.index_with { 0 }
+    start_pages[ApplicationHelper::START_PAGE_NEVER_SET] = 0
     active_teammates.each do |tm|
       prefs = prefs_by_person_id[tm.person_id] || UserPreference.for_person(tm.person)
       enabled = []
@@ -421,11 +424,16 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
                                 'none'
                               end
       daily_digest_types[daily_digest_category] += 1
+
+      raw_start_page = prefs.preference(start_page_key)
+      start_page_bucket = raw_start_page.presence || ApplicationHelper::START_PAGE_NEVER_SET
+      start_pages[start_page_bucket] = start_pages[start_page_bucket].to_i + 1
     end
     @digest_medium_combinations = combinations
     @weekly_digest_day_distribution = weekly_digest_days
     @weekly_digest_type_distribution = weekly_digest_types
     @daily_digest_type_distribution = daily_digest_types
+    @start_page_distribution = start_pages
 
     # Search + Ask OG activity (org-wide) for abuse / engagement monitoring
     @show_ask_og_spend = impersonating?

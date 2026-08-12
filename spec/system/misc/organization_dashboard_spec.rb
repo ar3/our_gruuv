@@ -10,12 +10,11 @@ RSpec.describe 'Organization Dashboard Redirect', type: :system do
   end
 
   describe 'Dashboard redirects to preferred start page' do
-    it 'redirects to About Me by default' do
+    it 'redirects to OG Academy by default' do
       visit dashboard_organization_path(organization)
 
-      expect(current_path).to eq(about_me_organization_company_teammate_path(organization, teammate))
-      expect(page).to have_content('About Me')
-      expect(page).to have_content(person.casual_name)
+      expect(current_path).to eq(organization_og_academy_path(organization))
+      expect(page).to have_content('OG Academy')
     end
 
     it 'redirects to Start Here when configured as start page' do

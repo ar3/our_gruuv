@@ -8,7 +8,7 @@
         %th Actions
     %tbody
       - @filtered_and_paginated_teammates.each do |teammate|
-        - start_page_value = (@start_page_by_teammate_id || {})[teammate.id] || 'about_me'
+        - start_page_value = (@start_page_by_teammate_id || {})[teammate.id] || ApplicationHelper::DEFAULT_START_PAGE
         - summary = (@start_page_summary_by_teammate_id || {})[teammate.id] || { title: 'No Start Here configuration', tooltip: nil, has_configuration: false }
         - can_edit_home_page = (@can_edit_start_page_by_teammate_id || {})[teammate.id]
         %tr

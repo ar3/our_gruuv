@@ -707,20 +707,43 @@ module ApplicationHelper
   end
 
   # --- Start page preference (where to land when logging in or clicking org's Gruuv in header) ---
+  DEFAULT_START_PAGE = 'og_academy'
+  # Insights chart only: unset preference (distinct from explicitly choosing DEFAULT_START_PAGE)
+  START_PAGE_NEVER_SET = 'never_set'
   START_PAGE_VALUES = %w[
     og_academy start_here about_me one_on_one_hub clarity_check_in_hub get_shit_done protect_flow
     goals company_goals my_growth_experiences my_growth_abilities my_growth_goals
     observations_involving_me my_teams kudos celebrate_milestones insights
   ].freeze
+  START_PAGE_CHART_LABELS = {
+    'never_set' => 'Never set (OG Academy)',
+    'og_academy' => 'OG Academy',
+    'start_here' => 'Start Here page',
+    'about_me' => 'About Me',
+    'one_on_one_hub' => "One Thing",
+    'clarity_check_in_hub' => 'Clarity Check-In Hub',
+    'get_shit_done' => 'Get Shit Done',
+    'protect_flow' => 'Protect Flow',
+    'goals' => 'Goals',
+    'company_goals' => 'Organization Goals',
+    'my_growth_experiences' => 'My Growth · Experiences',
+    'my_growth_abilities' => 'My Growth · Abilities',
+    'my_growth_goals' => 'My Growth · Goals',
+    'observations_involving_me' => 'Observations involving me',
+    'my_teams' => 'My teams',
+    'kudos' => 'Kudos',
+    'celebrate_milestones' => 'Celebrate Milestones',
+    'insights' => 'Insights'
+  }.freeze
 
   def start_page_preference_key(organization)
     "start_page_#{organization.id}"
   end
 
   def start_page_preference(organization, person)
-    return 'about_me' unless person
+    return DEFAULT_START_PAGE unless person
     pref = UserPreference.for_person(person).preference(start_page_preference_key(organization))
-    pref.presence || 'about_me'
+    pref.presence || DEFAULT_START_PAGE
   end
 
   def preferred_start_page_path(organization, company_teammate)
@@ -766,8 +789,12 @@ module ApplicationHelper
     when 'insights'
       organization_insights_path(organization)
     else
-      about_me_organization_company_teammate_path(organization, company_teammate)
+      organization_og_academy_path(organization)
     end
+  end
+
+  def start_page_chart_label(value)
+    START_PAGE_CHART_LABELS[value.to_s] || value.to_s.humanize
   end
 
   def start_page_options_for_select(organization, company_teammate)

@@ -183,6 +183,26 @@ module InsightsHelper
     end
   end
 
+  def who_is_doing_what_start_page_series
+    return [] unless @start_page_distribution.is_a?(Hash)
+
+    total = @start_page_distribution.values.sum.to_i
+    return [] if total.zero?
+
+    ordered_keys = [ApplicationHelper::START_PAGE_NEVER_SET] + ApplicationHelper::START_PAGE_VALUES
+    extra_keys = @start_page_distribution.keys.map(&:to_s) - ordered_keys
+    (ordered_keys + extra_keys.sort).filter_map do |key|
+      count = @start_page_distribution[key].to_i
+      next if count.zero?
+
+      who_is_doing_what_digest_stacked_series_entry(
+        start_page_chart_label(key),
+        count,
+        inactive: key.to_s == ApplicationHelper::START_PAGE_NEVER_SET
+      )
+    end
+  end
+
   def who_is_doing_what_digest_stacked_series_entry(name, count, inactive: false)
     entry = { name: name, data: [count.to_i] }
     entry[:color] = WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR if inactive
