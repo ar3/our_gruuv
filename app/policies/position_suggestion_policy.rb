@@ -37,6 +37,10 @@ class PositionSuggestionPolicy < ApplicationPolicy
     admin_bypass? || (same_company? && record.open? && (participant_active? || can_manage_maap?))
   end
 
+  def update_assignment_draft?
+    update_milestone?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

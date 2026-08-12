@@ -49,4 +49,13 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
       expect(html).not_to include("handbook content")
     end
   end
+
+  describe "#position_suggestion_ability_description_popover_html" do
+    it "renders markdown description" do
+      ability = create(:ability, company: organization, name: "Communication", description: "Listen **carefully**")
+      html = helper.position_suggestion_ability_description_popover_html(ability)
+
+      expect(html).to include("<strong>carefully</strong>")
+    end
+  end
 end

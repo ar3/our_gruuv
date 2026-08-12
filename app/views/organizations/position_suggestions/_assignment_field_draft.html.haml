@@ -1,0 +1,69 @@
+-# Locals: organization, suggestion, assignment, draft, can_suggest
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+- assignment = local_assigns[:assignment]
+- draft = local_assigns[:draft]
+- can_suggest = local_assigns.fetch(:can_suggest, false)
+- title_value = draft&.title || assignment.title
+- tagline_value = draft ? draft.tagline.to_s : assignment.tagline.to_s
+- activities_value = draft ? draft.required_activities.to_s : assignment.required_activities.to_s
+- handbook_value = draft ? draft.handbook.to_s : assignment.handbook.to_s
+- outcomes_source = draft ? draft.outcomes.order(:position, :id) : assignment.assignment_outcomes.ordered
+- outcomes_text = outcomes_source.map(&:description).join("\n")
+- collapse_id = "assignment-#{assignment.id}-field-form"
+
+.border.rounded.p-3.mb-3.bg-light{id: "assignment-#{assignment.id}-fields"}
+  .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-2
+    %h3.h6.mb-0 Suggest field changes
+    - if draft
+      %span.badge.text-bg-info
+        Suggested
+        - if draft.last_modified_by
+          by #{draft.last_modified_by.person.casual_name}
+  - if draft
+    %p.text-muted.small.mb-2
+      Bag holds the latest proposal (not applied to MAAP). Saving again overwrites and posts a comment with what changed.
+  - if can_suggest
+    %p.mb-2
+      %button.btn.btn-sm.btn-outline-secondary{type: "button", data: { bs_toggle: "collapse", bs_target: "##{collapse_id}" }, aria: { expanded: draft.present? ? "true" : "false", controls: collapse_id }}
+        = draft.present? ? "Edit suggestion" : "Propose changes"
+    .collapse{id: collapse_id, class: ("show" if draft.present?)}
+      = form_with url: upsert_assignment_draft_organization_position_suggestion_path(organization, suggestion), method: :patch, local: true do
+        = hidden_field_tag :source_assignment_id, assignment.id
+        .mb-2
+          = label_tag "assignment_draft_title_#{assignment.id}", "Title", class: "form-label form-label-sm"
+          = text_field_tag "assignment_draft[title]", title_value, class: "form-control form-control-sm", id: "assignment_draft_title_#{assignment.id}", required: true
+        .mb-2
+          = label_tag "assignment_draft_tagline_#{assignment.id}", "Tagline", class: "form-label form-label-sm"
+          = text_area_tag "assignment_draft[tagline]", tagline_value, class: "form-control form-control-sm", id: "assignment_draft_tagline_#{assignment.id}", rows: 2
+        .mb-2
+          = label_tag "assignment_draft_activities_#{assignment.id}", "Required activities", class: "form-label form-label-sm"
+          = text_area_tag "assignment_draft[required_activities]", activities_value, class: "form-control form-control-sm", id: "assignment_draft_activities_#{assignment.id}", rows: 3
+        .mb-2
+          = label_tag "assignment_draft_handbook_#{assignment.id}", "Handbook", class: "form-label form-label-sm"
+          = text_area_tag "assignment_draft[handbook]", handbook_value, class: "form-control form-control-sm", id: "assignment_draft_handbook_#{assignment.id}", rows: 3
+        .mb-2
+          = label_tag "assignment_draft_outcomes_#{assignment.id}", "Outcomes (one per line)", class: "form-label form-label-sm"
+          = text_area_tag "assignment_draft[outcomes_text]", outcomes_text, class: "form-control form-control-sm", id: "assignment_draft_outcomes_#{assignment.id}", rows: 4
+          %small.text-muted Clearing the box proposes removing all outcomes. Optional text fields may be cleared.
+        = submit_tag "Save field suggestions", class: "btn btn-sm btn-primary"
+  - elsif draft
+    %dl.row.small.mb-0
+      %dt.col-sm-3 Title
+      %dd.col-sm-9= draft.title
+      %dt.col-sm-3 Tagline
+      %dd.col-sm-9= draft.tagline.presence || "(cleared)"
+      %dt.col-sm-3 Required activities
+      %dd.col-sm-9= draft.required_activities.presence || "(cleared)"
+      %dt.col-sm-3 Handbook
+      %dd.col-sm-9= draft.handbook.presence || "(cleared)"
+      %dt.col-sm-3 Outcomes
+      %dd.col-sm-9
+        - if draft.outcomes.any?
+          %ul.mb-0.ps-3
+            - draft.outcomes.order(:position, :id).each do |outcome|
+              %li= outcome.description
+        - else
+          (none)
+  - else
+    %p.text-muted.small.mb-0 No field suggestions yet.

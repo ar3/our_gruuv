@@ -73,4 +73,12 @@ module PositionSuggestionsHelper
 
     tag.div(class: "text-start") { safe_join(parts) }
   end
+
+  def position_suggestion_ability_description_popover_html(ability)
+    if ability.description.present?
+      tag.div(class: "text-start markdown-content small") { render_markdown(ability.description) }
+    else
+      tag.p("No ability description.", class: "small text-muted mb-0")
+    end
+  end
 end

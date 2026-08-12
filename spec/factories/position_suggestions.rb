@@ -55,4 +55,34 @@ FactoryBot.define do
       end
     end
   end
+
+  factory :position_suggestion_assignment do
+    association :position_suggestion
+    association :last_modified_by, factory: :company_teammate
+    title { "Suggested Title" }
+    tagline { "Suggested tagline" }
+
+    after(:build) do |draft|
+      suggestion = draft.position_suggestion
+      org = suggestion.organization
+      if draft.last_modified_by.organization_id != org.id
+        draft.last_modified_by = create(:company_teammate, organization: org)
+      end
+
+      if draft.source_assignment.blank?
+        assignment = create(:assignment, company: org, title: "Source Assignment")
+        create(:position_assignment, position: suggestion.position, assignment: assignment)
+        draft.source_assignment = assignment
+        draft.title = assignment.title
+        draft.tagline = assignment.tagline
+      end
+    end
+  end
+
+  factory :position_suggestion_assignment_outcome do
+    association :position_suggestion_assignment
+    description { "Deliver clear discovery notes" }
+    outcome_type { "quantitative" }
+    position { 0 }
+  end
 end

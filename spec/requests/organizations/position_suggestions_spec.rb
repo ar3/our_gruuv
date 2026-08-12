@@ -69,6 +69,8 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(response.body).to include('data-bs-toggle="popover"')
       expect(response.body).to include(organization_ability_path(organization, ability))
       expect(response.body).to include('aria-label="Suggested milestone for Communication"')
+      expect(response.body).to include("Description for Communication")
+      expect(response.body).to include("bi-question-circle")
     end
   end
 
@@ -141,6 +143,35 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       comment = Comment.last
       expect(comment.position_suggestion_id).to eq(suggestion.id)
       expect(comment.commentable).to eq(assignment)
+    end
+
+    it "upserts an assignment field draft and posts a system comment" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+
+      expect do
+        patch upsert_assignment_draft_organization_position_suggestion_path(organization, suggestion),
+              params: {
+                source_assignment_id: assignment.id,
+                assignment_draft: {
+                  title: "#{assignment.title} Updated",
+                  tagline: assignment.tagline,
+                  required_activities: assignment.required_activities,
+                  handbook: assignment.handbook,
+                  outcomes_text: "Capture priorities\nShare a brief"
+                }
+              }
+      end.to change(PositionSuggestionAssignment, :count).by(1)
+         .and change(Comment, :count).by(1)
+
+      expect(response).to redirect_to(
+        organization_position_suggestion_path(organization, suggestion, anchor: "assignment-#{assignment.id}-fields")
+      )
+      draft = suggestion.assignment_drafts.find_by!(source_assignment: assignment)
+      expect(draft.title).to include("Updated")
+      expect(draft.outcomes.count).to eq(2)
+      expect(response).to redirect_to(
+        organization_position_suggestion_path(organization, suggestion, anchor: "assignment-#{assignment.id}-fields")
+      )
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_10_140000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_12_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1450,6 +1450,36 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_10_140000) do
     t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
   end
 
+  create_table "position_suggestion_assignment_outcomes", force: :cascade do |t|
+    t.bigint "position_suggestion_assignment_id", null: false
+    t.text "description", null: false
+    t.string "outcome_type", null: false
+    t.string "progress_report_url"
+    t.string "management_relationship_filter"
+    t.string "team_relationship_filter"
+    t.string "consumer_assignment_filter"
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_suggestion_assignment_id"], name: "index_ps_assignment_outcomes_on_draft_id"
+  end
+
+  create_table "position_suggestion_assignments", force: :cascade do |t|
+    t.bigint "position_suggestion_id", null: false
+    t.bigint "source_assignment_id", null: false
+    t.string "title", null: false
+    t.text "tagline"
+    t.text "required_activities"
+    t.text "handbook"
+    t.bigint "last_modified_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_modified_by_id"], name: "index_position_suggestion_assignments_on_last_modified_by_id"
+    t.index ["position_suggestion_id", "source_assignment_id"], name: "index_position_suggestion_assignments_unique", unique: true
+    t.index ["position_suggestion_id"], name: "idx_on_position_suggestion_id_fa149a4687"
+    t.index ["source_assignment_id"], name: "index_position_suggestion_assignments_on_source_assignment_id"
+  end
+
   create_table "position_suggestion_milestones", force: :cascade do |t|
     t.bigint "position_suggestion_id", null: false
     t.string "milestoneable_type", null: false
@@ -2190,6 +2220,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_10_140000) do
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_clarity_results", "og_consultations"
   add_foreign_key "position_levels", "position_major_levels"
+  add_foreign_key "position_suggestion_assignment_outcomes", "position_suggestion_assignments"
+  add_foreign_key "position_suggestion_assignments", "assignments", column: "source_assignment_id"
+  add_foreign_key "position_suggestion_assignments", "position_suggestions"
+  add_foreign_key "position_suggestion_assignments", "teammates", column: "last_modified_by_id"
   add_foreign_key "position_suggestion_milestones", "position_suggestions"
   add_foreign_key "position_suggestion_milestones", "teammates", column: "last_modified_by_id"
   add_foreign_key "position_suggestion_participants", "position_suggestions"

@@ -11,6 +11,7 @@ class PositionSuggestion < ApplicationRecord
   has_many :participants, class_name: "PositionSuggestionParticipant", dependent: :destroy
   has_many :company_teammates, through: :participants
   has_many :milestones, class_name: "PositionSuggestionMilestone", dependent: :destroy
+  has_many :assignment_drafts, class_name: "PositionSuggestionAssignment", dependent: :destroy
   has_many :comments, dependent: :nullify
 
   validates :status, presence: true, inclusion: { in: STATUSES }
@@ -62,11 +63,12 @@ class PositionSuggestion < ApplicationRecord
     )
   end
 
-  # A1: authored free-text comments (non–ability-milestone system threads) OR last-changed a bag milestone.
+  # Authored free-text comments, last-changed a bag milestone, or last-changed an assignment draft.
   def has_made_suggestions_for?(company_teammate)
     return false if company_teammate.blank?
 
     milestones.where(last_modified_by_id: company_teammate.id).exists? ||
+      assignment_drafts.where(last_modified_by_id: company_teammate.id).exists? ||
       free_text_comment_authored_by?(company_teammate.person)
   end
 

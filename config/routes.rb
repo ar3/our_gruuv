@@ -194,6 +194,7 @@ Rails.application.routes.draw do
         patch :close
         post :create_comment
         patch :upsert_milestone
+        patch :upsert_assignment_draft
       end
     end
 

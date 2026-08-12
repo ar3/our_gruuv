@@ -4,7 +4,7 @@
 class PositionSuggestions::RoundSummaryBuilder
   Event = Struct.new(:at, :kind, :person, :text, keyword_init: true)
   ProcessRow = Struct.new(
-    :kind, :label, :anchor, :comment, :milestone, :resolved, keyword_init: true
+    :kind, :label, :anchor, :comment, :milestone, :assignment_draft, :resolved, keyword_init: true
   )
 
   def self.call(suggestion:)
@@ -30,6 +30,7 @@ class PositionSuggestions::RoundSummaryBuilder
     events.concat(joined_events)
     events.concat(free_text_comment_events)
     events.concat(milestone_suggestion_events)
+    events.concat(assignment_draft_events)
     events.compact.sort_by { |e| [e.at || Time.zone.at(0), e.kind.to_s] }
   end
 
@@ -188,6 +189,20 @@ class PositionSuggestions::RoundSummaryBuilder
     end
   end
 
+  def assignment_draft_events
+    @suggestion.assignment_drafts.includes(:last_modified_by, :source_assignment).filter_map do |draft|
+      person = draft.last_modified_by&.person
+      next unless person
+
+      Event.new(
+        at: draft.updated_at,
+        kind: :assignment_draft,
+        person: person,
+        text: "#{person.casual_name} suggested field changes for Assignment #{draft.source_assignment.title}"
+      )
+    end
+  end
+
   def build_process_rows
     rows = []
 
@@ -198,18 +213,34 @@ class PositionSuggestions::RoundSummaryBuilder
         anchor: free_text_anchor(comment),
         comment: comment,
         milestone: nil,
+        assignment_draft: nil,
         resolved: comment.resolved?
       )
     end
 
     @suggestion.milestones.includes(:last_modified_by, milestoneable: [:ability, :assignment]).find_each do |milestone|
+      root = milestone_thread_root(milestone)
       rows << ProcessRow.new(
         kind: :milestone,
         label: milestone_process_label(milestone),
         anchor: milestone_anchor(milestone),
-        comment: milestone_thread_root(milestone),
+        comment: root,
         milestone: milestone,
-        resolved: milestone_thread_root(milestone)&.resolved?
+        assignment_draft: nil,
+        resolved: root&.resolved?
+      )
+    end
+
+    @suggestion.assignment_drafts.includes(:last_modified_by, :source_assignment).find_each do |draft|
+      root = assignment_draft_thread_root(draft)
+      rows << ProcessRow.new(
+        kind: :assignment_draft,
+        label: assignment_draft_process_label(draft),
+        anchor: "assignment-#{draft.source_assignment_id}-fields",
+        comment: root,
+        milestone: nil,
+        assignment_draft: draft,
+        resolved: root&.resolved?
       )
     end
 
@@ -230,6 +261,22 @@ class PositionSuggestions::RoundSummaryBuilder
     level_verb = milestone_level_display(level)
 
     "#{name}: #{ability_name} at least Milestone #{level} (#{level_verb}) for #{assignment_name}"
+  end
+
+  def assignment_draft_process_label(draft)
+    person = draft.last_modified_by&.person
+    name = person&.casual_name || "Someone"
+    "#{name}: field changes for Assignment #{draft.source_assignment.title}"
+  end
+
+  def assignment_draft_thread_root(draft)
+    Comment
+      .for_position_suggestion(@suggestion)
+      .for_commentable(draft.source_assignment)
+      .for_suggestion_thread_subject(draft)
+      .root_comments
+      .ordered
+      .first
   end
 
   def free_text_anchor(comment)

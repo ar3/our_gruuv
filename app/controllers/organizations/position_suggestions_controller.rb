@@ -3,7 +3,7 @@
 class Organizations::PositionSuggestionsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
   before_action :set_suggestion, only: [
-    :show, :join, :update_participation, :close, :create_comment, :upsert_milestone
+    :show, :join, :update_participation, :close, :create_comment, :upsert_milestone, :upsert_assignment_draft
   ]
   after_action :verify_authorized
 
@@ -161,6 +161,36 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     end
   end
 
+  def upsert_assignment_draft
+    authorize @suggestion, :update_assignment_draft?
+
+    assignment = find_source_assignment!
+    attrs = params.require(:assignment_draft).permit(
+      :title, :tagline, :required_activities, :handbook, :outcomes_text
+    )
+    outcomes = outcomes_from_params(attrs[:outcomes_text], assignment)
+
+    result = PositionSuggestions::UpsertAssignmentDraftService.call(
+      suggestion: @suggestion,
+      source_assignment: assignment,
+      attributes: attrs.slice(:title, :tagline, :required_activities, :handbook),
+      outcomes: outcomes,
+      modified_by: current_company_teammate
+    )
+
+    if result.ok?
+      redirect_to organization_position_suggestion_path(
+                    organization,
+                    @suggestion,
+                    anchor: "assignment-#{assignment.id}-fields"
+                  ),
+                  notice: "Assignment field suggestions saved (not applied to MAAP yet)."
+    else
+      redirect_to organization_position_suggestion_path(organization, @suggestion, anchor: "assignment-#{assignment.id}-fields"),
+                  alert: Array(result.error).join(", ")
+    end
+  end
+
   private
 
   def set_suggestion
@@ -186,6 +216,9 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     @milestones_by_key = @suggestion.milestones.includes(:last_modified_by, :milestoneable).index_by do |m|
       [m.milestoneable_type, m.milestoneable_id]
     end
+    @assignment_drafts_by_assignment_id = @suggestion.assignment_drafts
+      .includes(:outcomes, :last_modified_by)
+      .index_by(&:source_assignment_id)
     @position_comments = @suggestion.comments
       .for_commentable(@position)
       .root_comments
@@ -224,6 +257,36 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
       assignment
     else
       raise ActiveRecord::RecordNotFound, "Unsupported commentable"
+    end
+  end
+
+  def find_source_assignment!
+    assignment = Assignment.find(params.require(:source_assignment_id))
+    unless @suggestion.position.assignments.exists?(id: assignment.id)
+      raise ActiveRecord::RecordNotFound, "Assignment not on this position"
+    end
+
+    assignment
+  end
+
+  # One outcome description per line. Prefer draft outcome types by line index when re-saving;
+  # otherwise keep live types by index, defaulting to quantitative.
+  def outcomes_from_params(outcomes_text, assignment)
+    lines = outcomes_text.to_s.lines.map(&:strip).reject(&:blank?)
+    draft = @suggestion.assignment_drafts.find_by(source_assignment: assignment)
+    baseline = draft&.outcomes&.order(:position, :id)&.to_a
+    baseline ||= assignment.assignment_outcomes.ordered.to_a
+
+    lines.each_with_index.map do |description, index|
+      existing = baseline[index]
+      {
+        description: description,
+        outcome_type: existing&.outcome_type.presence || "quantitative",
+        progress_report_url: existing&.try(:progress_report_url),
+        management_relationship_filter: existing&.try(:management_relationship_filter),
+        team_relationship_filter: existing&.try(:team_relationship_filter),
+        consumer_assignment_filter: existing&.try(:consumer_assignment_filter)
+      }
     end
   end
 

@@ -37,7 +37,7 @@
 
 - if @suggestion.open?
   %p.text-muted.small.mb-4
-    Each Assignment row pairs content on the left with comments on the right. Each Ability row pairs the ability on the left with the milestone suggestion control on the right. Milestone radios save as soon as you change them (proposals only). Hover a level for milestone language; current MAAP levels use a thicker border.
+    Each Assignment row pairs content on the left with comments on the right. Use “Suggest field changes” to propose title, tagline, activities, handbook, and outcomes (proposals only). Ability rows have milestone radios that save on change. Hover a level for milestone language; current MAAP levels use a thicker border.
 
 .border.rounded.p-3.mb-4#position-comments
   .row
@@ -86,17 +86,27 @@
                  return_to: @return_to,
                  disabled: !@suggestion.open?
 
+    = render "organizations/position_suggestions/assignment_field_draft",
+             organization: @organization,
+             suggestion: @suggestion,
+             assignment: assignment,
+             draft: @assignment_drafts_by_assignment_id[assignment.id],
+             can_suggest: @suggestion.open? && (@participant&.active? || @can_manage_maap)
+
     - if assignment.assignment_abilities.any?
+      - assignment_draft = @assignment_drafts_by_assignment_id[assignment.id]
+      - assignment_name_for_milestones = assignment_draft&.title.presence || assignment.title
+      %h3.h6.mt-3.mb-2
+        In order to be qualified to take on #{assignment_name_for_milestones}, the following Ability Milestones must be demonstrated and certified:
       - assignment.assignment_abilities.sort_by { |aa| aa.ability.name }.each_with_index do |aa, index|
         - suggestion_milestone = @milestones_by_key[["AssignmentAbility", aa.id]]
         .row.py-3{class: ("border-top" if index.positive?), id: "assignment-ability-#{aa.id}"}
           .col-12.col-lg-8
-            %h3.h6.mb-1
+            %h3.h6.mb-1.d-flex.align-items-center.gap-1
               = link_to aa.ability.name, organization_ability_path(@organization, aa.ability), class: "text-decoration-none"
-            - if aa.ability.description.present?
-              .markdown-content.small.text-muted.mb-0= render_markdown(aa.ability.description)
-            - else
-              %p.text-muted.small.mb-0 No ability description.
+              - ability_popover_html = position_suggestion_ability_description_popover_html(aa.ability)
+              %button.btn.btn-link.btn-sm.p-0.lh-1.text-muted{type: "button", "aria-label": "Description for #{aa.ability.name}", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "right", bs_title: aa.ability.name, bs_custom_class: "position-suggestion-ability-popover", bs_content: ability_popover_html }}
+                %i.bi.bi-question-circle{aria: { hidden: true }}
           .col-12.col-lg-4
             = render "organizations/position_suggestions/milestone_suggest_control",
                      ability: aa.ability,
