@@ -1,0 +1,56 @@
+- level = local_assigns.fetch(:level)
+- casual = local_assigns.fetch(:casual)
+- earned = local_assigns.fetch(:earned)
+- verb = Organizations::OgAcademyHelper::MILESTONE_STATUS_VERBS[level.level]
+- trust = og_academy_milestone_trust_caption(level, casual)
+- frame_class = earned ? "og-academy-certificate og-academy-certificate--earned" : "og-academy-certificate og-academy-certificate--progress"
+
+%div{class: frame_class}
+  .og-academy-certificate__eyebrow
+    - if earned
+      Practice certification
+    - else
+      Practice certification in progress
+  %h3.og-academy-certificate__ability.mb-1 OG Mastery
+  %p.og-academy-certificate__milestone.mb-3
+    Milestone #{level.level}
+    - if verb.present?
+      — #{verb}
+  %p.og-academy-certificate__trust.mb-3= trust
+
+  .og-academy-certificate__seals.d-flex.flex-wrap.justify-content-center.gap-2.mb-3
+    - level.criteria.each do |c|
+      - action_path = og_academy_criterion_path_for(c, organization: current_organization, company_teammate: current_company_teammate)
+      - if c.done
+        - popover_html = og_academy_criterion_completion_popover_html(c)
+        %span.badge.rounded-pill.text-bg-success.og-academy-certificate__seal.og-academy-certificate__seal--done{role: "button", tabindex: "0", style: "cursor: help;", "aria-label": "#{c.seal} completed", data: { bs_toggle: "popover", bs_trigger: "hover focus", bs_placement: "top", bs_html: "true", bs_title: c.seal, bs_content: popover_html }}
+          %i.bi.bi-check-lg.me-1{"aria-hidden" => "true"}
+          = c.seal
+      - elsif action_path.present?
+        = link_to action_path, class: "badge rounded-pill text-bg-light border text-decoration-none og-academy-certificate__seal og-academy-certificate__seal--link" do
+          = c.seal
+          %i.bi.bi-arrow-right-short.ms-1{"aria-hidden" => "true"}
+      - else
+        %span.badge.rounded-pill.text-bg-light.border.og-academy-certificate__seal{role: "button", tabindex: "0", "aria-label": c.hint, data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: c.hint }}
+          = c.seal
+          %i.bi.bi-question-circle.ms-1{"aria-hidden" => "true"}
+
+  - unless earned
+    %ul.list-unstyled.og-academy-certificate__requirements.mb-3.text-start
+      - level.criteria.each do |c|
+        - next if c.done
+        - action_path = og_academy_criterion_path_for(c, organization: current_organization, company_teammate: current_company_teammate)
+        %li.d-flex.align-items-start.gap-2.mb-2
+          %i.bi.bi-circle.text-muted.mt-1{"aria-hidden" => "true"}
+          .flex-grow-1.min-w-0
+            - if action_path.present?
+              = link_to c.label, action_path, class: "fw-semibold text-decoration-none"
+            - else
+              %span.fw-semibold= c.label
+            %div.small.text-muted= c.hint
+
+  .og-academy-certificate__footer.small.text-muted
+    - if earned
+      Milestone Certified on the OG Academy practice track · not a company MAAP Ability
+    - else
+      = "#{level.done_count} of #{level.total_count} requirements sealed · practice track"

@@ -41,7 +41,6 @@ module NavigationHelper
         icon: 'bi-mortarboard',
         path: organization_og_academy_path(current_organization),
         section: nil,
-        beta: true,
         policy_check: -> { policy(current_organization).show? }
       },
       {

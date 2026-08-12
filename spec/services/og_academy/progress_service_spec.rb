@@ -10,12 +10,21 @@ RSpec.describe OgAcademy::ProgressService do
   subject(:service) { described_class.new(organization: company, company_teammate: teammate) }
 
   describe '#levels' do
-    it 'returns five levels without creating real milestones' do
+    it 'returns five levels with reshaped criteria keys' do
       expect {
         levels = service.levels
         expect(levels.map(&:level)).to eq([1, 2, 3, 4, 5])
-        expect(levels.first.criteria.map(&:key)).to include(:logged_in, :zero_actions, :published_ogo)
-        expect(levels.last.placeholder).to eq(false)
+        expect(levels[0].criteria.map(&:key)).to eq(%i[logged_in check_in_types published_ogo added_goal])
+        expect(levels[1].criteria.map(&:key)).to eq(%i[
+          real_milestone confidence_checks notifications visited_my_growth visited_my_one_thing
+        ])
+        expect(levels[2].audience).to eq(:everyone)
+        expect(levels[2].criteria.map(&:key)).to include(
+          :check_in_depth, :visited_teammates_index, :visited_teammate_internals,
+          :linked_goals, :observe_three, :four_ratings, :maap_comment
+        )
+        expect(levels[2].criteria.map(&:key)).not_to include(:visited_my_growth, :visited_my_one_thing)
+        expect(levels[3].criteria.map(&:key)).to eq(%i[maap_edits employment_stewardship visited_insights_and_billing])
         expect(levels.last.criteria.map(&:key)).to eq(%i[
           published_position_other_orgs
           published_assignment_other_orgs
@@ -45,9 +54,100 @@ RSpec.describe OgAcademy::ProgressService do
       expect(criterion.done).to eq(true)
     end
 
-    it 'collapses advanced track for non-managers without admin flags' do
+    it 'marks check_in_types when employee completed each type once' do
+      create(:assignment_check_in, teammate: teammate, employee_completed_at: 1.day.ago)
+      create(:position_check_in, teammate: teammate, employee_completed_at: 1.day.ago)
+      create(:aspiration_check_in, teammate: teammate, employee_completed_at: 1.day.ago)
+
+      criterion = service.levels[0].criteria.find { |c| c.key == :check_in_types }
+      expect(criterion.done).to eq(true)
+    end
+
+    it 'marks visited_my_growth and visited_my_one_thing from PageVisit urls on M2' do
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{company.id}/company_teammates/#{teammate.id}/my_growth/abilities",
+        page_title: 'My Growth',
+        visited_at: Time.current
+      )
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{company.id}/company_teammates/#{teammate.id}/one_on_one_link",
+        page_title: 'One Thing',
+        visited_at: Time.current
+      )
+
+      levels = service.levels
+      expect(levels[1].criteria.find { |c| c.key == :visited_my_growth }.done).to eq(true)
+      expect(levels[1].criteria.find { |c| c.key == :visited_my_one_thing }.done).to eq(true)
+    end
+
+    it 'marks visited_teammates_index and teammate internals from PageVisit urls' do
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{company.id}/employees?spotlight=teammate_tenures",
+        page_title: 'Teammates',
+        visited_at: 2.days.ago
+      )
+
+      other_teammates = create_list(:teammate, 5, organization: company)
+      other_teammates.each_with_index do |other, idx|
+        create(
+          :page_visit,
+          person: person,
+          url: "/organizations/#{company.id}/company_teammates/#{other.id}/internal",
+          page_title: 'Internal',
+          visited_at: (idx + 1).hours.ago
+        )
+      end
+      # Own internal should not count
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{company.id}/company_teammates/#{teammate.id}/internal",
+        page_title: 'Internal',
+        visited_at: Time.current
+      )
+
+      levels = service.levels
+      expect(levels[2].criteria.find { |c| c.key == :visited_teammates_index }.done).to eq(true)
+      expect(levels[2].criteria.find { |c| c.key == :visited_teammate_internals }.done).to eq(true)
+    end
+
+    it 'marks visited_insights_and_billing when every insights page and billing were visited' do
+      oid = company.id
+      (OgAcademy::ProgressService::INSIGHT_PATH_SEGMENTS + ['value_billing']).each do |segment|
+        create(
+          :page_visit,
+          person: person,
+          url: "/organizations/#{oid}/#{segment}",
+          page_title: segment,
+          visited_at: Time.current
+        )
+      end
+
+      criterion = service.levels[3].criteria.find { |c| c.key == :visited_insights_and_billing }
+      expect(criterion.done).to eq(true)
+    end
+
+    it 'marks linked_goals when assignment and ability associations exist' do
+      assignment = create(:assignment, company: company)
+      ability = create(:ability, company: company)
+      goal_a = create(:goal, company: company, owner: teammate, creator: teammate)
+      goal_b = create(:goal, company: company, owner: teammate, creator: teammate)
+      create(:goal_association, goal: goal_a, associable: assignment)
+      create(:goal_association, goal: goal_b, associable: ability)
+
+      criterion = service.levels[2].criteria.find { |c| c.key == :linked_goals }
+      expect(criterion.done).to eq(true)
+    end
+
+    it 'collapses advanced track (M4+) for non-admins' do
       expect(service.collapsed_advanced?).to eq(true)
-      expect(service.has_direct_reports?).to eq(false)
+      expect(described_class::ADVANCED_FROM_LEVEL).to eq(4)
     end
   end
 end

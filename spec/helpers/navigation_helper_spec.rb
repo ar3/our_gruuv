@@ -542,7 +542,7 @@ RSpec.describe NavigationHelper, type: :helper do
         structure = helper.navigation_structure
         og_academy = structure.find { |item| item[:label] == 'OG Academy' && item[:section].nil? }
         expect(og_academy).to be_present
-        expect(og_academy[:beta]).to eq(true)
+        expect(og_academy[:beta]).not_to eq(true)
         expect(og_academy[:path]).to eq(helper.organization_og_academy_path(company))
 
         dashboard = structure.find { |item| item[:label] == "#{person.casual_name}'s Dashboard" && item[:section].nil? }

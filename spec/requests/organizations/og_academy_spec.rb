@@ -65,9 +65,19 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(body).to include('data-bs-toggle="tooltip"')
     end
 
-    it 'collapses manager/admin levels when the viewer has no reports' do
+    it 'collapses admin/cross-company levels when the viewer is not on the admin track' do
       get organization_og_academy_path(company)
-      expect(response.body).to include('Manager & admin levels (M3+)')
+      expect(response.body).to include('Admin & cross-company levels (M4+)')
+    end
+
+    it 'renders practice certificate chrome for milestones' do
+      get organization_og_academy_path(company)
+      expect(response.body).to include('og-academy-certificate')
+      expect(response.body).to include('Practice certification in progress')
+      expect(response.body).to include('requirements sealed')
+      expect(response.body).not_to include('Certified so far')
+      expect(response.body).to include('data-bs-toggle="popover"')
+      expect(response.body).to include('Why it matters:')
     end
   end
 

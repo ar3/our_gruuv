@@ -11,9 +11,6 @@
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
                tooltip: "Learn OG by doing — Quick Start, practice milestones, home base. Click for details."
-    %span.badge.text-bg-warning
-      %i.bi.bi-flask.me-1
-      Beta
   %p.lead.text-muted.mb-0
     Learn OurGruuv by doing... quick start now... working towards deeper mastery over time.
 
@@ -119,10 +116,10 @@
     - if progress.collapsed_advanced?
       .mt-3
         %button.btn.btn-outline-secondary{type: "button", data: { bs_toggle: "collapse", bs_target: "#og-academy-advanced-levels" }, aria: { expanded: "false", controls: "og-academy-advanced-levels" }}
-          Manager & admin levels (M3+)
+          Admin & cross-company levels (M4+)
         .collapse#og-academy-advanced-levels.mt-3
           .alert.alert-secondary.small
-            These levels are for people with direct reports (M3) or employment/admin responsibility (M4+). You can explore the criteria anytime; they are not required for every teammate.
+            These levels are for people with employment/admin responsibility (M4) or future cross-company MAAP contribution (M5). You can explore the criteria anytime; they are not required for every teammate.
           - advanced_levels.each do |lvl|
             = render "organizations/og_academy/level_card", level: lvl, progress: progress, casual: casual
     - else

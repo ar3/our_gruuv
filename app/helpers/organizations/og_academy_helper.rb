@@ -76,28 +76,58 @@ module Organizations::OgAcademyHelper
     "#{count} active and healthy #{'goal'.pluralize(count)}"
   end
 
+  def og_academy_criterion_completion_popover_html(criterion)
+    return nil unless criterion.done
+
+    when_text = if criterion.attained_at.present?
+                  format_date_in_user_timezone(criterion.attained_at)
+                else
+                  "Date not recorded"
+                end
+
+    content_tag(:div, class: "small text-start") do
+      safe_join([
+        content_tag(:p, class: "mb-2") do
+          safe_join([content_tag(:strong, "What: "), ERB::Util.html_escape(criterion.what.presence || criterion.label)])
+        end,
+        content_tag(:p, class: "mb-2") do
+          safe_join([content_tag(:strong, "When: "), ERB::Util.html_escape(when_text)])
+        end,
+        content_tag(:p, class: "mb-0") do
+          safe_join([content_tag(:strong, "Why it matters: "), ERB::Util.html_escape(criterion.why_important.to_s)])
+        end
+      ])
+    end
+  end
+
   # Where the teammate can act on an incomplete criterion.
   # Returns a path string, or nil when only a hover explanation is appropriate.
   def og_academy_criterion_path_for(criterion, organization:, company_teammate:)
     return nil if criterion.done
 
     case criterion.key.to_sym
-    when :zero_actions
+    when :check_in_types, :check_in_depth
       up_next_organization_company_teammate_check_ins_path(organization, company_teammate)
     when :published_ogo, :observe_three, :four_ratings
       select_type_organization_observations_path(organization)
-    when :added_goal
+    when :added_goal, :linked_goals
       new_organization_goal_path(organization, owner_id: "CompanyTeammate_#{company_teammate.id}")
-    when :confidence_checks, :completed_goal
+    when :confidence_checks
       my_growth_goals_organization_company_teammate_path(organization, company_teammate)
     when :notifications
       organization_company_teammate_notifications_path(organization, company_teammate)
-    when :manager_check_in
-      return nil unless company_teammate.has_direct_reports?
-
-      organization_protect_flow_path(organization)
+    when :visited_my_growth, :real_milestone
+      my_growth_abilities_organization_company_teammate_path(organization, company_teammate)
+    when :visited_my_one_thing
+      organization_company_teammate_one_on_one_link_path(organization, company_teammate)
+    when :visited_teammates_index, :visited_teammate_internals
+      organization_employees_path(organization, spotlight: "teammate_tenures")
+    when :visited_insights_and_billing
+      organization_insights_path(organization)
     when :maap_comment, :maap_edits
       organization_positions_path(organization)
+    when :employment_stewardship
+      organization_seats_path(organization)
     end
   end
 end

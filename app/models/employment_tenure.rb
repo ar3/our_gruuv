@@ -1,4 +1,6 @@
 class EmploymentTenure < ApplicationRecord
+  has_paper_trail
+
   belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
   alias_method :teammate, :company_teammate
   alias_method :teammate=, :company_teammate=

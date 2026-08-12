@@ -1,4 +1,6 @@
 class Seat < ApplicationRecord
+  has_paper_trail
+
   # Associations
   belongs_to :title
   has_many :seat_titles, dependent: :destroy
