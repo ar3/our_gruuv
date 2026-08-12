@@ -126,6 +126,8 @@ Rails.application.routes.draw do
 
     # OG Academy (orientation lander / practice milestones — Beta)
     get 'og_academy', to: 'organizations/og_academy#show', as: :og_academy
+    get 'og_academy/quick_start', to: 'organizations/og_academy#quick_start', as: :og_academy_quick_start
+    get 'og_academy/milestones', to: 'organizations/og_academy#milestones', as: :og_academy_milestones
     post 'og_academy/update_start_page', to: 'organizations/og_academy#update_start_page', as: :og_academy_update_start_page
 
     get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing

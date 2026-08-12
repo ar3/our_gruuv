@@ -20,7 +20,7 @@
               %span.badge.text-bg-warning.text-dark In progress
             - unless visible
               %span.badge.text-bg-light.border not your track yet
-          %p.small.text-muted.mb-0.mt-1.og-academy-level-header__caption= og_academy_milestone_trust_caption(level, casual)
+          %p.small.text-muted.mb-0.mt-1.og-academy-level-header__caption= og_academy_milestone_trust_caption(level, casual, earned: earned)
         %span.small.text-muted.text-nowrap.og-academy-level-header__count.pt-1
           = "#{level.done_count}/#{level.total_count} sealed"
           %i.bi.bi-chevron-down.ms-1

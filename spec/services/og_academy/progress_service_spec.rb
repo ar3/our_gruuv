@@ -67,14 +67,38 @@ RSpec.describe OgAcademy::ProgressService do
       create(
         :page_visit,
         person: person,
-        url: "/organizations/#{company.id}/company_teammates/#{teammate.id}/my_growth/abilities",
+        url: "/organizations/#{company.to_param}/company_teammates/me/my_growth/abilities",
         page_title: 'My Growth',
         visited_at: Time.current
       )
       create(
         :page_visit,
         person: person,
-        url: "/organizations/#{company.id}/company_teammates/#{teammate.id}/one_on_one_link",
+        url: "/organizations/#{company.to_param}/company_teammates/me/one_on_one_link",
+        page_title: 'One Thing',
+        visited_at: Time.current
+      )
+
+      levels = service.levels
+      expect(levels[1].criteria.find { |c| c.key == :visited_my_growth }.done).to eq(true)
+      expect(levels[1].criteria.find { |c| c.key == :visited_my_one_thing }.done).to eq(true)
+    end
+
+    it 'counts own-hub visits when the teammate id is negative' do
+      allow(teammate).to receive(:id).and_return(-1)
+      service = described_class.new(organization: company, company_teammate: teammate)
+
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{company.to_param}/company_teammates/-1/my_growth/goals",
+        page_title: 'My Growth',
+        visited_at: Time.current
+      )
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{company.to_param}/company_teammates/-1/one_on_one_link",
         page_title: 'One Thing',
         visited_at: Time.current
       )
@@ -88,7 +112,7 @@ RSpec.describe OgAcademy::ProgressService do
       create(
         :page_visit,
         person: person,
-        url: "/organizations/#{company.id}/employees?spotlight=teammate_tenures",
+        url: "/organizations/#{company.to_param}/employees?spotlight=teammate_tenures",
         page_title: 'Teammates',
         visited_at: 2.days.ago
       )
@@ -98,7 +122,7 @@ RSpec.describe OgAcademy::ProgressService do
         create(
           :page_visit,
           person: person,
-          url: "/organizations/#{company.id}/company_teammates/#{other.id}/internal",
+          url: "/organizations/#{company.to_param}/company_teammates/#{other.id}/internal",
           page_title: 'Internal',
           visited_at: (idx + 1).hours.ago
         )
@@ -107,7 +131,7 @@ RSpec.describe OgAcademy::ProgressService do
       create(
         :page_visit,
         person: person,
-        url: "/organizations/#{company.id}/company_teammates/#{teammate.id}/internal",
+        url: "/organizations/#{company.to_param}/company_teammates/me/internal",
         page_title: 'Internal',
         visited_at: Time.current
       )
@@ -118,12 +142,11 @@ RSpec.describe OgAcademy::ProgressService do
     end
 
     it 'marks visited_insights_and_billing when every insights page and billing were visited' do
-      oid = company.id
       (OgAcademy::ProgressService::INSIGHT_PATH_SEGMENTS + ['value_billing']).each do |segment|
         create(
           :page_visit,
           person: person,
-          url: "/organizations/#{oid}/#{segment}",
+          url: "/organizations/#{company.to_param}/#{segment}",
           page_title: segment,
           visited_at: Time.current
         )
@@ -145,9 +168,10 @@ RSpec.describe OgAcademy::ProgressService do
       expect(criterion.done).to eq(true)
     end
 
-    it 'collapses advanced track (M4+) for non-admins' do
-      expect(service.collapsed_advanced?).to eq(true)
-      expect(described_class::ADVANCED_FROM_LEVEL).to eq(4)
+    it 'keeps M4+ in the level list for non-admins' do
+      expect(service.admin_track?).to eq(false)
+      expect(service.levels.map(&:level)).to eq([1, 2, 3, 4, 5])
+      expect(service.visible_for?(service.levels[3])).to eq(false)
     end
   end
 end

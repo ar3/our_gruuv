@@ -1,0 +1,58 @@
+.d-grid.gap-3
+  - @quick_start_people.each do |tm|
+    - person = tm.person
+    - is_self = tm.id == current_company_teammate.id
+    - one_thing_path = organization_company_teammate_one_on_one_link_path(current_organization, tm)
+    - observe_path = ogos_organization_company_teammate_path(current_organization, tm)
+    - goals_path = my_growth_goals_organization_company_teammate_path(current_organization, tm)
+    - check_in_path = up_next_organization_company_teammate_check_ins_path(current_organization, tm)
+    - row_data = (@quick_start_row_data_by_teammate_id || {})[tm.id]
+    - clarity_records = (@quick_start_clarity_eh_by_teammate_id || {})[tm.id]
+    - goals_eh_records = (@quick_start_goals_eh_by_teammate_id || {})[tm.id]
+    - action_breakdown = EngagementHealth::ClarityActionMetrics.for_records(clarity_records)
+    - names = teammate_and_manager_short_names(tm, current_organization)
+    - action_popover_html = check_ins_health_action_popover_html(records: clarity_records, employee_name: names[:employee], manager_name: names[:manager])
+    - ogos_received_count = row_data&.ogos_received_30d_count.to_i
+    - healthy_goals_count = og_academy_healthy_goals_count(goals_eh_records)
+    - clarity_caption = action_breakdown.present? && action_breakdown.total_slots.to_i.positive? ? "#{action_breakdown.ok_percentage.round(1)}% clear" : "No clarity data yet"
+    .card.border-0.shadow-sm
+      .card-body
+        .row.g-3.align-items-center
+          .col-12.col-lg-3
+            = link_to one_thing_path, class: "d-flex align-items-center gap-3 text-decoration-none" do
+              = teammate_profile_image(tm, size: 48)
+              %div.min-w-0
+                .fs-4.fw-semibold.text-body
+                  = person.casual_name
+                  - if is_self
+                    %span.badge.text-bg-secondary.ms-1 you
+                .small.text-muted= one_thing_label_for(tm, viewer: current_company_teammate)
+          .col-12.col-lg-9
+            .row.g-3
+              .col-12.col-md-4
+                = link_to observe_path, class: "text-decoration-none h-100 d-block" do
+                  .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
+                    .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+                      .flex-grow-1.min-w-0
+                        %h4.fw-bold.mb-2 Observe
+                        %p.text-muted.mb-0.small= og_academy_ogos_received_caption(ogos_received_count)
+                      %i.bi.bi-eye.display-4.text-primary.flex-shrink-0
+              .col-12.col-md-4
+                = link_to goals_path, class: "text-decoration-none h-100 d-block" do
+                  .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
+                    .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+                      .flex-grow-1.min-w-0
+                        %h4.fw-bold.mb-2 Goals
+                        %p.text-muted.mb-0.small= og_academy_healthy_goals_caption(healthy_goals_count)
+                      %i.bi.bi-bullseye.display-4.text-success.flex-shrink-0
+              .col-12.col-md-4
+                = link_to check_in_path, class: "text-decoration-none h-100 d-block" do
+                  .card.h-100.hover-lift.border-primary{style: "cursor: pointer;"}
+                    .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
+                      .flex-grow-1.min-w-0
+                        %h4.fw-bold.mb-2 Check-in
+                        - if action_popover_html.present?
+                          %p.text-muted.mb-0.small{role: "button", tabindex: 0, style: "cursor: help;", data: { bs_toggle: "popover", bs_trigger: "hover focus", bs_placement: "top", bs_html: "true", bs_content: action_popover_html }}= clarity_caption
+                        - else
+                          %p.text-muted.mb-0.small= clarity_caption
+                      %i.bi.bi-chat-square-text.display-4.text-info.flex-shrink-0

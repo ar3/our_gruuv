@@ -1,0 +1,11 @@
+- progress = @academy_progress
+- casual = current_company_teammate.person.casual_name
+
+.alert.alert-light.border.mb-4
+  %p.mb-1
+    %strong Practice track — OG Mastery is not a company Ability on your MAAP.
+  %p.mb-0.small.text-muted
+    Cards use Ability milestone language so you learn the ceremony. Real job milestones are still awarded by managers on real abilities.
+
+- progress.levels.each do |lvl|
+  = render "organizations/og_academy/level_card", level: lvl, progress: progress, casual: casual

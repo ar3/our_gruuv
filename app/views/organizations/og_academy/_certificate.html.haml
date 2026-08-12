@@ -2,7 +2,7 @@
 - casual = local_assigns.fetch(:casual)
 - earned = local_assigns.fetch(:earned)
 - verb = Organizations::OgAcademyHelper::MILESTONE_STATUS_VERBS[level.level]
-- trust = og_academy_milestone_trust_caption(level, casual)
+- trust = og_academy_milestone_trust_caption(level, casual, earned: earned)
 - frame_class = earned ? "og-academy-certificate og-academy-certificate--earned" : "og-academy-certificate og-academy-certificate--progress"
 
 %div{class: frame_class}

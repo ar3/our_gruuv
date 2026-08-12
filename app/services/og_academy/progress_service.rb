@@ -27,8 +27,6 @@ module OgAcademy
       insights/check_ins_progress
     ].freeze
     OTHER_TEAMMATE_INTERNALS_REQUIRED = 5
-    # M1–M3 are for everyone; M4+ (admin / cross-company) stay behind the advanced fold.
-    ADVANCED_FROM_LEVEL = 4
 
     WHY = {
       logged_in: "Showing up is the first habit — Academy can celebrate progress the moment you arrive.",
@@ -109,10 +107,6 @@ module OgAcademy
       when :future then true
       else true
       end
-    end
-
-    def collapsed_advanced?
-      !admin_track?
     end
 
     private
@@ -515,45 +509,27 @@ module OgAcademy
     end
 
     def visited_my_growth?
-      my_growth_visits_scope.exists?
-    end
-
-    def my_growth_visits_scope
-      prefix = "/organizations/#{@organization.id}/company_teammates/#{@company_teammate.id}/my_growth"
-      PageVisit.where(person_id: @person.id).where("url LIKE ?", "#{prefix}%")
+      visited_own_hub_page?("my_growth")
     end
 
     def first_my_growth_visit_at
-      my_growth_visits_scope.minimum(:visited_at)
+      first_own_hub_visit_at("my_growth")
     end
 
     def visited_my_one_thing?
-      my_one_thing_visits_scope.exists?
-    end
-
-    def my_one_thing_visits_scope
-      prefix = "/organizations/#{@organization.id}/company_teammates/#{@company_teammate.id}/one_on_one_link"
-      PageVisit.where(person_id: @person.id).where("url = :exact OR url LIKE :prefix OR url LIKE :with_query",
-                                                   exact: prefix,
-                                                   prefix: "#{prefix}/%",
-                                                   with_query: "#{prefix}?%")
+      visited_own_hub_page?("one_on_one_link")
     end
 
     def first_my_one_thing_visit_at
-      my_one_thing_visits_scope.minimum(:visited_at)
+      first_own_hub_visit_at("one_on_one_link")
     end
 
     def visited_teammates_index?
-      teammates_index_visits_scope.exists?
-    end
-
-    def teammates_index_visits_scope
-      path = "/organizations/#{@organization.id}/employees"
-      page_visits_for_exact_path(path)
+      visited_org_suffix?("employees")
     end
 
     def first_teammates_index_visit_at
-      teammates_index_visits_scope.minimum(:visited_at)
+      first_org_suffix_visit_at("employees")
     end
 
     def visited_other_teammate_internals_count
@@ -561,68 +537,107 @@ module OgAcademy
     end
 
     def other_teammate_internal_visit_ids
-      @other_teammate_internal_visit_ids ||= begin
-        prefix = "/organizations/#{@organization.id}/company_teammates/"
-        PageVisit.where(person_id: @person.id)
-                 .where("url LIKE ?", "#{prefix}%/internal%")
-                 .pluck(:url)
-                 .filter_map do |url|
-                   path = url.to_s.split("?", 2).first
-                   match = path.match(%r{\A/organizations/\d+/company_teammates/(\d+)/internal\z})
-                   next unless match
+      @other_teammate_internal_visit_ids ||= other_teammate_internal_visits.map { |id, _| id }.uniq
+    end
 
-                   id = match[1].to_i
-                   id unless id == @company_teammate.id
-                 end
-                 .uniq
+    def other_teammate_internal_visits
+      @other_teammate_internal_visits ||= begin
+        seen = []
+        org_page_visit_rows.filter_map do |path, visited_at|
+          match = path.match(internal_page_regex)
+          next unless match
+
+          segment = match[1]
+          next if own_teammate_path_segment?(segment)
+
+          id = segment.to_i
+          next if id.zero? || seen.include?(id)
+
+          seen << id
+          [id, visited_at]
+        end
       end
     end
 
     def fifth_other_teammate_internal_visit_at
       return nil if visited_other_teammate_internals_count < OTHER_TEAMMATE_INTERNALS_REQUIRED
 
-      prefix = "/organizations/#{@organization.id}/company_teammates/"
-      seen = []
-      PageVisit.where(person_id: @person.id)
-               .where("url LIKE ?", "#{prefix}%/internal%")
-               .order(:visited_at)
-               .pluck(:url, :visited_at)
-               .each do |url, visited_at|
-        path = url.to_s.split("?", 2).first
-        match = path.match(%r{\A/organizations/\d+/company_teammates/(\d+)/internal\z})
-        next unless match
-
-        id = match[1].to_i
-        next if id == @company_teammate.id || seen.include?(id)
-
-        seen << id
-        return visited_at if seen.size == OTHER_TEAMMATE_INTERNALS_REQUIRED
-      end
-      nil
+      other_teammate_internal_visits[OTHER_TEAMMATE_INTERNALS_REQUIRED - 1]&.last
     end
 
     def visited_insights_and_billing?
-      required_insight_and_billing_paths.all? { |path| page_visited_exact?(path) }
+      required_insight_and_billing_suffixes.all? { |suffix| visited_org_suffix?(suffix) }
     end
 
-    def required_insight_and_billing_paths
-      oid = @organization.id
-      INSIGHT_PATH_SEGMENTS.map { |segment| "/organizations/#{oid}/#{segment}" } +
-        ["/organizations/#{oid}/value_billing"]
+    def required_insight_and_billing_suffixes
+      INSIGHT_PATH_SEGMENTS + ["value_billing"]
     end
 
     def insights_and_billing_attained_at
       return nil unless visited_insights_and_billing?
 
-      required_insight_and_billing_paths.filter_map { |path| page_visits_for_exact_path(path).minimum(:visited_at) }.max
+      required_insight_and_billing_suffixes.filter_map { |suffix| first_org_suffix_visit_at(suffix) }.max
     end
 
-    def page_visited_exact?(path)
-      page_visits_for_exact_path(path).exists?
+    # PageVisit urls use Organization#to_param (`id-slug`) and often `/company_teammates/me/`
+    # for the viewer's own hub. Numeric `/organizations/:id/` paths still count.
+    def org_page_visit_rows
+      @org_page_visit_rows ||= begin
+        id = @organization.id
+        PageVisit.where(person_id: @person.id)
+                 .where(
+                   "url = :id_only OR url LIKE :id_slash OR url LIKE :id_slug OR url LIKE :id_query",
+                   id_only: "/organizations/#{id}",
+                   id_slash: "/organizations/#{id}/%",
+                   id_slug: "/organizations/#{id}-%",
+                   id_query: "/organizations/#{id}?%"
+                 )
+                 .order(:visited_at)
+                 .pluck(:url, :visited_at)
+                 .filter_map do |url, visited_at|
+                   path = url.to_s.split("?", 2).first
+                   next unless path.match?(org_path_prefix_regex)
+
+                   [path, visited_at]
+                 end
+      end
     end
 
-    def page_visits_for_exact_path(path)
-      PageVisit.where(person_id: @person.id).where("url = :path OR url LIKE :with_query", path: path, with_query: "#{path}?%")
+    def org_path_prefix_regex
+      @org_path_prefix_regex ||= %r{\A/organizations/#{Regexp.escape(@organization.id.to_s)}(?:-[^/]+)?(?:/|\z)}
+    end
+
+    def own_hub_page_regex(segment)
+      teammate_segment = Regexp.escape(@company_teammate.id.to_s)
+      %r{\A/organizations/#{Regexp.escape(@organization.id.to_s)}(?:-[^/]+)?/company_teammates/(?:#{teammate_segment}|me|my)/#{Regexp.escape(segment)}(?:/|\z)}
+    end
+
+    def org_suffix_regex(suffix)
+      %r{\A/organizations/#{Regexp.escape(@organization.id.to_s)}(?:-[^/]+)?/#{Regexp.escape(suffix)}\z}
+    end
+
+    def internal_page_regex
+      @internal_page_regex ||= %r{\A/organizations/#{Regexp.escape(@organization.id.to_s)}(?:-[^/]+)?/company_teammates/([^/]+)/internal\z}
+    end
+
+    def own_teammate_path_segment?(segment)
+      %w[me my].include?(segment.to_s.downcase) || segment.to_i == @company_teammate.id
+    end
+
+    def visited_own_hub_page?(segment)
+      org_page_visit_rows.any? { |path, _| path.match?(own_hub_page_regex(segment)) }
+    end
+
+    def first_own_hub_visit_at(segment)
+      org_page_visit_rows.filter_map { |path, visited_at| visited_at if path.match?(own_hub_page_regex(segment)) }.min
+    end
+
+    def visited_org_suffix?(suffix)
+      org_page_visit_rows.any? { |path, _| path.match?(org_suffix_regex(suffix)) }
+    end
+
+    def first_org_suffix_visit_at(suffix)
+      org_page_visit_rows.filter_map { |path, visited_at| visited_at if path.match?(org_suffix_regex(suffix)) }.min
     end
 
     def linked_assignment_and_ability_goals?

@@ -3,13 +3,22 @@
 class Organizations::OgAcademyController < Organizations::OrganizationNamespaceBaseController
   def show
     authorize current_organization, :show?
+  end
 
+  def quick_start
+    authorize current_organization, :show?
     @quick_start_people = quick_start_people
     load_quick_start_health_data!
+    render :quick_start, layout: false
+  end
+
+  def milestones
+    authorize current_organization, :show?
     @academy_progress = OgAcademy::ProgressService.new(
       organization: current_organization,
       company_teammate: current_company_teammate
     )
+    render :milestones, layout: false
   end
 
   def update_start_page

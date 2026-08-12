@@ -43,10 +43,30 @@ module Organizations::OgAcademyHelper
     "#{OG_MASTER_ABILITY_NAME} @ Milestone #{level.level} #{verb}"
   end
 
-  def og_academy_milestone_trust_caption(level, casual_name)
+  def og_academy_milestone_trust_caption(level, casual_name, earned: false)
     phrase = MILESTONE_TRUST_PHRASES[level.level] || "with the right amount of support"
     practice = level.title.to_s
-    "Milestone #{level.level} of #{OG_MASTER_ABILITY_NAME} means I, OG, entrust #{casual_name} to execute #{OG_MASTER_ABILITY_NAME} #{phrase}. At this Milestone, we have demonstrated #{practice}."
+    ability = OG_MASTER_ABILITY_NAME
+    prefix = "Milestone #{level.level} of #{ability} means I, OG, "
+    suffix = "entrust #{casual_name} to execute #{ability} #{phrase}. At this Milestone, we have demonstrated #{practice}."
+
+    if earned
+      "#{prefix}#{suffix}"
+    else
+      observing = "AM OBSERVING #{casual_name} TO SEE THEM DEMONSTRATE #{ability} SO THAT I CAN..."
+      safe_join(
+        [
+          prefix,
+          content_tag(
+            :span,
+            observing,
+            class: "badge rounded-pill text-bg-warning text-dark text-wrap align-middle"
+          ),
+          " ",
+          suffix
+        ]
+      )
+    end
   end
 
   def og_academy_milestone_examples_caption

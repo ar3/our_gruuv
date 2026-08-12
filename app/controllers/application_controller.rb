@@ -413,24 +413,15 @@ class ApplicationController < ActionController::Base
     most_visited + recent_deduped
   end
 
-  # Track page visits for recently visited feature
+  # Track page visits for recently visited feature.
+  # Skips: no person, impersonation, non-HTML, XHR, Turbo Frames, `/`, `/api`.
   def track_page_visit
-    # Skip tracking if no current person
     return unless current_person
-    
-    # Skip tracking when impersonating
     return if impersonating?
-    
-    # Skip tracking for root path
     return if request.path == '/' || request.path == root_path
-    
-    # Skip tracking for non-HTML requests
     return unless request.format.html?
-    
-    # Skip tracking for AJAX requests
     return if request.xhr?
-    
-    # Skip tracking for API endpoints (if path starts with /api)
+    return if turbo_frame_request?
     return if request.path.start_with?('/api')
     
     # Get page title from rendered HTML response

@@ -444,6 +444,10 @@ document.addEventListener('turbo:load', () => {
   initializeAuditToggle()
   initializeCollapseSummaries()
 })
+document.addEventListener('turbo:frame-load', () => {
+  initializeTooltips()
+  initializePopovers()
+})
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
   initializePopovers()
