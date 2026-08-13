@@ -68,5 +68,26 @@ RSpec.describe PositionSuggestions::RoundSummaryBuilder do
       expect(ms_row.anchor).to eq("assignment-ability-#{assignment_ability.id}")
       expect(system_comment).to be_present
     end
+
+    it "includes assignment link timeline and process rows" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+      link = PositionSuggestions::UpsertAssignmentLinkService.call(
+        suggestion: suggestion,
+        assignment: assignment,
+        attributes: {
+          action: "update",
+          assignment_type: "suggested",
+          min_estimated_energy: 10,
+          max_estimated_energy: 30
+        },
+        modified_by: participant_tm
+      ).value
+
+      result = described_class.call(suggestion: suggestion)
+      expect(result[:timeline].any? { |e| e.kind == :assignment_link && e.text.include?("association changes") }).to be true
+      link_row = result[:process_rows].find { |r| r.kind == :assignment_link }
+      expect(link_row.assignment_link).to eq(link)
+      expect(link_row.anchor).to eq("assignment-#{assignment.id}-link")
+    end
   end
 end

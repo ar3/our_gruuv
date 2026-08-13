@@ -41,6 +41,10 @@ class PositionSuggestionPolicy < ApplicationPolicy
     update_milestone?
   end
 
+  def update_assignment_link?
+    update_milestone?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

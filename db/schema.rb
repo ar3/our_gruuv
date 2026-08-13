@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_12_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_13_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -303,7 +303,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_12_120000) do
     t.index ["assignment_id"], name: "index_assignment_survey_responses_on_assignment_id"
     t.index ["assignment_survey_submission_id", "assignment_id"], name: "index_assignment_survey_responses_on_submission_assignment", unique: true
     t.index ["assignment_survey_submission_id"], name: "index_assignment_survey_responses_on_submission_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -320,7 +320,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_12_120000) do
     t.index ["organization_id"], name: "index_assignment_survey_submissions_on_organization_id"
     t.index ["teammate_id"], name: "index_assignment_survey_submissions_on_one_draft_per_teammate", unique: true, where: "((status)::text = 'draft'::text)"
     t.index ["teammate_id"], name: "index_assignment_survey_submissions_on_teammate_id"
-    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'finalized'::character varying]::text[])", name: "assignment_survey_submissions_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying::text, 'finalized'::character varying::text])", name: "assignment_survey_submissions_status_check"
   end
 
   create_table "assignment_tenures", force: :cascade do |t|
@@ -1450,6 +1450,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_12_120000) do
     t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
   end
 
+  create_table "position_suggestion_assignment_links", force: :cascade do |t|
+    t.bigint "position_suggestion_id", null: false
+    t.bigint "assignment_id", null: false
+    t.string "action", null: false
+    t.string "assignment_type", null: false
+    t.integer "min_estimated_energy"
+    t.integer "max_estimated_energy"
+    t.bigint "last_modified_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_position_suggestion_assignment_links_on_assignment_id"
+    t.index ["last_modified_by_id"], name: "idx_on_last_modified_by_id_eebc40000e"
+    t.index ["position_suggestion_id", "assignment_id"], name: "index_position_suggestion_assignment_links_unique", unique: true
+    t.index ["position_suggestion_id"], name: "idx_on_position_suggestion_id_27436febc5"
+  end
+
   create_table "position_suggestion_assignment_outcomes", force: :cascade do |t|
     t.bigint "position_suggestion_assignment_id", null: false
     t.text "description", null: false
@@ -2220,6 +2236,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_12_120000) do
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_clarity_results", "og_consultations"
   add_foreign_key "position_levels", "position_major_levels"
+  add_foreign_key "position_suggestion_assignment_links", "assignments"
+  add_foreign_key "position_suggestion_assignment_links", "position_suggestions"
+  add_foreign_key "position_suggestion_assignment_links", "teammates", column: "last_modified_by_id"
   add_foreign_key "position_suggestion_assignment_outcomes", "position_suggestion_assignments"
   add_foreign_key "position_suggestion_assignments", "assignments", column: "source_assignment_id"
   add_foreign_key "position_suggestion_assignments", "position_suggestions"

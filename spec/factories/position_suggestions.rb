@@ -79,6 +79,43 @@ FactoryBot.define do
     end
   end
 
+  factory :position_suggestion_assignment_link do
+    association :position_suggestion
+    association :last_modified_by, factory: :company_teammate
+    action { "update" }
+    assignment_type { "required" }
+    min_estimated_energy { 10 }
+    max_estimated_energy { 20 }
+
+    after(:build) do |link|
+      suggestion = link.position_suggestion
+      org = suggestion.organization
+      if link.last_modified_by.organization_id != org.id
+        link.last_modified_by = create(:company_teammate, organization: org)
+      end
+
+      if link.assignment.blank?
+        assignment = create(:assignment, company: org, title: "Linked Assignment")
+        create(:position_assignment, position: suggestion.position, assignment: assignment) unless link.action == "add"
+        link.assignment = assignment
+      end
+    end
+
+    trait :add do
+      action { "add" }
+      after(:build) do |link|
+        # Ensure assignment is not on the position for add proposals.
+        if link.assignment.present?
+          PositionAssignment.where(position: link.position_suggestion.position, assignment: link.assignment).delete_all
+        end
+      end
+    end
+
+    trait :remove do
+      action { "remove" }
+    end
+  end
+
   factory :position_suggestion_assignment_outcome do
     association :position_suggestion_assignment
     description { "Deliver clear discovery notes" }

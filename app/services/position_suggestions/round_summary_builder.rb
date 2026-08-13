@@ -4,7 +4,8 @@
 class PositionSuggestions::RoundSummaryBuilder
   Event = Struct.new(:at, :kind, :person, :text, keyword_init: true)
   ProcessRow = Struct.new(
-    :kind, :label, :anchor, :comment, :milestone, :assignment_draft, :resolved, keyword_init: true
+    :kind, :label, :anchor, :comment, :milestone, :assignment_draft, :assignment_link, :resolved,
+    keyword_init: true
   )
 
   def self.call(suggestion:)
@@ -31,6 +32,7 @@ class PositionSuggestions::RoundSummaryBuilder
     events.concat(free_text_comment_events)
     events.concat(milestone_suggestion_events)
     events.concat(assignment_draft_events)
+    events.concat(assignment_link_events)
     events.compact.sort_by { |e| [e.at || Time.zone.at(0), e.kind.to_s] }
   end
 
@@ -203,6 +205,32 @@ class PositionSuggestions::RoundSummaryBuilder
     end
   end
 
+  def assignment_link_events
+    @suggestion.assignment_links.includes(:last_modified_by, :assignment).filter_map do |link|
+      person = link.last_modified_by&.person
+      next unless person
+
+      Event.new(
+        at: link.updated_at,
+        kind: :assignment_link,
+        person: person,
+        text: assignment_link_event_text(person, link)
+      )
+    end
+  end
+
+  def assignment_link_event_text(person, link)
+    title = link.assignment.title
+    case link.action
+    when "add"
+      "#{person.casual_name} suggested adding Assignment #{title} to this Position"
+    when "remove"
+      "#{person.casual_name} suggested removing Assignment #{title} from this Position"
+    else
+      "#{person.casual_name} suggested association changes for Assignment #{title}"
+    end
+  end
+
   def build_process_rows
     rows = []
 
@@ -214,6 +242,7 @@ class PositionSuggestions::RoundSummaryBuilder
         comment: comment,
         milestone: nil,
         assignment_draft: nil,
+        assignment_link: nil,
         resolved: comment.resolved?
       )
     end
@@ -227,6 +256,7 @@ class PositionSuggestions::RoundSummaryBuilder
         comment: root,
         milestone: milestone,
         assignment_draft: nil,
+        assignment_link: nil,
         resolved: root&.resolved?
       )
     end
@@ -240,6 +270,21 @@ class PositionSuggestions::RoundSummaryBuilder
         comment: root,
         milestone: nil,
         assignment_draft: draft,
+        assignment_link: nil,
+        resolved: root&.resolved?
+      )
+    end
+
+    @suggestion.assignment_links.includes(:last_modified_by, :assignment).find_each do |link|
+      root = assignment_link_thread_root(link)
+      rows << ProcessRow.new(
+        kind: :assignment_link,
+        label: assignment_link_process_label(link),
+        anchor: "assignment-#{link.assignment_id}-link",
+        comment: root,
+        milestone: nil,
+        assignment_draft: nil,
+        assignment_link: link,
         resolved: root&.resolved?
       )
     end
@@ -269,11 +314,35 @@ class PositionSuggestions::RoundSummaryBuilder
     "#{name}: field changes for Assignment #{draft.source_assignment.title}"
   end
 
+  def assignment_link_process_label(link)
+    person = link.last_modified_by&.person
+    name = person&.casual_name || "Someone"
+    title = link.assignment.title
+    case link.action
+    when "add"
+      "#{name}: add Assignment #{title} (#{link.assignment_type})"
+    when "remove"
+      "#{name}: remove Assignment #{title}"
+    else
+      "#{name}: update association for Assignment #{title} (#{link.assignment_type})"
+    end
+  end
+
   def assignment_draft_thread_root(draft)
     Comment
       .for_position_suggestion(@suggestion)
       .for_commentable(draft.source_assignment)
       .for_suggestion_thread_subject(draft)
+      .root_comments
+      .ordered
+      .first
+  end
+
+  def assignment_link_thread_root(link)
+    Comment
+      .for_position_suggestion(@suggestion)
+      .for_commentable(link.assignment)
+      .for_suggestion_thread_subject(link)
       .root_comments
       .ordered
       .first

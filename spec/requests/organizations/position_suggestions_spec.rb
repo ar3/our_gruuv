@@ -173,6 +173,54 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
         organization_position_suggestion_path(organization, suggestion, anchor: "assignment-#{assignment.id}-fields")
       )
     end
+
+    it "upserts an assignment association link and posts a system comment" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+      other = create(:assignment, company: organization, title: "Extra Work")
+
+      expect do
+        patch upsert_assignment_link_organization_position_suggestion_path(organization, suggestion),
+              params: {
+                assignment_id: other.id,
+                assignment_link: {
+                  action: "add",
+                  assignment_type: "suggested",
+                  min_estimated_energy: 5,
+                  max_estimated_energy: 15
+                }
+              }
+      end.to change(PositionSuggestionAssignmentLink, :count).by(1)
+         .and change(Comment, :count).by(1)
+
+      expect(response).to redirect_to(
+        organization_position_suggestion_path(organization, suggestion, anchor: "assignment-#{other.id}-link")
+      )
+      link = suggestion.assignment_links.find_by!(assignment: other)
+      expect(link.action).to eq("add")
+      expect(link.assignment_type).to eq("suggested")
+      expect(position.assignments.exists?(id: other.id)).to be false
+    end
+
+    it "proposes unlinking an Assignment already on the Position" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+
+      expect do
+        patch upsert_assignment_link_organization_position_suggestion_path(organization, suggestion),
+              params: {
+                assignment_id: assignment.id,
+                assignment_link: {
+                  action: "remove",
+                  assignment_type: "required",
+                  min_estimated_energy: "",
+                  max_estimated_energy: ""
+                }
+              }
+      end.to change(PositionSuggestionAssignmentLink, :count).by(1)
+
+      link = suggestion.assignment_links.find_by!(assignment: assignment)
+      expect(link.action).to eq("remove")
+      expect(position.assignments.exists?(id: assignment.id)).to be true
+    end
   end
 
   describe "MAAP close" do

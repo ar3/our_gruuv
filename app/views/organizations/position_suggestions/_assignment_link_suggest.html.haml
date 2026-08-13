@@ -1,0 +1,87 @@
+-# Locals: organization, suggestion, assignment, link, live_position_assignment (optional), can_suggest, mode: :linked | :proposed_add
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+- assignment = local_assigns[:assignment]
+- link = local_assigns[:link]
+- live_pa = local_assigns[:live_position_assignment]
+- can_suggest = local_assigns.fetch(:can_suggest, false)
+- mode = local_assigns.fetch(:mode, live_pa.present? ? :linked : :proposed_add)
+- collapse_id = "assignment-#{assignment.id}-link-form"
+- default_action = link&.action || (live_pa ? "update" : "add")
+- default_type = link&.assignment_type || live_pa&.assignment_type || "required"
+- default_min = link ? link.min_estimated_energy : live_pa&.min_estimated_energy
+- default_max = link ? link.max_estimated_energy : live_pa&.max_estimated_energy
+- energy_options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
+
+.border.rounded.p-3.mb-3{id: "assignment-#{assignment.id}-link", class: (link&.remove? ? "border-warning" : "bg-light")}
+  .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-2
+    %h3.h6.mb-0 Suggest association changes
+    - if link
+      %span.badge{class: (link.remove? ? "text-bg-warning" : "text-bg-info")}
+        - case link.action
+        - when "add"
+          Suggested add
+        - when "remove"
+          Suggested remove
+        - else
+          Suggested update
+        - if link.last_modified_by
+          by #{link.last_modified_by.person.casual_name}
+  - if live_pa
+    %p.text-muted.small.mb-2
+      Current MAAP: #{live_pa.assignment_type.titleize}, #{live_pa.energy_range_display}.
+  - elsif link&.add?
+    %p.text-muted.small.mb-2
+      Proposed add (not on MAAP yet): #{link.assignment_type.titleize}, #{link.energy_range_display}.
+  - if can_suggest
+    - toggle_label = link.present? ? "Edit association suggestion" : "Propose association change"
+    %p.mb-2
+      = position_suggestion_collapse_toggle(label: toggle_label, collapse_id: collapse_id, expanded: link.present?)
+    .collapse{id: collapse_id, class: ("show" if link.present?)}
+      = form_with url: upsert_assignment_link_organization_position_suggestion_path(organization, suggestion), method: :patch, local: true do
+        = hidden_field_tag :assignment_id, assignment.id
+        - if mode == :linked || live_pa.present?
+          .mb-2
+            %span.form-label.form-label-sm.d-block Action
+            .btn-group.btn-group-sm{role: "group"}
+              - [["update", "Update association"], ["remove", "Propose unlink"]].each do |value, label|
+                - radio_id = "assignment_link_action_#{assignment.id}_#{value}"
+                = radio_button_tag "assignment_link[action]", value, default_action == value, class: "btn-check", id: radio_id
+                = label_tag radio_id, label, class: "btn btn-outline-primary"
+        - else
+          = hidden_field_tag "assignment_link[action]", "add"
+        .mb-2
+          %span.form-label.form-label-sm.d-block Type
+          .btn-group.btn-group-sm{role: "group"}
+            - [["required", "Required"], ["suggested", "Suggested"]].each do |value, label|
+              - radio_id = "assignment_link_type_#{assignment.id}_#{value}"
+              = radio_button_tag "assignment_link[assignment_type]", value, default_type == value, class: "btn-check", id: radio_id
+              = label_tag radio_id, label, class: "btn btn-outline-secondary"
+        .row.g-2.mb-2
+          .col-6
+            = label_tag "assignment_link_min_#{assignment.id}", "Min energy", class: "form-label form-label-sm"
+            = select_tag "assignment_link[min_estimated_energy]",
+                         options_for_select(energy_options, default_min),
+                         include_blank: "—",
+                         class: "form-select form-select-sm",
+                         id: "assignment_link_min_#{assignment.id}"
+          .col-6
+            = label_tag "assignment_link_max_#{assignment.id}", "Max energy", class: "form-label form-label-sm"
+            = select_tag "assignment_link[max_estimated_energy]",
+                         options_for_select(energy_options, default_max),
+                         include_blank: "—",
+                         class: "form-select form-select-sm",
+                         id: "assignment_link_max_#{assignment.id}"
+        %small.text-muted.d-block.mb-2
+          Type and energy are kept on unlink proposals until Accept.
+        = submit_tag "Save association suggestions", class: "btn btn-sm btn-primary"
+  - elsif link
+    %dl.row.small.mb-0
+      %dt.col-sm-3 Action
+      %dd.col-sm-9= link.action.titleize
+      %dt.col-sm-3 Type
+      %dd.col-sm-9= link.assignment_type.titleize
+      %dt.col-sm-3 Energy
+      %dd.col-sm-9= link.energy_range_display
+  - else
+    %p.text-muted.small.mb-0 No association suggestions yet.

@@ -12,6 +12,7 @@ class PositionSuggestion < ApplicationRecord
   has_many :company_teammates, through: :participants
   has_many :milestones, class_name: "PositionSuggestionMilestone", dependent: :destroy
   has_many :assignment_drafts, class_name: "PositionSuggestionAssignment", dependent: :destroy
+  has_many :assignment_links, class_name: "PositionSuggestionAssignmentLink", dependent: :destroy
   has_many :comments, dependent: :nullify
 
   validates :status, presence: true, inclusion: { in: STATUSES }
@@ -63,13 +64,22 @@ class PositionSuggestion < ApplicationRecord
     )
   end
 
-  # Authored free-text comments, last-changed a bag milestone, or last-changed an assignment draft.
+  # Authored free-text comments, or last-changed a bag milestone / assignment draft / assignment link.
   def has_made_suggestions_for?(company_teammate)
     return false if company_teammate.blank?
 
     milestones.where(last_modified_by_id: company_teammate.id).exists? ||
       assignment_drafts.where(last_modified_by_id: company_teammate.id).exists? ||
+      assignment_links.where(last_modified_by_id: company_teammate.id).exists? ||
       free_text_comment_authored_by?(company_teammate.person)
+  end
+
+  # Assignments on the Position, or proposed via an add link in this round.
+  def suggestable_assignment?(assignment)
+    return false if assignment.blank?
+
+    position.assignments.exists?(id: assignment.id) ||
+      assignment_links.adds.exists?(assignment_id: assignment.id)
   end
 
   def free_text_root_comments

@@ -81,4 +81,44 @@ module PositionSuggestionsHelper
       tag.p("No ability description.", class: "small text-muted mb-0")
     end
   end
+
+  # Optgroups for Assignment selects: Company-wide first, then departments by name;
+  # titles sorted within each group. Mirrors Assignments index grouping.
+  def assignments_grouped_options_for_select(assignments, selected_id = nil)
+    return "" if assignments.blank?
+
+    grouped = assignments.group_by(&:department)
+    ordered_keys = grouped.keys.sort_by { |dept| dept ? [1, dept.display_name.to_s.downcase] : [0, ""] }
+
+    options = ordered_keys.map do |department|
+      label =
+        if department
+          department_hierarchy_display(department).presence || department.display_name
+        else
+          "Company-wide"
+        end
+      choices = grouped[department].sort_by { |a| a.title.to_s.downcase }.map { |a| [a.title, a.id] }
+      [label, choices]
+    end
+
+    grouped_options_for_select(options, selected_id)
+  end
+
+  # Disclosure control for suggestion collapse panels (chevron + link styling, not a primary action).
+  def position_suggestion_collapse_toggle(label:, collapse_id:, expanded:)
+    tag.button(
+      type: "button",
+      class: "btn btn-link btn-sm px-0 text-decoration-none",
+      data: { bs_toggle: "collapse", bs_target: "##{collapse_id}" },
+      aria: { expanded: expanded ? "true" : "false", controls: collapse_id }
+    ) do
+      safe_join(
+        [
+          tag.i(class: "bi bi-chevron-down collapsed me-1", aria: { hidden: true }),
+          tag.i(class: "bi bi-chevron-up not-collapsed me-1", aria: { hidden: true }),
+          tag.span(label)
+        ]
+      )
+    end
+  end
 end

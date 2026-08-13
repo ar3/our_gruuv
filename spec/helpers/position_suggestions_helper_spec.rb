@@ -58,4 +58,36 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
       expect(html).to include("<strong>carefully</strong>")
     end
   end
+
+  describe "#assignments_grouped_options_for_select" do
+    it "groups company-wide first, then departments by name" do
+      dept = create(:department, company: organization, name: "Engineering")
+      company_wide = create(:assignment, company: organization, title: "Zulu Work", department: nil)
+      in_dept = create(:assignment, company: organization, title: "Alpha Work", department: dept)
+      other = create(:assignment, company: organization, title: "Beta Work", department: dept)
+
+      html = helper.assignments_grouped_options_for_select([in_dept, company_wide, other])
+
+      expect(html).to include("Company-wide")
+      expect(html).to include("optgroup")
+      expect(html.index("Company-wide")).to be < html.index("Alpha Work")
+      expect(html.index("Alpha Work")).to be < html.index("Beta Work")
+    end
+  end
+
+  describe "#position_suggestion_collapse_toggle" do
+    it "renders a link-styled disclosure with chevrons" do
+      html = helper.position_suggestion_collapse_toggle(
+        label: "Propose changes",
+        collapse_id: "assignment-1-field-form",
+        expanded: false
+      )
+
+      expect(html).to include("btn-link")
+      expect(html).to include("bi-chevron-down")
+      expect(html).to include("bi-chevron-up")
+      expect(html).to include('aria-expanded="false"')
+      expect(html).to include("Propose changes")
+    end
+  end
 end

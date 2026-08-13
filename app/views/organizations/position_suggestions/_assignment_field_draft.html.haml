@@ -24,9 +24,9 @@
     %p.text-muted.small.mb-2
       Bag holds the latest proposal (not applied to MAAP). Saving again overwrites and posts a comment with what changed.
   - if can_suggest
+    - toggle_label = draft.present? ? "Edit suggestion" : "Propose changes"
     %p.mb-2
-      %button.btn.btn-sm.btn-outline-secondary{type: "button", data: { bs_toggle: "collapse", bs_target: "##{collapse_id}" }, aria: { expanded: draft.present? ? "true" : "false", controls: collapse_id }}
-        = draft.present? ? "Edit suggestion" : "Propose changes"
+      = position_suggestion_collapse_toggle(label: toggle_label, collapse_id: collapse_id, expanded: draft.present?)
     .collapse{id: collapse_id, class: ("show" if draft.present?)}
       = form_with url: upsert_assignment_draft_organization_position_suggestion_path(organization, suggestion), method: :patch, local: true do
         = hidden_field_tag :source_assignment_id, assignment.id

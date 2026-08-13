@@ -37,7 +37,7 @@
 
 - if @suggestion.open?
   %p.text-muted.small.mb-4
-    Each Assignment row pairs content on the left with comments on the right. Use “Suggest field changes” to propose title, tagline, activities, handbook, and outcomes (proposals only). Ability rows have milestone radios that save on change. Hover a level for milestone language; current MAAP levels use a thicker border.
+    Each Assignment row pairs content on the left with comments on the right. Suggest field changes, association changes (type / energy / unlink), or add an existing Assignment not yet on this Position — all proposals only. Ability rows have milestone radios that save on change.
 
 .border.rounded.p-3.mb-4#position-comments
   .row
@@ -58,9 +58,76 @@
                return_to: @return_to,
                disabled: !@suggestion.open?
 
+- @proposed_add_links.each do |link|
+  - assignment = link.assignment
+  - comments = @assignment_comments[assignment.id] || []
+  .border.rounded.p-3.mb-4.border-info{id: "assignment-#{assignment.id}"}
+    .row.mb-3.pb-3.border-bottom
+      .col-12.col-lg-8
+        %span.badge.text-bg-info.mb-2 Suggested add (not on MAAP yet)
+        %h2.mb-2
+          = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
+        %span.badge.text-bg-light.mb-3= link.assignment_type.titleize
+        %p.text-muted.small= link.energy_range_display
+        - if assignment.assignment_outcomes.any?
+          %h3.h6 Outcomes
+          %ul.mb-0
+            - assignment.assignment_outcomes.each do |outcome|
+              %li
+                .markdown-content.small= render_markdown(outcome.description)
+      .col-12.col-lg-4
+        %h3.h6 Comments
+        = render "organizations/position_suggestions/comment_block",
+                 commentable: assignment,
+                 comments: comments,
+                 suggestion: @suggestion,
+                 organization: @organization,
+                 return_to: @return_to,
+                 disabled: !@suggestion.open?
+
+    = render "organizations/position_suggestions/assignment_link_suggest",
+             organization: @organization,
+             suggestion: @suggestion,
+             assignment: assignment,
+             link: link,
+             live_position_assignment: nil,
+             can_suggest: @can_suggest_bag,
+             mode: :proposed_add
+
+    = render "organizations/position_suggestions/assignment_field_draft",
+             organization: @organization,
+             suggestion: @suggestion,
+             assignment: assignment,
+             draft: @assignment_drafts_by_assignment_id[assignment.id],
+             can_suggest: @can_suggest_bag
+
+    - if assignment.assignment_abilities.any?
+      - assignment_draft = @assignment_drafts_by_assignment_id[assignment.id]
+      - assignment_name_for_milestones = assignment_draft&.title.presence || assignment.title
+      %h3.h6.mt-3.mb-2
+        In order to be qualified to take on #{assignment_name_for_milestones}, the following Ability Milestones must be demonstrated and certified:
+      - assignment.assignment_abilities.sort_by { |aa| aa.ability.name }.each_with_index do |aa, index|
+        - suggestion_milestone = @milestones_by_key[["AssignmentAbility", aa.id]]
+        .row.py-3{class: ("border-top" if index.positive?), id: "assignment-ability-#{aa.id}"}
+          .col-12.col-lg-8
+            %h3.h6.mb-1.d-flex.align-items-center.gap-1
+              = link_to aa.ability.name, organization_ability_path(@organization, aa.ability), class: "text-decoration-none"
+              - ability_popover_html = position_suggestion_ability_description_popover_html(aa.ability)
+              %button.btn.btn-link.btn-sm.p-0.lh-1.text-muted{type: "button", "aria-label": "Description for #{aa.ability.name}", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "right", bs_title: aa.ability.name, bs_custom_class: "position-suggestion-ability-popover", bs_content: ability_popover_html }}
+                %i.bi.bi-question-circle{aria: { hidden: true }}
+          .col-12.col-lg-4
+            = render "organizations/position_suggestions/milestone_suggest_control",
+                     ability: aa.ability,
+                     assignment_ability: aa,
+                     suggestion_milestone: suggestion_milestone,
+                     organization: @organization,
+                     suggestion: @suggestion,
+                     can_suggest: @suggestion.open?
+
 - @position_assignments.each do |position_assignment|
   - assignment = position_assignment.assignment
   - comments = @assignment_comments[assignment.id] || []
+  - link = @assignment_links_by_assignment_id[assignment.id]
   .border.rounded.p-3.mb-4{id: "assignment-#{assignment.id}"}
     .row.mb-3.pb-3.border-bottom
       .col-12.col-lg-8
@@ -68,6 +135,10 @@
         %h2.mb-2
           = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none", data: { bs_toggle: "popover", bs_html: true, bs_trigger: "hover focus", bs_placement: "bottom", bs_title: assignment.title, bs_custom_class: "position-suggestion-assignment-popover", bs_content: assignment_popover_html }
         %span.badge.text-bg-light.mb-3= position_assignment.assignment_type.titleize
+        - if link&.remove?
+          %span.badge.text-bg-warning.mb-3 Suggested remove
+        - elsif link&.update_action?
+          %span.badge.text-bg-info.mb-3 Suggested association update
         - if assignment.assignment_outcomes.any?
           %h3.h6 Outcomes
           %ul.mb-0
@@ -86,12 +157,21 @@
                  return_to: @return_to,
                  disabled: !@suggestion.open?
 
+    = render "organizations/position_suggestions/assignment_link_suggest",
+             organization: @organization,
+             suggestion: @suggestion,
+             assignment: assignment,
+             link: link,
+             live_position_assignment: position_assignment,
+             can_suggest: @can_suggest_bag,
+             mode: :linked
+
     = render "organizations/position_suggestions/assignment_field_draft",
              organization: @organization,
              suggestion: @suggestion,
              assignment: assignment,
              draft: @assignment_drafts_by_assignment_id[assignment.id],
-             can_suggest: @suggestion.open? && (@participant&.active? || @can_manage_maap)
+             can_suggest: @can_suggest_bag
 
     - if assignment.assignment_abilities.any?
       - assignment_draft = @assignment_drafts_by_assignment_id[assignment.id]
@@ -117,6 +197,12 @@
                      can_suggest: @suggestion.open?
     - else
       %p.text-muted.small.mb-0.pt-2 No abilities linked to this assignment yet.
+
+= render "organizations/position_suggestions/assignment_link_add",
+         organization: @organization,
+         suggestion: @suggestion,
+         available_assignments: @available_assignments_for_add,
+         can_suggest: @can_suggest_bag
 
 = render "organizations/position_suggestions/round_action_panels",
          organization: @organization,

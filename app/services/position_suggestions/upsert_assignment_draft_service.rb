@@ -22,8 +22,8 @@ class PositionSuggestions::UpsertAssignmentDraftService
   def call
     return Result.err("Suggestion round is closed") unless @suggestion.open?
 
-    unless @suggestion.position.assignments.exists?(id: @source_assignment.id)
-      return Result.err("Assignment is not on this position")
+    unless @suggestion.suggestable_assignment?(@source_assignment)
+      return Result.err("Assignment is not on this position or proposed via an add link")
     end
 
     draft = @suggestion.assignment_drafts.find_or_initialize_by(source_assignment: @source_assignment)

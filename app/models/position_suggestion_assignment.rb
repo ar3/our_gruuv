@@ -49,8 +49,8 @@ class PositionSuggestionAssignment < ApplicationRecord
   def source_assignment_on_position
     return unless position_suggestion && source_assignment
 
-    unless position_suggestion.position.assignments.exists?(id: source_assignment_id)
-      errors.add(:source_assignment, "must be linked to this position")
-    end
+    return if position_suggestion.suggestable_assignment?(source_assignment)
+
+    errors.add(:source_assignment, "must be on this position or proposed via an add link")
   end
 end

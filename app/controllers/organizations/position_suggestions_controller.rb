@@ -3,7 +3,8 @@
 class Organizations::PositionSuggestionsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
   before_action :set_suggestion, only: [
-    :show, :join, :update_participation, :close, :create_comment, :upsert_milestone, :upsert_assignment_draft
+    :show, :join, :update_participation, :close, :create_comment, :upsert_milestone,
+    :upsert_assignment_draft, :upsert_assignment_link
   ]
   after_action :verify_authorized
 
@@ -191,6 +192,38 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     end
   end
 
+  def upsert_assignment_link
+    authorize @suggestion, :update_assignment_link?
+
+    assignment = find_link_assignment!
+    attrs = params.require(:assignment_link).permit(
+      :action, :assignment_type, :min_estimated_energy, :max_estimated_energy
+    )
+
+    result = PositionSuggestions::UpsertAssignmentLinkService.call(
+      suggestion: @suggestion,
+      assignment: assignment,
+      attributes: attrs,
+      modified_by: current_company_teammate
+    )
+
+    if result.ok?
+      redirect_to organization_position_suggestion_path(
+                    organization,
+                    @suggestion,
+                    anchor: "assignment-#{assignment.id}-link"
+                  ),
+                  notice: "Assignment association suggestions saved (not applied to MAAP yet)."
+    else
+      redirect_to organization_position_suggestion_path(
+                    organization,
+                    @suggestion,
+                    anchor: "assignment-#{assignment.id}-link"
+                  ),
+                  alert: Array(result.error).join(", ")
+    end
+  end
+
   private
 
   def set_suggestion
@@ -219,13 +252,32 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     @assignment_drafts_by_assignment_id = @suggestion.assignment_drafts
       .includes(:outcomes, :last_modified_by)
       .index_by(&:source_assignment_id)
+    @assignment_links_by_assignment_id = @suggestion.assignment_links
+      .includes(:last_modified_by, :assignment)
+      .index_by(&:assignment_id)
+    @proposed_add_links = @suggestion.assignment_links.adds
+      .includes(assignment: [:assignment_outcomes, { assignment_abilities: :ability }], last_modified_by: :person)
+      .sort_by { |link| link.assignment.title.to_s.downcase }
+    linked_or_proposed_ids = (
+      @position_assignments.map(&:assignment_id) + @assignment_links_by_assignment_id.keys
+    ).uniq
+    @available_assignments_for_add = Assignment
+      .for_company(company)
+      .unarchived
+      .ordered
+      .where.not(id: linked_or_proposed_ids)
+      .includes(:department)
+      .to_a
+    commentable_assignment_ids = (
+      @position_assignments.map(&:assignment_id) + @proposed_add_links.map(&:assignment_id)
+    ).uniq
     @position_comments = @suggestion.comments
       .for_commentable(@position)
       .root_comments
       .ordered
       .includes(:creator)
     @assignment_comments = @suggestion.comments
-      .where(commentable_type: "Assignment", commentable_id: @position_assignments.map(&:assignment_id))
+      .where(commentable_type: "Assignment", commentable_id: commentable_assignment_ids)
       .root_comments
       .ordered
       .includes(:creator)
@@ -237,6 +289,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     @round_timeline = summary[:timeline]
     @process_rows = summary[:process_rows]
     @viewer_casual_name = current_person.casual_name
+    @can_suggest_bag = @suggestion.open? && (@participant&.active? || @can_manage_maap)
   end
 
   def find_suggestion_commentable!
@@ -250,7 +303,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
       @suggestion.position
     when "Assignment"
       assignment = Assignment.find(id)
-      unless @suggestion.position.assignments.exists?(id: assignment.id)
+      unless @suggestion.suggestable_assignment?(assignment)
         raise ActiveRecord::RecordNotFound, "Assignment not on this position"
       end
 
@@ -262,8 +315,18 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
 
   def find_source_assignment!
     assignment = Assignment.find(params.require(:source_assignment_id))
-    unless @suggestion.position.assignments.exists?(id: assignment.id)
+    unless @suggestion.suggestable_assignment?(assignment)
       raise ActiveRecord::RecordNotFound, "Assignment not on this position"
+    end
+
+    assignment
+  end
+
+  def find_link_assignment!
+    assignment = Assignment.find(params.require(:assignment_id))
+    company_id = company.id
+    unless assignment.company_id == company_id
+      raise ActiveRecord::RecordNotFound, "Assignment not in this organization"
     end
 
     assignment
@@ -297,7 +360,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     case type
     when "AssignmentAbility"
       aa = AssignmentAbility.find(id)
-      unless @suggestion.position.assignments.exists?(id: aa.assignment_id)
+      unless @suggestion.suggestable_assignment?(aa.assignment)
         raise ActiveRecord::RecordNotFound, "Assignment ability not on this position"
       end
 

@@ -1,0 +1,49 @@
+-# Locals: organization, suggestion, available_assignments, can_suggest
+- organization = local_assigns[:organization]
+- suggestion = local_assigns[:suggestion]
+- available_assignments = local_assigns[:available_assignments] || []
+- can_suggest = local_assigns.fetch(:can_suggest, false)
+- energy_options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
+
+.border.rounded.p-3.mb-4.bg-light#suggest-add-assignment
+  %h2.h5.mb-2 Suggest adding an existing Assignment
+  %p.text-muted.small.mb-3
+    Propose linking an org Assignment that is not on this Position yet. Bag-only until Accept.
+  - if can_suggest
+    - if available_assignments.any?
+      = form_with url: upsert_assignment_link_organization_position_suggestion_path(organization, suggestion), method: :patch, local: true do
+        = hidden_field_tag "assignment_link[action]", "add"
+        .mb-2
+          = label_tag :assignment_id, "Assignment", class: "form-label form-label-sm"
+          = select_tag :assignment_id,
+                       assignments_grouped_options_for_select(available_assignments),
+                       include_blank: "Select an Assignment…",
+                       class: "form-select form-select-sm",
+                       required: true
+        .mb-2
+          %span.form-label.form-label-sm.d-block Type
+          .btn-group.btn-group-sm{role: "group"}
+            - [["required", "Required"], ["suggested", "Suggested"]].each do |value, label|
+              - radio_id = "assignment_link_add_type_#{value}"
+              = radio_button_tag "assignment_link[assignment_type]", value, value == "required", class: "btn-check", id: radio_id
+              = label_tag radio_id, label, class: "btn btn-outline-secondary"
+        .row.g-2.mb-2
+          .col-md-3
+            = label_tag "assignment_link_add_min", "Min energy", class: "form-label form-label-sm"
+            = select_tag "assignment_link[min_estimated_energy]",
+                         options_for_select(energy_options),
+                         include_blank: "—",
+                         class: "form-select form-select-sm",
+                         id: "assignment_link_add_min"
+          .col-md-3
+            = label_tag "assignment_link_add_max", "Max energy", class: "form-label form-label-sm"
+            = select_tag "assignment_link[max_estimated_energy]",
+                         options_for_select(energy_options),
+                         include_blank: "—",
+                         class: "form-select form-select-sm",
+                         id: "assignment_link_add_max"
+        = submit_tag "Save add suggestion", class: "btn btn-sm btn-primary"
+    - else
+      %p.text-muted.small.mb-0 All company Assignments are already on this Position or proposed in this round.
+  - else
+    %p.text-muted.small.mb-0 Join as an active participant to propose adding an Assignment.
