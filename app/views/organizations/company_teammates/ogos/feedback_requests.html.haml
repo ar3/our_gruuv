@@ -5,14 +5,28 @@
 = render "tabs"
 = render "open_respondent_banner"
 
-.card.border-0.shadow-sm
-  .card-header.bg-transparent.border-0.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
-    %h5.mb-0
-      %i.bi.bi-send.me-2
-      Feedback requests about #{@casual_name}
+- inbox = @feedback_request_inbox
+- casual = @casual_name
+- fr_path = ->(**extra) { ogos_feedback_requests_organization_company_teammate_path(organization, teammate_route_param(@teammate), **extra) }
+
+.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2.mb-3
+  .small.text-muted
+    - if @show_closed_feedback_requests
+      Showing closed and archived requests as well as open ones.
+    - else
+      Showing open requests only.
+  .d-flex.flex-wrap.align-items-center.gap-2
+    - if @show_closed_feedback_requests
+      = link_to "Show open only", fr_path.call, class: "btn btn-sm btn-outline-secondary"
+    - else
+      = link_to "Show closed & archived", fr_path.call(show_closed: "1"), class: "btn btn-sm btn-outline-secondary"
     - if policy(FeedbackRequest.new(company: organization.root_company || organization, subject_of_feedback_teammate: @teammate)).create?
       = link_to new_organization_feedback_request_path(organization, subject_of_feedback_teammate_id: @teammate.id), class: "btn btn-sm btn-primary" do
         %i.bi.bi-plus.me-1
-        Request feedback about #{@casual_name}
-  .card-body
-    = render "feedback_requests_table"
+        Request feedback about #{casual}
+
+- if inbox
+  - inbox[:sections].each_with_index do |section, index|
+    = render "feedback_request_section",
+             section: section,
+             include_top_header_margin: index.positive?

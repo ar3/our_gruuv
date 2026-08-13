@@ -1,0 +1,20 @@
+- section = local_assigns.fetch(:section)
+- section_id = "fr-section-#{section.key}"
+- description = section.rows.any? ? pluralize(section.rows.size, "request") : section.empty_message
+
+%div{id: section_id}
+  = render "shared/section_header",
+           title: section.title,
+           icon: section.icon,
+           description: description,
+           include_top_header_margin: local_assigns.fetch(:include_top_header_margin, true)
+
+  - if section.rows.any?
+    .mb-4
+      = render "feedback_requests_table", rows: section.rows
+  - else
+    .alert.alert-light.border.mb-4
+      %h6.mb-2
+        %i.bi.bi-info-circle.me-2
+        = section.empty_heading
+      %p.mb-0.small.text-muted= section.empty_message

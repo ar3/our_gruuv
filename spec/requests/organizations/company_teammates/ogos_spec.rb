@@ -78,11 +78,86 @@ RSpec.describe "Teammate OGOs page", type: :request do
   end
 
   describe "GET /organizations/:organization_id/company_teammates/:id/ogos/feedback_requests" do
-    it "renders the feedback requests tab" do
+    it "renders the feedback requests inbox with four sections" do
       get ogos_feedback_requests_organization_company_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Feedback Requests")
-      expect(response.body).to include("Feedback requests about #{person.casual_name}")
+      expect(response.body).to include("360° Feedback Requests")
+      expect(response.body).to include("Waiting on #{person.casual_name}")
+      expect(response.body).to include("About #{person.casual_name}")
+      expect(response.body).to include("#{person.casual_name} asked of others")
+      expect(response.body).to include("#{person.casual_name} asked for others")
+      expect(response.body).to include("Show closed")
+      expect(response.body).to include("archived")
+    end
+
+    it "supports the /me/ teammate alias" do
+      get ogos_feedback_requests_organization_company_teammate_path(organization, "me")
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Waiting on #{person.casual_name}")
+      expect(response.body).to include("360° Feedback Requests")
+    end
+
+    context "with open and closed involvement" do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
+      let(:requestor_person) { create(:person) }
+      let(:requestor) { create(:company_teammate, person: requestor_person, organization: organization) }
+
+      let!(:waiting_request) do
+        create(:feedback_request,
+               company: organization,
+               requestor_teammate: requestor,
+               subject_of_feedback_teammate: other_teammate).tap do |fr|
+          fr.feedback_request_responders.create!(teammate: teammate)
+        end
+      end
+
+      let!(:about_request) do
+        create(:feedback_request,
+               company: organization,
+               requestor_teammate: requestor,
+               subject_of_feedback_teammate: teammate)
+      end
+
+      let!(:self_request) do
+        create(:feedback_request,
+               company: organization,
+               requestor_teammate: teammate,
+               subject_of_feedback_teammate: teammate)
+      end
+
+      let!(:for_others_request) do
+        create(:feedback_request,
+               company: organization,
+               requestor_teammate: teammate,
+               subject_of_feedback_teammate: other_teammate)
+      end
+
+      let!(:archived_about) do
+        create(:feedback_request, :archived,
+               company: organization,
+               requestor_teammate: requestor,
+               subject_of_feedback_teammate: teammate)
+      end
+
+      before do
+        create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        create(:employment_tenure, teammate: requestor, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      it "shows open requests in the matching sections and hides archived by default" do
+        get ogos_feedback_requests_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include(other_teammate.person.display_name)
+        expect(response.body).to include(requestor.person.display_name)
+        expect(response.body).to include(waiting_request.subject_of_feedback_teammate.person.display_name)
+        expect(response.body).not_to include("Archived")
+      end
+
+      it "includes archived requests when show_closed=1" do
+        get ogos_feedback_requests_organization_company_teammate_path(organization, teammate, show_closed: "1")
+        expect(response.body).to include("Show open only")
+        expect(response.body).to include("Archived")
+      end
     end
 
     context "when the viewer owes a response about the subject" do

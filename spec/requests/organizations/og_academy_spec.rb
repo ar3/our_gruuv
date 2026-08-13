@@ -68,7 +68,7 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(body).to include(new_organization_goal_path(company, owner_id: "CompanyTeammate_#{teammate.id}"))
       expect(body).to include(organization_company_teammate_notifications_path(company, teammate))
       expect(body).to include(new_organization_feedback_request_path(company))
-      expect(body).to include(organization_feedback_requests_path(company))
+      expect(body).to include(ogos_feedback_requests_organization_company_teammate_path(company, "me"))
       expect(body).to include('bi-question-circle')
       expect(body).to include('Have a manager certify a milestone on a company Ability.')
       expect(body).to include('data-bs-toggle="tooltip"')

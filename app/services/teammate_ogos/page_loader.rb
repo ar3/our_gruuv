@@ -7,33 +7,54 @@ module TeammateOgos
 
     def self.call(...) = new(...).call
 
-    def initialize(organization:, teammate:, current_person:, viewing_company_teammate:, one_on_one_link:, active_tab:)
+    def initialize(organization:, teammate:, current_person:, viewing_company_teammate:, one_on_one_link:, active_tab:, show_closed_feedback_requests: false)
       @organization = organization
       @teammate = teammate
       @current_person = current_person
       @viewing_company_teammate = viewing_company_teammate
       @one_on_one_link = one_on_one_link
       @active_tab = active_tab
+      @show_closed_feedback_requests = show_closed_feedback_requests
       @company = organization.root_company || organization
     end
 
     def call
-      {
+      result = {
         observation_health: load_observation_health,
         about_counts: load_about_counts,
         from_counts: load_from_counts,
         observations_involving_url: observations_involving_url,
         observations: load_observations_for_tab,
-        feedback_requests: load_feedback_requests,
-        feedback_request_rows: load_feedback_request_rows,
+        feedback_requests: FeedbackRequest.none,
+        feedback_request_rows: [],
+        feedback_request_inbox: nil,
         open_respondent_requests: load_open_respondent_requests
       }
+
+      if active_tab == :feedback_requests
+        inbox = FeedbackRequestsInbox.call(
+          organization: organization,
+          teammate: teammate,
+          current_person: current_person,
+          viewing_company_teammate: viewing_company_teammate,
+          show_closed: show_closed_feedback_requests?
+        )
+        result[:feedback_request_inbox] = inbox
+        result[:feedback_request_rows] = inbox[:sections].flat_map(&:rows)
+        result[:feedback_requests] = result[:feedback_request_rows].map(&:feedback_request)
+      end
+
+      result
     end
 
     private
 
     attr_reader :organization, :teammate, :current_person, :viewing_company_teammate,
-                :one_on_one_link, :active_tab, :company
+                :one_on_one_link, :active_tab, :company, :show_closed_feedback_requests
+
+    def show_closed_feedback_requests?
+      !!show_closed_feedback_requests
+    end
 
     def load_observation_health
       return nil if active_tab == :source_from_slack
@@ -115,46 +136,6 @@ module TeammateOgos
         .includes(:observer, :observed_teammates, :observation_ratings, :feedback_request_question)
         .order(observed_at: :desc)
         .limit(LIST_LIMIT)
-    end
-
-    def feedback_requests_scope
-      return FeedbackRequest.none unless viewing_company_teammate
-
-      scope = FeedbackRequest.where(company: company, subject_of_feedback_teammate_id: teammate.id)
-      unless can_view_all_story_feedback_requests?
-        pundit_user = OpenStruct.new(user: viewing_company_teammate, impersonating_teammate: nil)
-        policy = FeedbackRequestPolicy::Scope.new(pundit_user, FeedbackRequest)
-        scope = policy.resolve.where(subject_of_feedback_teammate_id: teammate.id)
-      end
-
-      scope.includes(
-        :requestor_teammate,
-        :subject_of_feedback_teammate,
-        { feedback_request_questions: [] },
-        :responders,
-        { observations: [:observer, :observed_teammates] }
-      ).order(created_at: :desc)
-    end
-
-    def can_view_all_story_feedback_requests?
-      viewing_company_teammate == teammate ||
-        viewing_company_teammate.can_manage_employment? ||
-        viewing_company_teammate.in_managerial_hierarchy_of?(teammate)
-    end
-
-    def load_feedback_requests
-      feedback_requests_scope
-    end
-
-    def load_feedback_request_rows
-      feedback_requests_scope.map do |request|
-        FeedbackRequestRow.new(
-          feedback_request: request,
-          viewing_teammate: viewing_company_teammate,
-          current_person: current_person,
-          company: company
-        )
-      end
     end
 
     def load_open_respondent_requests

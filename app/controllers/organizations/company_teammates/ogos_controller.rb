@@ -51,7 +51,8 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
       current_person: current_person,
       viewing_company_teammate: current_company_teammate,
       one_on_one_link: @one_on_one_link,
-      active_tab: active_tab
+      active_tab: active_tab,
+      show_closed_feedback_requests: params[:show_closed].to_s == "1"
     )
 
     @observation_health = page_data[:observation_health]
@@ -61,6 +62,8 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
     @observations = page_data[:observations]
     @feedback_requests = page_data[:feedback_requests]
     @feedback_request_rows = page_data[:feedback_request_rows]
+    @feedback_request_inbox = page_data[:feedback_request_inbox]
+    @show_closed_feedback_requests = params[:show_closed].to_s == "1"
     @open_respondent_requests = page_data[:open_respondent_requests]
 
     preload_rateables(@observations)

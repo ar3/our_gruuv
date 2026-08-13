@@ -39,42 +39,21 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       )
     end
 
-    it 'renders the index page' do
+    let(:my_ogos_fr_path) { ogos_feedback_requests_organization_company_teammate_path(company, "me") }
+
+    it 'redirects the index hub to the teammate OGOs Feedback Requests tab' do
       get organization_feedback_requests_path(company)
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Feedback Requests')
+      expect(response).to redirect_to(my_ogos_fr_path)
     end
 
-    it 'excludes archived requests by default on as_subject' do
-      # Current user (requestor) is the subject of the active request; archived is about someone else
-      feedback_request.update!(subject_of_feedback_teammate: requestor_teammate)
-      archived_subject_person = create(:person)
-      archived_subject_teammate = CompanyTeammate.find_or_create_by!(person: archived_subject_person, organization: company)
-      archived_request = create(:feedback_request, :archived,
-        company: company,
-        requestor_teammate: requestor_teammate,
-        subject_of_feedback_teammate: archived_subject_teammate,
-        subject_line: 'Archived about other'
-      )
-
+    it 'redirects as_subject to the teammate OGOs Feedback Requests tab' do
       get as_subject_organization_feedback_requests_path(company)
-      expect(response.body).to include(feedback_request.subject_of_feedback_teammate.person.display_name)
-      expect(response.body).not_to include(archived_request.subject_of_feedback_teammate.person.display_name)
+      expect(response).to redirect_to(my_ogos_fr_path)
     end
 
-    it 'includes archived requests when show_archived=1 on as_subject' do
-      feedback_request.update!(subject_of_feedback_teammate: requestor_teammate)
-      create(:feedback_request, :archived,
-        company: company,
-        requestor_teammate: requestor_teammate,
-        subject_of_feedback_teammate: requestor_teammate,
-        subject_line: 'Archived about me'
-      )
-
-      get as_subject_organization_feedback_requests_path(company, show_archived: '1')
-      expect(response.body).to include(requestor_teammate.person.display_name)
-      # Table shows both active and archived; archived row has "Archived" badge
-      expect(response.body).to include('Archived')
+    it 'redirects requested_for_others to the teammate OGOs Feedback Requests tab' do
+      get requested_for_others_organization_feedback_requests_path(company)
+      expect(response).to redirect_to(my_ogos_fr_path)
     end
 
     it 'requires authorization' do
@@ -84,105 +63,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
 
       get organization_feedback_requests_path(company)
       expect(response).to have_http_status(:redirect)
-    end
-
-    it 'displays empty state on index when there are no requests of me' do
-      feedback_request.destroy
-      get organization_feedback_requests_path(company)
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Requests of me')
-      expect(response.body).to include('You have no open feedback requests').or include('No one has requested your feedback yet')
-    end
-
-    it 'displays empty state on as_subject when there are no feedback requests about you' do
-      feedback_request.destroy
-      get as_subject_organization_feedback_requests_path(company)
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('No Feedback Requests About You')
-      expect(response.body).to include('No one has requested feedback about you yet')
-    end
-
-    it 'displays empty state for archived on as_subject when all requests are active and show_archived=1' do
-      feedback_request.destroy
-      get as_subject_organization_feedback_requests_path(company, show_archived: '1')
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('No Feedback Requests')
-      expect(response.body).to include('There are no archived feedback requests in this view')
-    end
-
-    context 'when a request has one question answered (one observation created)' do
-      before do
-        feedback_request.feedback_request_questions.destroy_all
-        question = create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did it go?', position: 1)
-        feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
-        observation = create(:observation,
-          observer: responder_person,
-          company: company,
-          story: 'One answered question.',
-          feedback_request_question: question,
-          privacy_level: :observed_and_managers
-        )
-        observation.observees.destroy_all
-        observation.observees.build(teammate: subject_teammate)
-        observation.save!
-      end
-
-      it 'renders as_subject and shows the request with one observation in the Observations column' do
-        sign_in_as_teammate_for_request(subject_person, company)
-        get as_subject_organization_feedback_requests_path(company)
-        expect(response).to have_http_status(:success)
-        expect(response.body).to include(feedback_request.subject_of_feedback_teammate.person.display_name)
-        expect(response.body).to include('Observations')
-        expect(response.body).to include('>1</span>')
-      end
-    end
-
-    describe 'Requests of me toggle' do
-      let(:other_requestor) { create(:company_teammate, organization: company) }
-      let(:open_subject) { create(:company_teammate, organization: company) }
-      let(:completed_subject) { create(:company_teammate, organization: company) }
-      let(:open_request) do
-        create(:feedback_request,
-          company: company,
-          requestor_teammate: other_requestor,
-          subject_of_feedback_teammate: open_subject,
-          subject_line: 'Open request'
-        ).tap do |fr|
-          fr.feedback_request_responders.create!(teammate: requestor_teammate)
-        end
-      end
-      let(:completed_request) do
-        create(:feedback_request,
-          company: company,
-          requestor_teammate: other_requestor,
-          subject_of_feedback_teammate: completed_subject,
-          subject_line: 'Completed request'
-        ).tap do |fr|
-          fr.feedback_request_responders.create!(teammate: requestor_teammate, completed_at: 1.day.ago)
-        end
-      end
-
-      before do
-        open_request
-        completed_request
-        sign_in_as_teammate_for_request(requestor_person, company)
-      end
-
-      it 'View open requests of me shows only requests where completed_at is nil' do
-        get organization_feedback_requests_path(company, requests_of_me: 'open')
-        expect(response).to have_http_status(:success)
-        expect(response.body).to include(open_subject.person.display_name)
-        expect(response.body).not_to include(completed_subject.person.display_name)
-        expect(response.body).to include('View open requests of me')
-        expect(response.body).to include('View all requests of me')
-      end
-
-      it 'View all requests of me shows all requests where user is responder' do
-        get organization_feedback_requests_path(company, requests_of_me: 'all')
-        expect(response).to have_http_status(:success)
-        expect(response.body).to include(open_subject.person.display_name)
-        expect(response.body).to include(completed_subject.person.display_name)
-      end
+      expect(response).not_to redirect_to(my_ogos_fr_path)
     end
   end
 
@@ -470,9 +351,9 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(feedback_request.archived?).to be true
     end
 
-    it 'redirects to index on success' do
+    it 'redirects to the teammate OGOs Feedback Requests tab on success' do
       delete organization_feedback_request_path(company, feedback_request)
-      expect(response).to redirect_to(organization_feedback_requests_path(company))
+      expect(response).to redirect_to(ogos_feedback_requests_organization_company_teammate_path(company, "me"))
     end
   end
 

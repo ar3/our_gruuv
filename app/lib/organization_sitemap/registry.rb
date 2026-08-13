@@ -134,9 +134,15 @@ module OrganizationSitemap
             key: :my_feedback_requests,
             label: "My Feedback Requests",
             icon: "bi-chat-dots",
-            path: ->(ctx) { ctx.organization_feedback_requests_path(ctx.organization) },
+            path: ->(ctx) {
+              if ctx.teammate.present?
+                ctx.ogos_feedback_requests_organization_company_teammate_path(ctx.organization, "me")
+              else
+                ctx.organization_feedback_requests_path(ctx.organization)
+              end
+            },
             policy: ->(ctx) { ctx.policy(ctx.company).view_feedback_requests? },
-            goal: "See feedback requests assigned to you and respond to them.",
+            goal: "See feedback requests you are waiting on, about you, or that you created.",
             synonyms: %w[feedback requests my feedback]
           ),
           page(

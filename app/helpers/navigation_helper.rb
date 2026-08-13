@@ -91,8 +91,15 @@ module NavigationHelper
           {
             label: 'My Feedback Requests',
             icon: 'bi-chat-dots',
-            path: organization_feedback_requests_path(current_organization),
+            path: current_company_teammate ? ogos_feedback_requests_organization_company_teammate_path(current_organization, "me") : organization_feedback_requests_path(current_organization),
             policy_check: -> { policy(current_company).view_feedback_requests? },
+            active_check: -> {
+              next false unless controller_path == "organizations/company_teammates/ogos" && action_name == "feedback_requests"
+              next false if current_company_teammate.blank?
+
+              id = params[:id].to_s
+              id.in?(%w[me my]) || id == current_company_teammate.id.to_s
+            },
             coming_soon: false
           },
           {

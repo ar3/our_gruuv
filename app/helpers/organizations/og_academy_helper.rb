@@ -143,7 +143,7 @@ module Organizations::OgAcademyHelper
     when :sent_feedback_request
       new_organization_feedback_request_path(organization)
     when :responded_to_feedback_request
-      organization_feedback_requests_path(organization)
+      ogos_feedback_requests_organization_company_teammate_path(organization, "me")
     when :visited_teammates_index, :visited_teammate_internals
       organization_employees_path(organization, spotlight: "teammate_tenures")
     when :visited_insights_and_billing

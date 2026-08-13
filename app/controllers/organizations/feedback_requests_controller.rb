@@ -3,54 +3,20 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :notify_respondents, :archive, :restore]
 
   after_action :verify_authorized
-  after_action :verify_policy_scoped, only: [:index, :as_subject, :requested_for_others]
 
   def index
     authorize company, :view_feedback_requests?
-    base_scope = policy_scope(FeedbackRequest).where(company: company)
-
-    # Tab: I'm the Respondent — requests where I'm a respondent
-    @requests_of_me = if current_company_teammate
-      scope = base_scope
-        .joins(:feedback_request_responders)
-        .where(feedback_request_responders: { teammate_id: current_company_teammate.id })
-        .order(created_at: :desc)
-        .includes(:requestor_teammate, :subject_of_feedback_teammate, :feedback_request_responders)
-        .distinct
-      if params[:requests_of_me] == 'all'
-        scope.where("feedback_requests.deleted_at IS NULL OR feedback_request_responders.completed_at IS NOT NULL")
-      else
-        scope.where(feedback_request_responders: { completed_at: nil }).where(feedback_requests: { deleted_at: nil })
-      end
-    else
-      FeedbackRequest.none
-    end
-    @requests_of_me_filter = params[:requests_of_me] == 'all' ? 'all' : 'open'
-
-    set_feedback_request_tab_counts(base_scope)
-    @active_feedback_tab = :respondent
+    redirect_to_my_ogos_feedback_requests
   end
 
   def as_subject
     authorize company, :view_feedback_requests?
-    base_scope = policy_scope(FeedbackRequest).where(company: company)
-    load_feedback_requests_for_tab(
-      base_scope.where(subject_of_feedback_teammate_id: current_company_teammate&.id)
-    )
-    set_feedback_request_tab_counts(base_scope)
-    @active_feedback_tab = :as_subject
+    redirect_to_my_ogos_feedback_requests
   end
 
   def requested_for_others
     authorize company, :view_feedback_requests?
-    base_scope = policy_scope(FeedbackRequest).where(company: company)
-    my_id = current_company_teammate&.id
-    creator_not_subject_scope = base_scope
-      .where(requestor_teammate_id: my_id)
-      .where.not(subject_of_feedback_teammate_id: my_id)
-    load_feedback_requests_for_tab(creator_not_subject_scope)
-    set_feedback_request_tab_counts(base_scope)
-    @active_feedback_tab = :requested_for_others
+    redirect_to_my_ogos_feedback_requests
   end
 
   def show
@@ -158,7 +124,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     authorize @feedback_request
     
     @feedback_request.soft_delete!
-    redirect_to organization_feedback_requests_path(organization),
+    redirect_to ogos_feedback_requests_organization_company_teammate_path(organization, "me"),
                 notice: 'Feedback request was successfully archived.'
   end
 
@@ -461,7 +427,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   def answer
     authorize @feedback_request, :answer?
     if @feedback_request.archived?
-      redirect_to organization_feedback_requests_path(organization),
+      redirect_to ogos_feedback_requests_organization_company_teammate_path(organization, "me"),
                   notice: 'This feedback request has been archived and is no longer accepting responses.'
       return
     end
@@ -506,7 +472,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       elsif policy(@feedback_request).show?
         organization_feedback_request_path(organization, @feedback_request)
       else
-        organization_feedback_requests_path(organization)
+        ogos_feedback_requests_organization_company_teammate_path(organization, "me")
       end
       notice = complete ? 'Your feedback has been submitted and marked complete.' : 'Your feedback has been saved and kept incomplete.'
       redirect_to redirect_path, notice: notice
@@ -526,6 +492,12 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   end
 
   private
+
+  def redirect_to_my_ogos_feedback_requests
+    raise ActiveRecord::RecordNotFound, "Unknown teammate" if current_company_teammate.blank?
+
+    redirect_to ogos_feedback_requests_organization_company_teammate_path(organization, "me")
+  end
 
   def set_feedback_request_tab_counts(base_scope)
     unless current_company_teammate

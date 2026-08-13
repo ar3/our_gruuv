@@ -6,10 +6,12 @@ class StartHere::Widgets::MyFeedbackRequestsWidget < StartHere::Widget::Base
     group: "About Me",
     icon: "bi-chat-dots",
     selection_title: "My Feedback Requests",
-    selection_description: "Feedback requests assigned to you.",
+    selection_description: "Feedback requests waiting on you, about you, or that you created.",
     label: "My Feedback Requests",
-    path: ->(c) { c.view.organization_feedback_requests_path(c.organization) },
-    description: "Feedback requests assigned to you.",
+    path: ->(c) {
+      c.view.ogos_feedback_requests_organization_company_teammate_path(c.organization, "me")
+    },
+    description: "Feedback requests waiting on you, about you, or that you created.",
     button_label: "Open Feedback Requests"
   }.freeze
 end
