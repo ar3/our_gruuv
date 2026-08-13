@@ -27,6 +27,15 @@ module OrganizationSitemap
         icon: "bi-house",
         pages: [
           page(
+            key: :og_academy,
+            label: "OG Academy",
+            icon: "bi-mortarboard",
+            path: ->(ctx) { ctx.organization_og_academy_path(ctx.organization) },
+            policy: ->(ctx) { ctx.policy(ctx.organization).show? },
+            goal: "Orientation home: Quick Start actions, practice milestones that teach how Ability milestones work, and start-page choice.",
+            synonyms: %w[og academy university onboarding get started orientation milestones learn]
+          ),
+          page(
             key: :start_here,
             label: "Start Here",
             icon: "bi-house-door",
@@ -551,10 +560,6 @@ module OrganizationSitemap
         label: "Beta",
         icon: "bi-lightning",
         pages: [
-          beta_page(:og_academy, "OG Academy", "bi-mortarboard", :organization_og_academy_path,
-            policy: ->(ctx) { ctx.policy(ctx.organization).show? },
-            goal: "Orientation home: Quick Start actions, practice milestones that teach how Ability milestones work, and start-page choice.",
-            synonyms: %w[og academy university onboarding get started orientation milestones learn]),
           beta_page(:beta_insights, "Insights", "bi-bar-chart-line", :organization_insights_path,
             policy: ->(ctx) { ctx.policy(ctx.company).show? },
             goal: "Open the insights hub with links to analytics dashboards.",

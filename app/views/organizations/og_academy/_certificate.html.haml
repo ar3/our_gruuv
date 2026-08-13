@@ -6,9 +6,13 @@
 - frame_class = earned ? "og-academy-certificate og-academy-certificate--earned" : "og-academy-certificate og-academy-certificate--progress"
 
 %div{class: frame_class}
+  - if earned
+    .og-academy-certificate__confetti{"aria-hidden" => "true"}
+      - 12.times do |i|
+        %span.og-academy-certificate__confetti-piece{class: "og-academy-certificate__confetti-piece--#{i + 1}"}
   .og-academy-certificate__eyebrow
     - if earned
-      Practice certification
+      🎉 Practice certification 🎉
     - else
       Practice certification in progress
   %h3.og-academy-certificate__ability.mb-1 OG Mastery
@@ -16,6 +20,9 @@
     Milestone #{level.level}
     - if verb.present?
       — #{verb}
+  - if earned
+    %p.og-academy-certificate__celebrate.mb-3
+      %span.badge.rounded-pill.text-bg-success 🎉 Milestone Certified 🎉
   %p.og-academy-certificate__trust.mb-3= trust
 
   .og-academy-certificate__seals.d-flex.flex-wrap.justify-content-center.gap-2.mb-3

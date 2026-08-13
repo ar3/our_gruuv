@@ -90,9 +90,10 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response.body).not_to include('Certified so far')
       expect(response.body).to include('data-bs-toggle="popover"')
       expect(response.body).to include('Why it matters:')
-      expect(response.body).to include('AM OBSERVING')
-      expect(response.body).to include('TO SEE THEM DEMONSTRATE OG Mastery SO THAT I CAN...')
-      expect(response.body).to include('text-bg-warning')
+      expect(response.body).to include('am observing')
+      expect(response.body).to include('to see them demonstrate OG Mastery so that I can...')
+      expect(response.body).to include('border-warning')
+      expect(response.body).not_to include('AM OBSERVING')
       expect(response.body).to include('Practice track')
       expect(response.body).to include('target="_top"')
     end

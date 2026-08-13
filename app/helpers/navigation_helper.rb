@@ -582,13 +582,6 @@ module NavigationHelper
         section: 'beta',
         items: [
           {
-            label: 'OG Academy',
-            icon: 'bi-mortarboard',
-            path: organization_og_academy_path(current_organization),
-            policy_check: -> { policy(current_organization).show? },
-            coming_soon: false
-          },
-          {
             label: 'Insights',
             icon: 'bi-bar-chart-line',
             path: organization_insights_path(current_organization),

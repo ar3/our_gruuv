@@ -274,7 +274,7 @@ RSpec.describe NavigationHelper, type: :helper do
       it 'includes OG Academy first, then Dashboard, then About Me' do
         structure = helper.navigation_structure
         expect(structure[0][:label]).to eq('OG Academy')
-        expect(structure[0][:beta]).to eq(true)
+        expect(structure[0][:beta]).not_to eq(true)
         expect(structure[0][:path]).to eq(helper.organization_og_academy_path(company))
         expect(structure[1][:label]).to eq("#{person.casual_name}'s Dashboard")
         expect(structure[1][:path]).to eq(helper.organization_start_here_path(company))
@@ -517,13 +517,13 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Check-ins Health')
       end
 
-      it 'includes Beta section with OG Academy, Insights, Position Comparison, Eligibility Requirements, Goal Impact Scanner, and Position Suggestions' do
+      it 'includes Beta section with Insights, Position Comparison, Eligibility Requirements, Goal Impact Scanner, and Position Suggestions' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
         expect(section[:section]).to eq('beta')
         labels = section[:items].map { |item| item[:label] }
-        expect(labels).to include('OG Academy')
+        expect(labels).not_to include('OG Academy')
         expect(labels).to include('Insights')
         expect(labels).not_to include('Meeting transcripts')
         expect(labels).to include('Position Comparison')

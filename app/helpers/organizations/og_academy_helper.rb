@@ -53,14 +53,14 @@ module Organizations::OgAcademyHelper
     if earned
       "#{prefix}#{suffix}"
     else
-      observing = "AM OBSERVING #{casual_name} TO SEE THEM DEMONSTRATE #{ability} SO THAT I CAN..."
+      observing = "am observing #{casual_name} to see them demonstrate #{ability} so that I can..."
       safe_join(
         [
           prefix,
           content_tag(
             :span,
             observing,
-            class: "badge rounded-pill text-bg-warning text-dark text-wrap align-middle"
+            class: "badge rounded-pill border border-warning text-warning-emphasis bg-transparent text-wrap fw-normal align-middle"
           ),
           " ",
           suffix
