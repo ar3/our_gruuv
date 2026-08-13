@@ -76,6 +76,17 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).not_to include('Sort by')
     end
 
+    it 'renders Feedback requests board when board=feedback_requests' do
+      get organization_insights_real_og_leaders_path(organization, board: 'feedback_requests')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('360° Feedback Requests')
+      expect(response.body).to include('Requested about')
+      expect(response.body).to include('Sent a request')
+      expect(response.body).to include('Received a request')
+      expect(response.body).to include('Completed a request')
+      expect(response.body).to include('No qualifying feedback-request activity in this timeframe')
+    end
+
     it 'returns success with timeframe=custom and from/to dates' do
       get organization_insights_real_og_leaders_path(
         organization,

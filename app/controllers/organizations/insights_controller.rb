@@ -65,7 +65,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
     chart_range = range || (52.weeks.ago..Time.current)
     @insights_chart_period_label = insights_chart_title_period(@timeframe, range, chart_range)
-    @board = %w[ogos goals org_goals check_ins].include?(params[:board].to_s) ? params[:board].to_s : 'ogos'
+    @board = %w[ogos goals org_goals check_ins feedback_requests].include?(params[:board].to_s) ? params[:board].to_s : 'ogos'
 
     case @board
     when 'goals'
@@ -75,6 +75,11 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     when 'check_ins'
       @department_health_rows = build_department_health_rows(company)
       @department_health_rows.sort_by! { |row| -row[:completion_rate].to_f }
+    when 'feedback_requests'
+      @real_og_leaders_feedback_requests = Insights::RealOgLeadersFeedbackRequestsBuilder.new(
+        company: company,
+        range: range
+      ).call
     else
       @real_og_leaders = Insights::RealOgLeadersBuilder.new(company: company, range: range).call
     end

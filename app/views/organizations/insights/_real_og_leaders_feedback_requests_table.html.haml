@@ -1,0 +1,72 @@
+.border-bottom.py-2.mb-3.small.text-muted
+  In this timeframe (#{@insights_chart_period_label}): #{number_with_delimiter(@real_og_leaders_feedback_requests.size)}
+  #{'person'.pluralize(@real_og_leaders_feedback_requests.size)} with at least one feedback-request signal (requested about, sent, received, or completed).
+
+.table-responsive
+  %table.table.table-hover.align-middle
+    %thead
+      %tr
+        %th.text-end{style: "width: 3rem;"} #
+        %th Person
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Named as the subject of a non-deleted feedback request created in this timeframe"}
+            Requested about
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Created a non-deleted feedback request as the requestor in this timeframe"}
+            Sent a request
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Named as a respondent on a non-deleted feedback request in this timeframe"}
+            Received a request
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Completed a feedback request as a respondent in this timeframe"}
+            Completed a request
+        %th.text-center
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Star when this person has all four signals in the timeframe"}
+            All four
+    %tbody
+      - if @real_og_leaders_feedback_requests.empty?
+        %tr
+          %td.text-muted{colspan: 7} No qualifying feedback-request activity in this timeframe.
+      - @real_og_leaders_feedback_requests.each_with_index do |entry, index|
+        %tr
+          %td.text-end.text-muted= index + 1
+          %td
+            - if entry.company_teammate
+              = link_to entry.display_name, internal_organization_company_teammate_path(@organization, entry.company_teammate), class: 'text-decoration-none'
+            - else
+              = entry.display_name
+          %td.text-center
+            - if entry.has_requested_about
+              %span.text-success{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.requested_about_count} #{'request'.pluralize(entry.requested_about_count)} as subject", tabindex: "0", role: "img", "aria-label" => "#{entry.requested_about_count} as subject"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_sent
+              %span.text-primary{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.sent_count} #{'request'.pluralize(entry.sent_count)} sent", tabindex: "0", role: "img", "aria-label" => "#{entry.sent_count} sent"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_received
+              %span.text-info{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.received_count} #{'request'.pluralize(entry.received_count)} received as respondent", tabindex: "0", role: "img", "aria-label" => "#{entry.received_count} received"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_completed
+              %span.text-secondary{"data-bs-toggle" => "tooltip", "data-bs-title" => "#{entry.completed_count} #{'request'.pluralize(entry.completed_count)} completed as respondent", tabindex: "0", role: "img", "aria-label" => "#{entry.completed_count} completed"}
+                %i.bi.bi-check-circle-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-circle.fs-5
+          %td.text-center
+            - if entry.has_all_four
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Has all four feedback-request signals in this timeframe", tabindex: "0", role: "img", "aria-label" => "All four"}
+                %i.bi.bi-star-fill.fs-5
+            - else
+              %span.text-muted.opacity-25{"aria-hidden" => "true"}
+                %i.bi.bi-star.fs-5

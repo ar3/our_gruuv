@@ -12,7 +12,7 @@
       Real OG Leaders
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
-               tooltip: "Who is practicing real OG habits — OGOs, goals, and clear check-ins. Click for details."
+               tooltip: "Who is practicing real OG habits — OGOs, goals, feedback requests, and clear check-ins. Click for details."
   %p.text-muted.mb-0
     - if board == "goals"
       Personal goals — confidence checks, connections, and completions in this timeframe.
@@ -20,6 +20,8 @@
       Team, department, and company goals — same signals as personal goals, by shared owner.
     - elsif board == "check_ins"
       Department clarity — who is most clear on required check-in action slots (% clear).
+    - elsif board == "feedback_requests"
+      360° Feedback Requests — requested about, sent, received, and completed in this timeframe.
     - else
       Published, shared OGOs about others — kudos and constructive feedback in this timeframe.
 
@@ -40,6 +42,8 @@
   %li.nav-item{role: "presentation"}
     = link_to "OGOs", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "ogos")), class: "nav-link#{' active' if board == 'ogos'}", role: "tab"
   %li.nav-item{role: "presentation"}
+    = link_to "360° Feedback Requests", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "feedback_requests")), class: "nav-link#{' active' if board == 'feedback_requests'}", role: "tab"
+  %li.nav-item{role: "presentation"}
     = link_to "Goals", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "goals")), class: "nav-link#{' active' if board == 'goals'}", role: "tab"
   %li.nav-item{role: "presentation"}
     = link_to "Shared goals", organization_insights_real_og_leaders_path(@organization, **path_opts_base.merge(board: "org_goals")), class: "nav-link#{' active' if board == 'org_goals'}", role: "tab"
@@ -52,5 +56,7 @@
   = render "organizations/insights/real_og_leaders_org_goals_table"
 - elsif board == "check_ins"
   = render "organizations/insights/real_og_leaders_check_ins_table"
+- elsif board == "feedback_requests"
+  = render "organizations/insights/real_og_leaders_feedback_requests_table"
 - else
   = render "organizations/insights/real_og_leaders_ogos_table"

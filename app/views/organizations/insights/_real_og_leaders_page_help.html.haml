@@ -3,7 +3,7 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    See who is building real OG habits — useful OGOs, goal practice, and departments getting clear on check-ins.
+    See who is building real OG habits — useful OGOs, goal practice, feedback requests, and departments getting clear on check-ins.
 
   %h3.fw-semibold.mb-2 Context
   %p.mb-3
@@ -12,7 +12,7 @@
     %strong kudos
     to
     %strong constructive feedback
-    OGOs. Goals practice is confidence checks, linking goals to meaningful work, and completing what you start. Check-in clarity is aggregated by department so progress stays collective rather than naming individuals.
+    OGOs. Goals practice is confidence checks, linking goals to meaningful work, and completing what you start. Feedback requests celebrate asking for input, being asked about, answering, and finishing. Check-in clarity is aggregated by department so progress stays collective rather than naming individuals.
 
   %h3.fw-semibold.mb-2 Specifics of this page
   - if board == "goals"
@@ -63,6 +63,28 @@
     %h5.fw-semibold.mb-2 Sort order
     %p.mb-0
       Always sorted by % clear (highest first). Unlike Check-ins Progress, name sort is not available here so the board stays a clarity race among teams.
+  - elsif board == "feedback_requests"
+    %h5.fw-semibold.mb-2 360° Feedback Requests board
+    %ul.mb-3
+      %li Only non-deleted feedback requests count
+      %li
+        %strong Requested about
+        — named as the subject when the request was created in the timeframe
+      %li
+        %strong Sent a request
+        — created a request as the requestor in the timeframe
+      %li
+        %strong Received a request
+        — named as a respondent in the timeframe
+      %li
+        %strong Completed a request
+        — finished answering as a respondent in the timeframe
+      %li
+        %i.bi.bi-star-fill.text-warning.me-1
+        when all four checks are present
+    %h5.fw-semibold.mb-2 Sort order
+    %p.mb-0
+      All four first, then three, then two, then one. Among the same count, prefer requested about, then sent, then received, then completed. Within each band, most recent activity first.
   - else
     %h5.fw-semibold.mb-2 OGOs board
     %ul.mb-3
