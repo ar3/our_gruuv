@@ -39,8 +39,10 @@ module OgAcademy
       check_in_depth: "Repeating all three check-in types builds fluency as employee or manager.",
       visited_my_growth: "My Growth is where experiences, abilities, and goals come together for development.",
       visited_my_one_thing: "My One Thing is the weekly focus for you and your manager — visiting it starts that rhythm.",
+      sent_feedback_request: "Asking for feedback is how you invite others into your continuous clarity loop.",
       visited_teammates_index: "The teammates directory is how you find people to support across the company.",
       visited_teammate_internals: "Spending time on other teammates’ internal pages builds context before you coach or observe.",
+      responded_to_feedback_request: "Answering a feedback request turns someone else’s ask into a published observation that helps them grow.",
       linked_goals: "Connecting goals to Assignments and Abilities ties outcomes to the operating system.",
       observe_three: "Observing different people builds a broader, fairer sense of what’s on display.",
       four_ratings: "Using the full rating range means you can celebrate and course-correct with honesty.",
@@ -217,6 +219,15 @@ module OgAcademy
           "One Thing",
           what: "Visited My One Thing.",
           attained_at: first_my_one_thing_visit_at
+        ),
+        criterion(
+          :sent_feedback_request,
+          "Sent a feedback request",
+          sent_feedback_request?,
+          "Create a feedback request and ask others for input.",
+          "Ask feedback",
+          what: "Created a feedback request as the requestor.",
+          attained_at: first_sent_feedback_request_at
         )
       ]
       Level.new(
@@ -225,7 +236,7 @@ module OgAcademy
         audience: :everyone,
         complete: criteria.all?(&:done),
         criteria: criteria,
-        marketing_why: why_for(criteria, "owning growth signals, weekly confidence, digests, and visiting My Growth and One Thing"),
+        marketing_why: why_for(criteria, "owning growth signals, weekly confidence, digests, visiting My Growth and One Thing, and asking for feedback"),
         placeholder: false
       )
     end
@@ -258,6 +269,15 @@ module OgAcademy
           "5 internals",
           what: "Visited Internal pages for at least 5 other teammates.",
           attained_at: fifth_other_teammate_internal_visit_at
+        ),
+        criterion(
+          :responded_to_feedback_request,
+          "Responded to a feedback request",
+          responded_to_feedback_request?,
+          "Complete a feedback request where you are a respondent.",
+          "Give feedback",
+          what: "Completed a feedback request as a respondent.",
+          attained_at: first_feedback_request_response_at
         ),
         criterion(
           :linked_goals,
@@ -302,7 +322,7 @@ module OgAcademy
         audience: :everyone,
         complete: criteria.all?(&:done),
         criteria: criteria,
-        marketing_why: why_for(criteria, "deepening check-ins, knowing teammates, linking goals to MAAP, richer observations, and improving definitions"),
+        marketing_why: why_for(criteria, "deepening check-ins, knowing teammates, answering feedback asks, linking goals to MAAP, richer observations, and improving definitions"),
         placeholder: false
       )
     end
@@ -506,6 +526,34 @@ module OgAcademy
         prefs.interesting_things_digest_enabled? &&
         weekly_day_ok &&
         weekly_content
+    end
+
+    def sent_feedback_request?
+      sent_feedback_requests_scope.exists?
+    end
+
+    def sent_feedback_requests_scope
+      FeedbackRequest.not_deleted
+                     .where(company: @organization, requestor_teammate_id: @company_teammate.id)
+    end
+
+    def first_sent_feedback_request_at
+      sent_feedback_requests_scope.minimum(:created_at)
+    end
+
+    def responded_to_feedback_request?
+      feedback_request_responses_scope.exists?
+    end
+
+    def feedback_request_responses_scope
+      FeedbackRequestResponder.joins(:feedback_request)
+                              .where(teammate_id: @company_teammate.id)
+                              .where.not(completed_at: nil)
+                              .where(feedback_requests: { company_id: @organization.id })
+    end
+
+    def first_feedback_request_response_at
+      feedback_request_responses_scope.minimum(:completed_at)
     end
 
     def visited_my_growth?

@@ -140,6 +140,10 @@ module Organizations::OgAcademyHelper
       my_growth_abilities_organization_company_teammate_path(organization, company_teammate)
     when :visited_my_one_thing
       organization_company_teammate_one_on_one_link_path(organization, company_teammate)
+    when :sent_feedback_request
+      new_organization_feedback_request_path(organization)
+    when :responded_to_feedback_request
+      organization_feedback_requests_path(organization)
     when :visited_teammates_index, :visited_teammate_internals
       organization_employees_path(organization, spotlight: "teammate_tenures")
     when :visited_insights_and_billing

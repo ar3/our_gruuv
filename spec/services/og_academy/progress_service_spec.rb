@@ -17,11 +17,12 @@ RSpec.describe OgAcademy::ProgressService do
         expect(levels[0].criteria.map(&:key)).to eq(%i[logged_in check_in_types published_ogo added_goal])
         expect(levels[1].criteria.map(&:key)).to eq(%i[
           real_milestone confidence_checks notifications visited_my_growth visited_my_one_thing
+          sent_feedback_request
         ])
         expect(levels[2].audience).to eq(:everyone)
         expect(levels[2].criteria.map(&:key)).to include(
           :check_in_depth, :visited_teammates_index, :visited_teammate_internals,
-          :linked_goals, :observe_three, :four_ratings, :maap_comment
+          :responded_to_feedback_request, :linked_goals, :observe_three, :four_ratings, :maap_comment
         )
         expect(levels[2].criteria.map(&:key)).not_to include(:visited_my_growth, :visited_my_one_thing)
         expect(levels[3].criteria.map(&:key)).to eq(%i[maap_edits employment_stewardship visited_insights_and_billing])
@@ -165,6 +166,34 @@ RSpec.describe OgAcademy::ProgressService do
       create(:goal_association, goal: goal_b, associable: ability)
 
       criterion = service.levels[2].criteria.find { |c| c.key == :linked_goals }
+      expect(criterion.done).to eq(true)
+    end
+
+    it 'marks sent_feedback_request when the teammate is requestor of a feedback request' do
+      subject_teammate = create(:teammate, organization: company)
+      create(
+        :feedback_request,
+        company: company,
+        requestor_teammate: teammate,
+        subject_of_feedback_teammate: subject_teammate
+      )
+
+      criterion = service.levels[1].criteria.find { |c| c.key == :sent_feedback_request }
+      expect(criterion.done).to eq(true)
+    end
+
+    it 'marks responded_to_feedback_request when a responder completion exists' do
+      requestor = create(:teammate, organization: company)
+      subject_teammate = create(:teammate, organization: company)
+      feedback_request = create(
+        :feedback_request,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate
+      )
+      feedback_request.feedback_request_responders.create!(teammate: teammate, completed_at: 1.day.ago)
+
+      criterion = service.levels[2].criteria.find { |c| c.key == :responded_to_feedback_request }
       expect(criterion.done).to eq(true)
     end
 
