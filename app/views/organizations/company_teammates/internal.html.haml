@@ -353,6 +353,13 @@
               Views for #{casual_name}
             = render "internal_views_navigation", organization: @current_organization, teammate: @teammate
 
+  = render "organizations/company_teammates/ogos/add_ogo_cta",
+           organization: @current_organization,
+           teammate: @teammate,
+           casual_name: casual_name,
+           return_url: request.fullpath,
+           return_text: "Back to #{casual_name}'s #{true_jd_teammate_view_suffix}"
+
   %section#assignments.mb-4{role: "region", "aria-labelledby": "teammate-assignments-heading"}
     .card
       .card-header

@@ -45,6 +45,17 @@ RSpec.describe 'Teammate View Security', type: :request do
         expect(response.body).to include('Position / Title Change')
       end
 
+      it 'includes typed add-OGO CTAs between views and assignments' do
+        get internal_organization_company_teammate_path(organization, person_teammate)
+        expect(response.body).to include("Add Kudos about #{person.casual_name}")
+        expect(response.body).to include("Add Constructive Feedback about #{person.casual_name}")
+        expect(response.body).to include("Add Note about #{person.casual_name}")
+        expect(response.body).to include(new_kudos_organization_observations_path(organization))
+        expect(response.body).to include("observee_ids")
+        expect(response.body).to include(person_teammate.id.to_s)
+        expect(response.body).not_to include("Why write OGOs about yourself?")
+      end
+
       it 'includes link to observation index filtered by observations about the teammate' do
         get internal_organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:success)

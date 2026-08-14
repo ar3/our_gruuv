@@ -23,13 +23,39 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("OGO health (last 30 days)")
     end
 
-    it "includes a giant add-OGO CTA that skips type selection and preselects the teammate" do
+    it "includes typed add-OGO CTAs that preselect the teammate (self labels when viewing own page)" do
       get ogos_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to include("Add an OGO about #{person.casual_name}")
-      expect(response.body).to include(new_organization_observation_path(organization))
+      expect(response.body).to include("Add Self-Kudos")
+      expect(response.body).to include("Add Self-Feedback")
+      expect(response.body).to include("Add Self-Note")
+      expect(response.body).to include("Why write OGOs about yourself?")
+      expect(response.body).to include("button in the header")
+      expect(response.body).to include(new_kudos_organization_observations_path(organization))
+      expect(response.body).to include(new_feedback_organization_observations_path(organization))
+      expect(response.body).to include(new_quick_note_organization_observations_path(organization))
       expect(response.body).to include("observee_ids")
       expect(response.body).to include(teammate.id.to_s)
       expect(response.body).not_to include(select_type_organization_observations_path(organization) + "?")
+    end
+
+    context "when viewing another teammate's OGOs page" do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:company_teammate, person: other_person, organization: organization) }
+
+      before do
+        create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager_teammate: teammate)
+        other_teammate.update!(first_employed_at: 1.year.ago)
+      end
+
+      it "labels CTAs with the teammate's name and omits the self-observation callout" do
+        get ogos_organization_company_teammate_path(organization, other_teammate)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Add Kudos about #{other_person.casual_name}")
+        expect(response.body).to include("Add Constructive Feedback about #{other_person.casual_name}")
+        expect(response.body).to include("Add Note about #{other_person.casual_name}")
+        expect(response.body).not_to include("Why write OGOs about yourself?")
+        expect(response.body).not_to include("Add Self-Kudos")
+      end
     end
 
     it "includes the Source from Slack tab on the OGOs page" do
