@@ -1,8 +1,5 @@
 - content_for :title, "Answer Feedback Request"
 
-- subject_casual_name = @feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'the subject'
-- manager_casual_name = @feedback_request.subject_of_feedback_teammate&.current_manager&.casual_name.presence
-
 - content_for :go_back_link do
   - if policy(@feedback_request).show?
     = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Feedback Requests", url: organization_feedback_requests_path(organization) }, { label: "Feedback Request", url: organization_feedback_request_path(organization, @feedback_request) }, { label: "Answer", url: nil }])
@@ -14,9 +11,6 @@
     %h1.mb-0.me-2
       %i.bi.bi-reply.me-2
       Answer Feedback Request
-
-- rateable_types = %w[Assignment Ability Aspiration]
-- questions_with_objects = @questions.select { |q| q.rateable.present? && rateable_types.include?(q.rateable_type) }
 
 .card.mb-3
   .card-header
@@ -46,98 +40,15 @@
   - if flash[:alert]
     .alert.alert-danger= flash[:alert]
 
-  - questions_with_objects.each do |question|
-    - rateable = question.rateable
-    - object_name = rateable.is_a?(Assignment) ? rateable.title : rateable.name
-    - object_url = case rateable
-    -   when Assignment then organization_assignment_path(organization, rateable)
-    -   when Ability then organization_ability_path(organization, rateable)
-    -   when Aspiration then organization_aspiration_path(organization, rateable)
-    -   else nil
-    - existing_observation = @observation_by_question_id[question.id]
-    - raw_rating = existing_observation&.observation_ratings&.find { |r| r.rateable_id == rateable.id && r.rateable_type == rateable.class.name }&.rating
-    - current_rating = observation_rating_display_label(raw_rating)
-    - story_value = existing_observation&.story.to_s
-
-    .card.mb-3
-      .card-body.p-0
-        .row.g-0
-          .col-12.col-md-4.p-3.border-end
-            %h6.mb-2
-              = link_to object_name, object_url, target: '_blank', rel: 'noopener noreferrer', class: 'text-decoration-none'
-            %hr
-            .markdown-content.small= render_markdown(question.question_text)
-          .col-12.col-md-8.p-3
-            .text-muted="This story is a..."
-            .mt-2
-            = render 'organizations/observations/rating_button_group',
-                field_name: "answers[#{question.id}][rating]",
-                rating_key: "question_#{question.id}",
-                current_value: current_rating,
-                rateable_type: question.rateable_type,
-                rateable_id: rateable.id
-            %div
-              - verb = case rateable
-              -   when Assignment then 'execution'
-              -   when Ability then 'demonstration'
-              -   when Aspiration then 'example'
-              -   else 'display'
-              - link_title = rateable.is_a?(Assignment) ? 'View assignment' : (rateable.is_a?(Ability) ? 'View ability' : 'View aspirational value')
-              - case rateable
-              - when Assignment
-                = "... #{verb} of being #{indefinite_article(rateable.title)} "
-                %span.rateable-title= rateable.title
-              - when Ability, Aspiration
-                = "... #{verb} of "
-                %span.rateable-title= rateable.name
-              = link_to object_url, class: "ms-2", target: "_blank", rel: "noopener noreferrer", title: link_title do
-                %i.bi.bi-box-arrow-up-right
-
-            .mt-2
-            = label_tag "answers_#{question.id}_story", 'Your story(ies)', class: 'form-label small'
-            = text_area_tag "answers[#{question.id}][story]", story_value, class: 'form-control form-control-sm', rows: 10, id: "answers_#{question.id}_story"
-            .form-text.mt-1
-              %small.text-muted
-                = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "answers_#{question.id}_story" }
-            - if existing_observation
-              %hr.mt-3.mb-2
-              %p.small.text-muted.mb-0
-                This observation was #{existing_observation.published_at? ? 'published' : 'created'} from your answer. You can update it here, or edit it further on
-                = link_to 'the observation itself', organization_observation_path(organization, existing_observation), class: 'text-muted'
-                \.
-            = render 'organizations/feedback_requests/answer_privacy_selector',
-                field_name: "answers[#{question.id}][privacy_level]",
-                current_value: existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers',
-                subject_casual_name: subject_casual_name,
-                manager_casual_name: manager_casual_name
-
-  - (@questions - questions_with_objects).each do |question|
-    - existing_observation = @observation_by_question_id[question.id]
-    - story_value = existing_observation&.story.to_s
-    .card.mb-3
-      .card-body
-        %h6.mb-2 Question (no rating)
-        .markdown-content.mb-3= render_markdown(question.question_text)
-        = label_tag "answers_#{question.id}_story", 'Your story(ies)', class: 'form-label'
-        = text_area_tag "answers[#{question.id}][story]", story_value, class: 'form-control', rows: 10, id: "answers_#{question.id}_story"
-        - if existing_observation
-          %hr.mt-3.mb-2
-          %p.small.text-muted.mb-0
-            This observation was #{existing_observation.published_at? ? 'published' : 'created'} from your answer. You can update it here, or edit it further on
-            = link_to 'the observation itself', organization_observation_path(organization, existing_observation), class: 'text-muted'
-            \.
-        .form-text.mt-1
-          %small.text-muted
-            = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "answers_#{question.id}_story" }
-        = hidden_field_tag "answers[#{question.id}][rating]", 'na'
-        = render 'organizations/feedback_requests/answer_privacy_selector',
-            field_name: "answers[#{question.id}][privacy_level]",
-            current_value: existing_observation&.privacy_level&.to_s.presence || 'observed_and_managers',
-            subject_casual_name: subject_casual_name,
-            manager_casual_name: manager_casual_name
+  = render "organizations/feedback_requests/answer_question_cards",
+      organization: organization,
+      feedback_request: @feedback_request,
+      questions: @questions,
+      observation_by_question_id: @observation_by_question_id,
+      disabled: false
 
   .d-flex.justify-content-between.pt-2
-    - cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : organization_feedback_requests_path(organization)
+    - cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : ogos_feedback_requests_organization_company_teammate_path(organization, "me")
     = link_to 'Cancel', cancel_path, class: 'btn btn-secondary'
     .btn-group
       = form.submit 'Save and Keep Incomplete', name: 'save_and_keep_incomplete', class: 'btn btn-outline-primary'

@@ -1,18 +1,25 @@
 module FeedbackRequests
   class NotifyRespondentsService
-    def self.call(feedback_request:)
-      new(feedback_request: feedback_request).call
+    def self.call(feedback_request:, teammate_ids: nil)
+      new(feedback_request: feedback_request, teammate_ids: teammate_ids).call
     end
 
-    def initialize(feedback_request:)
+    def initialize(feedback_request:, teammate_ids: nil)
       @feedback_request = feedback_request
       @company = feedback_request.company
+      @teammate_ids = teammate_ids
     end
 
     def call
       return Result.err('Slack is not configured') unless @company.slack_configured?
 
-      responders_with_slack = @feedback_request.responders.select { |r| r.slack_user_id.present? }
+      responders = @feedback_request.responders.to_a
+      if @teammate_ids.present?
+        allowed_ids = @teammate_ids.map(&:to_i).to_set
+        responders.select! { |r| allowed_ids.include?(r.id) }
+      end
+
+      responders_with_slack = responders.select { |r| r.slack_user_id.present? }
       return Result.ok(sent: 0) if responders_with_slack.empty?
 
       answer_url = Rails.application.routes.url_helpers.answer_organization_feedback_request_url(

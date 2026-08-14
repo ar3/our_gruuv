@@ -24,14 +24,14 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
     @responders = @feedback_request.responders.includes(:person)
-    @observations = @feedback_request.observations.includes(:observer, :observed_teammates)
+    @observations = @feedback_request.observations.includes(:observer, :observed_teammates, :feedback_request_question)
     @responder_records_by_teammate_id = @feedback_request.feedback_request_responders.index_by(&:teammate_id)
-    @observations_by_observer_id = @feedback_request.observations.includes(:feedback_request_question).group_by(&:observer_id)
-    @observation_by_observer_and_question = @feedback_request.observations.includes(:feedback_request_question).index_by { |o| [o.observer_id, o.feedback_request_question_id] }
+    @observations_by_observer_id = @feedback_request.observations.group_by(&:observer_id)
+    @observation_by_observer_and_question = @feedback_request.observations.index_by { |o| [o.observer_id, o.feedback_request_question_id] }
+    @observation_visibility_query = ObservationVisibilityQuery.new(current_person, company)
 
     @notifications_sent = @feedback_request.respondent_notifications_sent
-    teammate_ids = @notifications_sent.filter_map { |n| n.metadata&.dig('teammate_id') }.uniq.map(&:to_i)
-    @teammates_by_id = CompanyTeammate.where(id: teammate_ids).includes(:person).index_by(&:id)
+    @notifications_by_teammate_id = @notifications_sent.group_by { |n| n.metadata&.dig("teammate_id")&.to_i }
   end
 
   def new
@@ -160,14 +160,34 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       return
     end
 
-    result = FeedbackRequests::NotifyRespondentsService.call(feedback_request: @feedback_request)
+    teammate_ids =
+      if params[:teammate_id].present?
+        [params[:teammate_id].to_i]
+      else
+        @feedback_request.feedback_request_responders.where(completed_at: nil).pluck(:teammate_id)
+      end
+
+    if teammate_ids.empty?
+      redirect_to organization_feedback_request_path(organization, @feedback_request),
+                  alert: 'There are no incomplete respondents to nudge.'
+      return
+    end
+
+    result = FeedbackRequests::NotifyRespondentsService.call(
+      feedback_request: @feedback_request,
+      teammate_ids: teammate_ids
+    )
 
     if result.ok?
-      message = result.value[:sent].positive? ? "Slack notification sent to #{result.value[:sent]} respondent(s)." : 'No respondents have Slack connected; no notifications were sent.'
+      message = if result.value[:sent].positive?
+        "Slack nudge sent to #{result.value[:sent]} respondent(s)."
+      else
+        'No respondents have Slack connected; no nudges were sent.'
+      end
       redirect_to organization_feedback_request_path(organization, @feedback_request), notice: message
     else
       redirect_to organization_feedback_request_path(organization, @feedback_request),
-                  alert: "Failed to send some notifications: #{result.error}"
+                  alert: "Failed to send some nudges: #{result.error}"
     end
   end
 

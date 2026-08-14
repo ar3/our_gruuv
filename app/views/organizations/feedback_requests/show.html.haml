@@ -19,103 +19,112 @@
       %span.badge.bg-success.ms-2 Active
     - when 'archived'
       %span.badge.bg-secondary.ms-2 Archived
-    - if @feedback_request.archived?
-      %span.badge.bg-secondary.ms-2 Archived
 
-.card.mb-3
-  .card-header
-    %h5.mb-0 Request Details
-  .card-body
-    .row
-      .col-md-6
-        %p
-          %strong Subject:
-          = @feedback_request.subject_of_feedback_teammate.person.display_name
-        %p
-          %strong Requestor:
-          = @feedback_request.requestor_teammate.person.display_name
-        %p
-          %strong Subject Line:
-          = @feedback_request.subject_line
-        %p
-          %strong State:
-          - case @feedback_request.state
-          - when 'invalid'
-            %span.badge.bg-danger Invalid
-          - when 'ready'
-            %span.badge.bg-warning Ready
-          - when 'active'
-            %span.badge.bg-success Active
-          - when 'archived'
-            %span.badge.bg-secondary Archived
-        %p
-          %strong Focus Items:
-          - rateables = @questions.map(&:rateable).compact.uniq
-          - if rateables.any?
-            - rateables.each do |rateable|
-              - case rateable.class.name
-              - when 'Position'
-                %span.badge.bg-dark.me-1= rateable.display_name
-              - when 'Assignment'
-                %span.badge.bg-primary.me-1= rateable.title
-              - when 'Ability'
-                %span.badge.bg-info.me-1= rateable.name
-              - when 'Aspiration'
-                %span.badge.bg-success.me-1= rateable.name
+- can_nudge = policy(@feedback_request).update? && organization.slack_configured? && @responders.any?
+
+.row
+  .col-md-8
+    .card.mb-4{ role: "region", "aria-labelledby": "request-details" }
+      .card-header
+        %h5.mb-0{ id: "request-details" } Request Details
+      .card-body
+        .row
+          .col-md-6
+            %p
+              %strong Subject:
+              = @feedback_request.subject_of_feedback_teammate.person.display_name
+            %p
+              %strong Requestor:
+              = @feedback_request.requestor_teammate.person.display_name
+            %p
+              %strong Subject Line:
+              = @feedback_request.subject_line
+            %p.mb-0
+              %strong State:
+              - case @feedback_request.state
+              - when 'invalid'
+                %span.badge.bg-danger Invalid
+              - when 'ready'
+                %span.badge.bg-warning Ready
+              - when 'active'
+                %span.badge.bg-success Active
+              - when 'archived'
+                %span.badge.bg-secondary Archived
+          .col-md-6
+            %p
+              %strong Created:
+              = format_time_in_user_timezone(@feedback_request.created_at)
+            %p
+              %strong Questions:
+              = @questions.count
+            %p
+              %strong Responders:
+              = @responders.count
+            %p.mb-0
+              %strong Observations:
+              = @observations.count
+
+  .col-md-4
+    .card.mb-4{ role: "region", "aria-labelledby": "request-actions" }
+      .card-header
+        %h6.mb-0{ id: "request-actions" }
+          %i.bi.bi-lightning-charge.me-2
+          Actions
+      .card-body
+        - if policy(@feedback_request).answer?
+          = link_to answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-primary btn-sm w-100 mb-2" do
+            %i.bi.bi-reply.me-2
+            Answer Request
+        - if policy(@feedback_request).update? && @feedback_request.can_be_edited?
+          - if @feedback_request.feedback_request_questions.empty?
+            = link_to select_focus_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
+              %i.bi.bi-bullseye.me-2
+              Select Focus
+          - elsif @feedback_request.feedback_request_questions.any? { |q| q.question_text.blank? }
+            = link_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
+              %i.bi.bi-question-circle.me-2
+              Edit Questions
+          - elsif @feedback_request.responders.empty?
+            = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
+              %i.bi.bi-people.me-2
+              Select Respondents
           - else
-            %span.text-muted None selected
-      .col-md-6
-        %p
-          %strong Created:
-          = format_time_in_user_timezone(@feedback_request.created_at)
-        %p
-          %strong Questions:
-          = @questions.count
-        %p
-          %strong Responders:
-          = @responders.count
-        %p
-          %strong Observations:
-          = @observations.count
+            = link_to edit_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
+              %i.bi.bi-pencil.me-2
+              Edit
+        - if @feedback_request.can_add_responders? && policy(@feedback_request).update?
+          = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-info btn-sm w-100 mb-2" do
+            %i.bi.bi-person-plus.me-2
+            Modify Respondents
+        - if policy(@feedback_request).destroy?
+          - if @feedback_request.archived?
+            = button_to restore_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-success btn-sm w-100 mb-2" do
+              %i.bi.bi-arrow-counterclockwise.me-2
+              Restore
+          - else
+            = button_to archive_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-danger btn-sm w-100", form: { data: { confirm: "Are you sure you want to archive this feedback request?" } } do
+              %i.bi.bi-archive.me-2
+              Archive
 
 .card.mb-3
-  .card-header
-    %h5.mb-0 Questions
-  .card-body
-    - if @questions.any?
-      %ol
-        - @questions.each do |question|
-          %li.mb-2
-            - if question.rateable
-              %small.text-muted.d-block.mb-1
-                - case question.rateable.class.name
-                - when 'Position'
-                  %i.bi.bi-briefcase.me-1
-                  About: #{question.rateable.display_name}
-                - when 'Assignment'
-                  %i.bi.bi-briefcase.me-1
-                  About: #{question.rateable.title}
-                - when 'Ability'
-                  %i.bi.bi-star.me-1
-                  About: #{question.rateable.name}
-                - when 'Aspiration'
-                  %i.bi.bi-bullseye.me-1
-                  About: #{question.rateable.name}
-            .markdown-content= render_markdown(question.question_text)
-    - else
-      %p.text-muted No questions defined.
-
-.card.mb-3
-  .card-header
+  .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
     %h5.mb-0 Responders
+    - if can_nudge
+      = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request),
+                  method: :post,
+                  class: "btn btn-sm btn-outline-secondary",
+                  form: { style: "display: inline;" } do
+        %i.bi.bi-bell.me-1
+        Nudge all
   .card-body
     - if @responders.any?
       - if @questions.any?
         .table-responsive
-          %table.table.table-sm.table-hover
+          %table.table.table-sm.table-hover.align-middle
             %thead
               %tr
                 %th Responder
+                %th Nudge
                 - @questions.each do |question|
                   %th
                     - if question.rateable
@@ -135,18 +144,41 @@
                 - responder_record = @responder_records_by_teammate_id[responder.id]
                 - is_current_user = responder == current_company_teammate
                 - completed = responder_record&.completed_at.present?
+                - nudges = @notifications_by_teammate_id[responder.id] || []
+                - last_nudge = nudges.first
                 %tr
                   %td
-                    = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
-                    - if completed
-                      %span.badge.bg-success.ms-2 Complete
-                    - elsif is_current_user
-                      %span.ms-2
-                        = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
+                    .d-flex.align-items-start.gap-1
+                      - if completed
+                        %i.bi.bi-check-circle-fill.text-success.mt-1{title: "Completed", "aria-label": "Completed"}
+                      %div
+                        = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
+                        - if completed
+                          .form-text.mb-0 Request completed on #{format_time_in_user_timezone(responder_record.completed_at)}
+                        - elsif is_current_user
+                          .mt-1
+                            = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
+                  %td
+                    - if last_nudge
+                      .small
+                        - ago = "#{time_ago_in_words(last_nudge.created_at)} ago"
+                        - if last_nudge.slack_url.present?
+                          = link_to ago, last_nudge.slack_url, target: "_blank", rel: "noopener noreferrer", class: "text-decoration-none"
+                        - else
+                          %span.text-muted= ago
+                        - if nudges.size > 1
+                          %span.text-muted
+                            · #{nudges.size} nudges
+                    - if !completed && can_nudge
+                      = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request, teammate_id: responder.id),
+                                  method: :post,
+                                  class: "btn btn-sm btn-outline-secondary py-0 px-2",
+                                  form: { class: "d-inline-block mt-1", style: "display: inline;" } do
+                        Nudge
                   - @questions.each do |question|
                     - obs = @observation_by_observer_and_question[[responder.person_id, question.id]]
                     %td
-                      - if obs
+                      - if obs && @observation_visibility_query.visible_to?(obs)
                         = link_to "View", organization_observation_path(organization, obs), class: "btn btn-sm btn-outline-primary"
                       - else
                         %span.text-muted --
@@ -156,38 +188,63 @@
             - responder_record = @responder_records_by_teammate_id[responder.id]
             - is_current_user = responder == current_company_teammate
             - completed = responder_record&.completed_at.present?
-            %li.mb-2
-              = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
-              - if completed
-                %span.badge.bg-success.ms-2 Complete
-              - elsif is_current_user
-                %span.ms-2
-                  = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
+            - nudges = @notifications_by_teammate_id[responder.id] || []
+            - last_nudge = nudges.first
+            %li.mb-3
+              .d-flex.flex-wrap.align-items-start.justify-content-between.gap-2
+                .d-flex.align-items-start.gap-1
+                  - if completed
+                    %i.bi.bi-check-circle-fill.text-success.mt-1{title: "Completed", "aria-label": "Completed"}
+                  %div
+                    = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
+                    - if completed
+                      .form-text.mb-0 Request completed on #{format_time_in_user_timezone(responder_record.completed_at)}
+                    - elsif is_current_user
+                      .mt-1
+                        = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
+                %div
+                  - if last_nudge
+                    .small
+                      - ago = "#{time_ago_in_words(last_nudge.created_at)} ago"
+                      - if last_nudge.slack_url.present?
+                        = link_to ago, last_nudge.slack_url, target: "_blank", rel: "noopener noreferrer", class: "text-decoration-none"
+                      - else
+                        %span.text-muted= ago
+                      - if nudges.size > 1
+                        %span.text-muted
+                          · #{nudges.size} nudges
+                  - if !completed && can_nudge
+                    = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request, teammate_id: responder.id),
+                                method: :post,
+                                class: "btn btn-sm btn-outline-secondary py-0 px-2",
+                                form: { class: "d-inline-block mt-1" } do
+                      Nudge
     - else
       %p.text-muted.mb-0 No responders assigned.
 
-- if @notifications_sent.any?
-  .card.mb-3
-    .card-header
-      %h5.mb-0 Notifications Sent
-    .card-body
-      %p.text-muted.small.mb-2 The following respondents were notified via Slack:
-      %ul.list-unstyled.mb-0
-        - @notifications_sent.each do |notification|
-          - teammate = @teammates_by_id[notification.metadata&.dig('teammate_id')&.to_i]
-          - if teammate
-            %li.mb-1
-              = link_to teammate.person.display_name, internal_organization_company_teammate_path(organization, teammate), class: "text-decoration-none"
-              %span.text-muted.ms-1
-                = format_time_in_user_timezone(notification.created_at)
+.card.mb-3
+  .card-header
+    %h5.mb-0 Questions
+    %small.text-muted Preview of what respondents will see
+  .card-body
+    - if @questions.any?
+      = render "organizations/feedback_requests/answer_question_cards",
+          organization: organization,
+          feedback_request: @feedback_request,
+          questions: @questions,
+          observation_by_question_id: {},
+          disabled: true
+    - else
+      %p.text-muted.mb-0 No questions defined.
 
 - if @observations.any?
   .card.mb-3
     .card-header
       %h5.mb-0 Generated Observations
     .card-body
-      %ul.list-unstyled
+      %ul.list-unstyled.mb-0
         - @observations.each do |observation|
+          - next unless @observation_visibility_query.visible_to?(observation)
           %li.mb-2
             = link_to organization_observation_path(organization, observation), class: "text-decoration-none" do
               %i.bi.bi-eye.me-2
@@ -195,45 +252,3 @@
               - if observation.feedback_request_question
                 %small.text-muted
                   (Question: #{observation.feedback_request_question.question_text.truncate(50)})
-
-.card
-  .card-body
-    .d-flex.gap-2.flex-wrap
-      - if policy(@feedback_request).answer?
-        = link_to answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-primary" do
-          %i.bi.bi-reply.me-2
-          Answer Request
-      - if policy(@feedback_request).update? && organization.slack_configured? && @feedback_request.responders.any?
-        = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-info", form: { style: "display: inline;" } do
-          %i.bi.bi-slack.me-2
-          Notify Respondents
-      - if policy(@feedback_request).update? && @feedback_request.can_be_edited?
-        - if @feedback_request.feedback_request_questions.empty?
-          = link_to select_focus_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
-            %i.bi.bi-bullseye.me-2
-            Select Focus
-        - elsif @feedback_request.feedback_request_questions.any? { |q| q.question_text.blank? }
-          = link_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
-            %i.bi.bi-question-circle.me-2
-            Edit Questions
-        - elsif @feedback_request.responders.empty?
-          = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
-            %i.bi.bi-people.me-2
-            Select Respondents
-        - else
-          = link_to edit_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary" do
-            %i.bi.bi-pencil.me-2
-            Edit
-      - if @feedback_request.can_add_responders? && policy(@feedback_request).update?
-        = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-info" do
-          %i.bi.bi-person-plus.me-2
-          Add Respondents
-      - if policy(@feedback_request).destroy?
-        - if @feedback_request.archived?
-          = button_to restore_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-success", form: { style: "display: inline;" } do
-            %i.bi.bi-arrow-counterclockwise.me-2
-            Restore
-        - else
-          = button_to archive_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-danger", form: { data: { confirm: "Are you sure you want to archive this feedback request?" }, style: "display: inline;" } do
-            %i.bi.bi-archive.me-2
-            Archive

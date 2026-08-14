@@ -158,7 +158,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response).to have_http_status(:redirect)
     end
 
-    it 'shows Notify Respondents button when Slack is configured and request has responders' do
+    it 'shows Nudge all when Slack is configured and request has responders' do
       company_with_slack = create(:organization, :with_slack_config)
       requestor_teammate.update!(organization: company_with_slack)
       subject_teammate.update!(organization: company_with_slack)
@@ -169,24 +169,50 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
 
       get organization_feedback_request_path(company_with_slack, feedback_request)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Notify Respondents')
+      expect(response.body).to include('Nudge all')
+      expect(response.body).to include('Nudge')
+      expect(response.body).not_to include('Notify Respondents')
+      expect(response.body).not_to include('Focus Items')
     end
 
-    it 'shows Notifications Sent section with who was notified and when' do
+    it 'shows prior nudges in the Nudge column' do
       create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
       feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
       feedback_request.notifications.create!(
         notification_type: 'feedback_request',
         status: 'sent_successfully',
         metadata: { channel: 'U123', teammate_id: responder_teammate.id },
-        fallback_text: 'Test'
+        fallback_text: 'Test',
+        created_at: 2.days.ago
       )
       sign_in_as_teammate_for_request(requestor_person, company)
 
       get organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Notifications Sent')
+      expect(response.body).to include('ago')
       expect(response.body).to include(responder_teammate.person.display_name)
+      expect(response.body).not_to include('Notifications Sent')
+    end
+
+    it 'shows completed caption and checkmark when a respondent has completed' do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      completed_at = 1.day.ago
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate, completed_at: completed_at)
+      sign_in_as_teammate_for_request(requestor_person, company)
+
+      get organization_feedback_request_path(company, feedback_request)
+      expect(response.body).to include('bi-check-circle-fill')
+      expect(response.body).to include('Request completed on')
+    end
+
+    it 'renders a disabled preview of the answer questions UI' do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'How did it go?', position: 1)
+      sign_in_as_teammate_for_request(requestor_person, company)
+
+      get organization_feedback_request_path(company, feedback_request)
+      expect(response.body).to include('Preview of what respondents will see')
+      expect(response.body).to include('Your story(ies)')
+      expect(response.body).to include('Visible to:')
     end
   end
 
@@ -853,7 +879,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         }.to change { feedback_request.notifications.where(notification_type: 'feedback_request').count }.by(1)
 
         expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
-        expect(flash[:notice]).to match(/Slack notification sent to 1 respondent/)
+        expect(flash[:notice]).to match(/Slack nudge sent to 1 respondent/)
       end
 
       it 'creates a notification with answer URL in the message' do
@@ -865,6 +891,20 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(notification.fallback_text).to include('Respond here:')
         expect(notification.rich_message).to be_present
         expect(notification.rich_message.first['text']['text']).to include('feedback')
+      end
+
+      it 'can nudge a single respondent via teammate_id' do
+        other = create(:company_teammate, organization: company_with_slack)
+        create(:teammate_identity, teammate: other, provider: 'slack', uid: 'U999')
+        feedback_request.feedback_request_responders.create!(teammate: other)
+
+        expect {
+          post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request),
+               params: { teammate_id: responder_teammate.id }
+        }.to change { feedback_request.notifications.where(notification_type: 'feedback_request').count }.by(1)
+
+        notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
+        expect(notification.metadata['teammate_id']).to eq(responder_teammate.id)
       end
     end
 
@@ -880,18 +920,18 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
 
         expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
-        expect(flash[:notice]).to match(/Slack notification sent to 1 respondent/)
+        expect(flash[:notice]).to match(/Slack nudge sent to 1 respondent/)
         notification = feedback_request.notifications.where(notification_type: 'feedback_request').last
         expect(notification.metadata['channel']).to eq('D_GROUP99')
       end
     end
 
     context 'when no responder has Slack identity' do
-      it 'redirects with notice that no notifications were sent' do
+      it 'redirects with notice that no nudges were sent' do
         post notify_respondents_organization_feedback_request_path(company_with_slack, feedback_request)
 
         expect(response).to redirect_to(organization_feedback_request_path(company_with_slack, feedback_request))
-        expect(flash[:notice]).to eq('No respondents have Slack connected; no notifications were sent.')
+        expect(flash[:notice]).to eq('No respondents have Slack connected; no nudges were sent.')
       end
     end
 
