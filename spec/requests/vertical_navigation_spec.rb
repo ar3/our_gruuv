@@ -540,7 +540,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
   end
 
   describe 'top bar create control' do
-    it 'shows a plus dropdown with Goal and typed Observation options' do
+    it 'shows a plus dropdown with Goal, New Kudos, and New Constructive Feedback' do
       get dashboard_organization_path(organization)
       follow_redirect! if response.redirect?
 
@@ -557,8 +557,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
       expect(response.body).to include('New Kudos')
       expect(response.body).to include("href=\"#{new_feedback_organization_observations_path(organization)}\"")
       expect(response.body).to include('New Constructive Feedback')
-      expect(response.body).to include("href=\"#{new_organization_observation_path(organization)}\"")
-      expect(response.body).to include('New Observation')
+      expect(response.body).not_to include('New Observation')
     end
   end
 end
