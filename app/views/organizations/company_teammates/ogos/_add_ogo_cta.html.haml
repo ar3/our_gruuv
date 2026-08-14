@@ -11,42 +11,48 @@
 - kudos_path = new_kudos_organization_observations_path(org, path_params)
 - feedback_path = new_feedback_organization_observations_path(org, path_params)
 - note_path = new_quick_note_organization_observations_path(org, path_params)
-- kudos_label = viewing_self ? "Add Self-Kudos" : "Add Kudos about #{casual_name}"
-- feedback_label = viewing_self ? "Add Self-Feedback" : "Add Constructive Feedback about #{casual_name}"
-- note_label = viewing_self ? "Add Self-Note" : "Add Note about #{casual_name}"
+- kudos_label = "Add Kudos about #{casual_name}"
+- feedback_label = "Add Constructive Feedback about #{casual_name}"
+- note_label = viewing_self ? "Add notes about me" : "Add Note about #{casual_name}"
+- select_type_path = select_type_organization_observations_path(org, return_url: return_url, return_text: return_text)
 
 .row.mb-4
   .col-12
     - if viewing_self
       .alert.alert-light.border.mb-3{role: "note"}
         %p.mb-2
-          %strong Why write OGOs about yourself?
-          Self-kudos, self-feedback, and notes keep continuous clarity between you and your manager —
+          %strong Why keep notes about yourself?
+          Private notes keep continuous clarity between you and your manager —
           so no one forgets the things that happen along the way, and your growth journey stays logged.
           When it is time for a check-in, that shared record helps the conversation stay increasingly accurate.
         %p.mb-0.small.text-muted
-          Want to give an observation about a different teammate? Use the
-          %i.bi.bi-plus
-          button in the header.
+          Want to give an observation about a different teammate?
+          = link_to "Add an OGO about any teammate", select_type_path
+          instead.
 
-    .row.g-3
-      .col-md-6
-        = link_to kudos_path, class: "text-decoration-none" do
-          .card.h-100.hover-lift.border-success-subtle
-            .card-body.text-center.p-4
-              %i.bi.bi-trophy.display-4.text-success.mb-2
-              %h4.mb-1= kudos_label
-              %p.text-muted.small.mb-0 Celebrate wins and note-worthy strengths
+      .text-center
+        = link_to note_path, class: "btn btn-outline-secondary" do
+          %i.bi.bi-sticky.me-1
+          = note_label
+    - else
+      .row.g-3
+        .col-md-6
+          = link_to kudos_path, class: "text-decoration-none" do
+            .card.h-100.hover-lift.border-success-subtle
+              .card-body.text-center.p-4
+                %i.bi.bi-trophy.display-4.text-success.mb-2
+                %h4.mb-1= kudos_label
+                %p.text-muted.small.mb-0 Celebrate wins and note-worthy strengths
 
-      .col-md-6
-        = link_to feedback_path, class: "text-decoration-none" do
-          .card.h-100.hover-lift.border-warning-subtle
-            .card-body.text-center.p-4
-              %i.bi.bi-chat-left-text.display-4.text-warning.mb-2
-              %h4.mb-1= feedback_label
-              %p.text-muted.small.mb-0 Share clear, actionable feedback
+        .col-md-6
+          = link_to feedback_path, class: "text-decoration-none" do
+            .card.h-100.hover-lift.border-warning-subtle
+              .card-body.text-center.p-4
+                %i.bi.bi-chat-left-text.display-4.text-warning.mb-2
+                %h4.mb-1= feedback_label
+                %p.text-muted.small.mb-0 Share clear, actionable feedback
 
-    .text-center.mt-3
-      = link_to note_path, class: "btn btn-sm btn-outline-secondary text-muted" do
-        %i.bi.bi-sticky.me-1
-        = note_label
+      .text-center.mt-3
+        = link_to note_path, class: "btn btn-sm btn-outline-secondary text-muted" do
+          %i.bi.bi-sticky.me-1
+          = note_label

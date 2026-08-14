@@ -20,6 +20,10 @@
         = render "shared/page_help/header_info_button",
                  collapse_id: page_help_id,
                  tooltip: local_assigns.fetch(:page_help_tooltip, "What this page is for and how to use it. Click for details.")
+    - if policy(Observation).create?
+      = link_to select_type_organization_observations_path(organization, return_url: request.fullpath, return_text: "Back to #{@casual_name}'s OGOs"), class: "btn btn-primary" do
+        %i.bi.bi-plus.me-1
+        Add an OGO about any teammate
 
 - content_for :header_action do
   = render "people/view_switcher"
