@@ -317,45 +317,14 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   def select_respondents
     authorize @feedback_request, :update?
 
-    # All active teammates, sorted by last name, preferred name, first name
-    all_teammates = CompanyTeammate
+    @teammates = CompanyTeammate
       .where(organization: company)
       .where(last_terminated_at: nil)
       .joins(:person)
       .includes(:person, employment_tenures: { position: { title: :department } })
       .order(Arel.sql('people.last_name ASC NULLS LAST, people.preferred_name ASC NULLS LAST, people.first_name ASC NULLS LAST'))
 
-    # Group by department (from active employment tenure's position title)
-    teammates_by_department = {}
-    all_teammates.each do |t|
-      tenure = t.employment_tenures.detect { |et| et.ended_at.nil? && et.company_id == company.id }
-      dept = tenure&.position&.title&.department
-      teammates_by_department[dept] ||= []
-      teammates_by_department[dept] << t
-    end
-    teammates_by_department.each_value do |list|
-      list.sort_by! { |t| [t.person.last_name.to_s, t.person.preferred_name.to_s, t.person.first_name.to_s] }
-    end
-
-    selected_ids = @feedback_request.responders.pluck(:id).to_set
-    @selected_respondent_teammates = @feedback_request.responders
-      .joins(:person)
-      .includes(:person)
-      .order(Arel.sql('people.last_name ASC NULLS LAST, people.preferred_name ASC NULLS LAST, people.first_name ASC NULLS LAST'))
-
-    # Grouped options for dropdown: only teammates not already in the list
-    teammates_by_department.each_key do |dept|
-      teammates_by_department[dept] = teammates_by_department[dept].reject { |t| selected_ids.include?(t.id) }
-    end
-    teammates_by_department.delete_if { |_, list| list.empty? }
-
-    @grouped_respondent_options = teammates_by_department.keys
-      .sort_by { |dept| dept.nil? ? [1, ''] : [0, dept.display_name] }
-      .map do |dept|
-        label = dept ? dept.display_name : 'No department'
-        options = teammates_by_department[dept].map { |t| [t.person.display_name, t.id] }
-        [label, options]
-      end
+    @selected_respondent_ids = @feedback_request.responders.pluck(:id).to_set
 
     render :select_respondents
   end
@@ -413,15 +382,33 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       return
     end
 
-    # Respondents are managed via add_respondent/remove_respondent; this action finalizes the list
-    if @feedback_request.responders.empty?
+    requested_ids = Array(params[:respondent_ids]).map(&:to_i).reject(&:zero?).uniq
+    eligible_ids = CompanyTeammate
+      .where(organization: company, id: requested_ids, last_terminated_at: nil)
+      .pluck(:id)
+      .to_set
+
+    if eligible_ids.empty?
       redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request),
                   alert: 'Please select at least one respondent.'
       return
     end
 
+    current_ids = @feedback_request.feedback_request_responders.pluck(:teammate_id).to_set
+    ids_to_add = eligible_ids - current_ids
+    ids_to_remove = current_ids - eligible_ids
+
+    FeedbackRequestResponder.transaction do
+      ids_to_add.each do |teammate_id|
+        @feedback_request.feedback_request_responders.create!(teammate_id: teammate_id)
+      end
+      @feedback_request.feedback_request_responders.where(teammate_id: ids_to_remove.to_a).destroy_all if ids_to_remove.any?
+    end
+
+    @feedback_request.validate_state!
+
     redirect_to organization_feedback_request_path(organization, @feedback_request),
-                notice: 'Feedback request was successfully created.'
+                notice: 'Respondents were saved.'
   end
 
   def answer
