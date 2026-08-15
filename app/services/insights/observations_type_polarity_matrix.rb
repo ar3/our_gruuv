@@ -2,8 +2,8 @@
 
 module Insights
   # Crosstab of observation_type × rating polarity for Observations insights.
-  # Polarity ignores N/A ratings: only positive/negative ratings count.
-  # Observations with no positive or negative ratings (including N/A-only) are "no_ratings".
+  # Polarity ignores N/A ratings: only positive/constructive ratings count.
+  # Observations with no positive or constructive ratings (including N/A-only) are "no_ratings".
   class ObservationsTypePolarityMatrix
     TYPE_KEYS = %w[generic kudos feedback quick_note].freeze
     TYPE_LABELS = {
@@ -13,11 +13,11 @@ module Insights
       "quick_note" => "Quick note"
     }.freeze
 
-    POLARITY_KEYS = %w[no_ratings all_positive all_negative mix].freeze
+    POLARITY_KEYS = %w[no_ratings all_positive all_constructive mix].freeze
     POLARITY_LABELS = {
       "no_ratings" => "No ratings",
       "all_positive" => "All positive",
-      "all_negative" => "All negative",
+      "all_constructive" => "All constructive",
       "mix" => "Mix"
     }.freeze
 
@@ -28,14 +28,14 @@ module Insights
     def self.polarity_for(observation)
       ratings = observation.observation_ratings
       has_pos = ratings.any?(&:positive?)
-      has_neg = ratings.any?(&:negative?)
+      has_constructive = ratings.any?(&:negative?)
 
-      if !has_pos && !has_neg
+      if !has_pos && !has_constructive
         "no_ratings"
-      elsif has_pos && !has_neg
+      elsif has_pos && !has_constructive
         "all_positive"
-      elsif has_neg && !has_pos
-        "all_negative"
+      elsif has_constructive && !has_pos
+        "all_constructive"
       else
         "mix"
       end

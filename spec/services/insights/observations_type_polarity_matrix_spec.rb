@@ -47,13 +47,13 @@ RSpec.describe Insights::ObservationsTypePolarityMatrix do
       expect(described_class.polarity_for(obs.reload)).to eq("all_positive")
     end
 
-    it "returns all_negative when only negative ratings exist" do
+    it "returns all_constructive when only constructive ratings exist" do
       obs = published_observation
       add_rating(obs, :disagree)
-      expect(described_class.polarity_for(obs.reload)).to eq("all_negative")
+      expect(described_class.polarity_for(obs.reload)).to eq("all_constructive")
     end
 
-    it "returns mix when both positive and negative ratings exist" do
+    it "returns mix when both positive and constructive ratings exist" do
       obs = published_observation
       add_rating(obs, :agree)
       add_rating(obs, :disagree)
