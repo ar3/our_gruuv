@@ -314,6 +314,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       bucket = obs.kudos_or_feedback_bucket
       @kudos_feedback_mixed_by_observer[obs.observer_id][bucket] += 1
     end
+    @observations_type_polarity_chart_data =
+      Insights::ObservationsTypePolarityMatrix.call(observations_with_bucket)
 
     # Aggregate count by privacy_level per observer
     @privacy_counts_by_observer = Hash.new { |h, k| h[k] = Hash.new(0) }

@@ -1,5 +1,9 @@
 - content_for :title, "Insights: Observations"
 
+- content_for :javascript do
+  / Must load after highcharts.js (see layouts/_head_common.html.haml)
+  %script{ src: "https://code.highcharts.com/modules/heatmap.js", "data-turbo-track": "reload" }
+
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
@@ -277,6 +281,38 @@
           %p.small.text-muted.mb-2
             Totals in this period (same categories as the chart above).
           #observations-publish-category-pie-chart{style: "height: 380px;"}
+
+  %hr.my-5
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-grid-3x3-gap.me-2
+            Observation type × rating polarity (#{@insights_chart_period_label})
+        .card-body
+          %p.small.text-muted.mb-3
+            Each published observation lands in one cell: creation type (generic, kudos, feedback, quick note)
+            crossed with rating polarity (no ratings, all positive, all negative, or mix).
+            N/A ratings are ignored for polarity; observations with only N/A (or no ratings) count as
+            %strong no ratings.
+            Cell labels show count and share of all observations in this timeframe
+            (#{number_with_delimiter(@observations_type_polarity_chart_data[:total])} total).
+          #observations-type-polarity-heatmap{style: "height: 420px;"}
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-secondary.text-white
+          %h4.mb-0
+            %i.bi.bi-bar-chart-steps.me-2
+            Rating polarity by observation type (#{@insights_chart_period_label})
+        .card-body
+          %p.small.text-muted.mb-3
+            Same data as the matrix above, stacked by polarity within each observation type.
+            Tooltip shows count and percent of all observations.
+          #observations-type-polarity-stacked{style: "height: 400px;"}
 
 :javascript
   (function() {
@@ -836,5 +872,184 @@
     }
     window.addEventListener('load', function() {
       if (typeof Highcharts !== 'undefined') initializePublishCategoryPieChart();
+    });
+  })();
+
+  (function() {
+    var matrixData = #{(@observations_type_polarity_chart_data || {}).to_json};
+    var chartTitle = #{@insights_chart_period_label.to_json};
+    var heatmap = matrixData.heatmap || {};
+    var stacked = matrixData.stacked || {};
+    var heatmapInitialized = false;
+    var stackedInitialized = false;
+
+    function loadScript(src, onload) {
+      var existing = document.querySelector('script[src="' + src + '"]');
+      if (existing) {
+        if (onload) {
+          if (typeof Highcharts !== 'undefined' && Highcharts.seriesTypes && Highcharts.seriesTypes.heatmap) {
+            onload();
+          } else {
+            existing.addEventListener('load', onload);
+          }
+        }
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = src;
+      script.onload = onload;
+      document.head.appendChild(script);
+    }
+
+    function initializeTypePolarityHeatmap() {
+      if (heatmapInitialized) return;
+      if (typeof Highcharts === 'undefined') return;
+      if (!(Highcharts.seriesTypes && Highcharts.seriesTypes.heatmap)) return;
+      var el = document.getElementById('observations-type-polarity-heatmap');
+      if (!el) return;
+      heatmapInitialized = true;
+      Highcharts.chart('observations-type-polarity-heatmap', {
+        chart: { type: 'heatmap' },
+        title: { text: 'Observation type x rating polarity (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: heatmap.x_categories || [],
+          title: { text: 'Rating polarity' }
+        },
+        yAxis: {
+          categories: heatmap.y_categories || [],
+          title: { text: 'Observation type' },
+          reversed: true
+        },
+        colorAxis: {
+          min: 0,
+          minColor: '#FFFFFF',
+          maxColor: Highcharts.getOptions().colors[0]
+        },
+        legend: {
+          align: 'right',
+          layout: 'vertical',
+          margin: 0,
+          verticalAlign: 'top',
+          y: 25,
+          symbolHeight: 280
+        },
+        tooltip: {
+          formatter: function() {
+            var typeLabel = (heatmap.y_categories || [])[this.point.y] || '';
+            var polarityLabel = (heatmap.x_categories || [])[this.point.x] || '';
+            return '<b>' + typeLabel + '</b> x <b>' + polarityLabel + '</b><br/>' +
+              this.point.value + ' (' + this.point.pct + '% of all)';
+          }
+        },
+        series: [{
+          name: 'Observations',
+          borderWidth: 1,
+          data: heatmap.data || [],
+          dataLabels: {
+            enabled: true,
+            color: '#000000',
+            formatter: function() {
+              if (!this.point.value) return '0';
+              return this.point.value + '<br/>' + this.point.pct + '%';
+            }
+          }
+        }]
+      });
+    }
+
+    function initializeTypePolarityStacked() {
+      if (stackedInitialized) return;
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('observations-type-polarity-stacked');
+      if (!el) return;
+      stackedInitialized = true;
+      var series = (stacked.series || []).map(function(s) {
+        return {
+          name: s.name,
+          data: (s.data || []).map(function(value, i) {
+            return { y: value, pct: (s.pct_data || [])[i] || 0 };
+          })
+        };
+      });
+      Highcharts.chart('observations-type-polarity-stacked', {
+        chart: { type: 'column' },
+        title: { text: 'Rating polarity by observation type (' + chartTitle + ')' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: stacked.categories || [],
+          title: { text: 'Observation type' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of observations' },
+          stackLabels: { enabled: true }
+        },
+        tooltip: {
+          shared: true,
+          formatter: function() {
+            var html = '<b>' + this.x + '</b>';
+            (this.points || []).forEach(function(p) {
+              html += '<br/>' + p.series.name + ': <b>' + p.y + '</b> (' + p.point.pct + '% of all)';
+            });
+            return html;
+          }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: false }
+          }
+        },
+        series: series
+      });
+    }
+
+    function ensureHeatmapThenInit() {
+      if (typeof Highcharts === 'undefined') return;
+      if (Highcharts.seriesTypes && Highcharts.seriesTypes.heatmap) {
+        initializeTypePolarityHeatmap();
+        return;
+      }
+      loadScript('https://code.highcharts.com/modules/heatmap.js', function() {
+        var tries = 0;
+        function waitForHeatmapType() {
+          if (Highcharts.seriesTypes && Highcharts.seriesTypes.heatmap) {
+            initializeTypePolarityHeatmap();
+          } else if (tries < 50) {
+            tries++;
+            setTimeout(waitForHeatmapType, 50);
+          }
+        }
+        waitForHeatmapType();
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighchartsTypePolarity() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeTypePolarityStacked();
+        ensureHeatmapThenInit();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighchartsTypePolarity, 100);
+      } else {
+        loadScript('https://code.highcharts.com/highcharts.js', function() {
+          initializeTypePolarityStacked();
+          ensureHeatmapThenInit();
+        });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighchartsTypePolarity);
+    } else {
+      waitForHighchartsTypePolarity();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeTypePolarityStacked();
+        ensureHeatmapThenInit();
+      }
     });
   })();

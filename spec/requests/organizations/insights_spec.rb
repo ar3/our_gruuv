@@ -149,6 +149,10 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include("Observations by observer's department")
       expect(response.body).to include('observations-by-department-chart')
       expect(response.body).to include("Observations by observee's department")
+      expect(response.body).to include('Observation type × rating polarity')
+      expect(response.body).to include('observations-type-polarity-heatmap')
+      expect(response.body).to include('Rating polarity by observation type')
+      expect(response.body).to include('observations-type-polarity-stacked')
     end
 
     it 'includes timeframe filter links (Last 90 days, Last Year, All-Time, Custom)' do
