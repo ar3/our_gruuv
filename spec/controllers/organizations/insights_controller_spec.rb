@@ -595,6 +595,36 @@ RSpec.describe Organizations::InsightsController, type: :controller do
         expect(distribution).to have_key(value)
       end
     end
+
+    context 'search and Ask OG detail tables' do
+      before do
+        allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(can_manage_employment)
+      end
+
+      context 'when viewer can manage employment' do
+        let(:can_manage_employment) { true }
+
+        it 'loads recent search logs and Ask OG sessions' do
+          get :who_is_doing_what, params: { organization_id: company.id }
+
+          expect(assigns(:show_search_ask_og_who)).to be true
+          expect(assigns(:recent_search_logs)).not_to be_nil
+          expect(assigns(:recent_ask_og_sessions)).not_to be_nil
+        end
+      end
+
+      context 'when viewer cannot manage employment' do
+        let(:can_manage_employment) { false }
+
+        it 'does not load recent search logs or Ask OG sessions' do
+          get :who_is_doing_what, params: { organization_id: company.id }
+
+          expect(assigns(:show_search_ask_og_who)).to be false
+          expect(assigns(:recent_search_logs)).to eq([])
+          expect(assigns(:recent_ask_og_sessions)).to eq([])
+        end
+      end
+    end
   end
 
   describe 'GET #prompts' do

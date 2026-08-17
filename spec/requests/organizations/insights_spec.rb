@@ -125,6 +125,35 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Past 30 days')
       expect(response.body).to include('Past 90 days')
     end
+
+    context 'search and Ask OG detail tables' do
+      before do
+        allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(can_manage_employment)
+      end
+
+      context 'when viewer can manage employment' do
+        let(:can_manage_employment) { true }
+
+        it 'shows recent search and Ask OG session tables' do
+          get organization_insights_who_is_doing_what_path(organization)
+
+          expect(response.body).to include('Recent searches (org-wide)')
+          expect(response.body).to include('Recent Ask OG sessions (org-wide)')
+        end
+      end
+
+      context 'when viewer cannot manage employment' do
+        let(:can_manage_employment) { false }
+
+        it 'hides recent search and Ask OG session tables' do
+          get organization_insights_who_is_doing_what_path(organization)
+
+          expect(response.body).to include('Search & Ask OG activity')
+          expect(response.body).not_to include('Recent searches (org-wide)')
+          expect(response.body).not_to include('Recent Ask OG sessions (org-wide)')
+        end
+      end
+    end
   end
 
   describe 'GET /organizations/:organization_id/insights/observations' do

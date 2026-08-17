@@ -452,29 +452,34 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
         .sum(:cost_micros)
         .to_i
     end
-    @recent_ask_og_sessions = AskOgResult
-      .joins(:og_consultation)
-      .where(og_consultations: { organization_id: company.id, kind: OgConsultation::KIND_ASK_OG })
-      .includes(:ask_og_messages, og_consultation: { triggered_by_teammate: :person })
-      .order(created_at: :desc)
-      .limit(25)
-      .map do |ask|
-        messages = ask.ask_og_messages
-        {
-          id: ask.og_consultation_id,
-          query: ask.query,
-          teammate_name: ask.og_consultation.triggered_by_teammate&.person&.display_name || "Unknown",
-          created_at: ask.created_at,
-          user_messages: messages.count { |m| m.user? },
-          turn_count: messages.size,
-          confirms_count: ask.confirms_count.to_i,
-          status: ask.og_consultation.status
-        }
-      end
+    if @show_search_ask_og_who
+      @recent_ask_og_sessions = AskOgResult
+        .joins(:og_consultation)
+        .where(og_consultations: { organization_id: company.id, kind: OgConsultation::KIND_ASK_OG })
+        .includes(:ask_og_messages, og_consultation: { triggered_by_teammate: :person })
+        .order(created_at: :desc)
+        .limit(25)
+        .map do |ask|
+          messages = ask.ask_og_messages
+          {
+            id: ask.og_consultation_id,
+            query: ask.query,
+            teammate_name: ask.og_consultation.triggered_by_teammate&.person&.display_name || "Unknown",
+            created_at: ask.created_at,
+            user_messages: messages.count { |m| m.user? },
+            turn_count: messages.size,
+            confirms_count: ask.confirms_count.to_i,
+            status: ask.og_consultation.status
+          }
+        end
 
-    @recent_search_logs = SearchQueryLog
-      .recent_for_organization(organization: company, limit: 25)
-      .includes(company_teammate: :person)
+      @recent_search_logs = SearchQueryLog
+        .recent_for_organization(organization: company, limit: 25)
+        .includes(company_teammate: :person)
+    else
+      @recent_ask_og_sessions = []
+      @recent_search_logs = []
+    end
 
     chart_range = 12.weeks.ago.beginning_of_week(:monday)..Time.current
     @search_ask_og_weekly_charts = search_ask_og_weekly_charts(company, chart_range)
