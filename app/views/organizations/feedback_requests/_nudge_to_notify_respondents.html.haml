@@ -1,0 +1,12 @@
+.card.mb-4.border-warning{ role: "region", "aria-labelledby": "nudge-respondents-prompt" }
+  .card-body.bg-light
+    .text-center.py-4
+      %h4.mb-2{ id: "nudge-respondents-prompt" }
+        Almost done!
+      %p.mb-4.text-muted
+        Nobody has been nudged yet. Respondents won’t see this request until you send a Slack nudge.
+      = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request),
+                  method: :post,
+                  class: "btn btn-primary btn-lg px-5 py-3" do
+        %i.bi.bi-bell.me-2
+        Nudge All

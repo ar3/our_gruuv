@@ -21,6 +21,13 @@
       %span.badge.bg-secondary.ms-2 Archived
 
 - can_nudge = policy(@feedback_request).update? && organization.slack_configured? && @responders.any?
+- incomplete_responders = @responder_records_by_teammate_id.values.any? { |record| record.completed_at.blank? }
+- show_nudge_banner = can_nudge && incomplete_responders && @notifications_sent.none? && !@feedback_request.archived?
+
+- if show_nudge_banner
+  .row
+    .col-12
+      = render "nudge_to_notify_respondents"
 
 .row
   .col-md-8
