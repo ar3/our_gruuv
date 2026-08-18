@@ -301,6 +301,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('Goal confidence checks')
       expect(response.body).to include('Observation Drafts')
       expect(response.body).to include('Silent Observations')
+      expect(response.body).to include('Feedback to clean up')
     end
 
     it 'lists silent observations (published, non-journal, no notifications, yours)' do
@@ -343,6 +344,70 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).not_to include(other_pub.story)
       show_path = Rails.application.routes.url_helpers.organization_observation_path(company, silent)
       expect(response.body).to include(show_path)
+    end
+
+    it 'lists published Feedback OGOs that still need a constructive rating' do
+      mismatch_story = "Feedback mismatch #{SecureRandom.hex(4)}"
+      mismatch = create(:observation,
+                        observer: person,
+                        company: company,
+                        observation_type: :feedback,
+                        created_as_type: 'feedback',
+                        published_at: Time.current,
+                        privacy_level: :observed_and_managers,
+                        story: mismatch_story)
+      create(:notification, notifiable: mismatch, notification_type: 'observation_dm', status: 'sent_successfully')
+      constructive_story = "Already constructive #{SecureRandom.hex(4)}"
+      constructive = create(:observation,
+                            observer: person,
+                            company: company,
+                            observation_type: :feedback,
+                            created_as_type: 'feedback',
+                            published_at: Time.current,
+                            privacy_level: :observed_and_managers,
+                            story: constructive_story)
+      create(:observation_rating, observation: constructive, rateable: create(:ability, company: company), rating: :disagree)
+      create(:notification, notifiable: constructive, notification_type: 'observation_dm', status: 'sent_successfully')
+      draft_story = "Draft feedback #{SecureRandom.hex(4)}"
+      create(:observation,
+             observer: person,
+             company: company,
+             observation_type: :feedback,
+             created_as_type: 'feedback',
+             published_at: nil,
+             privacy_level: :observed_and_managers,
+             story: draft_story)
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Feedback to clean up')
+      expect(response.body).to include(mismatch_story)
+      expect(response.body).to include('Change to Kudos')
+      expect(response.body).to include('Change to Generic')
+      expect(response.body).not_to include(constructive_story)
+      convert_kudos_path = Rails.application.routes.url_helpers.convert_to_kudos_organization_observation_path(company, mismatch)
+      expect(response.body).to include(convert_kudos_path)
+    end
+
+    it 'clears a Feedback mismatch from Get Shit Done after converting to Kudos' do
+      mismatch_story = "Convert me #{SecureRandom.hex(4)}"
+      mismatch = create(:observation,
+                        observer: person,
+                        company: company,
+                        observation_type: :feedback,
+                        created_as_type: 'feedback',
+                        published_at: Time.current,
+                        privacy_level: :observed_and_managers,
+                        story: mismatch_story)
+      create(:notification, notifiable: mismatch, notification_type: 'observation_dm', status: 'sent_successfully')
+      gsd_path = organization_get_shit_done_path(company)
+
+      patch convert_to_kudos_organization_observation_path(company, mismatch, return_url: gsd_path)
+      expect(response).to redirect_to(gsd_path)
+
+      get gsd_path
+      expect(response.body).not_to include(mismatch_story)
     end
 
     it 'does not list silent observations when the observer skipped the GSD reminder' do

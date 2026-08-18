@@ -8,6 +8,11 @@ module Observations
       new(observation).mismatch?
     end
 
+    # Feedback OGOs in +relation+ that have no constructive (negative) ratings.
+    def self.without_constructive_ratings(relation)
+      relation.feedback_observations.where.not(id: ObservationRating.negative.select(:observation_id))
+    end
+
     def initialize(observation)
       @observation = observation
     end

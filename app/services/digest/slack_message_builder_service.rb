@@ -12,6 +12,7 @@ module Digest
       maap_snapshots: -> { I18n.t('terminology.clarity_check_ins_awaiting_acknowledgement') },
       observation_drafts: 'Observation Drafts',
       silent_observations: 'Silent Observations',
+      feedback_expectation_mismatches: 'Feedback to clean up',
       goals_needing_check_in: -> { I18n.t('terminology.goal_confidence_checks') },
       check_ins_awaiting_input: -> { I18n.t('terminology.clarity_check_ins_awaiting_your_input') }
     }.freeze
@@ -537,7 +538,7 @@ module Digest
         collection.map { |m| slack_escape(m.digest_sentence) }
       when :maap_snapshots
         collection.map { |s| "#{s.change_type.humanize}: #{slack_escape(s.reason.to_s.truncate(60))}" }
-      when :observation_drafts, :silent_observations
+      when :observation_drafts, :silent_observations, :feedback_expectation_mismatches
         collection.map { |o| observation_draft_label(o) }
       when :goals_needing_check_in
         collection.map { |goal| goal_check_in_label(goal) }

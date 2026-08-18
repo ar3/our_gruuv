@@ -339,6 +339,52 @@ RSpec.describe GetShitDoneQueryService do
     end
   end
 
+  describe '#feedback_expectation_mismatches' do
+    def published_feedback(attrs = {})
+      create(:observation, {
+        observer: person,
+        company: company,
+        observation_type: :feedback,
+        created_as_type: 'feedback',
+        published_at: Time.current,
+        privacy_level: :observed_and_managers
+      }.merge(attrs))
+    end
+
+    it 'includes published feedback with no constructive rating' do
+      no_ratings = published_feedback(story: "No ratings #{SecureRandom.hex(4)}")
+      positive_only = published_feedback(story: "Positive only #{SecureRandom.hex(4)}")
+      create(:observation_rating, observation: positive_only, rateable: create(:ability, company: company), rating: :agree)
+
+      rows = service.feedback_expectation_mismatches
+      expect(rows).to include(no_ratings, positive_only)
+    end
+
+    it 'excludes feedback that already has a constructive rating' do
+      constructive = published_feedback(story: "Has constructive #{SecureRandom.hex(4)}")
+      create(:observation_rating, observation: constructive, rateable: create(:ability, company: company), rating: :disagree)
+
+      expect(service.feedback_expectation_mismatches).not_to include(constructive)
+    end
+
+    it 'excludes kudos, drafts, journals, archived, and other observers' do
+      kudos = create(:observation, observer: person, company: company, observation_type: :kudos, published_at: Time.current, privacy_level: :observed_and_managers)
+      draft = published_feedback(published_at: nil, story: "Draft feedback #{SecureRandom.hex(4)}")
+      journal = published_feedback(privacy_level: :observer_only, story: "Journal feedback #{SecureRandom.hex(4)}")
+      archived = published_feedback(story: "Archived feedback #{SecureRandom.hex(4)}")
+      archived.soft_delete!
+      other_person = create(:person)
+      other_obs = create(:observation, observer: other_person, company: company, observation_type: :feedback, created_as_type: 'feedback', published_at: Time.current, privacy_level: :observed_and_managers)
+
+      rows = service.feedback_expectation_mismatches
+      expect(rows).not_to include(kudos, draft, journal, archived, other_obs)
+    end
+
+    it 'returns empty relation when teammate is nil' do
+      expect(described_class.new(teammate: nil).feedback_expectation_mismatches).to be_empty
+    end
+  end
+
   describe '#all_pending_items' do
     it 'returns a hash with all pending items and total count' do
       result = service.all_pending_items
@@ -347,6 +393,7 @@ RSpec.describe GetShitDoneQueryService do
       expect(result).to have_key(:maap_snapshots)
       expect(result).to have_key(:observation_drafts)
       expect(result).to have_key(:silent_observations)
+      expect(result).to have_key(:feedback_expectation_mismatches)
       expect(result).to have_key(:goals_needing_check_in)
       expect(result).to have_key(:check_ins_awaiting_input)
       expect(result).to have_key(:total_pending)
@@ -376,6 +423,19 @@ RSpec.describe GetShitDoneQueryService do
              story: "For silent breakdown #{SecureRandom.hex(4)}")
       rows = service.pending_category_breakdown
       expect(rows).to include(hash_including(count: 1, label: "Silent Observations"))
+    end
+
+    it 'includes Feedback to clean up when present' do
+      create(:observation,
+             observer: person,
+             company: company,
+             observation_type: :feedback,
+             created_as_type: 'feedback',
+             published_at: Time.current,
+             privacy_level: :observed_and_managers,
+             story: "Feedback mismatch #{SecureRandom.hex(4)}")
+      rows = service.pending_category_breakdown
+      expect(rows).to include(hash_including(count: 1, label: "Feedback to clean up"))
     end
   end
 end

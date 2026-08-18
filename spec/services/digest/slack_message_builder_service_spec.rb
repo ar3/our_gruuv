@@ -136,6 +136,36 @@ RSpec.describe Digest::SlackMessageBuilderService do
       expect(check_in_payload[:text]).to include('Manager')
       expect(check_in_payload[:text]).to match(/checked-in \d+ (day|days) ago/)
     end
+
+    it 'includes a Feedback to clean up thread when mismatches are present' do
+      observation = create(:observation,
+                           observer: person,
+                           company: organization,
+                           observation_type: :feedback,
+                           created_as_type: 'feedback',
+                           published_at: Time.current,
+                           privacy_level: :observed_and_managers,
+                           story: 'Needs a constructive rating')
+      gsd_items = {
+        total_pending: 1,
+        observable_moments: [],
+        maap_snapshots: [],
+        observation_drafts: [],
+        silent_observations: [],
+        feedback_expectation_mismatches: [observation],
+        goals_needing_check_in: [],
+        check_ins_awaiting_input: []
+      }
+      allow(GetShitDoneQueryService).to receive(:new).and_return(instance_double(GetShitDoneQueryService, all_pending_items: gsd_items))
+      allow(Digest::AboutMeContentService).to receive(:new).and_return(instance_double(Digest::AboutMeContentService, sections: []))
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.gsd_thread_payloads
+
+      payload = result.find { |p| p[:text].include?('Feedback to clean up') }
+      expect(payload).to be_present
+      expect(payload[:text]).to include('Needs a constructive rating')
+    end
   end
 
   describe '#about_me_main_payload' do

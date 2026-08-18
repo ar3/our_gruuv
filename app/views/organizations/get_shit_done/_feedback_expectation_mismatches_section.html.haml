@@ -1,0 +1,56 @@
+- mismatch_count = @feedback_expectation_mismatches.count
+= render 'shared/section_header',
+         title: 'Feedback to clean up',
+         icon: 'bi-chat-left-text',
+         description: 'Published Feedback OGOs that still need a constructive rating — or should be recategorized as Kudos or Generic',
+         collapsible: true,
+         collapse_target: 'feedbackExpectationMismatchesSection',
+         status_indicator: :warning
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#feedbackExpectationMismatchesSection", "aria-expanded" => "false", "aria-controls" => "feedbackExpectationMismatchesSection", style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(mismatch_count, 'Feedback OGO') + ' without a constructive rating'
+
+.collapse#feedbackExpectationMismatchesSection
+  .card.mb-4
+    .card-body
+      - if @feedback_expectation_mismatches.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Preview
+                %th Published
+                %th{style: "min-width: 380px;"} Actions
+            %tbody
+              - gsd_return = organization_get_shit_done_path(organization)
+              - @feedback_expectation_mismatches.each do |observation|
+                %tr
+                  %td
+                    %strong= truncate(observation.story || 'No story', length: 100)
+                    %br
+                    %small.text-muted
+                      - if observation.observees.any?
+                        = "Observing: #{observation.observed_teammates.map { |t| t.person.display_name }.join(', ')}"
+                      - else
+                        No observees
+                  %td
+                    %small= observation.published_at&.strftime('%b %d, %Y')
+                  %td
+                    .btn-group.btn-group-sm{role: "group"}
+                      = link_to "Edit",
+                                edit_organization_observation_path(organization, observation, return_url: gsd_return, return_text: "Back to #{company_label_for('get_shit_done', 'Get Shit Done')}"),
+                                class: "btn btn-primary btn-sm"
+                      = button_to "Change to Kudos",
+                                  convert_to_kudos_organization_observation_path(organization, observation, return_url: gsd_return),
+                                  method: :patch,
+                                  class: "btn btn-outline-success btn-sm",
+                                  data: { turbo: false }
+                      = button_to "Change to Generic",
+                                  convert_to_generic_organization_observation_path(organization, observation, return_url: gsd_return),
+                                  method: :patch,
+                                  class: "btn btn-outline-secondary btn-sm",
+                                  data: { turbo: false, confirm: "This will enable all privacy levels and features. Continue?" }
+      - else
+        %p.text-muted.mb-0 No Feedback OGOs to clean up.

@@ -42,6 +42,18 @@ class GetShitDoneQueryService
                .recent
   end
 
+  # Published Feedback OGOs you authored that still lack a constructive rating.
+  def feedback_expectation_mismatches
+    return Observation.none unless person && company
+
+    Observations::FeedbackExpectation.without_constructive_ratings(
+      Observation.where(observer: person, company: company)
+                 .published
+                 .not_journal
+                 .not_soft_deleted
+    ).recent
+  end
+
   def goals_needing_check_in
     return Goal.none unless teammate
     
@@ -61,6 +73,7 @@ class GetShitDoneQueryService
       maap_snapshots.count +
       observation_drafts.count +
       silent_observations.count +
+      feedback_expectation_mismatches.count +
       goals_needing_check_in.count +
       check_ins_awaiting_input.size
   end
@@ -71,6 +84,7 @@ class GetShitDoneQueryService
       maap_snapshots: maap_snapshots,
       observation_drafts: observation_drafts,
       silent_observations: silent_observations,
+      feedback_expectation_mismatches: feedback_expectation_mismatches,
       goals_needing_check_in: goals_needing_check_in,
       check_ins_awaiting_input: check_ins_awaiting_input,
       total_pending: total_pending_count
@@ -87,7 +101,8 @@ class GetShitDoneQueryService
       { count: check_ins_awaiting_input.size, label: I18n.t("terminology.clarity_check_ins_awaiting_your_input") },
       { count: goals_needing_check_in.count, label: I18n.t("terminology.goal_confidence_checks") },
       { count: observation_drafts.count, label: "Observation Drafts" },
-      { count: silent_observations.count, label: "Silent Observations" }
+      { count: silent_observations.count, label: "Silent Observations" },
+      { count: feedback_expectation_mismatches.count, label: "Feedback to clean up" }
     ].select { |row| row[:count].positive? }
   end
 

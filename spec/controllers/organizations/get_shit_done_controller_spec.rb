@@ -106,6 +106,31 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
 
       expect(assigns(:silent_observations)).not_to include(skipped)
     end
+
+    it 'loads feedback expectation mismatches for the current person' do
+      mismatch = create(:observation,
+                        observer: person,
+                        company: company,
+                        observation_type: :feedback,
+                        created_as_type: 'feedback',
+                        published_at: Time.current,
+                        privacy_level: :observed_and_managers,
+                        story: "Mismatch #{SecureRandom.hex(4)}")
+      constructive = create(:observation,
+                            observer: person,
+                            company: company,
+                            observation_type: :feedback,
+                            created_as_type: 'feedback',
+                            published_at: Time.current,
+                            privacy_level: :observed_and_managers,
+                            story: "Has constructive #{SecureRandom.hex(4)}")
+      create(:observation_rating, observation: constructive, rateable: create(:ability, company: company), rating: :disagree)
+
+      get :show, params: { organization_id: company.id }
+
+      expect(assigns(:feedback_expectation_mismatches)).to include(mismatch)
+      expect(assigns(:feedback_expectation_mismatches)).not_to include(constructive)
+    end
     
     it 'loads goals needing check-in' do
       # Ensure teammate is a CompanyTeammate

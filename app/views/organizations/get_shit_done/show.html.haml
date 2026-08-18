@@ -44,6 +44,11 @@
 - else
   - completed_categories << { title: 'Silent Observations', icon: 'bi-bell-slash', description: 'Published observations not yet shared via Slack or DM' }
 
+- if @feedback_expectation_mismatches.any?
+  = render partial: 'organizations/get_shit_done/feedback_expectation_mismatches_section'
+- else
+  - completed_categories << { title: 'Feedback to clean up', icon: 'bi-chat-left-text', description: 'Published Feedback OGOs that still need a constructive rating' }
+
 - if completed_categories.any?
   .row.mt-5.pt-4
     .col-12
