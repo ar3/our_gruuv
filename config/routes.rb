@@ -666,6 +666,7 @@ Rails.application.routes.draw do
       end
       member do
         patch :convert_to_generic
+        patch :convert_to_kudos
         patch :restore  # Restore soft-deleted observation
         get :set_ratings, action: :set_ratings
         post :set_ratings, action: :set_ratings

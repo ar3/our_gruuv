@@ -43,6 +43,11 @@
               %button.btn.btn-lg.btn-warning.text-dark.fw-semibold.disabled{ disabled: true }
                 Restore
               %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You do not have permission to restore this observation"}
+/ Feedback expectation — observer only; draft or published
+- if show_feedback_expectation_banner?(@observation, current_person)
+  .row
+    .col-12
+      = render 'feedback_expectation_banner', organization: @organization
 / Draft nudge - shown when observation is draft and user can publish (observer)
 - if @observation.draft? && current_person == @observation.observer
   .row

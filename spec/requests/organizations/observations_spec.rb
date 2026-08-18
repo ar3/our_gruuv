@@ -174,11 +174,19 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(observation.created_as_type).to eq('kudos') # Should not change
       end
 
+      it 'redirects to return_url when provided' do
+        return_url = organization_observation_path(organization, observation)
+        patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url)
+        expect(response).to redirect_to(return_url)
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+      end
+
       it 'preserves return_url and return_text params in redirect' do
         return_url = organization_observations_path(organization)
         return_text = 'Back to Observations'
         patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url, return_text: return_text)
-        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+        expect(response).to redirect_to(return_url)
         observation.reload
         expect(observation.observation_type).to eq('generic')
         expect(observation.created_as_type).to eq('kudos')
@@ -200,7 +208,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
         return_url = organization_observations_path(organization)
         return_text = 'Back to Observations'
         patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url, return_text: return_text)
-        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+        expect(response).to redirect_to(return_url)
         observation.reload
         expect(observation.observation_type).to eq('generic')
         expect(observation.created_as_type).to eq('feedback')
@@ -222,7 +230,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
         return_url = organization_observations_path(organization)
         return_text = 'Back to Observations'
         patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url, return_text: return_text)
-        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+        expect(response).to redirect_to(return_url)
         observation.reload
         expect(observation.observation_type).to eq('generic')
         expect(observation.created_as_type).to eq('quick_note')
@@ -242,6 +250,39 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(response).to have_http_status(:redirect)
         observation.reload
         expect(observation.observation_type).to eq(original_type) # Should not change
+      end
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/observations/:id/convert_to_kudos' do
+    let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'feedback', created_as_type: 'feedback') }
+
+    it 'converts observation type to kudos' do
+      patch convert_to_kudos_organization_observation_path(organization, observation)
+      expect(response).to redirect_to(new_kudos_organization_observations_path(organization, draft_id: observation.id))
+      observation.reload
+      expect(observation.observation_type).to eq('kudos')
+      expect(observation.created_as_type).to eq('feedback')
+    end
+
+    it 'redirects to return_url when provided' do
+      return_url = organization_observation_path(organization, observation)
+      patch convert_to_kudos_organization_observation_path(organization, observation, return_url: return_url)
+      expect(response).to redirect_to(return_url)
+      observation.reload
+      expect(observation.observation_type).to eq('kudos')
+    end
+
+    context 'authorization' do
+      let(:other_person) { create(:person) }
+
+      it 'requires update permission' do
+        sign_in_as_teammate_for_request(other_person, organization)
+        original_type = observation.observation_type
+        patch convert_to_kudos_organization_observation_path(organization, observation)
+        expect(response).to have_http_status(:redirect)
+        observation.reload
+        expect(observation.observation_type).to eq(original_type)
       end
     end
   end

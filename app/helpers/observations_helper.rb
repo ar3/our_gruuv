@@ -114,6 +114,18 @@ module ObservationsHelper
     end
   end
 
+  def feedback_expectation_mismatch?(observation)
+    Observations::FeedbackExpectation.mismatch?(observation)
+  end
+
+  def show_feedback_expectation_banner?(observation, current_person)
+    return false unless observation.present? && current_person.present?
+    return false unless current_person == observation.observer
+    return false if observation.soft_deleted?
+
+    feedback_expectation_mismatch?(observation)
+  end
+
   def observation_type_name(observation_type)
     case observation_type.to_s
     when 'kudos'

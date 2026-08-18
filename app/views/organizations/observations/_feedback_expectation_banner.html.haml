@@ -1,0 +1,36 @@
+.card.mb-4.border-warning{ role: "region", "aria-labelledby": "feedback-expectation-banner" }
+  .card-body.bg-light
+    .d-flex.flex-column.flex-md-row.align-items-md-start.justify-content-between.gap-3
+      %div
+        %h4.mb-2{ id: "feedback-expectation-banner" }
+          %i.bi.bi-exclamation-triangle.text-warning.me-2
+          Feedback needs a constructive rating
+        %p.mb-2
+          This OGO is labeled
+          %strong Feedback
+          but has no constructive rating yet. Feedback in OG is for growth-oriented challenge — at least one
+          %strong Mis-aligned
+          or
+          %strong Concerning
+          rating on an assignment, ability, or value.
+        %p.mb-0.text-muted.small
+          If this is recognition, switch to
+          %strong Kudos.
+          If it is neutral context, use a
+          %strong Generic
+          OGO. A mix of positive and constructive ratings is fine.
+      - if policy(@observation).update?
+        .d-flex.flex-wrap.gap-2.flex-shrink-0
+          = link_to 'Edit',
+                    edit_organization_observation_path(organization, @observation, return_url: organization_observation_path(organization, @observation), return_text: 'Back to Observation'),
+                    class: 'btn btn-outline-primary btn-sm'
+          = button_to 'Change to Kudos',
+                       convert_to_kudos_organization_observation_path(organization, @observation, return_url: organization_observation_path(organization, @observation), return_text: 'Back to Observation'),
+                       method: :patch,
+                       class: 'btn btn-outline-success btn-sm',
+                       data: { turbo: false }
+          = button_to 'Change to Generic',
+                       convert_to_generic_organization_observation_path(organization, @observation, return_url: organization_observation_path(organization, @observation), return_text: 'Back to Observation'),
+                       method: :patch,
+                       class: 'btn btn-outline-secondary btn-sm',
+                       data: { turbo: false, confirm: 'This will enable all privacy levels and features. Continue?' }

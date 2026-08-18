@@ -259,6 +259,91 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     end
   end
 
+  describe 'feedback expectation banner' do
+    let(:feedback_observation) do
+      create(:observation,
+             observer: observer,
+             company: company,
+             observation_type: :feedback,
+             created_as_type: 'feedback',
+             privacy_level: :observed_and_managers,
+             published_at: nil,
+             story: 'Needs work on communication')
+    end
+
+    def render_show_for(obs, viewer: observer)
+      assign(:organization, company)
+      assign(:observation, obs)
+      assign(:observee_names, [observee_person.casual_name])
+      assign(:direct_manager_names, [])
+      assign(:other_manager_names, [])
+      view.instance_variable_set(:@current_person, viewer)
+      view.define_singleton_method(:current_person) { viewer }
+      allow(view).to receive(:policy) do |obj|
+        if obj == obs
+          double(publish?: obs.draft?, post_to_slack?: false, view_permalink?: false, update?: true, destroy?: false, restore?: false)
+        else
+          double(publish?: false, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
+        end
+      end
+      allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{obs.id}")
+      allow(view).to receive(:edit_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{obs.id}/edit")
+      allow(view).to receive(:convert_to_kudos_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{obs.id}/convert_to_kudos")
+      allow(view).to receive(:convert_to_generic_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{obs.id}/convert_to_generic")
+      allow(view).to receive(:publish_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{obs.id}/publish")
+      allow_any_instance_of(Observation).to receive(:decorate).and_return(
+        double(
+          story_html: '<p>Story</p>',
+          gifs_html: '',
+          visibility_text_style: 'text-primary',
+          visibility_text: 'Stakeholders',
+          visibility_icon: '',
+          feelings_display_html: '',
+          permalink_url: "https://example.com/observations/#{obs.id}"
+        )
+      )
+      allow(obs).to receive(:format_ratings_by_type_and_level).and_return([])
+      render
+    end
+
+    context 'when feedback has no constructive rating and viewer is observer' do
+      before { render_show_for(feedback_observation) }
+
+      it 'displays the feedback expectation banner' do
+        expect(rendered).to have_content('Feedback needs a constructive rating')
+        expect(rendered).to have_link('Edit')
+        expect(rendered).to have_button('Change to Kudos')
+        expect(rendered).to have_button('Change to Generic')
+      end
+    end
+
+    context 'when feedback has a constructive rating' do
+      before do
+        ability = create(:ability, company: company)
+        create(:observation_rating, observation: feedback_observation, rateable: ability, rating: :disagree)
+        render_show_for(feedback_observation)
+      end
+
+      it 'does not display the feedback expectation banner' do
+        expect(rendered).not_to have_content('Feedback needs a constructive rating')
+      end
+    end
+
+    context 'when viewer is not the observer' do
+      let(:other_person) { create(:person) }
+
+      before do
+        view.instance_variable_set(:@current_person, other_person)
+        view.define_singleton_method(:current_person) { other_person }
+        render_show_for(feedback_observation, viewer: other_person)
+      end
+
+      it 'does not display the feedback expectation banner' do
+        expect(rendered).not_to have_content('Feedback needs a constructive rating')
+      end
+    end
+  end
+
   describe 'draft publish nudge' do
     let(:draft_observation) do
       obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil, story: 'Draft story')

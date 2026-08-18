@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :skip_gsd_notification, :share_publicly, :share_privately, :award_kudos, :award_celebratory_kudos]
+  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :skip_gsd_notification, :share_publicly, :share_privately, :award_kudos, :award_celebratory_kudos, :convert_to_generic, :convert_to_kudos]
   
 
   def index
@@ -1422,17 +1422,35 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def convert_to_generic
-    @observation = Observation.find(params[:id])
     authorize @observation, :update?
-    
+
     @observation.update!(observation_type: 'generic')
-    
-    redirect_to new_organization_observation_path(
-      organization,
-      draft_id: @observation.id,
-      return_url: params[:return_url],
-      return_text: params[:return_text]
-    ), notice: 'Converted to generic observation. All features are now available.'
+
+    redirect_after_type_conversion(
+      notice: 'Converted to generic observation. All features are now available.',
+      edit_path: new_organization_observation_path(
+        organization,
+        draft_id: @observation.id,
+        return_url: params[:return_url],
+        return_text: params[:return_text]
+      )
+    )
+  end
+
+  def convert_to_kudos
+    authorize @observation, :update?
+
+    @observation.update!(observation_type: 'kudos')
+
+    redirect_after_type_conversion(
+      notice: 'Converted to Kudos.',
+      edit_path: new_kudos_organization_observations_path(
+        organization,
+        draft_id: @observation.id,
+        return_url: params[:return_url],
+        return_text: params[:return_text]
+      )
+    )
   end
 
   # Quick observation creation from check-ins (backward compatibility - redirects to new)
@@ -2532,6 +2550,14 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     # Check if the path matches any edit path (with or without query params)
     edit_paths.any? { |edit_path| path_without_params == edit_path.split('?').first }
+  end
+
+  def redirect_after_type_conversion(notice:, edit_path:)
+    if params[:return_url].present?
+      redirect_to params[:return_url], notice: notice
+    else
+      redirect_to edit_path, notice: notice
+    end
   end
 
   def apply_preset_if_selected
