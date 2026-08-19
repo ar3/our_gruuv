@@ -33,10 +33,19 @@ RSpec.describe TalentDensity::Access do
     end
   end
 
-  describe "#reports_for" do
-    it "returns the selected manager's directs and never the viewer" do
-      reports = access_for(vp).reports_for(manager)
-      expect(reports.map(&:id)).to eq([ic.id])
+  describe "#active_teammates_for_exclude" do
+    it "includes every employed teammate, not only the current manager's tree" do
+      ids = access_for(vp).active_teammates_for_exclude.map(&:id)
+      expect(ids).to include(vp.id, manager.id, ic.id, other_manager.id, other_ic.id)
+    end
+  end
+
+  describe "#teammates_in_scope" do
+    it "includes skip-level reports for hierarchy and not for directs" do
+      directs = access_for(vp).teammates_in_scope(vp, scope: "directs")
+      hierarchy = access_for(vp).teammates_in_scope(vp, scope: "hierarchy")
+      expect(directs.map(&:id)).to eq([manager.id])
+      expect(hierarchy.map(&:id)).to include(manager.id, ic.id)
     end
 
     it "omits the viewer when they would appear as a direct report" do

@@ -1,0 +1,94 @@
+- page_help_id = "talentDensityFiltersPageHelp"
+- viz_params = talent_density_viz_filter_params
+
+- content_for :title, "Talent Density filters"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization) }, { label: "Visualization", url: visualization_organization_talent_density_path(@organization, viz_params) }, { label: "Filters", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-funnel.me-1
+      Talent Density filters
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Choose manager, directs vs hierarchy, and people to hide. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p.mb-3 Set who appears on the Talent Density visualization without crowding the plot itself.
+    %h3.fw-semibold.mb-2 Context
+    %p.mb-3 Same privacy rules as Stances: you never see your own marker, even if you would otherwise be in the hierarchy.
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-0
+      %li Manager picks whose tree you are looking at.
+      %li Directs is only that manager's current direct reports. All within hierarchy includes reports of reports.
+      %li Check people to exclude them from the plot. The exclude list is every active teammate so exclusions stay put if you change manager. Apply filters returns to the visualization.
+
+= form_with url: visualization_organization_talent_density_path(@organization), method: :get, local: true do |form|
+  = hidden_field_tag :display, @display
+  = hidden_field_tag :applied, 1
+
+  .card.border-0.shadow-sm.mb-4
+    .card-body
+      %h2.h5 Manager
+      %label.form-label.fw-bold{for: "talent-density-filter-manager"} Whose team
+      = select_tag :manager_id,
+        options_for_select(@manager_filter_options, @current_manager_filter),
+        class: "form-select form-select-lg",
+        id: "talent-density-filter-manager",
+        include_blank: @manager_filter_options.blank?
+
+      %h2.h5.mt-4 Scope
+      .form-check
+        = radio_button_tag :scope, "directs", @scope != "hierarchy", id: "scope_directs", class: "form-check-input"
+        %label.form-check-label{for: "scope_directs"} Directs only
+      .form-check
+        = radio_button_tag :scope, "hierarchy", @scope == "hierarchy", id: "scope_hierarchy", class: "form-check-input"
+        %label.form-check-label{for: "scope_hierarchy"} All within hierarchy
+
+  .card.mb-3
+    .card-header
+      %h2.h5.mb-0 Teammates to exclude
+    .card-body
+      %p.text-muted
+        Checked people are hidden on the visualization. This list is every active teammate, so exclusions stay put if the manager or scope changes.
+      - if @exclude_candidates.any?
+        .mb-3{data: {controller: "selection-toolbar options-filter"}}
+          = render "shared/selection_pages/toolbar",
+            form: form,
+            save_label: "Apply filters",
+            can_manage: true,
+            large_save: true,
+            search_placeholder: "Search teammates...",
+            search_aria_label: "Filter teammates to exclude"
+
+          .selection-page-columns{data: {options_filter_target: "list"}}
+            - @exclude_candidates.each do |teammate|
+              - display_name = teammate.person.preferred_first_then_last_display_name
+              %label.card.filterable-option.text-decoration-none{for: "exclude_teammate_#{teammate.id}", style: "cursor: pointer;"}
+                .card-body
+                  .d-flex.align-items-start
+                    .form-check.me-2.mt-1
+                      = check_box_tag "exclude_teammate_ids[]",
+                        teammate.id,
+                        @exclude_ids.include?(teammate.id),
+                        class: "form-check-input",
+                        id: "exclude_teammate_#{teammate.id}",
+                        data: { selection_toolbar_label: display_name }
+                    .flex-grow-1
+                      .d-flex.align-items-center
+                        .me-3
+                          = teammate_profile_image(teammate, size: 48)
+                        .flex-grow-1
+                          %h6.mb-0= display_name
+      - else
+        .alert.alert-info.mb-0 No active teammates.
+
+      .mt-3
+        = render "shared/selection_pages/save_button", form: form, label: "Apply filters", can_manage: true, large: true

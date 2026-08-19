@@ -179,4 +179,105 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(response).to redirect_to(root_path)
     end
   end
+
+  describe "GET visualization" do
+    let!(:ic_tenure) { ic.employment_tenures.find_by!(ended_at: nil) }
+
+    before do
+      create(:talent_density_stance, company_teammate: ic, company: company, stance: :try_to_avoid_the_swap)
+      create(
+        :position_check_in,
+        :closed,
+        teammate: ic,
+        employment_tenure: ic_tenure,
+        official_rating: 3
+      )
+    end
+
+    it "plots a teammate on the keeper vs position grid for hierarchy scope" do
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get visualization_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        applied: 1
+      )
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("Visualization")
+      expect(body).to include("I'd work to avoid the swap")
+      expect(body).to include("Exceptional")
+      expect(body).to include("talent-density-viz-dot")
+      expect(body).to include("Ivy")
+      expect(body).to include("Keeper:")
+      expect(response.body).to include('data-bs-toggle="popover"')
+      expect(response.body).to include("talent-density-viz-popover")
+      expect(response.body).to include("text-start")
+    end
+
+    it "hides excluded teammates and lists their casual names" do
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get visualization_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        display: "names",
+        exclude_teammate_ids: [ic.id],
+        applied: 1
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("excluding #{ic_person.casual_name}")
+      expect(response.body).not_to include("excluding 1")
+    end
+
+    it "uses casual names in the grid when the Names view is selected" do
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get visualization_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        display: "names",
+        applied: 1
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(ic_person.casual_name)
+      expect(response.body).not_to include(">#{ic_person.display_name}<")
+    end
+
+    it "redirects an IC without manager access to the explainer" do
+      sign_in_as_teammate_for_request(ic_person, company)
+
+      get visualization_organization_talent_density_path(company)
+
+      expect(response).to redirect_to(organization_talent_density_path(company))
+    end
+  end
+
+  describe "GET filters" do
+    it "renders manager, scope, and exclude selection" do
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get filters_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        applied: 1
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Teammates to exclude")
+      expect(response.body).to include("Directs only")
+      expect(response.body).to include("All within hierarchy")
+      expect(response.body).to include("Ivy")
+      expect(response.body).to include("Omar")
+      expect(response.body).to include("Apply filters")
+      expect(response.body).not_to include("Update teammate list")
+    end
+  end
 end

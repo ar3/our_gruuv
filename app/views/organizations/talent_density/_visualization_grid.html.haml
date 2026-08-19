@@ -1,0 +1,49 @@
+- query = local_assigns.fetch(:query)
+- display = local_assigns.fetch(:display)
+- organization = local_assigns.fetch(:organization)
+
+- if query.nil?
+  .alert.alert-info No manager selected.
+- else
+  .table-responsive.mb-4
+    %table.table.table-bordered.mb-0.talent-density-viz-grid
+      %thead
+        %tr
+          %th.align-middle.text-muted.small Worst ↑ / Best →
+          - TalentDensity::VisualizationQuery::X_RATINGS.each do |rating|
+            - data = EmploymentTenure::POSITION_RATINGS[rating]
+            %th.text-center.small
+              %div= data[:emoji]
+              %div= data[:label]
+      %tbody
+        - TalentDensity::VisualizationQuery::Y_STANCES_TOP_TO_BOTTOM.each do |stance_key|
+          - choice = TalentDensity::Rubric.choice_for(stance_key)
+          %tr
+            %th.align-middle.small{class: "text-#{choice[:tone]}", style: "min-width: 9rem;"}
+              = choice[:id_do]
+            - TalentDensity::VisualizationQuery::X_RATINGS.each do |rating|
+              %td.align-top{style: "min-width: 7rem; min-height: 4.5rem;"}
+                .d-flex.flex-wrap.gap-1.align-items-start
+                  - query.cell(stance_key, rating).each do |point|
+                    = render "organizations/talent_density/visualization_marker",
+                      point: point,
+                      display: display,
+                      organization: organization,
+                      choice: choice
+
+  - if query.unplaced.any?
+    %h2.h5 People not yet plotted
+    %p.small.text-muted Need both a keeper stance and a last finalized position rating.
+    %ul.list-unstyled.mb-0
+      - query.unplaced.each do |point|
+        %li.mb-2
+          = render "organizations/talent_density/visualization_marker",
+            point: point,
+            display: "names",
+            organization: organization,
+            choice: TalentDensity::Rubric.choice_for(point.stance&.stance)
+          %span.small.text-muted.ms-2
+            - unless point.stance&.stance.present?
+              no keeper stance
+            - unless TalentDensity::VisualizationQuery::X_RATINGS.include?(point.finalized&.official_rating)
+              · no finalized position rating

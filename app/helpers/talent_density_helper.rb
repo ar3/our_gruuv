@@ -49,4 +49,55 @@ module TalentDensityHelper
       status
     end
   end
+
+  def talent_density_excluded_casual_names(teammates)
+    Array(teammates).filter_map { |teammate| teammate.person&.casual_name }.join(", ")
+  end
+
+  def talent_density_viz_filter_params(overrides = {})
+    {
+      manager_id: @current_manager_filter,
+      scope: @scope,
+      display: @display,
+      exclude_teammate_ids: @exclude_ids,
+      applied: 1
+    }.merge(overrides)
+  end
+
+  def talent_density_marker_popover(point)
+    name = ERB::Util.html_escape(point.teammate.person.display_name)
+    keeper = ERB::Util.html_escape(TalentDensity::Rubric.do_label(point.stance&.stance) || "Not yet")
+    keeper_who = ERB::Util.html_escape(talent_density_stance_actor_name(point))
+    keeper_when = ERB::Util.html_escape(talent_density_stance_recorded_on(point))
+    rating = ERB::Util.html_escape(point.finalized ? position_rating_display(point.finalized.official_rating) : "Not yet finalized")
+    rating_who = ERB::Util.html_escape(point.finalized&.finalized_by_teammate&.person&.casual_name.presence || "Unknown")
+    rating_when = if point.finalized&.official_check_in_completed_at
+      ERB::Util.html_escape(format_date_in_user_timezone(point.finalized.official_check_in_completed_at))
+    else
+      "Unknown"
+    end
+
+    <<~HTML.squish
+      <div class="text-start">
+        #{name}<br>
+        Keeper: #{keeper}<br>
+        Recorded by #{keeper_who} on #{keeper_when}<br>
+        Last finalized position: #{rating}<br>
+        Finalized by #{rating_who} on #{rating_when}
+      </div>
+    HTML
+  end
+
+  def talent_density_stance_actor_name(point)
+    return "Unknown" unless point.stance_version
+
+    paper_trail_whodunnit_casual_name(point.stance_version)
+  end
+
+  def talent_density_stance_recorded_on(point)
+    time = point.stance_version&.created_at || point.stance&.updated_at
+    return "Unknown" unless time
+
+    format_date_in_user_timezone(time)
+  end
 end

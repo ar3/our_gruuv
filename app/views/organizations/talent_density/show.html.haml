@@ -23,4 +23,5 @@
 - if @explainer_only
   = render "organizations/talent_density/explainer"
 - else
+  = render "organizations/talent_density/tabs", organization: @organization, active_tab: :stances
   = render "organizations/talent_density/working_page"

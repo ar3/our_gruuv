@@ -1617,6 +1617,14 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
+.popover.talent-density-viz-popover {
+  text-align: left;
+
+  .popover-body {
+    text-align: left;
+  }
+}
+
 // Organizations PaperTrail: expandable Field | Before | After under each version row
 .paper-trail-change-history {
   .paper-trail-version-detail-shell {

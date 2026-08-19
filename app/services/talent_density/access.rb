@@ -23,14 +23,31 @@ module TalentDensity
     end
 
     def reports_for(manager)
+      teammates_in_scope(manager, scope: "directs")
+    end
+
+    def active_teammates_for_exclude
+      CompanyTeammate.for_organization_hierarchy(organization)
+        .employed
+        .joins(:person)
+        .includes(:person)
+        .order("people.last_name ASC", "people.first_name ASC")
+    end
+
+    def teammates_in_scope(manager, scope:)
       return CompanyTeammate.none unless manager_selectable?(manager)
 
-      report_ids = EmploymentTenure
-        .where(company: company, manager_teammate: manager, ended_at: nil)
-        .pluck(:teammate_id)
-      report_ids -= [viewer.id] if viewer
+      ids = if scope.to_s == "hierarchy"
+        descendant_ids = CompanyTeammate.self_and_reporting_hierarchy(manager, organization).pluck(:id)
+        descendant_ids - [manager.id]
+      else
+        EmploymentTenure
+          .where(company: company, manager_teammate: manager, ended_at: nil)
+          .pluck(:teammate_id)
+      end
+      ids -= [viewer.id] if viewer
 
-      CompanyTeammate.where(id: report_ids)
+      CompanyTeammate.where(id: ids)
         .where.not(first_employed_at: nil)
         .where(last_terminated_at: nil)
         .joins(:person)

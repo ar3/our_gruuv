@@ -236,7 +236,10 @@ Rails.application.routes.draw do
 
     resource :talent_density,
              only: [:show, :update],
-             controller: "organizations/talent_density"
+             controller: "organizations/talent_density" do
+      get :visualization
+      get :filters
+    end
 
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'

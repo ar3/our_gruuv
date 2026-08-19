@@ -1,0 +1,50 @@
+- page_help_id = "talentDensityVisualizationPageHelp"
+- viz_params = talent_density_viz_filter_params
+
+- content_for :title, "Talent Density visualization"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization) }, { label: "Visualization", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-grid-3x3-gap.me-1
+      Talent Density
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Plot keeper-test stance against last finalized position. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/talent_density/visualization_page_help"
+
+= render "organizations/talent_density/tabs", organization: @organization, active_tab: :visualization, viz_params: viz_params
+
+.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-3
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %span.text-muted Show
+    .btn-group{role: "group", "aria-label": "Marker style"}
+      = link_to "Dots",
+        visualization_organization_talent_density_path(@organization, talent_density_viz_filter_params(display: "dots")),
+        class: "btn btn-sm #{@display == 'dots' ? 'btn-primary' : 'btn-outline-primary'}"
+      = link_to "Names",
+        visualization_organization_talent_density_path(@organization, talent_density_viz_filter_params(display: "names")),
+        class: "btn btn-sm #{@display == 'names' ? 'btn-primary' : 'btn-outline-primary'}"
+  = link_to filters_organization_talent_density_path(@organization, viz_params), class: "btn btn-outline-secondary" do
+    %i.bi.bi-funnel.me-1
+    Filters
+
+- if @selected_manager
+  %p.text-muted.mb-3
+    = @scope == "hierarchy" ? "All within hierarchy of" : "Direct reports of"
+    %strong= @selected_manager.person.display_name
+    - if @excluded_teammates.any?
+      · excluding #{talent_density_excluded_casual_names(@excluded_teammates)}
+
+= render "organizations/talent_density/visualization_grid",
+  query: @query,
+  display: @display,
+  organization: @organization

@@ -49,7 +49,33 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     render :show, status: :unprocessable_entity
   end
 
+  def visualization
+    return unless require_working_access
+
+    load_visualization_context
+    teammates = scoped_teammates_excluding
+    @query = TalentDensity::VisualizationQuery.new(teammates: teammates)
+  end
+
+  def filters
+    return unless require_working_access
+
+    load_visualization_context
+    @exclude_candidates = @access.active_teammates_for_exclude.to_a
+  end
+
   private
+
+  def require_working_access
+    unless policy(@organization).talent_density?
+      authorize @organization, :talent_density_explainer?
+      redirect_to organization_talent_density_path(@organization)
+      return false
+    end
+
+    authorize @organization, :talent_density?
+    true
+  end
 
   def load_working_page
     load_access
@@ -57,10 +83,77 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     @reports = @selected_manager ? @access.reports_for(@selected_manager).to_a : []
     stance_by_teammate_id = TalentDensityStance.where(company_teammate_id: @reports.map(&:id)).index_by(&:company_teammate_id)
     @rows = decorate_talent_density_rows(@reports, stance_by_teammate_id)
+    assign_manager_filter_options
+  end
+
+  def load_visualization_context
+    load_access
+    merge_stored_visualization_filters_into_params
+    resolve_selected_manager
+    @scope = params[:scope].to_s == "hierarchy" ? "hierarchy" : "directs"
+    @display = params[:display].to_s == "names" ? "names" : "dots"
+    @exclude_ids = Array(params[:exclude_teammate_ids]).map(&:to_i).uniq.reject(&:zero?)
+    @excluded_teammates = excluded_teammates_for(@exclude_ids)
+    assign_manager_filter_options
+    store_visualization_filters
+  end
+
+  def excluded_teammates_for(ids)
+    return [] if ids.blank?
+
+    CompanyTeammate.where(id: ids)
+      .joins(:person)
+      .includes(:person)
+      .order("people.last_name ASC", "people.first_name ASC")
+      .to_a
+  end
+
+  def scoped_teammates_excluding
+    return [] unless @selected_manager
+
+    @access.teammates_in_scope(@selected_manager, scope: @scope)
+      .where.not(id: @exclude_ids)
+      .to_a
+  end
+
+  def assign_manager_filter_options
     @manager_filter_options = @access.selectable_managers.map do |manager|
       [manager.person&.display_name, "CompanyTeammate_#{manager.id}"]
     end
     @current_manager_filter = manager_filter_param
+  end
+
+  def visualization_filter_session_key
+    "talent_density_viz_filters_#{@organization.id}"
+  end
+
+  def merge_stored_visualization_filters_into_params
+    return if visualization_filters_in_params?
+
+    stored = session[visualization_filter_session_key]
+    return unless stored.is_a?(Hash)
+
+    params[:manager_id] = stored["manager_id"] if stored["manager_id"].present?
+    params[:scope] = stored["scope"] if stored["scope"].present?
+    params[:display] = stored["display"] if stored["display"].present?
+    params[:exclude_teammate_ids] = stored["exclude_teammate_ids"] if stored["exclude_teammate_ids"].present?
+  end
+
+  def visualization_filters_in_params?
+    params[:manager_id].present? ||
+      params[:scope].present? ||
+      params[:display].present? ||
+      params[:applied].present? ||
+      params[:exclude_teammate_ids].present?
+  end
+
+  def store_visualization_filters
+    session[visualization_filter_session_key] = {
+      "manager_id" => manager_filter_param,
+      "scope" => @scope,
+      "display" => @display,
+      "exclude_teammate_ids" => @exclude_ids
+    }
   end
 
   def load_access
