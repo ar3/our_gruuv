@@ -589,7 +589,11 @@ module OrganizationSitemap
           beta_page(:position_suggestions, "Position Suggestions", "bi-chat-left-quote", :organization_position_suggestions_path,
             policy: ->(ctx) { ctx.policy(PositionSuggestion).index? },
             goal: "Suggest assignment and milestone changes on positions without editing MAAP directly.",
-            synonyms: %w[position suggestions maap feedback manager suggestions assignment milestones])
+            synonyms: %w[position suggestions maap feedback manager suggestions assignment milestones]),
+          beta_page(:talent_density, "Talent Density", "bi-people", :organization_talent_density_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).talent_density_explainer? },
+            goal: "HR-led keeper-test ritual: managers record a private seat-fit stance. Employees can read that it exists; nobody ever sees their own rating.",
+            synonyms: %w[talent density keeper test keeper-test swap seat fit hr ritual])
         ]
       }
     end

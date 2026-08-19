@@ -220,3 +220,6 @@ en:
         outcomes_audit_snapshot: "Outcomes"
       position:
         assignments_audit_snapshot: "Linked assignments (audit)"
+      talent_density_stance:
+        stance: "Stance"
+        notes: "Notes"

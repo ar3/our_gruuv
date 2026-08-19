@@ -77,6 +77,24 @@ class OrganizationPolicy < ApplicationPolicy
     viewing_teammate.has_direct_reports?
   end
 
+  def talent_density?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+    return true if admin_bypass?
+    return true if viewing_teammate.can_manage_employment?
+
+    viewing_teammate.has_direct_reports?
+  end
+
+  def talent_density_explainer?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+
+    admin_bypass? || organization_in_hierarchy?
+  end
+
   def check_ins_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

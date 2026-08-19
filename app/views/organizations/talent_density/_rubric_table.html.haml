@@ -1,0 +1,25 @@
+.table-responsive.mb-0
+  %table.table.table-bordered.align-middle.mb-0
+    %thead
+      %tr
+        %th
+        - TalentDensity::Rubric::CHOICES.each do |choice|
+          %th{class: "text-bg-#{choice[:tone]}"}
+            = choice[:id_do]
+            - if choice[:most_people]
+              %div.small.fw-normal most people
+            - if choice[:rare]
+              %div.small.fw-normal rare
+    %tbody
+      %tr
+        %th.text-nowrap I'd do
+        - TalentDensity::Rubric::CHOICES.each do |choice|
+          %td{class: "text-#{choice[:tone]}"}= choice[:id_do]
+      %tr
+        %th.text-nowrap I'd feel
+        - TalentDensity::Rubric::CHOICES.each do |choice|
+          %td= choice[:id_feel]
+      %tr
+        %th.text-nowrap It means
+        - TalentDensity::Rubric::CHOICES.each do |choice|
+          %td= choice[:it_means]

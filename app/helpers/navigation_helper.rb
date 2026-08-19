@@ -629,6 +629,13 @@ module NavigationHelper
             path: organization_position_suggestions_path(current_organization),
             policy_check: -> { policy(PositionSuggestion).index? },
             coming_soon: false
+          },
+          {
+            label: 'Talent Density',
+            icon: 'bi-people',
+            path: organization_talent_density_path(current_organization),
+            policy_check: -> { policy(current_organization).talent_density? },
+            coming_soon: false
           }
         ]
       },

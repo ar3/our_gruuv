@@ -1,0 +1,12 @@
+.card.border-0.shadow-sm.mb-4
+  .card-body
+    %h2.h4 Talent Density exists. You will never see yours.
+    %p.mb-3
+      OurGruuv is built so people can see where they stand. This page is one of the rare exceptions.
+      HR runs a keeper-test ritual with managers every couple of months. The stance and notes live here so that planning can be honest.
+    %p.mb-3
+      %strong You cannot see your own rating
+      — not as an employee, not as a manager looking at your manager's team, and not with manage-employment permission. Someone else records it. You are told that it exists.
+    = render "organizations/talent_density/prompt"
+    .mt-3
+      = render "organizations/talent_density/rubric_table"

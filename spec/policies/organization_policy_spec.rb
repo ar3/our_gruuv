@@ -396,6 +396,46 @@ RSpec.describe OrganizationPolicy, type: :policy do
     end
   end
 
+  describe '#talent_density?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows managers with direct reports' do
+        allow(employed_teammate).to receive(:has_direct_reports?).and_return(true)
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.talent_density?).to be true
+      end
+
+      it 'allows employed manage-employment teammates without reports' do
+        employment_teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+        allow(employment_teammate).to receive(:has_direct_reports?).and_return(false)
+        policy = OrganizationPolicy.new(pundit_user_employment, organization)
+        expect(policy.talent_density?).to be true
+      end
+
+      it 'denies employed teammates without reports or manage-employment' do
+        allow(employed_teammate).to receive(:has_direct_reports?).and_return(false)
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.talent_density?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.talent_density?).to be true
+      end
+    end
+  end
+
+  describe '#talent_density_explainer?' do
+    it 'allows any employed teammate in the organization' do
+      policy = OrganizationPolicy.new(pundit_user_employed, organization)
+      expect(policy.talent_density_explainer?).to be true
+    end
+
+    it 'denies teammates who are not employed' do
+      policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+      expect(policy.talent_density_explainer?).to be false
+    end
+  end
+
   describe '#check_ins_health?' do
     context 'when organization matches viewing_teammate.organization' do
       it 'allows access for any employed teammate (nav link visibility)' do

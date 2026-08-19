@@ -1,0 +1,26 @@
+- page_help_id = "talentDensityPageHelp"
+
+- content_for :title, "Talent Density"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-people.me-1
+      Talent Density
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Private keeper-test stances for a manager's directs. Click for the rubric and privacy rules."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/talent_density/page_help"
+
+- if @explainer_only
+  = render "organizations/talent_density/explainer"
+- else
+  = render "organizations/talent_density/working_page"

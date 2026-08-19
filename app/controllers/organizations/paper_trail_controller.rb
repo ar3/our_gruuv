@@ -26,7 +26,8 @@ class Organizations::PaperTrailController < Organizations::OrganizationNamespace
     'Organization' => Organization,
     'Position' => Position,
     'PositionSuggestionMilestone' => PositionSuggestionMilestone,
-    'Title' => Title
+    'Title' => Title,
+    'TalentDensityStance' => TalentDensityStance
   }.freeze
 
   def set_auditable_record
@@ -56,6 +57,8 @@ class Organizations::PaperTrailController < Organizations::OrganizationNamespace
               klass.joins(:position_suggestion).where(position_suggestions: { organization_id: org.id })
             when 'GoalCheckIn'
               klass.joins(:goal).where(goals: { company_id: org.id })
+            when 'TalentDensityStance'
+              klass.where(company_id: org.id)
             else
               klass.none
             end

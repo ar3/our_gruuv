@@ -149,6 +149,8 @@ module PaperTrailHelper
       organization_position_path(organization, record)
     when Title
       organization_title_path(organization, record)
+    when TalentDensityStance
+      organization_talent_density_path(organization)
     end
   end
 

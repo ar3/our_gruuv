@@ -1,0 +1,51 @@
+- teammate = row[:teammate]
+- stance_record = row[:stance]
+- selected = stance_record.stance
+- check_ins_path = review_most_recent_organization_company_teammate_check_ins_path(organization, teammate)
+
+.card.border.shadow-sm.mb-3
+  .card-body
+    .d-flex.justify-content-between.align-items-start.gap-3.flex-wrap.mb-3
+      .d-flex.align-items-start.gap-3.min-w-0
+        .flex-shrink-0
+          = teammate_profile_image(teammate, size: 48)
+        .min-w-0
+          %h3.h5.mb-1
+            = link_to teammate.person.display_name, check_ins_path, class: "text-decoration-none"
+          %p.small.text-muted.mb-0= talent_density_teammate_context_sentence(row)
+      - if stance_record.persisted?
+        = link_to organization_paper_trail_path(organization, item_type: "TalentDensityStance", item_id: stance_record.id), class: "small text-decoration-none" do
+          %i.bi.bi-clock-history.me-1
+          Change history
+    .row.g-3
+      - TalentDensity::Rubric::CHOICES.each do |choice|
+        .col-md-4
+          .form-check{class: talent_density_choice_card_class(choice, selected: selected == choice[:key])}
+            = radio_button_tag "stances[#{teammate.id}][stance]",
+              choice[:key],
+              selected == choice[:key],
+              id: "stance_#{teammate.id}_#{choice[:key]}",
+              class: "form-check-input"
+            %label.form-check-label{for: "stance_#{teammate.id}_#{choice[:key]}"}
+              %span{class: talent_density_choice_title_class(choice)}= choice[:id_do]
+              - if choice[:rare]
+                %span.d-block.small.text-muted rare
+              - if choice[:most_people]
+                %span.d-block.small.text-muted most people
+              %span.d-block.small.text-muted.mt-1 I'd feel: #{choice[:id_feel]}
+              %span.d-block.small.mt-1 It means: #{choice[:it_means]}
+    .form-check.mt-2
+      = radio_button_tag "stances[#{teammate.id}][stance]",
+        "not_yet",
+        selected.blank?,
+        id: "stance_#{teammate.id}_blank",
+        class: "form-check-input"
+      %label.form-check-label.text-muted{for: "stance_#{teammate.id}_blank"} Not yet
+    .mt-3
+      %label.form-label{for: "stance_notes_#{teammate.id}"}
+        Notes (these notes and the values are only visible to #{talent_density_visible_to_sentence(row[:viewers])})
+      = text_area_tag "stances[#{teammate.id}][notes]",
+        stance_record.notes,
+        id: "stance_notes_#{teammate.id}",
+        class: "form-control",
+        rows: 3

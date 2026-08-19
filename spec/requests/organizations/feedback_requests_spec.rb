@@ -170,12 +170,29 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get organization_feedback_request_path(company_with_slack, feedback_request)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Nudge all')
-      expect(response.body).to include('Nudge All')
+      expect(response.body).to include('Notify All')
+      expect(response.body).not_to include('Notify All 1 respondent')
       expect(response.body).to include('Almost done!')
       expect(response.body).to include('Nobody has been nudged yet')
       expect(response.body).to include('Nudge')
       expect(response.body).not_to include('Notify Respondents')
       expect(response.body).not_to include('Focus Items')
+    end
+
+    it 'shows Notify All with respondent count in the banner when there are multiple responders' do
+      company_with_slack = create(:organization, :with_slack_config)
+      requestor_teammate.update!(organization: company_with_slack)
+      subject_teammate.update!(organization: company_with_slack)
+      feedback_request.update!(company: company_with_slack)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      second_responder = create(:company_teammate, organization: company_with_slack)
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      feedback_request.feedback_request_responders.create!(teammate: second_responder)
+      sign_in_as_teammate_for_request(requestor_person, company_with_slack)
+
+      get organization_feedback_request_path(company_with_slack, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Notify All 2 respondents')
     end
 
     it 'hides the nudge banner after a successful nudge has been sent' do

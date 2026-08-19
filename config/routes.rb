@@ -234,6 +234,10 @@ Rails.application.routes.draw do
              only: [:show],
              controller: "organizations/goal_impact_scanner"
 
+    resource :talent_density,
+             only: [:show, :update],
+             controller: "organizations/talent_density"
+
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'

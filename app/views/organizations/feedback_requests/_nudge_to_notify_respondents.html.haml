@@ -9,4 +9,5 @@
                   method: :post,
                   class: "btn btn-primary btn-lg px-5 py-3" do
         %i.bi.bi-bell.me-2
-        Nudge All
+        - respondent_count = @responders.size
+        Notify All#{ " #{respondent_count} respondents" if respondent_count > 1 }
