@@ -52,9 +52,19 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
   def visualization
     return unless require_working_access
 
+    params[:matrix] = "visualization"
     load_visualization_context
     teammates = scoped_teammates_excluding
     @query = TalentDensity::VisualizationQuery.new(teammates: teammates)
+  end
+
+  def guidance_matrix
+    return unless require_working_access
+
+    params[:matrix] = "guidance_matrix"
+    load_visualization_context
+    teammates = scoped_teammates_excluding
+    @query = TalentDensity::GuidanceMatrixQuery.new(teammates: teammates)
   end
 
   def filters
@@ -92,6 +102,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     resolve_selected_manager
     @scope = params[:scope].to_s == "hierarchy" ? "hierarchy" : "directs"
     @display = params[:display].to_s == "names" ? "names" : "dots"
+    @matrix = params[:matrix].to_s == "guidance_matrix" ? "guidance_matrix" : "visualization"
     @exclude_ids = Array(params[:exclude_teammate_ids]).map(&:to_i).uniq.reject(&:zero?)
     @excluded_teammates = excluded_teammates_for(@exclude_ids)
     assign_manager_filter_options
@@ -136,6 +147,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     params[:manager_id] = stored["manager_id"] if stored["manager_id"].present?
     params[:scope] = stored["scope"] if stored["scope"].present?
     params[:display] = stored["display"] if stored["display"].present?
+    params[:matrix] = stored["matrix"] if stored["matrix"].present?
     params[:exclude_teammate_ids] = stored["exclude_teammate_ids"] if stored["exclude_teammate_ids"].present?
   end
 
@@ -143,6 +155,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     params[:manager_id].present? ||
       params[:scope].present? ||
       params[:display].present? ||
+      params[:matrix].present? ||
       params[:applied].present? ||
       params[:exclude_teammate_ids].present?
   end
@@ -152,6 +165,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
       "manager_id" => manager_filter_param,
       "scope" => @scope,
       "display" => @display,
+      "matrix" => @matrix,
       "exclude_teammate_ids" => @exclude_ids
     }
   end

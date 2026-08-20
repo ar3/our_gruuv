@@ -238,6 +238,7 @@ Rails.application.routes.draw do
              only: [:show, :update],
              controller: "organizations/talent_density" do
       get :visualization
+      get :guidance_matrix
       get :filters
     end
 

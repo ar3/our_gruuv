@@ -59,9 +59,20 @@ module TalentDensityHelper
       manager_id: @current_manager_filter,
       scope: @scope,
       display: @display,
+      matrix: @matrix,
       exclude_teammate_ids: @exclude_ids,
       applied: 1
     }.merge(overrides)
+  end
+
+  def talent_density_matrix_path(organization, overrides = {})
+    params_hash = talent_density_viz_filter_params(overrides)
+    matrix = params_hash[:matrix].to_s
+    if matrix == "guidance_matrix"
+      guidance_matrix_organization_talent_density_path(organization, params_hash)
+    else
+      visualization_organization_talent_density_path(organization, params_hash)
+    end
   end
 
   def talent_density_marker_popover(point)
@@ -84,6 +95,26 @@ module TalentDensityHelper
         Recorded by #{keeper_who} on #{keeper_when}<br>
         Last finalized position: #{rating}<br>
         Finalized by #{rating_who} on #{rating_when}
+      </div>
+    HTML
+  end
+
+  def talent_density_guidance_marker_popover(point)
+    name = ERB::Util.html_escape(point.teammate.person.display_name)
+    actual = ERB::Util.html_escape(point.finalized ? position_rating_display(point.finalized.official_rating) : "Not yet finalized")
+    guidance = if point.guidance_rating
+      ERB::Util.html_escape(position_rating_display(point.guidance_rating))
+    else
+      "Not computable"
+    end
+    source = point.summary&.show_inflight_rating_chart ? "in-flight ratings chart" : "finalized (official) ratings chart"
+
+    <<~HTML.squish
+      <div class="text-start">
+        #{name}<br>
+        Actual overall: #{actual}<br>
+        Guidance: #{guidance}<br>
+        Based on #{ERB::Util.html_escape(source)}
       </div>
     HTML
   end

@@ -251,5 +251,133 @@ RSpec.describe MyGrowth::ExperiencesSummary do
         hash_including(name: 'Working to Meet expectations', y: 100)
       )
     end
+
+    it 'ignores manager_rating on an open check-in until the manager side is completed' do
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_a,
+        anticipated_energy_percentage: 100,
+        ended_at: nil,
+        official_rating: 'meeting'
+      )
+      finalized = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_a,
+        official_rating: 'meeting'
+      )
+      open_a = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment_a,
+        employee_completed_at: Time.current,
+        actual_energy_percentage: 100,
+        employee_rating: 'exceeding',
+        manager_rating: 'exceeding',
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+
+      summary = described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: { assignment_a.id => finalized },
+        open_check_ins_by_assignment_id: { assignment_a.id => open_a }
+      )
+
+      expect(summary.energy_by_inflight_rating_chart).to contain_exactly(
+        hash_including(name: 'Meeting expectations', y: 100)
+      )
+      expect(summary.guidance_position_rating).to eq(2)
+    end
+  end
+
+  describe '#guidance_position_rating' do
+    it 'maps >20% working-to-meet energy to Developing' do
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_a,
+        anticipated_energy_percentage: 30,
+        ended_at: nil,
+        official_rating: 'working_to_meet'
+      )
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_b,
+        anticipated_energy_percentage: 70,
+        ended_at: nil,
+        official_rating: 'meeting'
+      )
+      finalized_a = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_a,
+        official_rating: 'working_to_meet'
+      )
+      finalized_b = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_b,
+        official_rating: 'meeting'
+      )
+
+      summary = described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: {
+          assignment_a.id => finalized_a,
+          assignment_b.id => finalized_b
+        }
+      )
+
+      expect(summary.guidance_position_rating).to eq(1)
+    end
+
+    it 'maps >50% exceeding with no working-to-meet to Exceptional' do
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_a,
+        anticipated_energy_percentage: 60,
+        ended_at: nil,
+        official_rating: 'exceeding'
+      )
+      create(
+        :assignment_tenure,
+        teammate: teammate,
+        assignment: assignment_b,
+        anticipated_energy_percentage: 40,
+        ended_at: nil,
+        official_rating: 'meeting'
+      )
+      finalized_a = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_a,
+        official_rating: 'exceeding'
+      )
+      finalized_b = create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: teammate,
+        assignment: assignment_b,
+        official_rating: 'meeting'
+      )
+
+      summary = described_class.build(
+        teammate: teammate.reload,
+        latest_finalized_check_ins_by_assignment_id: {
+          assignment_a.id => finalized_a,
+          assignment_b.id => finalized_b
+        }
+      )
+
+      expect(summary.guidance_position_rating).to eq(3)
+    end
   end
 end

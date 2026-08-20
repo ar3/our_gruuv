@@ -206,7 +206,7 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
 
       body = CGI.unescapeHTML(response.body)
       expect(response).to have_http_status(:success)
-      expect(body).to include("Visualization")
+      expect(body).to include("MgrStance+Rating Matrix")
       expect(body).to include("I'd work to avoid the swap")
       expect(body).to include("Exceptional")
       expect(body).to include("talent-density-viz-dot")
@@ -254,6 +254,65 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       sign_in_as_teammate_for_request(ic_person, company)
 
       get visualization_organization_talent_density_path(company)
+
+      expect(response).to redirect_to(organization_talent_density_path(company))
+    end
+  end
+
+  describe "GET guidance_matrix" do
+    let!(:ic_tenure) { ic.employment_tenures.find_by!(ended_at: nil) }
+    let(:assignment) { create(:assignment, company: company, title: "Delivery") }
+
+    before do
+      create(
+        :assignment_tenure,
+        teammate: ic,
+        assignment: assignment,
+        anticipated_energy_percentage: 100,
+        ended_at: nil,
+        official_rating: "meeting"
+      )
+      create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: ic,
+        assignment: assignment,
+        official_rating: "meeting"
+      )
+      create(
+        :position_check_in,
+        :closed,
+        teammate: ic,
+        employment_tenure: ic_tenure,
+        official_rating: 3
+      )
+    end
+
+    it "plots actual vs guidance and shares filter labels with the stance matrix" do
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get guidance_matrix_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        applied: 1
+      )
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("Guidance+Rating Matrix")
+      expect(body).to include("MgrStance+Rating Matrix")
+      expect(body).to include("Guidance ↑ / Actual →")
+      expect(body).to include("(guidance)")
+      expect(body).to include("Ivy")
+      expect(body).to include("Actual overall:")
+      expect(body).to include("Guidance:")
+    end
+
+    it "redirects an IC without manager access to the explainer" do
+      sign_in_as_teammate_for_request(ic_person, company)
+
+      get guidance_matrix_organization_talent_density_path(company)
 
       expect(response).to redirect_to(organization_talent_density_path(company))
     end

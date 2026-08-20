@@ -1,0 +1,52 @@
+- query = local_assigns.fetch(:query)
+- display = local_assigns.fetch(:display)
+- organization = local_assigns.fetch(:organization)
+
+- if query.nil?
+  .alert.alert-info No manager selected.
+- else
+  .table-responsive.mb-4
+    %table.table.table-bordered.mb-0.talent-density-viz-grid
+      %thead
+        %tr
+          %th.align-middle.text-muted.small Guidance ↑ / Actual →
+          - TalentDensity::GuidanceMatrixQuery::X_RATINGS.each do |rating|
+            - data = EmploymentTenure::POSITION_RATINGS[rating]
+            %th.text-center.small
+              %div= data[:emoji]
+              %div= data[:label]
+      %tbody
+        - TalentDensity::GuidanceMatrixQuery::Y_GUIDANCE_TOP_TO_BOTTOM.each do |guidance_rating|
+          - data = EmploymentTenure::POSITION_RATINGS[guidance_rating]
+          - tone = TalentDensity::GuidanceMatrixQuery::GUIDANCE_TONE[guidance_rating]
+          %tr
+            %th.align-middle.small{class: "text-#{tone}", style: "min-width: 9rem;"}
+              = data[:emoji]
+              = data[:label]
+              %div.fw-normal.text-muted (guidance)
+            - TalentDensity::GuidanceMatrixQuery::X_RATINGS.each do |actual_rating|
+              %td.align-top{style: "min-width: 7rem; min-height: 4.5rem;"}
+                .d-flex.flex-wrap.gap-1.align-items-start
+                  - query.cell(guidance_rating, actual_rating).each do |point|
+                    = render "organizations/talent_density/guidance_matrix_marker",
+                      point: point,
+                      display: display,
+                      organization: organization,
+                      tone: tone
+
+  - if query.unplaced.any?
+    %h2.h5 People not yet plotted
+    %p.small.text-muted Need both a last finalized overall rating and computable assignment-energy guidance.
+    %ul.list-unstyled.mb-0
+      - query.unplaced.each do |point|
+        %li.mb-2
+          = render "organizations/talent_density/guidance_matrix_marker",
+            point: point,
+            display: "names",
+            organization: organization,
+            tone: TalentDensity::GuidanceMatrixQuery::GUIDANCE_TONE[point.guidance_rating] || "secondary"
+          %span.small.text-muted.ms-2
+            - unless TalentDensity::GuidanceMatrixQuery::X_RATINGS.include?(point.finalized&.official_rating)
+              no finalized overall rating
+            - unless TalentDensity::GuidanceMatrixQuery::GUIDANCE_TONE.key?(point.guidance_rating)
+              · no assignment-energy guidance

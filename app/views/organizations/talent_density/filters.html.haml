@@ -4,7 +4,7 @@
 - content_for :title, "Talent Density filters"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization) }, { label: "Visualization", url: visualization_organization_talent_density_path(@organization, viz_params) }, { label: "Filters", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization) }, { label: "MgrStance+Rating Matrix", url: visualization_organization_talent_density_path(@organization, viz_params) }, { label: "Filters", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -30,8 +30,9 @@
       %li Directs is only that manager's current direct reports. All within hierarchy includes reports of reports.
       %li Check people to exclude them from the plot. The exclude list is every active teammate so exclusions stay put if you change manager. Apply filters returns to the visualization.
 
-= form_with url: visualization_organization_talent_density_path(@organization), method: :get, local: true do |form|
+= form_with url: talent_density_matrix_path(@organization), method: :get, local: true do |form|
   = hidden_field_tag :display, @display
+  = hidden_field_tag :matrix, @matrix
   = hidden_field_tag :applied, 1
 
   .card.border-0.shadow-sm.mb-4

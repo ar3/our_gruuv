@@ -1,4 +1,4 @@
--# locals: active_tab (:stances or :visualization)
+-# locals: active_tab (:stances, :visualization, or :guidance_matrix)
 - active_tab = local_assigns.fetch(:active_tab)
 - viz_params = local_assigns.fetch(:viz_params, {})
 
@@ -9,7 +9,12 @@
       class: "nav-link #{'active' if active_tab == :stances}",
       aria: { current: (active_tab == :stances ? "page" : nil) }
   %li.nav-item
-    = link_to "Visualization",
+    = link_to "MgrStance+Rating Matrix",
       visualization_organization_talent_density_path(organization, viz_params),
       class: "nav-link #{'active' if active_tab == :visualization}",
       aria: { current: (active_tab == :visualization ? "page" : nil) }
+  %li.nav-item
+    = link_to "Guidance+Rating Matrix",
+      guidance_matrix_organization_talent_density_path(organization, viz_params),
+      class: "nav-link #{'active' if active_tab == :guidance_matrix}",
+      aria: { current: (active_tab == :guidance_matrix ? "page" : nil) }
