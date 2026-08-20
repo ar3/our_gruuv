@@ -1,4 +1,5 @@
 - page_help_id = "talentDensityPageHelp"
+- viz_params = talent_density_viz_filter_params(matrix: "stances")
 
 - content_for :title, "Talent Density"
 
@@ -12,7 +13,7 @@
       Talent Density
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
-               tooltip: "Private keeper-test stances for a manager's directs. Click for the rubric and privacy rules."
+               tooltip: "Private keeper-test stances for a manager's team. Click for the rubric and privacy rules."
     %span.badge.text-bg-warning
       %i.bi.bi-flask.me-1
       Beta
@@ -23,5 +24,6 @@
 - if @explainer_only
   = render "organizations/talent_density/explainer"
 - else
-  = render "organizations/talent_density/tabs", organization: @organization, active_tab: :stances
+  = render "organizations/talent_density/shared_filters_bar"
+  = render "organizations/talent_density/tabs", organization: @organization, active_tab: :stances, viz_params: viz_params
   = render "organizations/talent_density/working_page"

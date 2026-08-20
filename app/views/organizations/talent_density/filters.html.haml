@@ -1,10 +1,18 @@
 - page_help_id = "talentDensityFiltersPageHelp"
 - viz_params = talent_density_viz_filter_params
+- return_label = if @matrix == "guidance_matrix"
+  - "Guidance+Rating Matrix"
+- elsif @matrix == "assignment_rating_alignment"
+  - "Assignment Rating Alignment"
+- elsif @matrix == "stances"
+  - "Stances"
+- else
+  - "MgrStance+Rating Matrix"
 
 - content_for :title, "Talent Density filters"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization) }, { label: "MgrStance+Rating Matrix", url: visualization_organization_talent_density_path(@organization, viz_params) }, { label: "Filters", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization, viz_params.merge(matrix: "stances")) }, { label: return_label, url: talent_density_matrix_path(@organization) }, { label: "Filters", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -21,14 +29,14 @@
 .collapse.mb-4{id: page_help_id}
   .alert.alert-light.border
     %h3.fw-semibold.mb-2 Goal of this page
-    %p.mb-3 Set who appears on the Talent Density visualization without crowding the plot itself.
+    %p.mb-3 Set who appears across Talent Density tabs without crowding each matrix.
     %h3.fw-semibold.mb-2 Context
-    %p.mb-3 Same privacy rules as Stances: you never see your own marker, even if you would otherwise be in the hierarchy.
+    %p.mb-3 Same privacy rules as Stances: you never see your own row or marker, even if you would otherwise be in the hierarchy.
     %h3.fw-semibold.mb-2 Specifics of this page
     %ul.mb-0
-      %li Manager picks whose tree you are looking at.
+      %li Manager and scope also sit above the tabs on every working page.
       %li Directs is only that manager's current direct reports. All within hierarchy includes reports of reports.
-      %li Check people to exclude them from the plot. The exclude list is every active teammate so exclusions stay put if you change manager. Apply filters returns to the visualization.
+      %li Check people to exclude them everywhere. The exclude list is every active teammate so exclusions stay put if you change manager. Apply filters returns to the tab you came from.
 
 = form_with url: talent_density_matrix_path(@organization), method: :get, local: true do |form|
   = hidden_field_tag :display, @display
@@ -58,7 +66,7 @@
       %h2.h5.mb-0 Teammates to exclude
     .card-body
       %p.text-muted
-        Checked people are hidden on the visualization. This list is every active teammate, so exclusions stay put if the manager or scope changes.
+        Checked people are hidden on every Talent Density tab. This list is every active teammate, so exclusions stay put if the manager or scope changes.
       - if @exclude_candidates.any?
         .mb-3{data: {controller: "selection-toolbar options-filter"}}
           = render "shared/selection_pages/toolbar",

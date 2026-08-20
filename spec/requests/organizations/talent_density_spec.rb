@@ -49,12 +49,14 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(response.body).to include("border-warning")
       expect(response.body).to include("border-info")
       expect(response.body).to include("border-success")
-      expect(response.body).to include("Whose directs")
+      expect(response.body).to include("Whose team")
       expect(response.body).to include("Morgan")
       expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(company, manager))
       expect(CGI.unescapeHTML(response.body)).to include("Notes (these notes and the values are only visible to")
       expect(response.body).to include(vp_person.casual_name)
       expect(response.body).to include("with the title/position")
+      expect(response.body).to include("Assignment Rating Alignment")
+      expect(response.body).to include("MgrStance+Rating Matrix")
     end
 
     it "lets a skip-level manager open a descendant manager's directs and hides the viewer if present" do
@@ -129,7 +131,16 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
         }
       }
 
-      expect(response).to redirect_to(organization_talent_density_path(company, manager_id: "CompanyTeammate_#{manager.id}"))
+      expect(response).to redirect_to(
+        organization_talent_density_path(
+          company,
+          manager_id: "CompanyTeammate_#{manager.id}",
+          scope: "directs",
+          display: "dots",
+          matrix: "stances",
+          applied: 1
+        )
+      )
       stance = TalentDensityStance.find_by!(company_teammate: ic)
       expect(stance.stance).to eq("fine_either_way")
       expect(stance.notes).to eq("Solid contributor")
@@ -313,6 +324,55 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       sign_in_as_teammate_for_request(ic_person, company)
 
       get guidance_matrix_organization_talent_density_path(company)
+
+      expect(response).to redirect_to(organization_talent_density_path(company))
+    end
+  end
+
+  describe "GET assignment_rating_alignment" do
+    let(:assignment) { create(:assignment, company: company, title: "Core Delivery") }
+
+    before do
+      create(
+        :assignment_check_in,
+        :officially_completed,
+        teammate: ic,
+        assignment: assignment,
+        employee_rating: "meeting",
+        manager_rating: "meeting",
+        official_rating: "exceeding"
+      )
+    end
+
+    it "plots agreement patterns with shared filter chrome" do
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get assignment_rating_alignment_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        applied: 1
+      )
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("Assignment Rating Alignment")
+      expect(body).to include("Whose team")
+      expect(body).to include("Core Delivery")
+      expect(body).to include("Emp+mgr same, final differed")
+      expect(body).to include("Ivy")
+      expect(body).to include("bi-arrow-up-short")
+      expect(body).to include("Final rated higher than manager")
+      expect(body).to include("Employee:")
+      expect(body).to include("Manager:")
+      expect(body).to include("Final:")
+      expect(body.index("All three differed")).to be < body.index("All three same")
+    end
+
+    it "redirects an IC without manager access to the explainer" do
+      sign_in_as_teammate_for_request(ic_person, company)
+
+      get assignment_rating_alignment_organization_talent_density_path(company)
 
       expect(response).to redirect_to(organization_talent_density_path(company))
     end

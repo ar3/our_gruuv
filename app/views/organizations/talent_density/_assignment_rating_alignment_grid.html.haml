@@ -1,0 +1,44 @@
+- query = local_assigns.fetch(:query)
+- display = local_assigns.fetch(:display)
+- organization = local_assigns.fetch(:organization)
+- columns = TalentDensity::AssignmentRatingAlignmentQuery::AGREEMENT_COLUMNS
+- labels = TalentDensity::AssignmentRatingAlignmentQuery::COLUMN_LABELS
+
+- if query.nil?
+  .alert.alert-info No manager selected.
+- elsif query.assignments.empty? && query.unplaced.empty?
+  .alert.alert-info No finalized assignment check-ins in this filter yet.
+- else
+  .table-responsive.mb-4
+    %table.table.table-bordered.mb-0.talent-density-viz-grid
+      %thead
+        %tr
+          %th.align-middle.text-muted.small Assignment ↓ / Agreement →
+          - columns.each do |column|
+            %th.text-center.small{style: "min-width: 8rem;"}= labels[column]
+      %tbody
+        - query.assignments.each do |assignment|
+          %tr
+            %th.align-middle.small{style: "min-width: 10rem;"}= assignment.title
+            - columns.each do |column|
+              %td.align-top{style: "min-width: 8rem; min-height: 4rem;"}
+                .d-flex.flex-wrap.gap-1.align-items-start
+                  - query.cell(assignment, column).each do |point|
+                    = render "organizations/talent_density/assignment_rating_alignment_marker",
+                      point: point,
+                      display: display,
+                      organization: organization
+
+  - if query.unplaced.any?
+    %h2.h5 People / check-ins not yet plotted
+    %p.small.text-muted Need employee, manager, and final ratings on a finalized assignment check-in.
+    %ul.list-unstyled.mb-0
+      - query.unplaced.each do |point|
+        %li.mb-2
+          = render "organizations/talent_density/assignment_rating_alignment_marker",
+            point: point,
+            display: "names",
+            organization: organization
+          %span.small.text-muted.ms-2
+            = point.assignment.title
+            · incomplete emp/mgr/final trio

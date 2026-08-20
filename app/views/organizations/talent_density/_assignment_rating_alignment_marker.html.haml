@@ -1,0 +1,25 @@
+- point = local_assigns.fetch(:point)
+- display = local_assigns.fetch(:display)
+- organization = local_assigns.fetch(:organization)
+- popover = talent_density_alignment_marker_popover(point)
+- path = review_most_recent_organization_company_teammate_check_ins_path(organization, point.teammate)
+- name = display == "names" ? point.teammate.person.casual_name : point.teammate.person.display_name
+- tone = talent_density_alignment_marker_tone(point.agreement)
+- popover_data = { bs_toggle: "popover", bs_trigger: "hover focus", bs_html: "true", bs_placement: "top", bs_custom_class: "talent-density-viz-popover text-start", bs_content: popover }
+
+.d-inline-flex.align-items-center.gap-0
+  - if display == "names"
+    = link_to path,
+      class: "badge rounded-pill text-bg-#{tone} text-decoration-none",
+      tabindex: 0,
+      data: popover_data do
+      = name
+  - else
+    = link_to path,
+      class: "talent-density-viz-dot d-inline-block rounded-circle border border-#{tone} bg-#{tone}",
+      style: "width: 1rem; height: 1rem;",
+      aria: { label: name },
+      tabindex: 0,
+      data: popover_data do
+      %span.visually-hidden= name
+  = talent_density_alignment_arrow_icon(point)

@@ -1,0 +1,41 @@
+- page_help_id = "talentDensityAssignmentRatingAlignmentPageHelp"
+- viz_params = talent_density_viz_filter_params(matrix: "assignment_rating_alignment")
+
+- content_for :title, "Assignment Rating Alignment"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Talent Density", url: organization_talent_density_path(@organization, viz_params.merge(matrix: "stances")) }, { label: "Assignment Rating Alignment", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-diagram-3.me-1
+      Talent Density
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "See how employee, manager, and final assignment ratings line up. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/talent_density/assignment_rating_alignment_page_help"
+
+= render "organizations/talent_density/shared_filters_bar"
+= render "organizations/talent_density/tabs", organization: @organization, active_tab: :assignment_rating_alignment, viz_params: viz_params
+
+.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-3
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %span.text-muted Show
+    .btn-group{role: "group", "aria-label": "Marker style"}
+      = link_to "Dots",
+        assignment_rating_alignment_organization_talent_density_path(@organization, talent_density_viz_filter_params(display: "dots", matrix: "assignment_rating_alignment")),
+        class: "btn btn-sm #{@display == 'dots' ? 'btn-primary' : 'btn-outline-primary'}"
+      = link_to "Names",
+        assignment_rating_alignment_organization_talent_density_path(@organization, talent_density_viz_filter_params(display: "names", matrix: "assignment_rating_alignment")),
+        class: "btn btn-sm #{@display == 'names' ? 'btn-primary' : 'btn-outline-primary'}"
+
+= render "organizations/talent_density/assignment_rating_alignment_grid",
+  query: @query,
+  display: @display,
+  organization: @organization

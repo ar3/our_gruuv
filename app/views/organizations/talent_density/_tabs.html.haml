@@ -1,20 +1,25 @@
--# locals: active_tab (:stances, :visualization, or :guidance_matrix)
+-# locals: organization:, active_tab, viz_params (optional)
 - active_tab = local_assigns.fetch(:active_tab)
-- viz_params = local_assigns.fetch(:viz_params, {})
+- viz_params = local_assigns.fetch(:viz_params) { talent_density_viz_filter_params(matrix: active_tab.to_s) }
 
 %ul.nav.nav-tabs.mb-4
   %li.nav-item
     = link_to "Stances",
-      organization_talent_density_path(organization),
+      talent_density_tab_path(organization, :stances, viz_params.merge(matrix: "stances")),
       class: "nav-link #{'active' if active_tab == :stances}",
       aria: { current: (active_tab == :stances ? "page" : nil) }
   %li.nav-item
     = link_to "MgrStance+Rating Matrix",
-      visualization_organization_talent_density_path(organization, viz_params),
+      talent_density_tab_path(organization, :visualization, viz_params.merge(matrix: "visualization")),
       class: "nav-link #{'active' if active_tab == :visualization}",
       aria: { current: (active_tab == :visualization ? "page" : nil) }
   %li.nav-item
     = link_to "Guidance+Rating Matrix",
-      guidance_matrix_organization_talent_density_path(organization, viz_params),
+      talent_density_tab_path(organization, :guidance_matrix, viz_params.merge(matrix: "guidance_matrix")),
       class: "nav-link #{'active' if active_tab == :guidance_matrix}",
       aria: { current: (active_tab == :guidance_matrix ? "page" : nil) }
+  %li.nav-item
+    = link_to "Assignment Rating Alignment",
+      talent_density_tab_path(organization, :assignment_rating_alignment, viz_params.merge(matrix: "assignment_rating_alignment")),
+      class: "nav-link #{'active' if active_tab == :assignment_rating_alignment}",
+      aria: { current: (active_tab == :assignment_rating_alignment ? "page" : nil) }

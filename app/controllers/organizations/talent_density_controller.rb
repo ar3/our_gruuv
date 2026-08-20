@@ -1,12 +1,21 @@
 # frozen_string_literal: true
 
 class Organizations::TalentDensityController < Organizations::OrganizationNamespaceBaseController
+  VALID_MATRICES = %w[
+    stances
+    visualization
+    guidance_matrix
+    assignment_rating_alignment
+  ].freeze
+
   before_action :authenticate_person!
   after_action :verify_authorized
 
   def show
     if policy(@organization).talent_density?
       authorize @organization, :talent_density?
+      params[:matrix] = "stances"
+      load_shared_filter_context
       load_working_page
     else
       authorize @organization, :talent_density_explainer?
@@ -16,21 +25,21 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
 
   def update
     authorize @organization, :talent_density?
-    load_access
-    resolve_selected_manager
+    params[:matrix] = "stances"
+    load_shared_filter_context
 
     unless @access.manager_selectable?(@selected_manager)
       raise Pundit::NotAuthorizedError, "Not allowed to rate this manager's team"
     end
 
-    reports = @access.reports_for(@selected_manager)
-    report_by_id = reports.index_by(&:id)
+    report_by_id = scoped_teammates_excluding.index_by(&:id)
 
     ActiveRecord::Base.transaction do
       submitted_stance_attrs.each do |teammate_id, attrs|
         teammate = report_by_id[teammate_id]
         next unless teammate
         next if teammate.id == current_company_teammate.id
+        next unless @access.can_edit?(teammate)
 
         stance = TalentDensityStance.find_or_initialize_by(company_teammate: teammate)
         stance.company = company
@@ -41,7 +50,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
       end
     end
 
-    redirect_to organization_talent_density_path(@organization, manager_id: manager_filter_param),
+    redirect_to organization_talent_density_path(@organization, talent_density_redirect_filter_params),
                 notice: "Talent Density saved."
   rescue ActiveRecord::RecordInvalid
     flash.now[:alert] = "Could not save Talent Density. Check the form and try again."
@@ -53,7 +62,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     return unless require_working_access
 
     params[:matrix] = "visualization"
-    load_visualization_context
+    load_shared_filter_context
     teammates = scoped_teammates_excluding
     @query = TalentDensity::VisualizationQuery.new(teammates: teammates)
   end
@@ -62,15 +71,24 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     return unless require_working_access
 
     params[:matrix] = "guidance_matrix"
-    load_visualization_context
+    load_shared_filter_context
     teammates = scoped_teammates_excluding
     @query = TalentDensity::GuidanceMatrixQuery.new(teammates: teammates)
+  end
+
+  def assignment_rating_alignment
+    return unless require_working_access
+
+    params[:matrix] = "assignment_rating_alignment"
+    load_shared_filter_context
+    teammates = scoped_teammates_excluding
+    @query = TalentDensity::AssignmentRatingAlignmentQuery.new(teammates: teammates)
   end
 
   def filters
     return unless require_working_access
 
-    load_visualization_context
+    load_shared_filter_context
     @exclude_candidates = @access.active_teammates_for_exclude.to_a
   end
 
@@ -88,25 +106,27 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
   end
 
   def load_working_page
-    load_access
-    resolve_selected_manager
-    @reports = @selected_manager ? @access.reports_for(@selected_manager).to_a : []
+    @reports = scoped_teammates_excluding
     stance_by_teammate_id = TalentDensityStance.where(company_teammate_id: @reports.map(&:id)).index_by(&:company_teammate_id)
     @rows = decorate_talent_density_rows(@reports, stance_by_teammate_id)
-    assign_manager_filter_options
   end
 
-  def load_visualization_context
+  def load_shared_filter_context
     load_access
     merge_stored_visualization_filters_into_params
     resolve_selected_manager
     @scope = params[:scope].to_s == "hierarchy" ? "hierarchy" : "directs"
     @display = params[:display].to_s == "names" ? "names" : "dots"
-    @matrix = params[:matrix].to_s == "guidance_matrix" ? "guidance_matrix" : "visualization"
+    @matrix = normalize_matrix(params[:matrix])
     @exclude_ids = Array(params[:exclude_teammate_ids]).map(&:to_i).uniq.reject(&:zero?)
     @excluded_teammates = excluded_teammates_for(@exclude_ids)
     assign_manager_filter_options
     store_visualization_filters
+  end
+
+  def normalize_matrix(value)
+    key = value.to_s
+    VALID_MATRICES.include?(key) ? key : "stances"
   end
 
   def excluded_teammates_for(ids)
@@ -147,7 +167,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     params[:manager_id] = stored["manager_id"] if stored["manager_id"].present?
     params[:scope] = stored["scope"] if stored["scope"].present?
     params[:display] = stored["display"] if stored["display"].present?
-    params[:matrix] = stored["matrix"] if stored["matrix"].present?
+    params[:matrix] = stored["matrix"] if stored["matrix"].present? && params[:matrix].blank?
     params[:exclude_teammate_ids] = stored["exclude_teammate_ids"] if stored["exclude_teammate_ids"].present?
   end
 
@@ -155,7 +175,6 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     params[:manager_id].present? ||
       params[:scope].present? ||
       params[:display].present? ||
-      params[:matrix].present? ||
       params[:applied].present? ||
       params[:exclude_teammate_ids].present?
   end
@@ -167,6 +186,17 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
       "display" => @display,
       "matrix" => @matrix,
       "exclude_teammate_ids" => @exclude_ids
+    }
+  end
+
+  def talent_density_redirect_filter_params
+    {
+      manager_id: manager_filter_param,
+      scope: @scope,
+      display: @display,
+      matrix: @matrix,
+      exclude_teammate_ids: @exclude_ids,
+      applied: 1
     }
   end
 

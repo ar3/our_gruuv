@@ -1,0 +1,41 @@
+-# Shared filter chrome above Talent Density tabs.
+- return_path = talent_density_matrix_path(@organization)
+- viz_params = talent_density_viz_filter_params
+
+.card.border-0.shadow-sm.mb-3
+  .card-body.py-3
+    = form_with url: return_path, method: :get, local: true, class: "row g-3 align-items-end" do
+      = hidden_field_tag :display, @display
+      = hidden_field_tag :matrix, @matrix
+      = hidden_field_tag :applied, 1
+      - Array(@exclude_ids).each do |exclude_id|
+        = hidden_field_tag "exclude_teammate_ids[]", exclude_id
+
+      .col-md-5
+        %label.form-label.fw-semibold.mb-1{for: "talent-density-shared-manager"} Whose team
+        = select_tag :manager_id,
+          options_for_select(@manager_filter_options, @current_manager_filter),
+          class: "form-select",
+          id: "talent-density-shared-manager",
+          include_blank: @manager_filter_options.blank?
+      .col-md-4
+        %span.form-label.fw-semibold.mb-1.d-block Scope
+        .d-flex.flex-wrap.gap-3
+          .form-check.mb-0
+            = radio_button_tag :scope, "directs", @scope != "hierarchy", id: "talent_density_scope_directs", class: "form-check-input", onchange: "this.form.requestSubmit()"
+            %label.form-check-label{for: "talent_density_scope_directs"} Directs
+          .form-check.mb-0
+            = radio_button_tag :scope, "hierarchy", @scope == "hierarchy", id: "talent_density_scope_hierarchy", class: "form-check-input", onchange: "this.form.requestSubmit()"
+            %label.form-check-label{for: "talent_density_scope_hierarchy"} Hierarchy
+      .col-md-3.d-flex.gap-2
+        = submit_tag "Apply", class: "btn btn-primary"
+        = link_to filters_organization_talent_density_path(@organization, viz_params), class: "btn btn-outline-secondary" do
+          %i.bi.bi-funnel.me-1
+          Excludes
+
+    - if @selected_manager
+      %p.text-muted.small.mb-0.mt-2
+        = @scope == "hierarchy" ? "All within hierarchy of" : "Direct reports of"
+        %strong= @selected_manager.person.display_name
+        - if @excluded_teammates&.any?
+          · excluding #{talent_density_excluded_casual_names(@excluded_teammates)}

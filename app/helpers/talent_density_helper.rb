@@ -67,11 +67,28 @@ module TalentDensityHelper
 
   def talent_density_matrix_path(organization, overrides = {})
     params_hash = talent_density_viz_filter_params(overrides)
-    matrix = params_hash[:matrix].to_s
-    if matrix == "guidance_matrix"
+    case params_hash[:matrix].to_s
+    when "guidance_matrix"
       guidance_matrix_organization_talent_density_path(organization, params_hash)
+    when "assignment_rating_alignment"
+      assignment_rating_alignment_organization_talent_density_path(organization, params_hash)
+    when "stances"
+      organization_talent_density_path(organization, params_hash)
     else
       visualization_organization_talent_density_path(organization, params_hash)
+    end
+  end
+
+  def talent_density_tab_path(organization, tab, viz_params = {})
+    case tab
+    when :guidance_matrix
+      guidance_matrix_organization_talent_density_path(organization, viz_params)
+    when :assignment_rating_alignment
+      assignment_rating_alignment_organization_talent_density_path(organization, viz_params)
+    when :visualization
+      visualization_organization_talent_density_path(organization, viz_params)
+    else
+      organization_talent_density_path(organization, viz_params)
     end
   end
 
@@ -117,6 +134,76 @@ module TalentDensityHelper
         Based on #{ERB::Util.html_escape(source)}
       </div>
     HTML
+  end
+
+  def talent_density_alignment_arrow_compared_to(agreement)
+    case agreement
+    when :mgr_final_same_emp_differed
+      "employee"
+    when :all_differed, :emp_mgr_same_final_differed, :emp_final_same_mgr_differed
+      "manager"
+    end
+  end
+
+  def talent_density_alignment_arrow_label(point)
+    compared = talent_density_alignment_arrow_compared_to(point.agreement)
+    return "No direction" if point.arrow.blank? || compared.blank?
+
+    case point.arrow
+    when :better
+      "Final rated higher than #{compared}"
+    when :worse
+      "Final rated lower than #{compared}"
+    else
+      "No direction"
+    end
+  end
+
+  def talent_density_alignment_marker_popover(point)
+    name = ERB::Util.html_escape(point.teammate.person.display_name)
+    assignment = ERB::Util.html_escape(point.assignment.title)
+    emp = ERB::Util.html_escape(point.check_in.employee_rating.to_s.humanize)
+    mgr = ERB::Util.html_escape(point.check_in.manager_rating.to_s.humanize)
+    final = ERB::Util.html_escape(point.check_in.official_rating.to_s.humanize)
+    column = ERB::Util.html_escape(
+      TalentDensity::AssignmentRatingAlignmentQuery::COLUMN_LABELS[point.agreement] || "Incomplete"
+    )
+    arrow = ERB::Util.html_escape(talent_density_alignment_arrow_label(point))
+
+    <<~HTML.squish
+      <div class="text-start">
+        #{name}<br>
+        Assignment: #{assignment}<br>
+        Employee: #{emp}<br>
+        Manager: #{mgr}<br>
+        Final: #{final}<br>
+        Pattern: #{column}<br>
+        Arrow: #{arrow}
+      </div>
+    HTML
+  end
+
+  def talent_density_alignment_marker_tone(agreement)
+    case agreement
+    when :all_same then "success"
+    when :all_differed then "danger"
+    when :emp_mgr_same_final_differed then "warning"
+    when :emp_final_same_mgr_differed then "info"
+    when :mgr_final_same_emp_differed then "primary"
+    else "secondary"
+    end
+  end
+
+  def talent_density_alignment_arrow_icon(point)
+    label = talent_density_alignment_arrow_label(point)
+    case point.arrow
+    when :better
+      content_tag(:i, "", class: "bi bi-arrow-up-short text-success", title: label, "aria-label": label)
+    when :worse
+      content_tag(:i, "", class: "bi bi-arrow-down-short text-danger", title: label, "aria-label": label)
+    else
+      "".html_safe
+    end
   end
 
   def talent_density_stance_actor_name(point)

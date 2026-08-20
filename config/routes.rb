@@ -239,6 +239,7 @@ Rails.application.routes.draw do
              controller: "organizations/talent_density" do
       get :visualization
       get :guidance_matrix
+      get :assignment_rating_alignment
       get :filters
     end
 

@@ -9,35 +9,24 @@
         .mt-3.mb-0
           = render "organizations/talent_density/rubric_table"
 
-.row.justify-content-center.mb-4
-  .col-lg-12
-    .card.border-0.shadow-sm
-      .card-body
-        = form_with url: organization_talent_density_path(@organization), method: :get, local: true do
-          .row.align-items-end
-            .col-md-10
-              %label.form-label.fw-bold.fs-5.mb-2{for: "talent-density-manager-select"} Whose directs
-              = select_tag :manager_id,
-                options_for_select(@manager_filter_options, @current_manager_filter),
-                class: "form-select form-select-lg",
-                id: "talent-density-manager-select",
-                include_blank: @manager_filter_options.blank?
-              %small.form-text.text-muted Yourself, or any manager in your hierarchy. Manage-employment can pick any manager.
-            .col-md-2
-              = submit_tag "Go", class: "btn btn-primary btn-lg w-100"
-
 - if @selected_manager.nil?
   .alert.alert-info
     No managers with direct reports are available for you to view yet.
 - elsif @rows.empty?
   .alert.alert-info
-    = "#{@selected_manager.person&.display_name} has no direct reports you can see on this page (your own row is always hidden)."
+    = "#{@selected_manager.person&.display_name} has no teammates in this filter you can see on this page (your own row is always hidden)."
 - else
   = form_with url: organization_talent_density_path(@organization), method: :patch, local: true do
     = hidden_field_tag :manager_id, @current_manager_filter
+    = hidden_field_tag :scope, @scope
+    = hidden_field_tag :matrix, "stances"
+    = hidden_field_tag :display, @display
+    = hidden_field_tag :applied, 1
+    - Array(@exclude_ids).each do |exclude_id|
+      = hidden_field_tag "exclude_teammate_ids[]", exclude_id
     .d-flex.justify-content-between.align-items-center.mb-3
       %h2.h5.mb-0
-        Direct reports of
+        = @scope == "hierarchy" ? "Hierarchy of" : "Direct reports of"
         = @selected_manager.person&.display_name
       = submit_tag "Save stances", class: "btn btn-primary"
     - @rows.each do |row|
