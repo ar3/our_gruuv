@@ -967,7 +967,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         end
       end
 
-      it 'does not add company aspirations when rateable_type and rateable_id are passed' do
+      it 'also adds company aspirations when rateable_type and rateable_id are passed' do
         assignment = create(:assignment, company: company)
         get :new, params: {
           organization_id: company.id,
@@ -977,14 +977,18 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         observation = assigns(:observation)
         
         aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
-        expect(aspiration_ratings.count).to eq(0)
+        expect(aspiration_ratings.map { |r| r.rateable_id }).to contain_exactly(
+          company_aspiration_1.id,
+          company_aspiration_2.id,
+          company_aspiration_3.id
+        )
         
         assignment_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Assignment' }
         expect(assignment_ratings.count).to eq(1)
         expect(assignment_ratings.first.rateable_id).to eq(assignment.id)
       end
 
-      it 'does not add company aspirations when an aspiration is explicitly passed' do
+      it 'adds all company aspirations when one aspiration is explicitly passed' do
         get :new, params: {
           organization_id: company.id,
           rateable_type: 'Aspiration',
@@ -993,8 +997,11 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         observation = assigns(:observation)
         
         aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
-        expect(aspiration_ratings.count).to eq(1)
-        expect(aspiration_ratings.first.rateable_id).to eq(company_aspiration_1.id)
+        expect(aspiration_ratings.map { |r| r.rateable_id }).to contain_exactly(
+          company_aspiration_1.id,
+          company_aspiration_2.id,
+          company_aspiration_3.id
+        )
       end
 
       it 'only adds root company aspirations, not department or team aspirations' do

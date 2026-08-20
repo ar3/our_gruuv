@@ -60,6 +60,8 @@ class Slack::CreateObservationFromMessageService
 
     if observation.save
       add_observees_for_slack_participants(observation, message_text)
+      # Ensure company values even when there are no observees yet
+      Observations::EnsureCompanyAspirationsService.new(observation: observation).call
       log_debug_response("create_observation_from_message", { status: 'success', observation_id: observation.id }, { observation_url: Rails.application.routes.url_helpers.organization_observation_url(@organization, observation) })
       Result.ok(observation)
     else

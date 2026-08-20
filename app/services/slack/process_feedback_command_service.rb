@@ -53,10 +53,13 @@ module Slack
         return Result.err(error_message)
       end
       
-      # 7. Add observees from @mentions
+      # 7. Add observees from @mentions (also syncs rateables + company aspirations)
       observee_teammates.each do |observee_teammate|
         Observations::AddObserveeService.new(observation: observation, teammate_id: observee_teammate.id).call
       end
+
+      # Ensure company values even when there are no observees yet
+      Observations::EnsureCompanyAspirationsService.new(observation: observation).call
       
       Result.ok(observation)
     rescue => e

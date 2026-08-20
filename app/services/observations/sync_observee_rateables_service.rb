@@ -2,7 +2,8 @@ module Observations
   # Keeps Assignment/Ability ratings representative of the current observees:
   # intersection of each observee's relevant abilities and active given-energy
   # assignments. Preserves already-scored ratings; prunes only unscored (na) rows
-  # that fall outside the intersection. Does not touch Aspiration ratings.
+  # that fall outside the intersection. Also ensures company aspirational values
+  # are present (add-if-missing only; never removes Aspiration ratings).
   class SyncObserveeRateablesService
     RATEABLE_TYPES = %w[Assignment Ability].freeze
 
@@ -16,6 +17,7 @@ module Observations
 
       sync_type('Assignment', assignment_ids)
       sync_type('Ability', ability_ids)
+      EnsureCompanyAspirationsService.new(observation: @observation).call
 
       @observation
     end

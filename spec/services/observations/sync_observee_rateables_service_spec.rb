@@ -88,13 +88,13 @@ RSpec.describe Observations::SyncObserveeRateablesService, type: :service do
       expect(observation.observation_ratings.exists?(rateable: shared_assignment)).to be true
     end
 
-    it 'does not touch aspiration ratings' do
-      aspiration = create(:aspiration, company: company)
-      create(:observation_rating, observation: observation, rateable: aspiration, rating: :na)
+    it 'does not remove existing aspiration ratings and ensures company values' do
+      aspiration = create(:aspiration, company: company, department_id: nil)
+      create(:observation_rating, observation: observation, rateable: aspiration, rating: :agree)
 
       described_class.new(observation: observation).call
 
-      expect(observation.observation_ratings.exists?(rateable: aspiration)).to be true
+      expect(observation.observation_ratings.find_by(rateable: aspiration).rating).to eq('agree')
     end
 
     it 'restores a remaining observee full set after the other is removed' do

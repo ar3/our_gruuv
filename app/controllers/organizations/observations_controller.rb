@@ -445,21 +445,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         )
         # Pre-load the rateable association so it's available for @observation.assignments
         rating.rateable = rateable
-      else
-        # If no rateable is explicitly passed, automatically add root company aspirations only
-        # (not department or team aspirations)
-        root_company = organization.root_company || organization
-        company_aspirations = root_company.aspirations.where(department_id: nil).ordered
-        
-        company_aspirations.each do |aspiration|
-          rating = @observation.observation_ratings.build(
-            rateable_type: 'Aspiration',
-            rateable_id: aspiration.id
-          )
-          # Pre-load the rateable association so it's available for @observation.aspirations
-          rating.rateable = aspiration
-        end
       end
+
+      # Always preload root company aspirational values (add-if-missing)
+      Observations::EnsureCompanyAspirationsService.new(observation: @observation).call
 
       # Pre-select observees and attach their active assignments / relevant abilities
       # (same path as Manage Observees via Observations::AddObserveeService)
@@ -1888,19 +1877,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           rateable_id: params[:rateable_id]
         )
         rating.rateable = rateable
-      else
-        # If no rateable is explicitly passed, automatically add root company aspirations only
-        root_company = organization.root_company || organization
-        company_aspirations = root_company.aspirations.where(department_id: nil).ordered
-
-        company_aspirations.each do |aspiration|
-          rating = @observation.observation_ratings.build(
-            rateable_type: 'Aspiration',
-            rateable_id: aspiration.id
-          )
-          rating.rateable = aspiration
-        end
       end
+
+      # Always preload root company aspirational values (add-if-missing)
+      Observations::EnsureCompanyAspirationsService.new(observation: @observation).call
 
       # Pre-select observees and attach their active assignments / relevant abilities
       Array(params[:observee_ids]).reject(&:blank?).each do |teammate_id|
