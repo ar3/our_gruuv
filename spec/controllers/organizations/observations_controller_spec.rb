@@ -2248,6 +2248,33 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         }
         expect(flash[:notice]).to include('Removed 1 observee(s)')
       end
+
+      it 'restores the remaining observee assignment set after removing another observee' do
+        shared_assignment = create(:assignment, company: company)
+        first_only = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: observee_teammate, assignment: shared_assignment,
+               started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        create(:assignment_tenure, teammate: observee_teammate, assignment: first_only,
+               started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        create(:assignment_tenure, teammate: new_teammate, assignment: shared_assignment,
+               started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id, new_teammate.id]
+        }
+        expect(draft.reload.observation_ratings.where(rateable_type: 'Assignment').pluck(:rateable_id))
+          .to contain_exactly(shared_assignment.id)
+
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id]
+        }
+        expect(draft.reload.observation_ratings.where(rateable_type: 'Assignment').pluck(:rateable_id))
+          .to contain_exactly(shared_assignment.id, first_only.id)
+      end
     end
 
     context 'when adding and removing in same submission' do

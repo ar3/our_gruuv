@@ -1644,7 +1644,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           added_count += 1
         end
       end
-      
+
+      # Always recompute so removals (and final set) keep ratings representative of observees
+      Observations::SyncObserveeRateablesService.new(observation: @observation).call
+
       # Build success message
       if added_count > 0 && removed_count > 0
         notice = "Added #{added_count} observee(s) and removed #{removed_count} observee(s)"

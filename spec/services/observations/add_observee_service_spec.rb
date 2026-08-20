@@ -331,6 +331,60 @@ RSpec.describe Observations::AddObserveeService, type: :service do
       end
     end
 
+    context 'when adding a second observee with overlapping rateables' do
+      let(:other_teammate) { create(:teammate, organization: company) }
+      let(:shared_assignment) { create(:assignment, company: company) }
+      let(:first_only_assignment) { create(:assignment, company: company) }
+      let(:shared_ability) { create(:ability, company: company) }
+      let(:first_only_ability) { create(:ability, company: company) }
+
+      before do
+        create(:assignment_ability, assignment: shared_assignment, ability: shared_ability, milestone_level: 1)
+        create(:assignment_ability, assignment: first_only_assignment, ability: first_only_ability, milestone_level: 1)
+
+        create(:assignment_tenure,
+               teammate: teammate,
+               assignment: shared_assignment,
+               started_at: 1.month.ago,
+               ended_at: nil,
+               anticipated_energy_percentage: 50)
+        create(:assignment_tenure,
+               teammate: teammate,
+               assignment: first_only_assignment,
+               started_at: 1.month.ago,
+               ended_at: nil,
+               anticipated_energy_percentage: 50)
+        create(:assignment_tenure,
+               teammate: other_teammate,
+               assignment: shared_assignment,
+               started_at: 1.month.ago,
+               ended_at: nil,
+               anticipated_energy_percentage: 40)
+
+        described_class.new(observation: observation, teammate_id: teammate.id).call
+      end
+
+      it 'prunes unrated rateables that are not shared and keeps the intersection' do
+        expect(observation.observation_ratings.exists?(rateable: first_only_assignment)).to be true
+
+        described_class.new(observation: observation, teammate_id: other_teammate.id).call
+
+        expect(observation.observation_ratings.exists?(rateable: shared_assignment)).to be true
+        expect(observation.observation_ratings.exists?(rateable: shared_ability)).to be true
+        expect(observation.observation_ratings.exists?(rateable: first_only_assignment)).to be false
+        expect(observation.observation_ratings.exists?(rateable: first_only_ability)).to be false
+      end
+
+      it 'does not prune already-scored non-shared ratings' do
+        rating = observation.observation_ratings.find_by(rateable: first_only_assignment)
+        rating.update!(rating: :agree)
+
+        described_class.new(observation: observation, teammate_id: other_teammate.id).call
+
+        expect(observation.observation_ratings.find_by(rateable: first_only_assignment).rating).to eq('agree')
+      end
+    end
+
     context 'with mixed scenario' do
       let(:active_with_energy) { create(:assignment, company: company) }
       let(:active_without_energy) { create(:assignment, company: company) }
