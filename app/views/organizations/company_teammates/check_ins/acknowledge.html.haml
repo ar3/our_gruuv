@@ -1,0 +1,99 @@
+- page_help_id = "checkInsAcknowledgePageHelp"
+- page_label = "Acknowledge Check-ins"
+- pending_count = [@position_check_in, *@assignment_check_ins, *@aspiration_check_ins].compact.size
+- employee_name = @teammate.person.casual_name
+
+- content_for :title, teammate_context_page_title(@selected_teammate, page_label)
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { acknowledge_organization_company_teammate_check_ins_path(organization, tm) },
+               switch_aria_label: "Switch teammate for acknowledgement"
+      %span= " - #{page_label}"
+      %span.badge.bg-secondary Beta
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Acknowledge finalized ratings with agree or disagree. Click for details."
+    - if pending_count.positive?
+      %span.badge.bg-warning.align-self-center #{pending_count} Pending
+
+- content_for :header_action do
+  = render "people/view_switcher"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Acknowledge Check-ins (audit)", url: audit_organization_employee_path(organization, @teammate) }, { label: page_label, url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/company_teammates/check_ins/acknowledge_page_help"
+
+= render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 3
+
+.alert.alert-info.mb-4
+  %i.bi.bi-info-circle.me-2
+  This is the new acknowledgement experience. Snapshot acknowledgement, GSD, and health still use the
+  #{link_to "current audit page", audit_organization_employee_path(organization, @teammate)}.
+
+- if pending_count.zero?
+  .text-center.py-5
+    %i.bi.bi-check-circle.text-success{style: "font-size: 3rem;"}
+    %h5.text-muted.mt-3 No check-ins need acknowledgement
+    %p.text-muted.mb-4 Latest finalized position, assignment, and aspirational value check-ins are acknowledged — or none have been finalized yet.
+    .d-flex.flex-column.align-items-center.gap-3
+      = link_to review_most_recent_organization_company_teammate_check_ins_path(organization, @teammate),
+                class: "btn btn-primary btn-lg" do
+        = view_latest_clarity_check_ins_label
+      = link_to audit_organization_employee_path(organization, @teammate),
+                class: "small text-muted text-decoration-none" do
+        Go to the audit page if you want to see every major change made to your job description over time.
+- else
+  - unless @can_acknowledge
+    .alert.alert-secondary.mb-4
+      Viewing as audit access. Only #{employee_name} can submit acknowledgements.
+
+  - body = capture do
+    - if @can_acknowledge
+      .d-flex.flex-wrap.align-items-center.gap-2.mb-3
+        %button.btn.btn-outline-secondary{type: 'button', id: 'set-all-ack-agree'} Set all to Agree
+        %small.text-muted Default is Leave Unacknowledged. Save All stores every Agree/Disagree choice.
+
+    = render 'organizations/company_teammates/check_ins/acknowledge_sections',
+             organization: organization,
+             teammate: @teammate,
+             employee_name: employee_name,
+             can_acknowledge: @can_acknowledge,
+             aspiration_check_ins: @aspiration_check_ins,
+             assignment_check_ins: @assignment_check_ins,
+             position_check_in: @position_check_in
+
+    - if @can_acknowledge
+      .d-flex.flex-wrap.align-items-center.gap-3.mt-2.mb-4
+        = submit_tag 'Save All',
+                     class: 'btn btn-success btn-lg',
+                     data: { confirm: 'Acknowledgements cannot be changed once saved. Continue?' }
+        %small.text-muted Leave Unacknowledged rows are skipped.
+
+  - if @can_acknowledge
+    = form_with url: update_acknowledgement_organization_company_teammate_check_ins_path(organization, @teammate),
+                method: :patch,
+                local: true,
+                id: 'bulk-acknowledge-form' do
+      = body
+  - else
+    = body
+
+- if @can_acknowledge && pending_count.positive?
+  :javascript
+    document.addEventListener('DOMContentLoaded', function() {
+      var setAll = document.getElementById('set-all-ack-agree');
+      if (!setAll) return;
+      setAll.addEventListener('click', function() {
+        document.querySelectorAll('.ack-choice-radio[value="agree"]').forEach(function(radio) {
+          radio.checked = true;
+        });
+      });
+    });

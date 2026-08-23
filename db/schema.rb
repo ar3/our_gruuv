@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_18_140000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_23_211000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -133,8 +133,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_18_140000) do
     t.datetime "updated_at", null: false
     t.bigint "manager_completed_by_teammate_id"
     t.bigint "finalized_by_teammate_id"
+    t.datetime "employee_acknowledged_at"
+    t.string "employee_acknowledgement"
+    t.text "employee_acknowledgement_notes"
     t.index ["aspiration_id"], name: "index_aspiration_check_ins_on_aspiration_id"
     t.index ["check_in_started_on"], name: "index_aspiration_check_ins_on_check_in_started_on"
+    t.index ["employee_acknowledged_at"], name: "index_aspiration_check_ins_on_employee_acknowledged_at"
     t.index ["finalized_by_id"], name: "index_aspiration_check_ins_on_finalized_by_id"
     t.index ["finalized_by_teammate_id"], name: "index_aspiration_check_ins_on_finalized_by_teammate_id"
     t.index ["maap_snapshot_id"], name: "index_aspiration_check_ins_on_maap_snapshot_id"
@@ -196,8 +200,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_18_140000) do
     t.bigint "maap_snapshot_id"
     t.bigint "manager_completed_by_teammate_id"
     t.bigint "finalized_by_teammate_id"
+    t.datetime "employee_acknowledged_at"
+    t.string "employee_acknowledgement"
+    t.text "employee_acknowledgement_notes"
     t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
     t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
+    t.index ["employee_acknowledged_at"], name: "index_assignment_check_ins_on_employee_acknowledged_at"
     t.index ["employee_completed_at"], name: "index_assignment_check_ins_on_employee_completed_at"
     t.index ["finalized_by_id"], name: "index_assignment_check_ins_on_finalized_by_id"
     t.index ["finalized_by_teammate_id"], name: "index_assignment_check_ins_on_finalized_by_teammate_id"
@@ -1383,6 +1391,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_18_140000) do
     t.datetime "updated_at", null: false
     t.bigint "manager_completed_by_teammate_id"
     t.bigint "finalized_by_teammate_id"
+    t.datetime "employee_acknowledged_at"
+    t.string "employee_acknowledgement"
+    t.text "employee_acknowledgement_notes"
+    t.index ["employee_acknowledged_at"], name: "index_position_check_ins_on_employee_acknowledged_at"
     t.index ["employee_completed_at"], name: "index_position_check_ins_on_employee_completed_at"
     t.index ["employment_tenure_id"], name: "index_position_check_ins_on_employment_tenure_id"
     t.index ["finalized_by_id"], name: "index_position_check_ins_on_finalized_by_id"

@@ -1,0 +1,82 @@
+-# locals: (organization:, teammate:, employee_name:, can_acknowledge:, aspiration_check_ins:, assignment_check_ins:, position_check_in:)
+= render 'shared/section_header',
+         title: 'Aspirational Values',
+         icon: 'bi-star',
+         description: 'Latest finalized check-ins awaiting acknowledgement',
+         include_top_header_margin: false
+
+- if aspiration_check_ins.any?
+  .table-responsive.mb-4
+    %table.table.table-striped
+      %thead
+        %tr
+          %th Aspiration
+          %th= employee_name
+          %th Manager
+          %th Reviewed Together
+          %th Acknowledgement
+      %tbody
+        - aspiration_check_ins.each do |check_in|
+          = render 'organizations/company_teammates/check_ins/acknowledge_row',
+                   check_in: check_in,
+                   check_in_type: 'aspiration',
+                   item_name: check_in.aspiration.name,
+                   item_path: organization_teammate_aspiration_path(organization, teammate, check_in.aspiration),
+                   can_acknowledge: can_acknowledge,
+                   employee_name: employee_name
+- else
+  %p.text-muted.mb-4 No aspirational value check-ins need acknowledgement.
+
+= render 'shared/section_header',
+         title: 'Assignments/Outcomes',
+         icon: 'bi-clipboard-check',
+         description: 'Latest finalized check-ins awaiting acknowledgement'
+
+- if assignment_check_ins.any?
+  .table-responsive.mb-4
+    %table.table.table-striped
+      %thead
+        %tr
+          %th Assignment
+          %th= employee_name
+          %th Manager
+          %th Reviewed Together
+          %th Acknowledgement
+      %tbody
+        - assignment_check_ins.each do |check_in|
+          = render 'organizations/company_teammates/check_ins/acknowledge_row',
+                   check_in: check_in,
+                   check_in_type: 'assignment',
+                   item_name: check_in.assignment.title,
+                   item_path: organization_teammate_assignment_path(organization, teammate, check_in.assignment),
+                   can_acknowledge: can_acknowledge,
+                   employee_name: employee_name
+- else
+  %p.text-muted.mb-4 No assignment check-ins need acknowledgement.
+
+= render 'shared/section_header',
+         title: 'Position',
+         icon: 'bi-briefcase',
+         description: 'Latest finalized check-in awaiting acknowledgement'
+
+- if position_check_in
+  .table-responsive.mb-4
+    %table.table.table-striped
+      %thead
+        %tr
+          %th Position
+          %th= employee_name
+          %th Manager
+          %th Reviewed Together
+          %th Acknowledgement
+      %tbody
+        - position_title = position_check_in.employment_tenure&.position&.display_name || 'Position'
+        = render 'organizations/company_teammates/check_ins/acknowledge_row',
+                 check_in: position_check_in,
+                 check_in_type: 'position',
+                 item_name: position_title,
+                 item_path: nil,
+                 can_acknowledge: can_acknowledge,
+                 employee_name: employee_name
+- else
+  %p.text-muted.mb-4 No position check-in needs acknowledgement.

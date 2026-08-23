@@ -55,6 +55,23 @@ module CheckInBehavior
     scope :awaiting_manager_input, -> {
       open.employee_completed.where(manager_completed_at: nil)
     }
+    scope :awaiting_employee_acknowledgement, -> {
+      closed.where(employee_acknowledged_at: nil)
+    }
+    scope :employee_acknowledged, -> {
+      where.not(employee_acknowledged_at: nil)
+    }
+
+    enum :employee_acknowledgement, {
+      agree: "agree",
+      disagree: "disagree"
+    }, prefix: true
+
+    validates :employee_acknowledgement,
+              inclusion: { in: employee_acknowledgements.keys },
+              allow_nil: true
+    validate :employee_acknowledgement_fields_consistent
+    validate :employee_acknowledgement_immutable, on: :update
   end
 
   class_methods do
@@ -94,6 +111,28 @@ module CheckInBehavior
   
   def ready_for_finalization?
     employee_completed? && manager_completed? && !officially_completed?
+  end
+
+  def employee_acknowledged?
+    employee_acknowledged_at.present?
+  end
+
+  def awaiting_employee_acknowledgement?
+    closed? && !employee_acknowledged?
+  end
+
+  # Sets acknowledgement immutably. Raises if already acknowledged.
+  def acknowledge_as_employee!(acknowledgement:, notes: nil)
+    if employee_acknowledged?
+      errors.add(:base, "Acknowledgement cannot be changed once set")
+      raise ActiveRecord::RecordInvalid, self
+    end
+
+    update!(
+      employee_acknowledged_at: Time.current,
+      employee_acknowledgement: acknowledgement,
+      employee_acknowledgement_notes: notes.presence
+    )
   end
 
   # Clarity states based on finalized recency:
@@ -220,6 +259,27 @@ module CheckInBehavior
       manager_completed_at: nil,
       manager_completed_by_teammate: nil
     )
+  end
+
+  private
+
+  def employee_acknowledgement_fields_consistent
+    if employee_acknowledged_at.present? && employee_acknowledgement.blank?
+      errors.add(:employee_acknowledgement, "must be present when acknowledged")
+    end
+    if employee_acknowledgement.present? && employee_acknowledged_at.blank?
+      errors.add(:employee_acknowledged_at, "must be present when acknowledgement is set")
+    end
+  end
+
+  def employee_acknowledgement_immutable
+    return if attribute_in_database("employee_acknowledged_at").blank?
+
+    if will_save_change_to_employee_acknowledged_at? ||
+       will_save_change_to_employee_acknowledgement? ||
+       will_save_change_to_employee_acknowledgement_notes?
+      errors.add(:base, "Acknowledgement cannot be changed once set")
+    end
   end
 end
 

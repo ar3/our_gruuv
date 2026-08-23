@@ -1,0 +1,47 @@
+-# locals: (check_in:, check_in_type:, item_name:, item_path:, can_acknowledge:, employee_name:)
+- prefix = "acknowledgements[#{check_in_type}][#{check_in.id}]"
+- radio_name = "#{prefix}[employee_acknowledgement]"
+- notes_name = "#{prefix}[employee_acknowledgement_notes]"
+- base_id = "#{check_in_type}_#{check_in.id}"
+%tr
+  %td
+    - if item_path.present?
+      = link_to item_name, item_path, class: 'text-decoration-none'
+    - else
+      = item_name
+    - if check_in.official_check_in_completed_at.present?
+      .small.text-muted.mt-1
+        Finalized #{format_date_in_user_timezone(check_in.official_check_in_completed_at, format: '%Y-%m-%d')}
+  %td
+    = render 'organizations/company_teammates/check_ins/acknowledge_rating_cell',
+             check_in: check_in, side: :employee, employee_name: employee_name
+  %td
+    = render 'organizations/company_teammates/check_ins/acknowledge_rating_cell',
+             check_in: check_in, side: :manager, employee_name: employee_name
+  %td
+    = render 'organizations/company_teammates/check_ins/acknowledge_rating_cell',
+             check_in: check_in, side: :official, employee_name: employee_name
+  %td
+    - if can_acknowledge
+      .mb-2
+        .form-check
+          = radio_button_tag radio_name, 'leave_unacknowledged', true,
+                             id: "ack_leave_#{base_id}",
+                             class: 'form-check-input ack-choice-radio'
+          = label_tag "ack_leave_#{base_id}", 'Leave Unacknowledged', class: 'form-check-label'
+        .form-check
+          = radio_button_tag radio_name, 'agree', false,
+                             id: "ack_agree_#{base_id}",
+                             class: 'form-check-input ack-choice-radio'
+          = label_tag "ack_agree_#{base_id}", 'Acknowledge and Agree', class: 'form-check-label'
+        .form-check
+          = radio_button_tag radio_name, 'disagree', false,
+                             id: "ack_disagree_#{base_id}",
+                             class: 'form-check-input ack-choice-radio'
+          = label_tag "ack_disagree_#{base_id}", 'Acknowledge and Disagree', class: 'form-check-label'
+      = text_area_tag notes_name, nil,
+                      class: 'form-control form-control-sm',
+                      rows: 2,
+                      placeholder: 'Optional notes'
+    - else
+      %span.text-muted Awaiting #{employee_name}

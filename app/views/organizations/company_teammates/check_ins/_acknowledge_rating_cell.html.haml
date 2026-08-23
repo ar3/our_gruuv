@@ -1,0 +1,14 @@
+-# locals: (check_in:, side:, employee_name:)
+- label = check_in_side_rating_display(check_in, side)
+- caption = check_in_side_rating_caption(check_in, side: side, employee_name: employee_name)
+- popover = check_in_side_rating_popover_content(check_in, side: side, employee_name: employee_name)
+%div
+  %span{"data-bs-toggle" => "popover",
+        "data-bs-trigger" => "hover focus",
+        "data-bs-placement" => "top",
+        "data-bs-html" => "true",
+        "data-bs-content" => popover,
+        style: "cursor: help;"}
+    = label
+  - if caption.present?
+    .small.text-muted= caption

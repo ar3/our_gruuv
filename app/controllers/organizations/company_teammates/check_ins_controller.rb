@@ -112,6 +112,50 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     )
   end
 
+  def acknowledge
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+    @can_acknowledge = (@view_mode == :employee)
+
+    queue = CheckIns::AcknowledgementQueue.for(teammate: @teammate)
+    @position_check_in = queue.position_check_in
+    @assignment_check_ins = queue.assignment_check_ins
+    @aspiration_check_ins = queue.aspiration_check_ins
+  end
+
+  def update_acknowledgement
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    unless current_person == @teammate.person
+      redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
+                  alert: "Only you can acknowledge your own check-ins."
+      return
+    end
+
+    result = CheckIns::BulkAcknowledgeCheckInsService.call(
+      teammate: @teammate,
+      acknowledgements: params[:acknowledgements]
+    )
+
+    if result.ok?
+      saved = result.value[:saved].to_i
+      errors = Array(result.value[:errors])
+      if saved.zero? && errors.empty?
+        redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
+                    alert: "Nothing to save. Choose Agree or Disagree on at least one check-in."
+      else
+        flash[:notice] = "Acknowledged #{saved} check-in#{'s' if saved != 1}." if saved.positive?
+        flash[:alert] = errors.first(3).join(" ") if errors.any?
+        redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate)
+      end
+    else
+      redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
+                  alert: result.error
+    end
+  end
+
   def hub
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
 

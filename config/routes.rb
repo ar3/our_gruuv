@@ -498,6 +498,8 @@ Rails.application.routes.draw do
       resource :check_ins, controller: 'company_teammates/check_ins', only: [:show, :update] do
         post :save_and_redirect, on: :member
         get :review_most_recent, on: :member
+        get :acknowledge, on: :member
+        patch :update_acknowledgement, on: :member
         get :hub, on: :member
         get :up_next, on: :member
         post :refresh_engagement_health, on: :member

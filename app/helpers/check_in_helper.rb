@@ -53,6 +53,69 @@ module CheckInHelper
     end
   end
 
+  # Rating label for acknowledge page columns (employee / manager / official).
+  def check_in_side_rating_display(check_in, side)
+    rating = case side.to_sym
+             when :employee then check_in.employee_rating
+             when :manager then check_in.manager_rating
+             when :official then check_in.official_rating
+             end
+
+    case check_in
+    when PositionCheckIn
+      position_rating_display(rating)
+    when AssignmentCheckIn
+      assignment_rating_display(rating)
+    when AspirationCheckIn
+      aspiration_rating_display(rating)
+    else
+      rating.presence || "Not Rated"
+    end
+  end
+
+  # Who / when / notes for a rating side on the acknowledge page.
+  def check_in_side_rating_meta(check_in, side:, employee_name:)
+    case side.to_sym
+    when :employee
+      {
+        notes: check_in.employee_private_notes,
+        at: check_in.employee_completed_at,
+        by_name: employee_name
+      }
+    when :manager
+      {
+        notes: check_in.manager_private_notes,
+        at: check_in.manager_completed_at,
+        by_name: check_in.manager_completed_by_teammate&.person&.casual_name.presence || "Manager"
+      }
+    when :official
+      {
+        notes: check_in.shared_notes,
+        at: check_in.official_check_in_completed_at,
+        by_name: check_in.finalized_by_teammate&.person&.casual_name.presence || "Finalizer"
+      }
+    else
+      { notes: nil, at: nil, by_name: nil }
+    end
+  end
+
+  def check_in_side_rating_caption(check_in, side:, employee_name:)
+    meta = check_in_side_rating_meta(check_in, side: side, employee_name: employee_name)
+    return nil if meta[:by_name].blank? || meta[:at].blank?
+
+    "By #{meta[:by_name]} on #{format_time_in_user_timezone(meta[:at]).to_s.strip}"
+  end
+
+  # Hover popover: notes for a rating side (by/when shown as cell caption).
+  def check_in_side_rating_popover_content(check_in, side:, employee_name:)
+    meta = check_in_side_rating_meta(check_in, side: side, employee_name: employee_name)
+    if meta[:notes].present?
+      "<strong>Notes:</strong><br>#{ERB::Util.html_escape(meta[:notes]).gsub("\n", '<br>')}"
+    else
+      "<em>No notes</em>"
+    end
+  end
+
   # Options for the official rating dropdown on the finalization page only. Includes a nil option.
   def assignment_official_rating_options_for_finalization
     [["Never took this on", ""]] + assignment_rating_options
