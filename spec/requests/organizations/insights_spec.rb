@@ -466,15 +466,14 @@ RSpec.describe 'Organizations::Insights', type: :request do
              teammate: teammate,
              assignment: assignment,
              official_check_in_completed_at: 2.days.ago,
-             employee_acknowledged_at: 1.day.ago,
-             employee_acknowledgement: 'agree')
+             employee_acknowledged_at: 1.day.ago)
 
       get organization_insights_acknowledgements_path(organization)
 
       expect(response.body).to include('Insights Ack Assignment')
-      expect(response.body).to include('Agreed:')
+      expect(response.body).to include('Acknowledged:')
       expect(response.body).to include('Unacknowledged:')
-      expect(response.body).to include('Disagreed:')
+      expect(response.body).not_to include('Disagreed:')
     end
 
     it 'shows who-to-show filter for employment managers' do

@@ -58,45 +58,54 @@ module CheckIns
     end
 
     def self.count_pending_latest_positions(teammate_ids)
+      rating_sql = PositionCheckIn.acknowledgement_relevant_rating_sql
       sql = ActiveRecord::Base.sanitize_sql_array([<<~SQL.squish, teammate_ids])
         SELECT teammate_id FROM (
-          SELECT DISTINCT ON (teammate_id) teammate_id, employee_acknowledged_at
+          SELECT DISTINCT ON (teammate_id) teammate_id, employee_acknowledged_at,
+            employee_rating, manager_rating, official_rating
           FROM position_check_ins
           WHERE teammate_id IN (?)
             AND official_check_in_completed_at IS NOT NULL
           ORDER BY teammate_id, official_check_in_completed_at DESC, id DESC
         ) latest
         WHERE employee_acknowledged_at IS NULL
+          AND #{rating_sql}
       SQL
       ActiveRecord::Base.connection.select_values(sql).map(&:to_i)
     end
     private_class_method :count_pending_latest_positions
 
     def self.count_pending_latest_assignments(teammate_ids)
+      rating_sql = AssignmentCheckIn.acknowledgement_relevant_rating_sql
       sql = ActiveRecord::Base.sanitize_sql_array([<<~SQL.squish, teammate_ids])
         SELECT teammate_id FROM (
-          SELECT DISTINCT ON (teammate_id, assignment_id) teammate_id, employee_acknowledged_at
+          SELECT DISTINCT ON (teammate_id, assignment_id) teammate_id, employee_acknowledged_at,
+            employee_rating, manager_rating, official_rating
           FROM assignment_check_ins
           WHERE teammate_id IN (?)
             AND official_check_in_completed_at IS NOT NULL
           ORDER BY teammate_id, assignment_id, official_check_in_completed_at DESC, id DESC
         ) latest
         WHERE employee_acknowledged_at IS NULL
+          AND #{rating_sql}
       SQL
       ActiveRecord::Base.connection.select_values(sql).map(&:to_i)
     end
     private_class_method :count_pending_latest_assignments
 
     def self.count_pending_latest_aspirations(teammate_ids)
+      rating_sql = AspirationCheckIn.acknowledgement_relevant_rating_sql
       sql = ActiveRecord::Base.sanitize_sql_array([<<~SQL.squish, teammate_ids])
         SELECT teammate_id FROM (
-          SELECT DISTINCT ON (teammate_id, aspiration_id) teammate_id, employee_acknowledged_at
+          SELECT DISTINCT ON (teammate_id, aspiration_id) teammate_id, employee_acknowledged_at,
+            employee_rating, manager_rating, official_rating
           FROM aspiration_check_ins
           WHERE teammate_id IN (?)
             AND official_check_in_completed_at IS NOT NULL
           ORDER BY teammate_id, aspiration_id, official_check_in_completed_at DESC, id DESC
         ) latest
         WHERE employee_acknowledged_at IS NULL
+          AND #{rating_sql}
       SQL
       ActiveRecord::Base.connection.select_values(sql).map(&:to_i)
     end

@@ -22,13 +22,13 @@ RSpec.describe CheckIns::BulkAcknowledgeCheckInsService do
            official_check_in_completed_at: 1.day.ago)
   end
 
-  it "saves agree/disagree and skips leave_unacknowledged" do
+  it "saves acknowledge and skips leave_unacknowledged" do
     result = described_class.call(
       teammate: teammate,
       acknowledgements: {
         "assignment" => {
           check_in_a.id.to_s => {
-            "employee_acknowledgement" => "agree",
+            "employee_acknowledgement" => "acknowledge",
             "employee_acknowledgement_notes" => "Yep"
           },
           check_in_b.id.to_s => {
@@ -41,7 +41,7 @@ RSpec.describe CheckIns::BulkAcknowledgeCheckInsService do
     expect(result).to be_ok
     expect(result.value[:saved]).to eq(1)
     expect(result.value[:skipped]).to eq(1)
-    expect(check_in_a.reload).to be_employee_acknowledgement_agree
+    expect(check_in_a.reload).to be_employee_acknowledged
     expect(check_in_a.employee_acknowledgement_notes).to eq("Yep")
     expect(check_in_b.reload.employee_acknowledged_at).to be_nil
   end

@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
 module CheckIns
-  # Persists employee acknowledgement (agree / disagree + optional notes) on a
-  # single finalized check-in. Acknowledgement is immutable once set.
+  # Persists employee acknowledgement (+ optional notes) on a single finalized
+  # check-in. Acknowledgement is immutable once set; flag is employee_acknowledged_at.
   class AcknowledgeCheckInService
     CHECK_IN_TYPES = {
       "position" => PositionCheckIn,
       "assignment" => AssignmentCheckIn,
       "aspiration" => AspirationCheckIn
     }.freeze
+
+    # Form choice values that mean "acknowledge now" (legacy "agree" still accepted).
+    ACKNOWLEDGE_CHOICES = %w[acknowledge agree].freeze
 
     def self.call(teammate:, check_in_type:, check_in_id:, acknowledgement:, notes: nil, request_info: {})
       new(
@@ -39,13 +42,15 @@ module CheckIns
       return Result.err("Only finalized check-ins can be acknowledged.") unless check_in.closed?
       return Result.err("This check-in has already been acknowledged.") if check_in.employee_acknowledged?
       return Result.err("Only the latest finalized check-in for this item can be acknowledged.") unless latest_for_item?(check_in)
+      unless check_in.acknowledgement_relevant_ratings?
+        return Result.err("This check-in has no ratings to acknowledge.")
+      end
 
-      unless %w[agree disagree].include?(@acknowledgement)
-        return Result.err("Choose Acknowledge and Agree or Acknowledge and Disagree.")
+      unless ACKNOWLEDGE_CHOICES.include?(@acknowledgement)
+        return Result.err("Choose Acknowledge.")
       end
 
       check_in.acknowledge_as_employee!(
-        acknowledgement: @acknowledgement,
         notes: @notes,
         request_info: @request_info
       )

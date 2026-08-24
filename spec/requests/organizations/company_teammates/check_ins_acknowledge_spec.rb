@@ -41,11 +41,13 @@ RSpec.describe "Check-in acknowledgement", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(assignment.title)
-      expect(response.body).to include("Acknowledge and Agree")
+      expect(response.body).to include(">Acknowledge<")
       expect(response.body).to include("Leave Unacknowledged")
-      expect(response.body).to include("Set all to Agree")
+      expect(response.body).to include("Acknowledge all")
       expect(response.body).to include("Save All")
       expect(response.body).to include("Acknowledge Check-ins")
+      expect(response.body).not_to include("Acknowledge and Agree")
+      expect(response.body).not_to include("Acknowledge and Disagree")
       expect(response.body).not_to include("Try the new acknowledgement experience")
       expect(response.body).to include("data-bs-toggle=\"popover\"")
     end
@@ -65,7 +67,7 @@ RSpec.describe "Check-in acknowledgement", type: :request do
   end
 
   describe "PATCH update_acknowledgement" do
-    it "bulk-saves agree/disagree and skips leave_unacknowledged" do
+    it "bulk-saves acknowledge and skips leave_unacknowledged" do
       sign_in_as_teammate_for_request(employee, organization)
 
       patch update_acknowledgement_organization_company_teammate_check_ins_path(organization, employee_teammate),
@@ -73,7 +75,7 @@ RSpec.describe "Check-in acknowledgement", type: :request do
               acknowledgements: {
                 assignment: {
                   assignment_check_in.id.to_s => {
-                    employee_acknowledgement: "agree",
+                    employee_acknowledgement: "acknowledge",
                     employee_acknowledgement_notes: "Fair"
                   },
                   assignment_check_in_two.id.to_s => {
@@ -86,7 +88,7 @@ RSpec.describe "Check-in acknowledgement", type: :request do
       expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
       assignment_check_in.reload
       expect(assignment_check_in.employee_acknowledged_at).to be_present
-      expect(assignment_check_in).to be_employee_acknowledgement_agree
+      expect(assignment_check_in).to be_employee_acknowledged
       expect(assignment_check_in.employee_acknowledgement_notes).to eq("Fair")
       expect(assignment_check_in_two.reload.employee_acknowledged_at).to be_nil
     end
@@ -98,7 +100,7 @@ RSpec.describe "Check-in acknowledgement", type: :request do
             params: {
               acknowledgements: {
                 assignment: {
-                  assignment_check_in.id.to_s => { employee_acknowledgement: "disagree" }
+                  assignment_check_in.id.to_s => { employee_acknowledgement: "acknowledge" }
                 }
               }
             }
@@ -124,7 +126,7 @@ RSpec.describe "Check-in acknowledgement", type: :request do
             params: {
               acknowledgements: {
                 assignment: {
-                  assignment_check_in.id.to_s => { employee_acknowledgement: "agree" }
+                  assignment_check_in.id.to_s => { employee_acknowledgement: "acknowledge" }
                 }
               }
             }

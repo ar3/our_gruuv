@@ -27,13 +27,13 @@ RSpec.describe CheckIns::BackfillAcknowledgementsFromSnapshots do
            official_check_in_completed_at: 2.days.ago)
   end
 
-  it "backfills closed check-ins on acknowledged snapshots as agree" do
+  it "backfills closed check-ins on acknowledged snapshots" do
     result = described_class.call(dry_run: false)
 
     expect(result).to be_ok
     expect(result.value[:updated]).to eq(1)
     check_in.reload
-    expect(check_in).to be_employee_acknowledgement_agree
+    expect(check_in).to be_employee_acknowledged
     expect(check_in.employee_acknowledged_at).to be_within(1.second).of(snapshot.employee_acknowledged_at)
     expect(check_in.employee_acknowledgement_request_info["request_source"]).to eq("migrated_from_snapshot")
     expect(check_in.employee_acknowledgement_request_info["snapshot_id"]).to eq(snapshot.id)

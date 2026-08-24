@@ -14,22 +14,13 @@ RSpec.describe Insights::CheckInAcknowledgementsReport do
            teammate: teammate,
            assignment: assignment,
            official_check_in_completed_at: 2.days.ago,
-           employee_acknowledged_at: 1.day.ago,
-           employee_acknowledgement: "agree",
+             employee_acknowledged_at: 1.day.ago,
            employee_acknowledgement_notes: "Yep")
     other_assignment = create(:assignment, company: organization, title: "Pending One")
     create(:assignment_check_in, :officially_completed,
            teammate: teammate,
            assignment: other_assignment,
            official_check_in_completed_at: 3.days.ago)
-    disagree_assignment = create(:assignment, company: organization, title: "Disagree One")
-    create(:assignment_check_in, :officially_completed,
-           teammate: teammate,
-           assignment: disagree_assignment,
-           official_check_in_completed_at: 4.days.ago,
-           employee_acknowledged_at: 1.day.ago,
-           employee_acknowledgement: "disagree",
-           employee_acknowledgement_notes: "No")
 
     result = described_class.call(
       organization: organization,
@@ -37,10 +28,28 @@ RSpec.describe Insights::CheckInAcknowledgementsReport do
       range: 30.days.ago..Time.current
     )
 
-    expect(result[:counts]).to eq(agree: 1, disagree: 1, unacknowledged: 1)
-    expect(result[:total]).to eq(3)
-    expect(result[:pie_chart_data].map { |p| p[:name] }).to contain_exactly("Agreed", "Unacknowledged", "Disagreed")
-    expect(result[:rows].map(&:item_name)).to include("Ack Report Assignment", "Pending One", "Disagree One")
+    expect(result[:counts]).to eq(acknowledged: 1, unacknowledged: 1)
+    expect(result[:total]).to eq(2)
+    expect(result[:pie_chart_data].map { |p| p[:name] }).to contain_exactly("Acknowledged", "Unacknowledged")
+    expect(result[:rows].map(&:item_name)).to include("Ack Report Assignment", "Pending One")
+  end
+
+  it "excludes check-ins with no real ratings" do
+    create(:assignment_check_in, :officially_completed,
+           teammate: teammate,
+           assignment: assignment,
+           official_check_in_completed_at: 2.days.ago,
+           employee_rating: nil,
+           manager_rating: nil,
+           official_rating: nil)
+
+    result = described_class.call(
+      organization: organization,
+      teammate_ids: [teammate.id],
+      range: 30.days.ago..Time.current
+    )
+
+    expect(result[:total]).to eq(0)
   end
 
   it "excludes check-ins outside the timeframe" do

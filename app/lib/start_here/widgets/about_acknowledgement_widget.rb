@@ -6,10 +6,10 @@ class StartHere::Widgets::AboutAcknowledgementWidget < StartHere::Widget::Base
     group: "About Me",
     icon: "bi-clock-history",
     selection_title: "Acknowledgement",
-    selection_description: "Acknowledge finalized check-in ratings with Agree or Disagree.",
+    selection_description: "Acknowledge finalized check-in ratings.",
     label: "Acknowledgement",
     path: ->(c) { c.view.acknowledge_organization_company_teammate_check_ins_path(c.organization, c.company_teammate) },
-    description: "Acknowledge and agree or disagree with finalized check-in ratings.",
+    description: "Acknowledge finalized check-in ratings (optional notes).",
     button_label: "Acknowledgement"
   }.freeze
 end

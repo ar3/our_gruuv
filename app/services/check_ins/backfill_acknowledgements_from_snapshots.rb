@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Idempotent backfill: closed check-ins linked to acknowledged snapshots → Agree.
+# Idempotent backfill: closed check-ins linked to acknowledged snapshots → acknowledged_at.
 #
 # Console:
 #   CheckIns::BackfillAcknowledgementsFromSnapshots.call(dry_run: true)
@@ -60,7 +60,6 @@ module CheckIns
       request_info = normalize_request_info(snapshot)
       {
         employee_acknowledged_at: snapshot.employee_acknowledged_at,
-        employee_acknowledgement: "agree",
         employee_acknowledgement_request_info: request_info,
         updated_at: Time.current
       }

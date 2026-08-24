@@ -269,8 +269,7 @@ RSpec.describe TeammateHelper, type: :helper do
              teammate: teammate,
              assignment: assignment,
              official_check_in_completed_at: 1.day.ago,
-             employee_acknowledged_at: 1.hour.ago,
-             employee_acknowledgement: 'agree')
+             employee_acknowledged_at: 1.hour.ago)
 
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(0)
     end

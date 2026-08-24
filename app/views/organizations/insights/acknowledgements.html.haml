@@ -11,13 +11,13 @@
       Insights: Acknowledgements
     = render "shared/page_help/header_info_button",
              collapse_id: page_help_id,
-             tooltip: "See agree, disagree, and unacknowledged finalized check-ins. Click for details."
+             tooltip: "See acknowledged and unacknowledged finalized check-ins. Click for details."
 
 .collapse.mb-4{id: page_help_id}
   .alert.alert-light.border
     %h3.fw-semibold.mb-2 Goal of this page
     %p.mb-3
-      Review how employees responded to finalized check-in ratings — agreed, disagreed, or still unacknowledged — in the selected timeframe.
+      Review how employees acknowledged finalized check-in ratings — or still have not — in the selected timeframe.
 
     %h3.fw-semibold.mb-2 Context
     = render "shared/maap/definition"
@@ -60,11 +60,9 @@
           %strong= @acknowledgement_total
           finalized check-in#{'s' if @acknowledgement_total != 1} in this period
         %span.badge.text-bg-success
-          Agreed: #{counts[:agree].to_i}
+          Acknowledged: #{counts[:acknowledged].to_i}
         %span.badge.text-bg-warning
           Unacknowledged: #{counts[:unacknowledged].to_i}
-        %span.badge.text-bg-danger
-          Disagreed: #{counts[:disagree].to_i}
 
   .row.mb-4
     .col-lg-6
@@ -114,7 +112,7 @@
                         - else
                           %span.text-muted —
                       %td
-                        - badge_class = { agree: "text-bg-success", disagree: "text-bg-danger" }.fetch(row.status, "text-bg-warning")
+                        - badge_class = row.status == :acknowledged ? "text-bg-success" : "text-bg-warning"
                         %span.badge{class: badge_class}= row.status_label
                       %td
                         - if row.acknowledged_at.present?

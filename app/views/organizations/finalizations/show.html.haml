@@ -45,7 +45,7 @@
             %ul
               %li Close the selected check-ins and record official ratings
               %li Add an audit history entry for #{@person.casual_name}
-              %li Ask #{@person.casual_name} to acknowledge each finalized rating (Agree / Disagree)
+              %li Ask #{@person.casual_name} to acknowledge each finalized rating
               %li Send notification to #{@person.casual_name} (coming soon)
           
           = f.submit finalize_selected_clarity_check_ins_label, class: 'btn btn-success btn-lg',

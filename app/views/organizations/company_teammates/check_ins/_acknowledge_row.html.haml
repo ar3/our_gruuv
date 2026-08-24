@@ -30,15 +30,10 @@
                              class: 'form-check-input ack-choice-radio'
           = label_tag "ack_leave_#{base_id}", 'Leave Unacknowledged', class: 'form-check-label'
         .form-check
-          = radio_button_tag radio_name, 'agree', false,
+          = radio_button_tag radio_name, 'acknowledge', false,
                              id: "ack_agree_#{base_id}",
                              class: 'form-check-input ack-choice-radio'
-          = label_tag "ack_agree_#{base_id}", 'Acknowledge and Agree', class: 'form-check-label'
-        .form-check
-          = radio_button_tag radio_name, 'disagree', false,
-                             id: "ack_disagree_#{base_id}",
-                             class: 'form-check-input ack-choice-radio'
-          = label_tag "ack_disagree_#{base_id}", 'Acknowledge and Disagree', class: 'form-check-label'
+          = label_tag "ack_agree_#{base_id}", 'Acknowledge', class: 'form-check-label'
       = text_area_tag notes_name, nil,
                       class: 'form-control form-control-sm',
                       rows: 2,

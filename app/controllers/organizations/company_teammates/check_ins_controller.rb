@@ -150,7 +150,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       errors = Array(result.value[:errors])
       if saved.zero? && errors.empty?
         redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
-                    alert: "Nothing to save. Choose Agree or Disagree on at least one check-in."
+                    alert: "Nothing to save. Choose Acknowledge on at least one check-in."
       else
         flash[:notice] = "Acknowledged #{saved} check-in#{'s' if saved != 1}." if saved.positive?
         flash[:alert] = errors.first(3).join(" ") if errors.any?

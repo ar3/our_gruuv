@@ -126,7 +126,7 @@ module CheckInHelper
     parts.join("<br><br>")
   end
 
-  # Agree/Disagree page: going-forward energy from finalization (active tenure after close).
+  # Acknowledge page: going-forward energy from finalization (active tenure after close).
   def assignment_acknowledgement_energy_sentence(check_in, employee_name:)
     return nil unless check_in.is_a?(AssignmentCheckIn)
     return nil unless check_in.officially_completed?
@@ -1035,7 +1035,7 @@ module CheckInHelper
     value.to_date.strftime('%b %d, %Y')
   end
 
-  # Shown under Agree/Disagree radios on the acknowledge page.
+  # Shown under Acknowledge radios on the acknowledge page.
   def acknowledgement_answers_visibility_caption(organization)
     names = employment_managers_casual_names(organization)
     if names.empty?

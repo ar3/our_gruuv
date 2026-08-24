@@ -34,11 +34,23 @@ RSpec.describe CheckIns::AcknowledgementQueue do
            teammate: teammate,
            assignment: assignment,
            official_check_in_completed_at: 1.day.ago,
-           employee_acknowledged_at: Time.current,
-           employee_acknowledgement: "agree")
+             employee_acknowledged_at: Time.current)
 
     queue = described_class.for(teammate: teammate)
 
     expect(queue.assignment_check_ins).to be_empty
+  end
+
+  it "omits finalized check-ins where all ratings are blank or N/A-style" do
+    check_in = create(:assignment_check_in, :officially_completed,
+                      teammate: teammate,
+                      assignment: assignment,
+                      official_check_in_completed_at: 1.day.ago)
+    check_in.update_columns(employee_rating: nil, manager_rating: "na", official_rating: "")
+
+    queue = described_class.for(teammate: teammate)
+
+    expect(queue.assignment_check_ins).to be_empty
+    expect(described_class.pending_count_for(teammate: teammate)).to eq(0)
   end
 end

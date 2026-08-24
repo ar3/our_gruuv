@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module CheckIns
-  # Acknowledges every check-in in the payload that is Agree or Disagree.
+  # Acknowledges every check-in in the payload marked Acknowledge.
   # Leave Unacknowledged entries are skipped. Continues on per-item failures.
   class BulkAcknowledgeCheckInsService
     def self.call(teammate:, acknowledgements:, request_info: {})

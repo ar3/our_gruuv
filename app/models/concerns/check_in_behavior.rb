@@ -55,24 +55,21 @@ module CheckInBehavior
     scope :awaiting_manager_input, -> {
       open.employee_completed.where(manager_completed_at: nil)
     }
+    scope :with_acknowledgement_relevant_rating, -> {
+      where(Arel.sql(acknowledgement_relevant_rating_sql))
+    }
     scope :awaiting_employee_acknowledgement, -> {
-      closed.where(employee_acknowledged_at: nil)
+      closed.where(employee_acknowledged_at: nil).with_acknowledgement_relevant_rating
     }
     scope :employee_acknowledged, -> {
       where.not(employee_acknowledged_at: nil)
     }
 
-    enum :employee_acknowledgement, {
-      agree: "agree",
-      disagree: "disagree"
-    }, prefix: true
-
-    validates :employee_acknowledgement,
-              inclusion: { in: employee_acknowledgements.keys },
-              allow_nil: true
-    validate :employee_acknowledgement_fields_consistent
     validate :employee_acknowledgement_immutable, on: :update
   end
+
+  # Blank / N/A-style rating tokens — treated as empty for acknowledgement eligibility.
+  EMPTY_ACKNOWLEDGEMENT_RATING_TOKENS = %w[na n/a not_rated not-rated none].freeze
 
   class_methods do
     # When multiple finalized check-ins exist per associable, keep the most recent
@@ -85,6 +82,19 @@ module CheckInBehavior
           key = check_in.public_send(group_key)
           memo[key] ||= check_in
         end
+    end
+
+    # SQL: at least one of employee / manager / official rating is a real value.
+    def acknowledgement_relevant_rating_sql
+      empty = EMPTY_ACKNOWLEDGEMENT_RATING_TOKENS.map { |t| ActiveRecord::Base.connection.quote(t) }.join(", ")
+      side = lambda do |column|
+        <<~SQL.squish
+          (#{column} IS NOT NULL
+           AND btrim(#{column}::text) <> ''
+           AND lower(btrim(#{column}::text)) NOT IN (#{empty}))
+        SQL
+      end
+      "(#{side.call('employee_rating')} OR #{side.call('manager_rating')} OR #{side.call('official_rating')})"
     end
   end
   
@@ -118,11 +128,29 @@ module CheckInBehavior
   end
 
   def awaiting_employee_acknowledgement?
-    closed? && !employee_acknowledged?
+    closed? && !employee_acknowledged? && acknowledgement_relevant_ratings?
+  end
+
+  # True if at least one rating side has a non-blank, non-N/A value.
+  def acknowledgement_relevant_ratings?
+    rating_present_for_acknowledgement?(employee_rating) ||
+      rating_present_for_acknowledgement?(manager_rating) ||
+      rating_present_for_acknowledgement?(official_rating)
+  end
+
+  def rating_present_for_acknowledgement?(value)
+    return false if value.nil?
+
+    normalized = value.to_s.strip
+    return false if normalized.empty?
+    return false if EMPTY_ACKNOWLEDGEMENT_RATING_TOKENS.include?(normalized.downcase)
+
+    true
   end
 
   # Sets acknowledgement immutably. Raises if already acknowledged.
-  def acknowledge_as_employee!(acknowledgement:, notes: nil, request_info: {})
+  # Acknowledgement is solely employee_acknowledged_at (plus optional notes / request_info).
+  def acknowledge_as_employee!(notes: nil, request_info: {})
     if employee_acknowledged?
       errors.add(:base, "Acknowledgement cannot be changed once set")
       raise ActiveRecord::RecordInvalid, self
@@ -130,7 +158,6 @@ module CheckInBehavior
 
     update!(
       employee_acknowledged_at: Time.current,
-      employee_acknowledgement: acknowledgement,
       employee_acknowledgement_notes: notes.presence,
       employee_acknowledgement_request_info: (request_info.presence || {})
     )
@@ -264,20 +291,10 @@ module CheckInBehavior
 
   private
 
-  def employee_acknowledgement_fields_consistent
-    if employee_acknowledged_at.present? && employee_acknowledgement.blank?
-      errors.add(:employee_acknowledgement, "must be present when acknowledged")
-    end
-    if employee_acknowledgement.present? && employee_acknowledged_at.blank?
-      errors.add(:employee_acknowledged_at, "must be present when acknowledgement is set")
-    end
-  end
-
   def employee_acknowledgement_immutable
     return if attribute_in_database("employee_acknowledged_at").blank?
 
     if will_save_change_to_employee_acknowledged_at? ||
-       will_save_change_to_employee_acknowledgement? ||
        will_save_change_to_employee_acknowledgement_notes? ||
        will_save_change_to_employee_acknowledgement_request_info?
       errors.add(:base, "Acknowledgement cannot be changed once set")

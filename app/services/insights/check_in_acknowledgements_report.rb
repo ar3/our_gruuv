@@ -2,6 +2,7 @@
 
 module Insights
   # Finalized check-ins in a timeframe, bucketed by acknowledgement status for Insights.
+  # Only check-ins with at least one real rating (not all blank/N/A) are included.
   class CheckInAcknowledgementsReport
     CHECK_IN_CLASSES = [AspirationCheckIn, AssignmentCheckIn, PositionCheckIn].freeze
 
@@ -31,8 +32,7 @@ module Insights
     def call
       rows = load_rows
       counts = {
-        agree: rows.count { |r| r.status == :agree },
-        disagree: rows.count { |r| r.status == :disagree },
+        acknowledged: rows.count { |r| r.status == :acknowledged },
         unacknowledged: rows.count { |r| r.status == :unacknowledged }
       }
       {
@@ -56,6 +56,7 @@ module Insights
       scope = klass
         .where(teammate_id: @teammate_ids)
         .closed
+        .with_acknowledgement_relevant_rating
       scope = scope.where(official_check_in_completed_at: @range) if @range
 
       case klass.name
@@ -72,14 +73,14 @@ module Insights
 
     def build_row(check_in)
       type_label, item_name = subject_labels(check_in)
-      status = acknowledgement_status(check_in)
+      status = check_in.employee_acknowledged? ? :acknowledged : :unacknowledged
       Row.new(
         check_in: check_in,
         teammate: check_in.teammate,
         type_label: type_label,
         item_name: item_name,
         status: status,
-        status_label: status_label(status),
+        status_label: status == :acknowledged ? "Acknowledged" : "Unacknowledged",
         finalized_at: check_in.official_check_in_completed_at,
         acknowledged_at: check_in.employee_acknowledged_at,
         notes: check_in.employee_acknowledgement_notes
@@ -99,27 +100,10 @@ module Insights
       end
     end
 
-    def acknowledgement_status(check_in)
-      return :unacknowledged unless check_in.employee_acknowledged?
-      return :agree if check_in.employee_acknowledgement_agree?
-      return :disagree if check_in.employee_acknowledgement_disagree?
-
-      :unacknowledged
-    end
-
-    def status_label(status)
-      case status
-      when :agree then "Agreed"
-      when :disagree then "Disagreed"
-      else "Unacknowledged"
-      end
-    end
-
     def pie_chart_data(counts)
       [
-        { name: "Agreed", y: counts[:agree].to_i, color: "#198754" },
-        { name: "Unacknowledged", y: counts[:unacknowledged].to_i, color: "#ffc107" },
-        { name: "Disagreed", y: counts[:disagree].to_i, color: "#dc3545" }
+        { name: "Acknowledged", y: counts[:acknowledged].to_i, color: "#198754" },
+        { name: "Unacknowledged", y: counts[:unacknowledged].to_i, color: "#ffc107" }
       ].reject { |point| point[:y].zero? }
     end
   end
