@@ -82,12 +82,18 @@
 
 - if @can_acknowledge && pending_count.positive?
   :javascript
-    document.addEventListener('DOMContentLoaded', function() {
-      var setAll = document.getElementById('set-all-ack-agree');
-      if (!setAll) return;
-      setAll.addEventListener('click', function() {
+    (function() {
+      if (window.__ackSetAllAgreeDelegated) return;
+      window.__ackSetAllAgreeDelegated = true;
+
+      document.addEventListener('click', function(event) {
+        var setAll = event.target.closest('#set-all-ack-agree');
+        if (!setAll) return;
+
+        event.preventDefault();
         document.querySelectorAll('.ack-choice-radio[value="agree"]').forEach(function(radio) {
-          radio.checked = true;
+          // click() overrides Leave Unacknowledged / Disagree in the same group
+          if (!radio.checked) radio.click();
         });
       });
-    });
+    })();

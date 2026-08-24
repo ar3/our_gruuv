@@ -275,6 +275,22 @@ RSpec.describe OrganizationsController, type: :controller do
       
       expect(person.teammates.where(organization: root_company).count).to eq(initial_count)
     end
+
+    context 'when switching to a different organization' do
+      let!(:other_organization) { create(:organization, name: 'Other Company') }
+      let!(:other_teammate) { create(:teammate, person: person, organization: other_organization) }
+
+      it 'switches session to the other organization without access error' do
+        expect(session[:current_company_teammate_id]).not_to eq(other_teammate.id)
+
+        patch :switch, params: { id: other_organization.id }
+
+        expect(response).to redirect_to(organization_path(other_organization))
+        expect(flash[:notice]).to eq("Switched to #{other_organization.display_name}")
+        expect(flash[:alert]).to be_nil
+        expect(session[:current_company_teammate_id]).to eq(other_teammate.id)
+      end
+    end
   end
 
   describe 'GET #dashboard' do

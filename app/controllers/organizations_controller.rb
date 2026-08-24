@@ -1,5 +1,8 @@
 class OrganizationsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication, except: [:pundit_healthcheck]
+  # Switch must load the target org but must not require the session teammate
+  # to already belong to it — that is what switch is for.
+  skip_before_action :ensure_teammate_matches_organization, only: [:switch]
   
   def index
     # Eager load teams and huddles (Team#huddle_channel is a method, not an association, so it cannot be included)
