@@ -1,0 +1,162 @@
+- content_for :title, "Insights: Acknowledgements"
+- page_help_id = "acknowledgementsInsightsPageHelp"
+- chart_title_period = @chart_title_period
+- counts = @acknowledgement_counts || {}
+- filter_query = { teammate_filter: @acknowledgements_filter }.compact
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-hand-thumbs-up.me-2
+      Insights: Acknowledgements
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See agree, disagree, and unacknowledged finalized check-ins. Click for details."
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p.mb-3
+      Review how employees responded to finalized check-in ratings — agreed, disagreed, or still unacknowledged — in the selected timeframe.
+
+    %h3.fw-semibold.mb-2 Context
+    = render "shared/maap/definition"
+    = render "shared/check_ins/three_step_clarity_flow", organization: @organization, teammate: current_company_teammate
+
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-0
+      %li Defaults to your own acknowledgements. Employment managers can filter to everyone, people managed by a given manager, or an individual.
+      %li Timeframe filters by when the check-in was reviewed together (finalized).
+      %li The pie chart covers all finalized check-ins in scope for the period, not only ones already acknowledged.
+
+= render "timeframe_selector",
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_acknowledgements_path(@organization, **filter_query.merge(opts)) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  form_hidden_fields: filter_query,
+  wrapper_class: "mb-3"
+
+- if @can_filter_acknowledgements
+  .mb-4
+    = form_tag organization_insights_acknowledgements_path(@organization), method: :get, class: "row g-2 align-items-end" do
+      = hidden_field_tag :timeframe, @timeframe
+      - if @timeframe == :custom
+        = hidden_field_tag :from, @insights_custom_from
+        = hidden_field_tag :to, @insights_custom_to
+      .col-sm-auto
+        = label_tag :teammate_filter, "Who to show", class: "form-label small mb-0 d-block"
+        = select_tag :teammate_filter,
+                     options_for_select(@acknowledgements_filter_options, @acknowledgements_filter),
+                     class: "form-select form-select-sm",
+                     onchange: "this.form.submit()"
+
+.container-fluid
+  .row.mb-4
+    .col-12
+      .d-flex.flex-wrap.gap-3.align-items-center
+        .text-muted
+          %strong= @acknowledgement_total
+          finalized check-in#{'s' if @acknowledgement_total != 1} in this period
+        %span.badge.text-bg-success
+          Agreed: #{counts[:agree].to_i}
+        %span.badge.text-bg-warning
+          Unacknowledged: #{counts[:unacknowledged].to_i}
+        %span.badge.text-bg-danger
+          Disagreed: #{counts[:disagree].to_i}
+
+  .row.mb-4
+    .col-lg-6
+      .card.border-0.shadow-sm
+        .card-header.bg-info.text-white
+          %h4.mb-0
+            %i.bi.bi-pie-chart.me-2
+            Acknowledgement status (#{chart_title_period})
+        .card-body
+          - if @acknowledgement_total.to_i.positive?
+            #acknowledgements-status-pie-chart{style: "height: 380px;"}
+          - else
+            %p.text-muted.mb-0 No finalized check-ins in this period for the selected people.
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-secondary.text-white
+          %h4.mb-0
+            %i.bi.bi-table.me-2
+            Acknowledgements
+        .card-body
+          - if @acknowledgement_rows.any?
+            .table-responsive
+              %table.table.table-hover.align-middle
+                %thead
+                  %tr
+                    - if @can_filter_acknowledgements && @acknowledgements_filter != "just_me"
+                      %th Teammate
+                    %th Type
+                    %th Item
+                    %th Reviewed Together
+                    %th Status
+                    %th Acknowledged
+                    %th Notes
+                %tbody
+                  - @acknowledgement_rows.each do |row|
+                    %tr
+                      - if @can_filter_acknowledgements && @acknowledgements_filter != "just_me"
+                        %td= row.teammate&.person&.display_name
+                      %td
+                        %span.badge.bg-secondary= row.type_label
+                      %td= row.item_name
+                      %td
+                        - if row.finalized_at.present?
+                          = format_date_in_user_timezone(row.finalized_at, format: "%b %d, %Y")
+                        - else
+                          %span.text-muted —
+                      %td
+                        - badge_class = { agree: "text-bg-success", disagree: "text-bg-danger" }.fetch(row.status, "text-bg-warning")
+                        %span.badge{class: badge_class}= row.status_label
+                      %td
+                        - if row.acknowledged_at.present?
+                          = format_date_in_user_timezone(row.acknowledged_at, format: "%b %d, %Y")
+                        - else
+                          %span.text-muted —
+                      %td
+                        - if row.notes.present?
+                          = simple_format(row.notes, class: "mb-0 small")
+                        - else
+                          %span.text-muted —
+          - else
+            %p.text-muted.mb-0 No finalized check-ins in this period for the selected people.
+
+- if @acknowledgement_total.to_i.positive?
+  :javascript
+    (function() {
+      var pieData = #{@acknowledgements_pie_chart_data.to_json};
+      var chartTitle = #{chart_title_period.to_json};
+      function initPie() {
+        if (typeof Highcharts === 'undefined') return;
+        var el = document.getElementById('acknowledgements-status-pie-chart');
+        if (!el) return;
+        Highcharts.chart('acknowledgements-status-pie-chart', {
+          chart: { type: 'pie' },
+          title: { text: 'Acknowledgement status (' + chartTitle + ')' },
+          accessibility: { enabled: false },
+          tooltip: { pointFormat: '<b>{point.y}</b> ({point.percentage:.1f}%)' },
+          plotOptions: {
+            pie: {
+              allowPointSelect: true,
+              cursor: 'pointer',
+              dataLabels: { enabled: true, format: '{point.name}: {point.y}' }
+            }
+          },
+          series: [{ name: 'Check-ins', colorByPoint: true, data: pieData }],
+          colors: ['#198754', '#ffc107', '#dc3545']
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPie);
+      } else {
+        initPie();
+      }
+    })();

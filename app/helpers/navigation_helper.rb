@@ -428,6 +428,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Acknowledgements',
+            icon: 'bi-hand-thumbs-up',
+            path: organization_insights_acknowledgements_path(current_organization),
+            policy_check: -> { policy(current_company).show? },
+            coming_soon: false
+          },
+          {
             label: 'Check-ins Progress',
             icon: 'bi-bar-chart-steps',
             path: organization_insights_check_ins_progress_path(current_organization),

@@ -23,7 +23,8 @@
                    item_name: check_in.aspiration.name,
                    item_path: organization_teammate_aspiration_path(organization, teammate, check_in.aspiration),
                    can_acknowledge: can_acknowledge,
-                   employee_name: employee_name
+                   employee_name: employee_name,
+                   organization: organization
 - else
   %p.text-muted.mb-4 No aspirational value check-ins need acknowledgement.
 
@@ -50,7 +51,8 @@
                    item_name: check_in.assignment.title,
                    item_path: organization_teammate_assignment_path(organization, teammate, check_in.assignment),
                    can_acknowledge: can_acknowledge,
-                   employee_name: employee_name
+                   employee_name: employee_name,
+                   organization: organization
 - else
   %p.text-muted.mb-4 No assignment check-ins need acknowledgement.
 
@@ -77,6 +79,7 @@
                  item_name: position_title,
                  item_path: nil,
                  can_acknowledge: can_acknowledge,
-                 employee_name: employee_name
+                 employee_name: employee_name,
+                 organization: organization
 - else
   %p.text-muted.mb-4 No position check-in needs acknowledgement.

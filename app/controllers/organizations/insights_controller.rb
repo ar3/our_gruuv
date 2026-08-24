@@ -499,7 +499,95 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @sort_by = apply_department_leaderboard_sort
   end
 
+  def acknowledgements
+    authorize company, :show?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
+
+    @can_filter_acknowledgements = policy(company).manage_employment?
+    apply_acknowledgements_filter_default!
+    @acknowledgements_filter = params[:teammate_filter].to_s
+    @acknowledgements_filter_options = acknowledgements_filter_options if @can_filter_acknowledgements
+    teammate_ids = acknowledgements_teammate_ids_for_filter(@acknowledgements_filter)
+
+    report = Insights::CheckInAcknowledgementsReport.call(
+      organization: company,
+      teammate_ids: teammate_ids,
+      range: range
+    )
+    @acknowledgement_rows = report[:rows]
+    @acknowledgement_counts = report[:counts]
+    @acknowledgement_total = report[:total]
+    @acknowledgements_pie_chart_data = report[:pie_chart_data]
+  end
+
   private
+
+  def apply_acknowledgements_filter_default!
+    return if params[:teammate_filter].present?
+
+    params[:teammate_filter] = "just_me"
+  end
+
+  def acknowledgements_filter_options
+    options = [
+      ["Just me", "just_me"],
+      ["Everyone", "everyone"]
+    ]
+
+    manager_ids = EmploymentTenure
+      .where(company: company, ended_at: nil)
+      .where.not(manager_teammate_id: nil)
+      .distinct
+      .pluck(:manager_teammate_id)
+    CompanyTeammate.where(id: manager_ids).joins(:person).order("people.last_name ASC, people.first_name ASC").each do |manager|
+      options << ["Managed by #{manager.person.casual_name}", "managed_by_#{manager.id}"]
+    end
+
+    active_acknowledgements_teammates.each do |tm|
+      options << [tm.person.display_name, "teammate_#{tm.id}"]
+    end
+
+    options
+  end
+
+  def acknowledgements_teammate_ids_for_filter(filter)
+    case filter.to_s
+    when "everyone"
+      return [] unless policy(company).manage_employment?
+
+      active_acknowledgements_teammates.pluck(:id)
+    when /\Amanaged_by_(\d+)\z/
+      return [] unless policy(company).manage_employment?
+
+      manager_id = Regexp.last_match(1).to_i
+      EmploymentTenure
+        .where(company: company, manager_teammate_id: manager_id, ended_at: nil)
+        .pluck(:teammate_id)
+    when /\Ateammate_(\d+)\z/
+      return [] unless policy(company).manage_employment?
+
+      teammate_id = Regexp.last_match(1).to_i
+      active_acknowledgements_teammates.where(id: teammate_id).pluck(:id)
+    else
+      # just_me (default) — always allowed
+      current_company_teammate ? [current_company_teammate.id] : []
+    end
+  end
+
+  def active_acknowledgements_teammates
+    CompanyTeammate
+      .for_organization_hierarchy(company)
+      .where.not(first_employed_at: nil)
+      .where(last_terminated_at: nil)
+      .joins(:person)
+      .includes(:person)
+      .order("people.last_name ASC, people.first_name ASC")
+  end
 
   def search_ask_og_weekly_charts(organization, chart_range)
     week_dates = og_scorecard_week_starts(chart_range)
@@ -589,6 +677,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     links << { label: 'Huddles', path: huddles_review_organization_path(organization) } if policy(organization).show?
     links << { label: 'Check-ins Health', path: organization_check_ins_health_path(organization) } if policy(organization).check_ins_health?
     links << { label: 'Check-ins Progress', path: organization_insights_check_ins_progress_path(organization) } if policy(organization).check_ins_health?
+    links << { label: 'Acknowledgements', path: organization_insights_acknowledgements_path(organization) } if policy(company).show?
     links
   end
 

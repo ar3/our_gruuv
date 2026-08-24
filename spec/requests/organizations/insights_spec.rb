@@ -445,6 +445,47 @@ RSpec.describe 'Organizations::Insights', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/insights/acknowledgements' do
+    it 'returns http success' do
+      get organization_insights_acknowledgements_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders timeframe controls and defaults to just me' do
+      get organization_insights_acknowledgements_path(organization)
+      expect(response.body).to include('Insights: Acknowledgements')
+      expect(response.body).to include('Last 90 days')
+      expect(response.body).to include('Last Year')
+      expect(response.body).to include('All-Time')
+      expect(response.body).not_to include('Who to show')
+    end
+
+    it 'lists the current teammate finalized check-ins and status buckets' do
+      assignment = create(:assignment, company: organization, title: 'Insights Ack Assignment')
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: assignment,
+             official_check_in_completed_at: 2.days.ago,
+             employee_acknowledged_at: 1.day.ago,
+             employee_acknowledgement: 'agree')
+
+      get organization_insights_acknowledgements_path(organization)
+
+      expect(response.body).to include('Insights Ack Assignment')
+      expect(response.body).to include('Agreed:')
+      expect(response.body).to include('Unacknowledged:')
+      expect(response.body).to include('Disagreed:')
+    end
+
+    it 'shows who-to-show filter for employment managers' do
+      teammate.update!(can_manage_employment: true)
+      get organization_insights_acknowledgements_path(organization)
+      expect(response.body).to include('Who to show')
+      expect(response.body).to include('Everyone')
+      expect(response.body).to include('Just me')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/insights/og_consultations' do
     it 'returns http success' do
       get organization_insights_og_consultations_path(organization)

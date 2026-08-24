@@ -1016,6 +1016,50 @@ module CheckInHelper
     content_tag(:div, body, class: "text-start")
   end
 
+  def check_in_subject_object_labels(check_in)
+    case check_in
+    when AssignmentCheckIn
+      ['Assignment', check_in.assignment.title]
+    when AspirationCheckIn
+      ['Aspirational Value', check_in.aspiration.name]
+    when PositionCheckIn
+      ['Position', check_in.employment_tenure.position.display_name]
+    else
+      ['Check-in', 'this item']
+    end
+  end
+
+  def check_in_completion_display_date(value)
+    return '' unless value.present?
+
+    value.to_date.strftime('%b %d, %Y')
+  end
+
+  # Shown under Agree/Disagree radios on the acknowledge page.
+  def acknowledgement_answers_visibility_caption(organization)
+    names = employment_managers_casual_names(organization)
+    if names.empty?
+      "This response/notes will only be visible to you."
+    else
+      "This response/notes will only be visible to you and #{names.to_sentence(two_words_connector: ' and ', last_word_connector: ', and ')}."
+    end
+  end
+
+  def employment_managers_casual_names(organization)
+    return [] unless organization
+
+    CompanyTeammate
+      .for_organization_hierarchy(organization)
+      .where(can_manage_employment: true)
+      .where.not(first_employed_at: nil)
+      .where(last_terminated_at: nil)
+      .joins(:person)
+      .includes(:person)
+      .order("people.last_name ASC, people.first_name ASC")
+      .filter_map { |tm| tm.person&.casual_name.presence }
+      .uniq
+  end
+
   private
 
   def check_in_counterparty_completion_detail_context(check_in, teammate: nil, current_person: nil)
@@ -1086,25 +1130,6 @@ module CheckInHelper
       bold_completed,
       '.'
     ])
-  end
-
-  def check_in_subject_object_labels(check_in)
-    case check_in
-    when AssignmentCheckIn
-      ['Assignment', check_in.assignment.title]
-    when AspirationCheckIn
-      ['Aspirational Value', check_in.aspiration.name]
-    when PositionCheckIn
-      ['Position', check_in.employment_tenure.position.display_name]
-    else
-      ['Check-in', 'this item']
-    end
-  end
-
-  def check_in_completion_display_date(value)
-    return '' unless value.present?
-
-    value.to_date.strftime('%b %d, %Y')
   end
 end
 

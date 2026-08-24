@@ -1,4 +1,4 @@
--# locals: (check_in:, check_in_type:, item_name:, item_path:, can_acknowledge:, employee_name:)
+-# locals: (check_in:, check_in_type:, item_name:, item_path:, can_acknowledge:, employee_name:, organization:)
 - prefix = "acknowledgements[#{check_in_type}][#{check_in.id}]"
 - radio_name = "#{prefix}[employee_acknowledgement]"
 - notes_name = "#{prefix}[employee_acknowledgement_notes]"
@@ -43,5 +43,7 @@
                       class: 'form-control form-control-sm',
                       rows: 2,
                       placeholder: 'Optional notes'
+      %p.small.text-muted.mt-2.mb-0
+        = acknowledgement_answers_visibility_caption(organization)
     - else
       %span.text-muted Awaiting #{employee_name}

@@ -136,6 +136,24 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#acknowledgement_answers_visibility_caption' do
+    let(:organization) { create(:organization) }
+    let!(:manager) do
+      person = create(:person, first_name: 'Pat', last_name: 'Manager')
+      create(:company_teammate,
+             person: person,
+             organization: organization,
+             can_manage_employment: true,
+             first_employed_at: 1.year.ago)
+    end
+
+    it 'lists employment managers' do
+      caption = helper.acknowledgement_answers_visibility_caption(organization)
+      expect(caption).to include('This response/notes will only be visible to you and')
+      expect(caption).to include(manager.person.casual_name)
+    end
+  end
+
   describe '#check_in_side_rating_popover_content' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person, first_name: 'Sam', last_name: 'Test') }
