@@ -12,24 +12,16 @@ class Organizations::CheckInsAcknowledgementNudgesController < Organizations::Or
     apply_filter_default_if_needed
     active_teammates = filtered_teammates_for_check_ins_health.to_a
     teammate_ids = active_teammates.map(&:id)
-
-    pending_all = MaapSnapshot.where(employee_company_teammate_id: teammate_ids)
-      .where(employee_acknowledged_at: nil)
-      .where.not(effective_date: nil)
-      .to_a
-    by_teammate = pending_all.group_by(&:employee_company_teammate_id)
+    pending_counts = CheckIns::AcknowledgementQueue.pending_counts_by_teammate_id(teammate_ids: teammate_ids)
 
     all_rows = active_teammates.map do |teammate|
-      list = by_teammate[teammate.id] || []
-      anchor = list.max_by { |s| [s.effective_date || Date.new(1900, 1, 1), s.id] }
-      pending_count = list.size
-      last_nudge = anchor&.last_delivered_acknowledgement_nudge
+      pending_count = pending_counts[teammate.id].to_i
+      last_nudge = teammate.last_delivered_acknowledgement_nudge
       {
         teammate: teammate,
         person: teammate.person,
         has_pending_ack: pending_count.positive?,
         pending_count: pending_count,
-        anchor_snapshot: anchor,
         last_nudge_notification: last_nudge
       }
     end
@@ -52,7 +44,7 @@ class Organizations::CheckInsAcknowledgementNudgesController < Organizations::Or
     apply_filter_default_if_needed
     teammate = filtered_teammates_for_check_ins_health.find_by(id: resolve_teammate_route_id(params[:company_teammate_id]))
     unless teammate
-      redirect_to redirect_index_path, alert: 'Teammate not found or not in this view.'
+      redirect_to redirect_index_path, alert: "Teammate not found or not in this view."
       return
     end
 
@@ -63,7 +55,7 @@ class Organizations::CheckInsAcknowledgementNudgesController < Organizations::Or
     )
 
     if result.ok?
-      redirect_to redirect_index_path, notice: 'Nudge sent.'
+      redirect_to redirect_index_path, notice: "Nudge sent."
     else
       redirect_to redirect_index_path, alert: result.error
     end
@@ -85,6 +77,6 @@ class Organizations::CheckInsAcknowledgementNudgesController < Organizations::Or
   def require_authentication
     return if current_person
 
-    redirect_to root_path, alert: 'Please log in to access this page.'
+    redirect_to root_path, alert: "Please log in to access this page."
   end
 end

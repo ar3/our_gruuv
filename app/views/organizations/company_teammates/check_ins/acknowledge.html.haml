@@ -15,7 +15,6 @@
                path_for_teammate: ->(tm) { acknowledge_organization_company_teammate_check_ins_path(organization, tm) },
                switch_aria_label: "Switch teammate for acknowledgement"
       %span= " - #{page_label}"
-      %span.badge.bg-secondary Beta
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
                tooltip: "Acknowledge finalized ratings with agree or disagree. Click for details."
@@ -26,17 +25,12 @@
   = render "people/view_switcher"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: "Acknowledge Check-ins (audit)", url: audit_organization_employee_path(organization, @teammate) }, { label: page_label, url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: page_label, url: nil }])
 
 .collapse.mb-4{id: page_help_id}
   = render "organizations/company_teammates/check_ins/acknowledge_page_help"
 
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 3
-
-.alert.alert-info.mb-4
-  %i.bi.bi-info-circle.me-2
-  This is the new acknowledgement experience. Snapshot acknowledgement, GSD, and health still use the
-  #{link_to "current audit page", audit_organization_employee_path(organization, @teammate)}.
 
 - if pending_count.zero?
   .text-center.py-5

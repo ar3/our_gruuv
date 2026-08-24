@@ -324,7 +324,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
                params: empty_params
         }.not_to change { MaapSnapshot.count }
         
-        expect(response).to redirect_to(audit_organization_employee_path(organization, employee_teammate))
+        expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
       end
 
       it "succeeds when finalize flag is not set for position" do
@@ -340,7 +340,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
                params: params_without_finalize
         }.not_to change { MaapSnapshot.count }
         
-        expect(response).to redirect_to(audit_organization_employee_path(organization, employee_teammate))
+        expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
       end
 
       it "succeeds when assignment_check_ins exists but finalize flag is not set" do
@@ -368,7 +368,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
                params: params_without_finalize
         }.not_to change { MaapSnapshot.count }
         
-        expect(response).to redirect_to(audit_organization_employee_path(organization, employee_teammate))
+        expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
       end
     end
 

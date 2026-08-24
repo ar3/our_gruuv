@@ -1,60 +1,30 @@
 -# Local variables expected:
   -# - snapshot: MaapSnapshot instance
-  -# - show_checkbox: boolean, whether to show checkbox column (for pending acknowledgements)
   -# - person: Person instance
   -# - organization: Organization instance
   -# - previous_snapshot: MaapSnapshot instance (the chronologically previous snapshot, or nil if first)
 - all_fields = format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
 - has_data = all_fields.present? && (all_fields[:employment].present? || all_fields[:assignments].present? || all_fields[:abilities].present? || all_fields[:aspirations].present?)
 - has_official_changes = has_data && (all_fields[:employment].present? || all_fields[:assignments].present? || all_fields[:abilities].present? || all_fields[:aspirations].present?)
-- # Calculate total columns: checkbox (if shown) + date + created_by + reason + status (if not checkbox) + acknowledgement (if shown) + details
-- total_cols = (show_checkbox ? 1 : 0) + 3 + (show_checkbox ? 0 : 1) + 1 + 1
+- total_cols = 5
 %tr
-  - if show_checkbox
-    %td
-      = check_box_tag 'snapshot_ids[]', snapshot.id, false, 
-                      class: 'snapshot-checkbox',
-                      id: "snapshot_#{snapshot.id}"
   %td
     = format_time_in_user_timezone(snapshot.created_at, format: "%Y-%m-%d %I:%M %p")
   %td
     = snapshot.creator_company_teammate&.person&.display_name || "System"
   %td
     = truncate(snapshot.reason, length: 50)
-  - unless show_checkbox
-    %td
-      - if snapshot.executed?
-        - executed_popover = executed_popover_content(snapshot)
-        - if executed_popover.present?
-          %span.badge.bg-success{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => executed_popover, style: "cursor: pointer;"} Executed
-        - else
-          %span.badge.bg-success Executed
-        %br
-        %small.text-muted= "on #{format_date_in_user_timezone(snapshot.effective_date, format: '%Y-%m-%d')}"
-      - else
-        %span.badge.bg-warning Pending
   %td
     - if snapshot.executed?
-      - if snapshot.acknowledged?
-        - acknowledged_popover = acknowledged_popover_content(snapshot)
-        - if acknowledged_popover.present?
-          %span.badge.bg-success{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => acknowledged_popover, style: "cursor: pointer;"}
-            %i.bi.bi-check-circle.me-1
-            Acknowledged
-        - else
-          %span.badge.bg-success
-            %i.bi.bi-check-circle.me-1
-            Acknowledged
-        %br
-        %small.text-muted= "on #{format_date_in_user_timezone(snapshot.employee_acknowledged_at, format: '%Y-%m-%d')}"
+      - executed_popover = executed_popover_content(snapshot)
+      - if executed_popover.present?
+        %span.badge.bg-success{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => executed_popover, style: "cursor: pointer;"} Executed
       - else
-        %span.badge.bg-warning
-          %i.bi.bi-exclamation-triangle.me-1
-          Pending
+        %span.badge.bg-success Executed
+      %br
+      %small.text-muted= "on #{format_date_in_user_timezone(snapshot.effective_date, format: '%Y-%m-%d')}"
     - else
-      %span.text-muted.text-decoration-none
-        %i.bi.bi-clock.me-1
-        Not Executed
+      %span.badge.bg-warning Pending
   %td
     - if has_data
       %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#snapshot_#{snapshot.id}_details", "aria-expanded" => "false", "aria-controls" => "snapshot_#{snapshot.id}_details", style: "cursor: pointer;"}
@@ -205,4 +175,3 @@
                                 %td= field[:label]
                                 %td= field[:old]
                                 %td= field[:new]
-

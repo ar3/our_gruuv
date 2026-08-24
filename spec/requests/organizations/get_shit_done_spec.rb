@@ -50,25 +50,27 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).not_to include(moment3.display_name)
     end
 
-    it 'loads pending MAAP snapshots for the current person' do
-      # Ensure teammate is a CompanyTeammate
+    it 'loads pending check-in acknowledgements for the current person' do
       company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
-      other_company_tm = CompanyTeammate.find_or_create_by!(person: other_person, organization: company)
-      creator = create(:company_teammate, organization: company)
-      snapshot1 = create(:maap_snapshot, employee_company_teammate: company_teammate, creator_company_teammate: creator, company: company, effective_date: Time.current, employee_acknowledged_at: nil, change_type: 'assignment_management', reason: 'Test reason 1')
-      snapshot2 = create(:maap_snapshot, employee_company_teammate: company_teammate, creator_company_teammate: creator, company: company, effective_date: Time.current, employee_acknowledged_at: Time.current, change_type: 'position_tenure', reason: 'Test reason 2')
-      snapshot3 = create(:maap_snapshot, employee_company_teammate: other_company_tm, creator_company_teammate: creator, company: company, effective_date: Time.current, employee_acknowledged_at: nil, change_type: 'milestone_management', reason: 'Test reason 3')
-      
+      employment = create(:employment_tenure, teammate: company_teammate, company: company, started_at: 1.year.ago)
+      position_check_in = create(:position_check_in, :closed,
+             teammate: company_teammate,
+             employment_tenure: employment,
+             official_check_in_completed_at: 1.day.ago)
+      assignment = create(:assignment, company: company, title: 'GSD Ack Assignment')
+      create(:assignment_check_in, :officially_completed,
+             teammate: company_teammate,
+             assignment: assignment,
+             official_check_in_completed_at: 2.days.ago)
+
       get "/organizations/#{company.to_param}/get_shit_done"
-      
+
       expect(response).to have_http_status(:success)
-      # snapshot1 should be included (pending acknowledgement) - check for unique reason text
-      expect(response.body).to include('Test reason 1')
-      expect(response.body).to include('The OG process for clarity is a three step process.')
-      # snapshot2 should NOT be included (already acknowledged) - check for unique reason text
-      expect(response.body).not_to include('Test reason 2')
-      # snapshot3 should NOT be included (different person) - check for unique reason text
-      expect(response.body).not_to include('Test reason 3')
+      expect(response.body).to include('View what needs to be Acknowledged')
+      expect(response.body).to include(acknowledge_organization_company_teammate_check_ins_path(company, company_teammate))
+      expect(response.body).to include('GSD Ack Assignment')
+      expect(response.body).to include(position_check_in.employment_tenure.position.display_name)
+      expect(response.body).to include('Reviewed Together')
     end
 
     it 'loads observation drafts for the current person' do
@@ -231,7 +233,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response.body).not_to include('GSD Test Assignment')
       end
 
-      it 'does not show finalized check-ins' do
+      it 'does not show finalized check-ins in awaiting input (they appear under acknowledgement)' do
         create(:assignment_check_in, :finalized,
                teammate: employee_teammate,
                assignment: assignment)
@@ -239,7 +241,10 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         get "/organizations/#{company.to_param}/get_shit_done"
 
         expect(response).to have_http_status(:success)
-        expect(response.body).not_to include('GSD Test Assignment')
+        expect(response.body).not_to include('Complete as Employee')
+        expect(response.body).not_to include('Complete as Manager')
+        expect(response.body).to include('View what needs to be Acknowledged')
+        expect(response.body).to include('GSD Test Assignment')
       end
 
       it 'shows aspiration check-ins awaiting employee input' do

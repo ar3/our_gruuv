@@ -94,8 +94,8 @@ module EngagementHealth
     end
 
     def previous_acknowledged?
-      ack_at = last_closed_check_in&.maap_snapshot&.employee_acknowledged_at
-      ack_at.present? && ack_at <= reference_time
+      last_closed_check_in&.employee_acknowledged? &&
+        last_closed_check_in.employee_acknowledged_at <= reference_time
     end
 
     def side_completed?(check_in, side)

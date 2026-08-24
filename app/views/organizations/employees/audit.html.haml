@@ -1,5 +1,5 @@
-- acknowledge_page_label = "Acknowledge Check-ins"
-- content_for :title, teammate_context_page_title(@selected_teammate, acknowledge_page_label)
+- audit_page_label = "View Audit"
+- content_for :title, teammate_context_page_title(@selected_teammate, audit_page_label)
 
 - content_for :header do
   .d-flex.align-items-center.flex-wrap.gap-2
@@ -9,67 +9,21 @@
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { audit_organization_employee_path(@organization, tm) },
-               switch_aria_label: "Switch teammate for acknowledgement"
-      %span= " - #{acknowledge_page_label}"
-    - if current_person == @person && @pending_snapshots&.any?
-      %span.badge.bg-warning.align-self-center #{@pending_snapshots.count} Pending
+               switch_aria_label: "Switch teammate for audit history"
+      %span= " - #{audit_page_label}"
 
 - content_for :header_action do
   = render 'people/view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: acknowledge_page_label, url: nil }])
-
-= render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 3
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Acknowledge Check-ins", url: acknowledge_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: audit_page_label, url: nil }])
 
 .alert.alert-light.border.mb-4
-  .d-flex.align-items-center.flex-wrap.gap-2
-    = link_to acknowledge_organization_company_teammate_check_ins_path(@organization, @teammate), class: 'btn btn-outline-primary' do
-      Try the new acknowledgement experience
-    %span.badge.bg-secondary Beta
-  %small.text-muted.d-block.mt-2
-    Acknowledge each finalized rating with Agree or Disagree. Snapshot acknowledgement below still drives GSD and health.
-
--# Pending Acknowledgements Section (for employees only)
-- if current_person == @person && @pending_snapshots&.any?
-  .row.mb-4
-    .col-12
-      .card.border-warning
-        .card-header.bg-warning.text-dark
-          %h5.mb-0
-            %i.bi.bi-exclamation-triangle.me-2
-            Pending Acknowledgements
-          %small You have #{@pending_snapshots.count} finalized check-in#{'s' if @pending_snapshots.count != 1} that need your acknowledgement
-        
-        .card-body
-          = form_with url: acknowledge_snapshots_organization_employee_path(@organization, @person), method: :patch, local: true do |f|
-            - acknowledgement_explanation = acknowledgement_explanation_markdown(@organization)
-            = render 'shared/acknowledgement_explanation_callout', markdown_text: acknowledgement_explanation, direction: :down
-
-            .table-responsive
-              %table.table.table-sm
-                %thead
-                  %tr
-                    %th{style: "width: 40px;"}
-                      -# TODO: Add select all checkbox
-                      -# = check_box_tag 'select_all', '1', false, id: 'select_all_snapshots'
-                      -# = label_tag 'select_all_snapshots', 'All', class: 'form-check-label ms-1'
-                    %th Date Finalized
-                    %th Finalized By
-                    %th Reason
-                    %th Acknowledgement
-                    %th Details
-                %tbody
-                  - @pending_snapshots.each do |snapshot|
-                    - snapshot_index = @maap_snapshots.index(snapshot)
-                    - previous_snapshot = snapshot_index ? @maap_snapshots[snapshot_index + 1] : nil
-                    = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: true, person: @person, organization: @organization, previous_snapshot: previous_snapshot }
-
-            .mt-3
-              = f.submit 'Acknowledge Selected Check-ins', 
-                        class: 'btn btn-success',
-                        data: { confirm: 'Are you sure you want to acknowledge the selected check-ins?' }
-              %small.text-muted.ms-3 Select the check-ins you want to acknowledge
+  %p.mb-2
+    This page is the MAAP change history for #{@person.display_name}. Acknowledgement of finalized check-in ratings happens on the acknowledgement page.
+  = link_to "Go to check-in acknowledgement",
+            acknowledge_organization_company_teammate_check_ins_path(@organization, @teammate),
+            class: "btn btn-primary"
 
 -# MAAP Change History Section
 .row
@@ -80,7 +34,7 @@
           %i.bi.bi-file-earmark-text.me-2
           MAAP Change History
         %small.text-muted MAAP snapshots for #{@person.display_name} in #{@organization.display_name}
-      
+
       .card-body
         - if @maap_snapshots.any?
           .table-responsive
@@ -91,38 +45,13 @@
                   %th Created By
                   %th Reason
                   %th Status
-                  %th Acknowledgement
                   %th Details
               %tbody
                 - @maap_snapshots.each_with_index do |snapshot, index|
                   - previous_snapshot = @maap_snapshots[index + 1]
-                  = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: false, person: @person, organization: @organization, previous_snapshot: previous_snapshot }
+                  = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, person: @person, organization: @organization, previous_snapshot: previous_snapshot }
         - else
           .text-center.py-5
             %i.bi.bi-clock-history.text-muted{style: "font-size: 3rem;"}
             %h5.text-muted.mt-3 No MAAP Changes Found
             %p.text-muted No MAAP snapshots have been created for #{@person.display_name} in #{@organization.display_name}.
-
--# JavaScript for Select All functionality
-:javascript
-  document.addEventListener('DOMContentLoaded', function() {
-    const selectAllCheckbox = document.getElementById('select_all_snapshots');
-    const snapshotCheckboxes = document.querySelectorAll('.snapshot-checkbox');
-    
-    if (selectAllCheckbox) {
-      selectAllCheckbox.addEventListener('change', function() {
-        snapshotCheckboxes.forEach(checkbox => {
-          checkbox.checked = this.checked;
-        });
-      });
-      
-      // Update "Select All" when individual checkboxes change
-      snapshotCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-          const checkedCount = document.querySelectorAll('.snapshot-checkbox:checked').length;
-          selectAllCheckbox.checked = checkedCount === snapshotCheckboxes.length;
-          selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < snapshotCheckboxes.length;
-        });
-      });
-    }
-  });

@@ -390,14 +390,12 @@ module TeammateHelper
 
   def pending_acknowledgements_count(person, organization)
     return 0 unless person
+    return 0 unless organization
+
     teammate = person.teammates.find_by(organization: organization)
     return 0 unless teammate
-    
-    MaapSnapshot.for_employee_teammate(teammate)
-                .for_company(organization)
-                .where.not(effective_date: nil)
-                .where(employee_acknowledged_at: nil)
-                .count
+
+    CheckIns::AcknowledgementQueue.pending_count_for(teammate: teammate)
   end
 
   def check_in_status_badge(check_in)

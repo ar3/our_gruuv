@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_23_211000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_23_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -136,6 +136,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_23_211000) do
     t.datetime "employee_acknowledged_at"
     t.string "employee_acknowledgement"
     t.text "employee_acknowledgement_notes"
+    t.jsonb "employee_acknowledgement_request_info", default: {}, null: false
     t.index ["aspiration_id"], name: "index_aspiration_check_ins_on_aspiration_id"
     t.index ["check_in_started_on"], name: "index_aspiration_check_ins_on_check_in_started_on"
     t.index ["employee_acknowledged_at"], name: "index_aspiration_check_ins_on_employee_acknowledged_at"
@@ -203,6 +204,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_23_211000) do
     t.datetime "employee_acknowledged_at"
     t.string "employee_acknowledgement"
     t.text "employee_acknowledgement_notes"
+    t.jsonb "employee_acknowledgement_request_info", default: {}, null: false
     t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
     t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
     t.index ["employee_acknowledged_at"], name: "index_assignment_check_ins_on_employee_acknowledged_at"
@@ -1394,6 +1396,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_23_211000) do
     t.datetime "employee_acknowledged_at"
     t.string "employee_acknowledgement"
     t.text "employee_acknowledgement_notes"
+    t.jsonb "employee_acknowledgement_request_info", default: {}, null: false
     t.index ["employee_acknowledged_at"], name: "index_position_check_ins_on_employee_acknowledged_at"
     t.index ["employee_completed_at"], name: "index_position_check_ins_on_employee_completed_at"
     t.index ["employment_tenure_id"], name: "index_position_check_ins_on_employment_tenure_id"

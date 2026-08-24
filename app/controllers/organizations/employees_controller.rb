@@ -377,69 +377,23 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
                                   .for_company(@organization)
                                   .recent
                                   .includes(:creator_company_teammate)
-    
-    # Separate acknowledged and pending snapshots for employee view
-    if current_person == @person
-      @acknowledged_snapshots = @maap_snapshots.where.not(employee_acknowledged_at: nil)
-      @pending_snapshots = @maap_snapshots.where(employee_acknowledged_at: nil).where.not(effective_date: nil)
-    end
   end
   
   def acknowledge_snapshots
-    # Find the person/employee
-    @person = @organization.employees.find(params[:id])
-    
-    # Authorize access to audit view
-    authorize @person, :audit?, policy_class: PersonPolicy
-    
-    teammate = @person.teammates.find_by(organization: @organization)
-    # Only allow employees to acknowledge their own snapshots
-    unless current_person == @person
-      redirect_to audit_organization_employee_path(@organization, teammate), 
-                  alert: 'You can only acknowledge your own check-ins.'
-      return
-    end
-    
-    # Get selected snapshot IDs
-    snapshot_ids = params[:snapshot_ids] || []
-    
-    if snapshot_ids.empty?
-      redirect_to audit_organization_employee_path(@organization, teammate), 
-                  alert: 'Please select at least one check-in to acknowledge.'
-      return
-    end
-    
-    # Find and acknowledge the snapshots
-    # Get the teammate for the person in this organization
-    teammate = @person.teammates.find_by(organization: @organization)
-    
-    if teammate
-      snapshots = MaapSnapshot.where(id: snapshot_ids, employee_company_teammate: teammate).where.not(effective_date: nil)
-    else
-      redirect_to audit_organization_employee_path(@organization, teammate), 
-                  alert: 'Unable to find teammate record.'
-      return
-    end
-    
-    acknowledged_count = 0
-    snapshots.each do |snapshot|
-      unless snapshot.acknowledged?
-        snapshot.update!(
-          employee_acknowledged_at: Time.current,
-          employee_acknowledgement_request_info: {
-            acknowledged_by: current_person.id,
-            acknowledged_at: Time.current,
-            request_source: 'audit_page'
-          }
-        )
-        acknowledged_count += 1
-      end
-    end
+    @person = @organization.employees.find_by(id: params[:id])
+    @teammate = @organization.teammates.find_by(id: params[:id])
+    @teammate ||= @person&.teammates&.find_by(organization: @organization)
+    @person ||= @teammate&.person
 
-      EngagementHealth.schedule_refresh_for(teammate.id) if teammate && acknowledged_count.positive?
-    
-    redirect_to audit_organization_employee_path(@organization, teammate), 
-                notice: "Successfully acknowledged #{acknowledged_count} check-in#{'s' if acknowledged_count != 1}."
+    if @teammate
+      authorize @teammate, :audit?, policy_class: CompanyTeammatePolicy
+      redirect_to acknowledge_organization_company_teammate_check_ins_path(@organization, @teammate),
+                  alert: "Snapshot acknowledgement has moved. Use the check-in acknowledgement page."
+    else
+      skip_authorization
+      redirect_to organization_employees_path(@organization),
+                  alert: "Snapshot acknowledgement has moved. Use the check-in acknowledgement page."
+    end
   end
   
   private

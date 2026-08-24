@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
+RSpec.describe 'Finalization Complex Flow - Audit Reasons', type: :system do
   let(:company) { create(:organization, :company) }
   let(:manager_person) { create(:person, full_name: 'Manager') }
   let!(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company, can_manage_employment: true) }
@@ -33,76 +33,8 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
   
   # Create assignment tenure
   let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
-  
-  # Check-in where both sides completed
-  let!(:check_in) do
-    check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
-    check_in&.update!(
-      employee_rating: 'exceeding',
-      employee_completed_at: Time.current,
-      manager_rating: 'meeting',
-      manager_completed_at: Time.current,
-      manager_completed_by_teammate: manager_teammate
-    )
-    check_in
-  end
 
-  describe 'Manager can enter custom reason' do
-    before do
-      sign_in_as(manager_person, company)
-    end
-
-    it 'allows manager to edit the reason field' do
-      visit organization_company_teammate_finalization_path(company, employee_teammate)
-      
-      reason_field = find_field('maap_snapshot_reason')
-      expect(reason_field).to be_visible
-      expect(reason_field.value).to eq("Check-in finalization for #{employee_person.display_name}")
-      
-      # Clear and enter custom reason
-      reason_field.fill_in(with: 'Q4 2024 Performance Review')
-      expect(reason_field.value).to eq('Q4 2024 Performance Review')
-    end
-  end
-
-  describe 'Manager can submit with custom reason' do
-    before do
-      sign_in_as(manager_person, company)
-    end
-
-    it 'creates snapshot with custom reason' do
-      visit organization_company_teammate_finalization_path(company, employee_teammate)
-      
-      # Verify check-in is ready
-      expect(check_in.reload.ready_for_finalization?).to be true
-      
-      # Enter custom reason
-      fill_in 'maap_snapshot_reason', with: 'Q4 2024 Performance Review'
-      
-      # Finalize the check-in
-      check_box = find("input[type='checkbox'][name='assignment_check_ins[#{check_in.id}][finalize]']")
-      check_box.check
-      
-      select '🟢 Exceeding', from: "assignment_check_ins[#{check_in.id}][official_rating]"
-      fill_in "assignment_check_ins[#{check_in.id}][shared_notes]", with: 'Test notes'
-      
-      # Submit form using JavaScript (bypasses confirmation dialog)
-      page.execute_script("document.querySelector('form[action*=\"finalization\"]').submit()")
-      sleep 3 # Wait for processing
-      
-      # Verify snapshot was created with custom reason
-      snapshot = MaapSnapshot.last
-      expect(snapshot).to be_present
-      expect(snapshot.reason).to eq('Q4 2024 Performance Review')
-      expect(snapshot.employee_company_teammate).to eq(employee_teammate)
-      expect(snapshot.creator_company_teammate).to eq(manager_teammate)
-      
-      # Verify check-in was finalized
-      expect(check_in.reload.official_check_in_completed_at).to be_present
-    end
-  end
-
-  describe 'Custom reason appears correctly on audit page' do
+  describe 'Stored reasons appear correctly on audit page' do
     let(:custom_reason) { 'Q4 2024 Performance Review' }
     let!(:snapshot) do
       create(:maap_snapshot,
@@ -119,17 +51,18 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
     end
 
     it 'displays the custom reason in the audit page' do
-      visit audit_organization_employee_path(company, employee_person)
+      visit audit_organization_employee_path(company, employee_teammate)
       
       expect(page).to have_content(custom_reason)
       expect(page).to have_content('MAAP Change History')
+      expect(page).not_to have_content('Acknowledgement')
     end
 
     it 'truncates long reasons correctly' do
       long_reason = 'A' * 100
       snapshot.update!(reason: long_reason)
       
-      visit audit_organization_employee_path(company, employee_person)
+      visit audit_organization_employee_path(company, employee_teammate)
       
       # The reason should be truncated to 50 characters in the table
       truncated = long_reason.truncate(50)
@@ -138,21 +71,6 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
   end
 
   describe 'Multiple finalizations with different reasons are distinguishable' do
-    let!(:assignment2) { create(:assignment, company: company, title: 'Test Assignment 2') }
-    let!(:assignment_tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, started_at: 3.months.ago) }
-    
-    let!(:check_in2) do
-      check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment2)
-      check_in&.update!(
-        employee_rating: 'meeting',
-        employee_completed_at: Time.current,
-        manager_rating: 'exceeding',
-        manager_completed_at: Time.current,
-        manager_completed_by_teammate: manager_teammate
-      )
-      check_in
-    end
-
     let!(:snapshot1) do
       create(:maap_snapshot,
              employee_company_teammate: employee_teammate,
@@ -178,15 +96,13 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
     end
 
     it 'shows both reasons distinctly on audit page' do
-      visit audit_organization_employee_path(company, employee_person)
+      visit audit_organization_employee_path(company, employee_teammate)
       
       expect(page).to have_content('Q4 2024 Performance Review')
       expect(page).to have_content('Annual Check-in')
       
-      # Verify both snapshots appear by checking for both reasons
       expect(page).to have_content('Q4 2024 Performance Review', count: 1)
       expect(page).to have_content('Annual Check-in', count: 1)
     end
   end
 end
-

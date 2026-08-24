@@ -1,48 +1,51 @@
-- snapshots_count = @maap_snapshots.count
-= render 'shared/section_header', 
+- pending_items = Array(@pending_acknowledgement_queue&.items)
+- pending_count = pending_items.size
+= render 'shared/section_header',
          title: clarity_check_ins_awaiting_acknowledgement_label,
          icon: 'bi-clipboard-check',
          description: clarity_check_ins_awaiting_acknowledgement_description,
          collapsible: true,
-         collapse_target: 'maapSnapshotsSection',
+         collapse_target: 'checkInAcknowledgementsSection',
          status_indicator: :warning
 
 -# Summary view (shown when collapsed) — warning alert style
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#maapSnapshotsSection", "aria-expanded" => "false", "aria-controls" => "maapSnapshotsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInAcknowledgementsSection", "aria-expanded" => "false", "aria-controls" => "checkInAcknowledgementsSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
-    = clarity_check_ins_awaiting_acknowledgement_summary(count: snapshots_count)
+    = clarity_check_ins_awaiting_acknowledgement_summary(count: pending_count)
 
 -# Collapsible content
-.collapse#maapSnapshotsSection
+.collapse#checkInAcknowledgementsSection
   .card.mb-4
     .card-body
-      - if @maap_snapshots.any?
+      - if pending_items.any?
         .table-responsive
           %table.table.table-hover
             %thead
               %tr
-                %th Change Type
-                %th Reason
-                %th Effective Date
+                %th Item
+                %th Reviewed Together
                 %th Action
             %tbody
-              - @maap_snapshots.each do |snapshot|
+              - pending_items.each do |check_in|
+                - type_label, item_name = check_in_subject_object_labels(check_in)
                 %tr
                   %td
-                    %strong= snapshot.change_type.humanize
+                    %span.badge.bg-secondary.me-2= type_label
+                    = item_name
                   %td
-                    %small= truncate(snapshot.reason, length: 50)
+                    - if check_in.official_check_in_completed_at.present?
+                      = format_date_in_user_timezone(check_in.official_check_in_completed_at, format: '%b %d, %Y')
+                    - else
+                      %span.text-muted —
                   %td
-                    %small= snapshot.effective_date&.strftime('%b %d, %Y')
-                  %td
-                    = link_to "Acknowledge", 
-                              audit_organization_employee_path(organization, @teammate),
+                    = link_to "View what needs to be Acknowledged",
+                              acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
                               class: "btn btn-primary btn-sm"
 
-        = render 'shared/acknowledgement_explanation_callout',
-                 markdown_text: acknowledgement_explanation_markdown(organization),
-                 direction: :up
+        .mt-3
+          = render 'shared/acknowledgement_explanation_callout',
+                   markdown_text: acknowledgement_explanation_markdown(organization),
+                   direction: :up
       - else
         %p.text-muted.mb-0 No check-ins awaiting acknowledgement.
-

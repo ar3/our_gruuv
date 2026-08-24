@@ -136,6 +136,61 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
+  describe '#check_in_side_rating_popover_content' do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person, first_name: 'Sam', last_name: 'Test') }
+    let(:teammate) { create(:company_teammate, person: person, organization: organization, first_employed_at: 1.year.ago) }
+    let(:assignment) { create(:assignment, company: organization, title: 'Project Alpha') }
+    let!(:tenure) do
+      create(:assignment_tenure,
+             teammate: teammate,
+             assignment: assignment,
+             anticipated_energy_percentage: 40,
+             started_at: 1.month.ago,
+             ended_at: nil)
+    end
+    let!(:check_in) do
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: assignment,
+             shared_notes: "Looks good",
+             official_check_in_completed_at: 1.day.ago)
+    end
+
+    it 'puts agreed energy above notes on assignment Reviewed Together popover' do
+      html = helper.check_in_side_rating_popover_content(check_in, side: :official, employee_name: person.casual_name)
+      expect(html).to include("They agreed that #{person.casual_name} will be using 40% of their energy on Project Alpha going forward.")
+      expect(html).to include('<strong>Notes:</strong>')
+      expect(html).to include('Looks good')
+      expect(html.index('They agreed')).to be < html.index('Notes:')
+    end
+
+    it 'does not include energy sentence on employee or manager popovers' do
+      employee_html = helper.check_in_side_rating_popover_content(check_in, side: :employee, employee_name: person.casual_name)
+      manager_html = helper.check_in_side_rating_popover_content(check_in, side: :manager, employee_name: person.casual_name)
+      expect(employee_html).not_to include('They agreed that')
+      expect(manager_html).not_to include('They agreed that')
+    end
+
+    it 'does not include energy sentence for position check-ins' do
+      position_check_in = instance_double(
+        PositionCheckIn,
+        employee_private_notes: nil,
+        employee_completed_at: nil,
+        manager_private_notes: nil,
+        manager_completed_at: nil,
+        manager_completed_by_teammate: nil,
+        shared_notes: 'Position notes',
+        official_check_in_completed_at: 1.day.ago,
+        finalized_by_teammate: nil
+      )
+      allow(position_check_in).to receive(:is_a?).with(AssignmentCheckIn).and_return(false)
+      html = helper.check_in_side_rating_popover_content(position_check_in, side: :official, employee_name: person.casual_name)
+      expect(html).not_to include('They agreed that')
+      expect(html).to include('Position notes')
+    end
+  end
+
   describe '#assignment_energy_alignment_sentence' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person, first_name: 'Sam', last_name: 'Test') }

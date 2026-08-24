@@ -122,7 +122,7 @@ module CheckInBehavior
   end
 
   # Sets acknowledgement immutably. Raises if already acknowledged.
-  def acknowledge_as_employee!(acknowledgement:, notes: nil)
+  def acknowledge_as_employee!(acknowledgement:, notes: nil, request_info: {})
     if employee_acknowledged?
       errors.add(:base, "Acknowledgement cannot be changed once set")
       raise ActiveRecord::RecordInvalid, self
@@ -131,7 +131,8 @@ module CheckInBehavior
     update!(
       employee_acknowledged_at: Time.current,
       employee_acknowledgement: acknowledgement,
-      employee_acknowledgement_notes: notes.presence
+      employee_acknowledgement_notes: notes.presence,
+      employee_acknowledgement_request_info: (request_info.presence || {})
     )
   end
 
@@ -277,7 +278,8 @@ module CheckInBehavior
 
     if will_save_change_to_employee_acknowledged_at? ||
        will_save_change_to_employee_acknowledgement? ||
-       will_save_change_to_employee_acknowledgement_notes?
+       will_save_change_to_employee_acknowledgement_notes? ||
+       will_save_change_to_employee_acknowledgement_request_info?
       errors.add(:base, "Acknowledgement cannot be changed once set")
     end
   end

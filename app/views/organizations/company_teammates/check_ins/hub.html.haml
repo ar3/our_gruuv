@@ -93,13 +93,22 @@
           %i.bi.bi-people-fill.display-4.text-warning
 
   .col-12.col-lg-6
-    = link_to audit_organization_employee_path(organization, @teammate), class: "text-decoration-none" do
-      .card.h-100.hover-lift.border-secondary{style: "cursor: pointer;"}
+    = link_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate), class: "text-decoration-none" do
+      - ack_card_class = @pending_acknowledgement_count.to_i.positive? ? "border-warning" : "border-secondary"
+      .card.h-100.hover-lift{class: ack_card_class, style: "cursor: pointer;"}
         .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
           .flex-grow-1
-            %h4.fw-bold.mb-2= view_audit_clarity_check_in_acknowledgements_label(count: @snapshot_total_count)
-            %p.text-muted.mb-0= "#{@snapshot_unacknowledged_count} have not been acknowledged yet."
+            %h4.fw-bold.mb-2= view_audit_clarity_check_in_acknowledgements_label(count: @pending_acknowledgement_count)
+            %p.text-muted.mb-0
+              - if @pending_acknowledgement_count.to_i.positive?
+                #{@pending_acknowledgement_count} latest finalized check-in#{'s' if @pending_acknowledgement_count != 1} need acknowledgement.
+              - else
+                No check-ins waiting for acknowledgement.
           %i.bi.bi-journal-check.display-4.text-dark
+    = link_to audit_organization_employee_path(organization, @teammate),
+              class: "btn btn-link btn-sm ps-0 text-muted d-inline-flex align-items-center gap-1 mt-2" do
+      %span View audit — every major change to the job description over time
+      %i.bi.bi-box-arrow-up-right.flex-shrink-0{aria: {hidden: true}}
 
 .row.mt-2.mb-4
   .col-12.col-sm-10.offset-sm-1

@@ -80,14 +80,13 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
       teammate: @teammate,
       finalization_params: finalization_params,
       finalized_by: current_company_teammate,
-      request_info: build_request_info,
-      maap_snapshot_reason: finalization_params[:maap_snapshot_reason]
+      request_info: build_request_info
     ).call
     
     if result.ok?
       EngagementHealth.schedule_refresh_for(@teammate.id)
       # TODO: Send notification to employee
-      redirect_to audit_organization_employee_path(organization, @teammate),
+      redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
                   notice: 'Check-ins finalized successfully. Employee will be notified.'
     else
       redirect_to organization_company_teammate_finalization_path(organization, @teammate),
@@ -111,7 +110,6 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
   
   def finalization_params
     permitted = params.permit(
-      :maap_snapshot_reason,
       position_check_in: [:finalize, :official_rating, :shared_notes],
       assignment_check_ins: {},
       aspiration_check_ins: {}

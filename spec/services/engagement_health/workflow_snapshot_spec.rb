@@ -14,18 +14,17 @@ RSpec.describe EngagementHealth::WorkflowSnapshot do
   end
 
   def build_check_in(employee_at: nil, manager_at: nil, finalized_at: nil, acknowledged: false)
-    check_in = instance_double(
+    ack_at = acknowledged ? 1.day.ago : nil
+    instance_double(
       "CheckIn",
       id: 1,
       employee_completed_at: employee_at,
       manager_completed_at: manager_at,
       official_check_in_completed_at: finalized_at,
-      created_at: 1.week.ago
+      created_at: 1.week.ago,
+      employee_acknowledged_at: ack_at,
+      employee_acknowledged?: ack_at.present?
     )
-    ack_at = acknowledged ? 1.day.ago : nil
-    snapshot = instance_double("MaapSnapshot", employee_acknowledged_at: ack_at)
-    allow(check_in).to receive(:maap_snapshot).and_return(snapshot)
-    check_in
   end
 
   describe "action_bar_color resolution" do

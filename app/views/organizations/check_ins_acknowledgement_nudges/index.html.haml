@@ -89,7 +89,6 @@
               - person = row[:person]
               - has_pending = row[:has_pending_ack]
               - pending_count = row[:pending_count]
-              - anchor = row[:anchor_snapshot]
               - last_nudge = row[:last_nudge_notification]
               - manager_teammate = teammate.employment_tenures.active.where(company: @organization).first&.manager_teammate
               - employee_slack_ok = teammate.slack_user_id.present?

@@ -253,21 +253,6 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
         expect(captured_args[:kwargs][:finalization_params][:assignment_check_ins]).to be_present
         expect(captured_args[:kwargs][:request_info]).to be_a(Hash)
         expect(captured_args[:kwargs][:request_info][:ip_address]).to be_present
-        expect(captured_args[:kwargs][:maap_snapshot_reason]).to be_nil
-      end
-      
-      it 'passes maap_snapshot_reason to service when provided' do
-        service_double = double(call: Result.ok(snapshot: double, results: {}))
-        captured_args = nil
-        allow(CheckInFinalizationService).to receive(:new) do |*args, **kwargs|
-          captured_args = { args: args, kwargs: kwargs }
-          service_double
-        end
-        
-        params_with_reason = finalization_params.merge(maap_snapshot_reason: 'Q4 2024 Performance Review')
-        post :create, params: params_with_reason
-        
-        expect(captured_args[:kwargs][:maap_snapshot_reason]).to eq('Q4 2024 Performance Review')
       end
       
       it 'redirects with success notice' do
@@ -277,7 +262,7 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
         
         post :create, params: finalization_params
         
-        expect(response).to redirect_to(audit_organization_employee_path(organization, employee_teammate))
+        expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
         expect(flash[:notice]).to include('finalized successfully')
       end
     end
@@ -371,26 +356,5 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
       expect(permitted[:aspiration_check_ins]['1'][:shared_notes]).to eq('Aspiration notes')
     end
     
-    it 'permits maap_snapshot_reason parameter' do
-      params = ActionController::Parameters.new(
-        maap_snapshot_reason: 'Q4 2024 Performance Review'
-      )
-      
-      controller.params = params
-      permitted = controller.send(:finalization_params)
-      
-      expect(permitted[:maap_snapshot_reason]).to eq('Q4 2024 Performance Review')
-    end
-    
-    it 'allows maap_snapshot_reason to be blank' do
-      params = ActionController::Parameters.new(
-        maap_snapshot_reason: ''
-      )
-      
-      controller.params = params
-      permitted = controller.send(:finalization_params)
-      
-      expect(permitted[:maap_snapshot_reason]).to eq('')
-    end
   end
 end

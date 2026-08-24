@@ -49,7 +49,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     it 'renders the audit page successfully' do
       get audit_organization_employee_path(organization, employee_teammate)
       expect(response).to be_successful
-      expect(response.body).to include(" - Acknowledge Check-ins")
+      expect(response.body).to include(" - View Audit")
     end
     
     it 'assigns the correct variables' do
@@ -158,56 +158,20 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       expect(response).to be_successful
     end
     
-    it 'assigns pending snapshots' do
+    it 'links to check-in acknowledgement instead of pending snapshot ack UI' do
       get audit_organization_employee_path(organization, employee_teammate)
-      
-      expect(assigns(:pending_snapshots)).to be_present
-      expect(assigns(:pending_snapshots)).to include(maap_snapshot1)
-      expect(assigns(:pending_snapshots)).not_to include(maap_snapshot2) # This one is acknowledged
-    end
-    
-    it 'assigns acknowledged snapshots' do
-      get audit_organization_employee_path(organization, employee_teammate)
-      
-      expect(assigns(:acknowledged_snapshots)).to be_present
-      expect(assigns(:acknowledged_snapshots)).to include(maap_snapshot2)
-      expect(assigns(:acknowledged_snapshots)).not_to include(maap_snapshot1) # This one is pending
-    end
-    
-    it 'shows pending acknowledgements section' do
-      get audit_organization_employee_path(organization, employee_teammate)
-      
-      expect(response.body).to include('Pending Acknowledgements')
-      expect(response.body).to include('select_all_snapshots')
+
+      expect(response.body).to include('Go to check-in acknowledgement')
+      expect(response.body).to include(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
+      expect(response.body).not_to include('Pending Acknowledgements')
+      expect(response.body).not_to include('Acknowledge Selected Check-ins')
+      expect(response.body).not_to include('>Acknowledgement<')
     end
 
-    it 'shows acknowledgement explanation above the pending table' do
+    it 'still lists MAAP change history' do
       get audit_organization_employee_path(organization, employee_teammate)
 
-      expect(response.body).to include('The OG process for clarity is a three step process.')
-      expect(response.body).to include('This is where you are')
-      expect(response.body).to include('You can also acknowledge when an admin/manager changes your real job description')
-      expect(response.body).to include('acknowledgement-explanation-callout--above')
-      expect(response.body).not_to include('acknowledgement-explanation-callout--below')
-    end
-
-    it 'shows custom acknowledgement explanation when configured' do
-      create(:company_label_preference,
-             company: organization,
-             label_key: Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY,
-             label_value: 'Our team uses acknowledgement to confirm understanding.')
-
-      get audit_organization_employee_path(organization, employee_teammate)
-
-      expect(response.body).to include('Our team uses acknowledgement to confirm understanding.')
-      expect(response.body).not_to include('The OG process for clarity is a three step process.')
-    end
-    
-    it 'renders snapshot_row partial for pending snapshots' do
-      get audit_organization_employee_path(organization, employee_teammate)
-
-      # Check that the snapshot data is present in the response
-      expect(response.body).to include(maap_snapshot1.creator_company_teammate&.person&.display_name)
+      expect(response.body).to include('MAAP Change History')
       expect(response.body).to include(maap_snapshot1.reason)
     end
     

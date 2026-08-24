@@ -36,7 +36,7 @@
       .alert.alert-info.mt-4
         %i.bi.bi-info-circle.me-2
         %strong This check-in has been finalized.
-        = link_to 'View all your check-ins and acknowledgements', audit_organization_employee_path(@organization, @person), class: 'btn btn-sm btn-outline-info ms-2'
+        = link_to 'Go to check-in acknowledgement', acknowledge_organization_company_teammate_check_ins_path(@organization, @teammate), class: 'btn btn-sm btn-outline-info ms-2'
 
 - elsif current_person == @person && @position_check_in.present?
   -# Employee Read-Only View

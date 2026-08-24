@@ -4,7 +4,7 @@
 - employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
 - step1_path = organization_company_teammate_check_ins_path(organization, teammate)
 - step2_path = organization_company_teammate_finalization_path(organization, teammate)
-- step3_path = audit_organization_employee_path(organization, teammate)
+- step3_path = acknowledge_organization_company_teammate_check_ins_path(organization, teammate)
 
 %h5.fw-semibold.mb-2 The three-step clarity check-in flow
 %p.mb-2
@@ -24,4 +24,4 @@
     %strong
       Step Three:
       = link_to 'Acknowledge/Observe', step3_path
-    — The audit trail shows what conversations happened so the employee, manager, and people team stay aligned. Non-OG organizations often keep “secret files” on employees; strong OG companies share these statuses to discourage politics, reduce toxic judgments, and increase fairness.
+    — Acknowledge finalized ratings with Agree or Disagree so the employment record stays shared and fair. Non-OG organizations often keep “secret files” on employees; strong OG companies share these statuses to discourage politics, reduce toxic judgments, and increase fairness.

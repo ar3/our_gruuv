@@ -107,13 +107,48 @@ module CheckInHelper
   end
 
   # Hover popover: notes for a rating side (by/when shown as cell caption).
+  # Assignment Reviewed Together also includes agreed going-forward energy above notes.
   def check_in_side_rating_popover_content(check_in, side:, employee_name:)
     meta = check_in_side_rating_meta(check_in, side: side, employee_name: employee_name)
-    if meta[:notes].present?
-      "<strong>Notes:</strong><br>#{ERB::Util.html_escape(meta[:notes]).gsub("\n", '<br>')}"
-    else
-      "<em>No notes</em>"
+    parts = []
+
+    if side.to_sym == :official
+      energy_sentence = assignment_acknowledgement_energy_sentence(check_in, employee_name: employee_name)
+      parts << energy_sentence if energy_sentence.present?
     end
+
+    if meta[:notes].present?
+      parts << "<strong>Notes:</strong><br>#{ERB::Util.html_escape(meta[:notes]).gsub("\n", '<br>')}"
+    else
+      parts << "<em>No notes</em>"
+    end
+
+    parts.join("<br><br>")
+  end
+
+  # Agree/Disagree page: going-forward energy from finalization (active tenure after close).
+  def assignment_acknowledgement_energy_sentence(check_in, employee_name:)
+    return nil unless check_in.is_a?(AssignmentCheckIn)
+    return nil unless check_in.officially_completed?
+
+    energy = assignment_check_in_going_forward_energy_percentage(check_in)
+    return nil if energy.nil?
+
+    assignment_name = check_in.assignment&.title.presence || "this assignment"
+    "They agreed that #{ERB::Util.html_escape(employee_name)} will be using " \
+      "#{ERB::Util.html_escape(energy.to_s)}% of their energy on " \
+      "#{ERB::Util.html_escape(assignment_name)} going forward."
+  end
+
+  def assignment_check_in_going_forward_energy_percentage(check_in)
+    active_tenure = AssignmentTenure
+      .where(company_teammate: check_in.teammate, assignment: check_in.assignment)
+      .active
+      .first
+    return active_tenure.anticipated_energy_percentage if active_tenure&.anticipated_energy_percentage.present?
+
+    # Finalizing at 0% ends the tenure without creating a new one.
+    0
   end
 
   # Options for the official rating dropdown on the finalization page only. Includes a nil option.

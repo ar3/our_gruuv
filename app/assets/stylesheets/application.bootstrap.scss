@@ -1907,7 +1907,8 @@ body:has(.vertical-nav.open) .floating-toggle {
     }
 
     &--up {
-      transform: rotate(-90deg);
+      // Point at content above; flip across the vertical axis so the hook faces the callout.
+      transform: scaleX(-1) rotate(-90deg);
     }
   }
 

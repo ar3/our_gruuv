@@ -47,50 +47,40 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
     check_in
   end
 
-  describe 'Manager can see reason field' do
+  describe 'Manager finalizes without a reason field' do
     before do
       sign_in_as(manager_person, company)
     end
 
-    it 'displays the reason field with default value' do
+    it 'does not show a reason field on the finalization page' do
       visit organization_company_teammate_finalization_path(company, employee_teammate)
-      
-      expect(page).to have_field('maap_snapshot_reason', with: "Check-in finalization for #{employee_person.display_name}")
-      expect(page).to have_content('Reason (optional)')
-    end
-  end
 
-  describe 'Manager can submit with default reason' do
-    before do
-      sign_in_as(manager_person, company)
+      expect(page).not_to have_field('maap_snapshot_reason')
+      expect(page).not_to have_content('Reason (optional)')
     end
 
-    it 'creates snapshot with default reason when no custom reason entered' do
+    it 'creates snapshot with default reason and redirects to acknowledgement' do
       visit organization_company_teammate_finalization_path(company, employee_teammate)
       
-      # Verify check-in is ready
       expect(check_in.reload.ready_for_finalization?).to be true
       
-      # Finalize the check-in without changing the reason field
       check_box = find("input[type='checkbox'][name='assignment_check_ins[#{check_in.id}][finalize]']")
       check_box.check
       
       select '🟢 Exceeding', from: "assignment_check_ins[#{check_in.id}][official_rating]"
       fill_in "assignment_check_ins[#{check_in.id}][shared_notes]", with: 'Test notes'
       
-      # Submit form using JavaScript (bypasses confirmation dialog)
       page.execute_script("document.querySelector('form[action*=\"finalization\"]').submit()")
-      sleep 3 # Wait for processing
+      sleep 3
       
-      # Verify snapshot was created with default reason
       snapshot = MaapSnapshot.last
       expect(snapshot).to be_present
       expect(snapshot.reason).to eq("Check-in finalization for #{employee_person.display_name}")
       expect(snapshot.employee_company_teammate).to eq(employee_teammate)
       expect(snapshot.creator_company_teammate).to eq(manager_teammate)
       
-      # Verify check-in was finalized
       expect(check_in.reload.official_check_in_completed_at).to be_present
+      expect(page).to have_current_path(acknowledge_organization_company_teammate_check_ins_path(company, employee_teammate))
     end
   end
 
@@ -110,11 +100,11 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
     end
 
     it 'displays the reason in the audit page' do
-      visit audit_organization_employee_path(company, employee_person)
+      visit audit_organization_employee_path(company, employee_teammate)
       
       expect(page).to have_content(snapshot.reason)
       expect(page).to have_content('MAAP Change History')
+      expect(page).not_to have_content('Acknowledgement')
     end
   end
 end
-

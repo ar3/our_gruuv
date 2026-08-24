@@ -28,6 +28,7 @@ class CompanyTeammate < ApplicationRecord
 
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
   has_many :og_consultations, as: :subject, dependent: :destroy
+  has_many :notifications, as: :notifiable, dependent: nil
 
   def latest_teammate_growth_consultation
     og_consultations.for_kind(OgConsultation::KIND_TEAMMATE_GROWTH).latest_first.first
@@ -190,6 +191,16 @@ class CompanyTeammate < ApplicationRecord
 
   def slack_user_id
     slack_identity&.uid
+  end
+
+  # Most recent successful Slack acknowledgement nudge anchored on this teammate.
+  def last_delivered_acknowledgement_nudge
+    notifications
+      .check_in_acknowledgement_nudges
+      .successful
+      .where.not(message_id: nil)
+      .order(created_at: :desc)
+      .first
   end
 
   def has_slack_identity?

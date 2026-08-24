@@ -31,19 +31,16 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
       expect(assigns(:observable_moments)).not_to include(moment3)
     end
     
-    it 'loads pending MAAP snapshots for the current teammate' do
-      # MAAP snapshots need effective_date to be pending acknowledgement
-      creator = create(:company_teammate, organization: company)
-      snapshot1 = create(:maap_snapshot, employee_company_teammate: teammate, creator_company_teammate: creator, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
-      snapshot2 = create(:maap_snapshot, employee_company_teammate: teammate, creator_company_teammate: creator, company: company, employee_acknowledged_at: Time.current, effective_date: Time.current)
-      other_person = create(:person)
-      other_tm = create(:company_teammate, person: other_person, organization: company)
-      snapshot3 = create(:maap_snapshot, employee_company_teammate: other_tm, creator_company_teammate: creator, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
-      
+    it 'loads pending check-in acknowledgement count for the current teammate' do
+      employment = create(:employment_tenure, teammate: teammate, company: company, started_at: 1.year.ago)
+      create(:position_check_in, :closed,
+             teammate: teammate,
+             employment_tenure: employment,
+             official_check_in_completed_at: 1.day.ago)
+
       get :show, params: { organization_id: company.id }
-      
-      expect(assigns(:maap_snapshots)).to include(snapshot1)
-      expect(assigns(:maap_snapshots)).not_to include(snapshot2, snapshot3)
+
+      expect(assigns(:pending_acknowledgement_count)).to eq(1)
     end
     
     it 'loads observation drafts for the current person' do
@@ -164,8 +161,10 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
       # Reload to ensure associations are set
       observable_moment.reload
 
-      creator = create(:company_teammate, organization: company)
-      create(:maap_snapshot, employee_company_teammate: company_teammate, creator_company_teammate: creator, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      create(:assignment_check_in, :officially_completed,
+             teammate: company_teammate,
+             assignment: create(:assignment, company: company),
+             official_check_in_completed_at: 1.day.ago)
       create(:observation, observer: person, company: company, published_at: nil)
       
       # Goal needs to meet check_in_eligible criteria and have no recent check-in
@@ -173,9 +172,8 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
       
       get :show, params: { organization_id: company.id }
       
-      # Count what we actually have - observable moment, maap snapshot, observation, and goal
-      # The goal should be included if it meets the criteria (no check-in or check-in older than 1 week)
-      expect(assigns(:total_pending)).to be >= 3 # At least 3 (observable moment, maap snapshot, observation)
+      # Count what we actually have - observable moment, pending check-in ack, observation, and goal
+      expect(assigns(:total_pending)).to be >= 3 # At least 3 (observable moment, check-in ack, observation)
       # Goal may or may not be included depending on check_in_eligible scope
     end
     

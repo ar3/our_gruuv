@@ -9,7 +9,8 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
     # Load all pending items using centralized service
     query_service = GetShitDoneQueryService.new(teammate: @teammate)
     @observable_moments = query_service.observable_moments
-    @maap_snapshots = query_service.maap_snapshots
+    @pending_acknowledgement_queue = query_service.pending_acknowledgement_queue
+    @pending_acknowledgement_count = @pending_acknowledgement_queue.count
     @observation_drafts = query_service.observation_drafts
     @silent_observations = query_service.silent_observations
     @feedback_expectation_mismatches = query_service.feedback_expectation_mismatches

@@ -19,7 +19,7 @@
 - else
   - completed_categories << { title: 'Observable Moments', icon: 'bi-star', description: 'Celebratory moments ready to observe' }
 
-- if @maap_snapshots.any?
+- if @pending_acknowledgement_count.to_i.positive?
   = render partial: 'organizations/get_shit_done/maap_snapshots_section'
 - else
   - completed_categories << { title: clarity_check_ins_awaiting_acknowledgement_label, icon: 'bi-clipboard-check', description: clarity_check_ins_awaiting_acknowledgement_description }

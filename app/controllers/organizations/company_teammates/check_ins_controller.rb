@@ -136,7 +136,13 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
     result = CheckIns::BulkAcknowledgeCheckInsService.call(
       teammate: @teammate,
-      acknowledgements: params[:acknowledgements]
+      acknowledgements: params[:acknowledgements],
+      request_info: {
+        ip_address: request.remote_ip,
+        user_agent: request.user_agent,
+        timestamp: Time.current.iso8601,
+        request_source: "acknowledge_page"
+      }
     )
 
     if result.ok?
@@ -169,11 +175,11 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       AssignmentCheckIn.where(company_teammate: @teammate).ready_for_finalization.count +
       AspirationCheckIn.where(company_teammate: @teammate).ready_for_finalization.count
 
-    snapshots_scope = MaapSnapshot.for_employee_teammate(@teammate)
+    @pending_acknowledgement_count = CheckIns::AcknowledgementQueue.pending_count_for(teammate: @teammate)
+    @snapshot_total_count = MaapSnapshot.for_employee_teammate(@teammate)
       .for_company(organization)
       .where.not(effective_date: nil)
-    @snapshot_total_count = snapshots_scope.count
-    @snapshot_unacknowledged_count = snapshots_scope.where(employee_acknowledged_at: nil).count
+      .count
     @engagement_health_records = EngagementHealth::ClarityMetrics.records_for_teammate(
       organization: organization,
       teammate_id: @teammate.id

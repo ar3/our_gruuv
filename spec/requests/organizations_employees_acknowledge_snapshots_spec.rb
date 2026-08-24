@@ -1,13 +1,9 @@
-require 'rails_helper'
+# frozen_string_literal: true
 
-RSpec.describe 'Organizations::Employees#acknowledge_snapshots', type: :request do
-  # When the employee clicks acknowledge, we must redirect using the teammate (not the person)
-  # so the user lands on the correct audit URL. Using person can send them to the wrong place
-  # because audit routes expect teammate id in modern usage.
+require "rails_helper"
 
+RSpec.describe "Organizations::Employees#acknowledge_snapshots", type: :request do
   let(:organization) { create(:organization) }
-  # Create another person first so employee and employee_teammate get different ids (person.id != teammate.id),
-  # which is the normal case and is when the redirect-to-person bug sends the user to the wrong place.
   let!(:_other_person) { create(:person) }
   let(:employee) { create(:person) }
   let!(:employee_teammate) { create(:company_teammate, person: employee, organization: organization, first_employed_at: 1.year.ago) }
@@ -16,13 +12,13 @@ RSpec.describe 'Organizations::Employees#acknowledge_snapshots', type: :request 
   let!(:maap_manager_teammate) { create(:company_teammate, person: maap_manager, organization: organization, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
   let!(:maap_manager_employment) { create(:employment_tenure, teammate: maap_manager_teammate, company: organization, started_at: 1.year.ago) }
 
-  it 'redirects to the audit page using the teammate (not the person) so the user lands in the right place' do
+  it "hard-disables snapshot acknowledgement and redirects to the check-in acknowledge page" do
     pending_snapshot = create(:maap_snapshot,
       employee_company_teammate: employee_teammate,
       creator_company_teammate: maap_manager_teammate,
       company: organization,
-      change_type: 'assignment_management',
-      reason: 'Snapshot to acknowledge',
+      change_type: "assignment_management",
+      reason: "Snapshot to acknowledge",
       effective_date: 1.day.ago,
       employee_acknowledged_at: nil
     )
@@ -32,8 +28,8 @@ RSpec.describe 'Organizations::Employees#acknowledge_snapshots', type: :request 
     patch acknowledge_snapshots_organization_employee_path(organization, employee),
           params: { snapshot_ids: [pending_snapshot.id] }
 
-    # Must redirect using teammate (not person) so the user lands on the correct audit URL.
-    # When person.id != teammate.id, redirecting with person sends them to the wrong place.
-    expect(response).to redirect_to(audit_organization_employee_path(organization, employee_teammate))
+    expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
+    expect(flash[:alert]).to include("moved")
+    expect(pending_snapshot.reload.employee_acknowledged_at).to be_nil
   end
 end

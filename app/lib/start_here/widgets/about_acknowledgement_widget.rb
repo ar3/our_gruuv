@@ -6,10 +6,10 @@ class StartHere::Widgets::AboutAcknowledgementWidget < StartHere::Widget::Base
     group: "About Me",
     icon: "bi-clock-history",
     selection_title: "Acknowledgement",
-    selection_description: "Acknowledgement and audit trail for your employment record.",
+    selection_description: "Acknowledge finalized check-in ratings with Agree or Disagree.",
     label: "Acknowledgement",
-    path: ->(c) { c.view.audit_organization_employee_path(c.organization, c.company_teammate) },
-    description: "Acknowledgement and audit trail for your employment record.",
+    path: ->(c) { c.view.acknowledge_organization_company_teammate_check_ins_path(c.organization, c.company_teammate) },
+    description: "Acknowledge and agree or disagree with finalized check-in ratings.",
     button_label: "Acknowledgement"
   }.freeze
 end

@@ -45,7 +45,8 @@ RSpec.describe "Check-in acknowledgement", type: :request do
       expect(response.body).to include("Leave Unacknowledged")
       expect(response.body).to include("Set all to Agree")
       expect(response.body).to include("Save All")
-      expect(response.body).to include("Beta")
+      expect(response.body).to include("Acknowledge Check-ins")
+      expect(response.body).not_to include("Try the new acknowledgement experience")
       expect(response.body).to include("data-bs-toggle=\"popover\"")
     end
 
@@ -133,23 +134,15 @@ RSpec.describe "Check-in acknowledgement", type: :request do
   end
 
   describe "GET audit page link" do
-    it "links to the new acknowledgement experience for the employee" do
+    it "points people from audit to the acknowledgement page" do
       sign_in_as_teammate_for_request(employee, organization)
 
       get audit_organization_employee_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Try the new acknowledgement experience")
+      expect(response.body).to include("Go to check-in acknowledgement")
       expect(response.body).to include(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
-    end
-
-    it "links to the new acknowledgement experience for managers with audit access" do
-      sign_in_as_teammate_for_request(manager, organization)
-
-      get audit_organization_employee_path(organization, employee_teammate)
-
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Try the new acknowledgement experience")
+      expect(response.body).not_to include("Try the new acknowledgement experience")
     end
   end
 end

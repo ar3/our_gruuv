@@ -214,36 +214,6 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'assigns pending snapshots when user is the person' do
-        executed_snapshot = create(:maap_snapshot,
-          employee_company_teammate: employee1_teammate,
-          creator_company_teammate: maap_access,
-          company: company,
-          change_type: 'assignment_management',
-          effective_date: 1.day.ago,
-          employee_acknowledged_at: nil
-        )
-
-        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
-
-        expect(assigns(:pending_snapshots)).to include(executed_snapshot)
-      end
-
-      it 'assigns acknowledged snapshots when user is the person' do
-        acknowledged_snapshot = create(:maap_snapshot,
-          employee_company_teammate: employee1_teammate,
-          creator_company_teammate: maap_access,
-          company: company,
-          change_type: 'assignment_management',
-          effective_date: 2.days.ago,
-          employee_acknowledged_at: 1.day.ago
-        )
-
-        get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
-
-        expect(assigns(:acknowledged_snapshots)).to include(acknowledged_snapshot)
-      end
-
       it 'renders the audit view template' do
         get :audit, params: { organization_id: company.id, id: employee1_teammate.id }
         expect(response).to render_template(:audit)

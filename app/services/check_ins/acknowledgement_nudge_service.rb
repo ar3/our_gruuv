@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module CheckIns
-  # Sends a Slack MPIM (teammate + nudger) via the OurGruuv bot, anchored on the latest
-  # unacknowledged MaapSnapshot. History lives on Notification rows (notifiable = anchor snapshot).
+  # Sends a Slack MPIM (teammate + nudger) via the OurGruuv bot when the employee
+  # has latest finalized check-ins awaiting acknowledgement. Notification notifiable
+  # is the employee CompanyTeammate.
   class AcknowledgementNudgeService
     include Rails.application.routes.url_helpers
 
@@ -21,39 +22,36 @@ module CheckIns
     end
 
     def call
-      pending_scope = MaapSnapshot.pending_acknowledgement_for(@employee_teammate)
-        .order(effective_date: :desc, id: :desc)
-      return Result.err('No pending acknowledgements for this teammate.') if pending_scope.none?
-
-      pending = pending_scope.to_a
-      anchor = pending.first
+      pending_count = AcknowledgementQueue.pending_count_for(teammate: @employee_teammate)
+      return Result.err("No pending acknowledgements for this teammate.") if pending_count.zero?
 
       employee_slack = @employee_teammate.slack_user_id
       nudger_slack = @nudger_company_teammate.slack_user_id
       if employee_slack.blank? || nudger_slack.blank?
-        return Result.err('Both you and the teammate must have Slack connected to send a nudge.')
+        return Result.err("Both you and the teammate must have Slack connected to send a nudge.")
       end
 
       slack_service = SlackService.new(@organization)
       dm_result = slack_service.open_or_create_group_dm(user_ids: [employee_slack, nudger_slack])
-      return Result.err(dm_result[:error].presence || 'Could not open Slack group DM.') unless dm_result[:success]
+      return Result.err(dm_result[:error].presence || "Could not open Slack group DM.") unless dm_result[:success]
 
       channel_id = dm_result[:channel_id]
-      audit_url = audit_organization_employee_url(
+      acknowledge_url = acknowledge_organization_company_teammate_check_ins_url(
         @organization,
         @employee_teammate,
-        audit_mail_url_options
+        mail_url_options
       )
 
-      blocks = build_blocks(pending_snapshots: pending, audit_url: audit_url)
-      fallback_text = build_fallback_text(pending_snapshots: pending, audit_url: audit_url)
+      blocks = build_blocks(pending_count: pending_count, acknowledge_url: acknowledge_url)
+      fallback_text = build_fallback_text(pending_count: pending_count, acknowledge_url: acknowledge_url)
 
-      notification = anchor.notifications.create!(
-        notification_type: 'check_in_acknowledgement_nudge',
-        status: 'preparing_to_send',
+      notification = @employee_teammate.notifications.create!(
+        notification_type: "check_in_acknowledgement_nudge",
+        status: "preparing_to_send",
         metadata: {
-          'channel' => channel_id,
-          'nudger_company_teammate_id' => @nudger_company_teammate.id
+          "channel" => channel_id,
+          "nudger_company_teammate_id" => @nudger_company_teammate.id,
+          "pending_count" => pending_count
         },
         rich_message: blocks,
         fallback_text: fallback_text
@@ -63,7 +61,7 @@ module CheckIns
       if post_result[:success]
         Result.ok(notification: notification.reload)
       else
-        Result.err(post_result[:error].presence || 'Slack failed to post the nudge.')
+        Result.err(post_result[:error].presence || "Slack failed to post the nudge.")
       end
     rescue Slack::Web::Api::Errors::SlackError => e
       Result.err("Slack error: #{e.message}")
@@ -73,45 +71,38 @@ module CheckIns
 
     private
 
-    def audit_mail_url_options
+    def mail_url_options
       base = Rails.application.config.action_mailer.default_url_options.presence ||
              Rails.application.routes.default_url_options || {}
       base = base.symbolize_keys
-      base.reverse_merge(host: 'localhost', protocol: 'http')
+      base.reverse_merge(host: "localhost", protocol: "http")
     end
 
-    def build_blocks(pending_snapshots:, audit_url:)
+    def build_blocks(pending_count:, acknowledge_url:)
       employee = @employee_teammate.person
-      casual = employee&.casual_name.presence || employee&.first_name.presence || 'there'
-      bullet_lines = pending_snapshots.map { |s| "• #{snapshot_line(s)}" }.join("\n")
+      casual = employee&.casual_name.presence || employee&.first_name.presence || "there"
+      item_word = pending_count == 1 ? "check-in" : "check-ins"
 
       intro = [
-        '*Check-in acknowledgement*',
-        "#{casual} — do you have any questions before you acknowledge? Here's what's waiting:",
-        bullet_lines,
+        "*Check-in acknowledgement*",
+        "#{casual} — do you have any questions before you acknowledge? You have *#{pending_count}* #{item_word} waiting.",
         "",
-        "<#{audit_url}|Open acknowledgement page>"
+        "<#{acknowledge_url}|Open acknowledgement page>"
       ].join("\n")
 
       [
         {
-          type: 'section',
+          type: "section",
           text: {
-            type: 'mrkdwn',
+            type: "mrkdwn",
             text: intro
           }
         }
       ]
     end
 
-    def build_fallback_text(pending_snapshots:, audit_url:)
-      lines = pending_snapshots.map { |s| snapshot_line(s) }.join('; ')
-      "Check-in acknowledgement: #{lines}. Acknowledge: #{audit_url}"
-    end
-
-    def snapshot_line(snapshot)
-      date_part = snapshot.effective_date&.strftime('%b %d, %Y') || '—'
-      "#{date_part} — #{snapshot.change_type.to_s.humanize} — #{snapshot.reason.to_s.truncate(120, omission: '…')}"
+    def build_fallback_text(pending_count:, acknowledge_url:)
+      "Check-in acknowledgement: #{pending_count} waiting. Acknowledge: #{acknowledge_url}"
     end
   end
 end

@@ -10,22 +10,24 @@ module CheckIns
       "aspiration" => AspirationCheckIn
     }.freeze
 
-    def self.call(teammate:, check_in_type:, check_in_id:, acknowledgement:, notes: nil)
+    def self.call(teammate:, check_in_type:, check_in_id:, acknowledgement:, notes: nil, request_info: {})
       new(
         teammate: teammate,
         check_in_type: check_in_type,
         check_in_id: check_in_id,
         acknowledgement: acknowledgement,
-        notes: notes
+        notes: notes,
+        request_info: request_info
       ).call
     end
 
-    def initialize(teammate:, check_in_type:, check_in_id:, acknowledgement:, notes: nil)
+    def initialize(teammate:, check_in_type:, check_in_id:, acknowledgement:, notes: nil, request_info: {})
       @teammate = teammate
       @check_in_type = check_in_type.to_s
       @check_in_id = check_in_id
       @acknowledgement = acknowledgement.to_s
       @notes = notes
+      @request_info = request_info || {}
     end
 
     def call
@@ -42,7 +44,11 @@ module CheckIns
         return Result.err("Choose Acknowledge and Agree or Acknowledge and Disagree.")
       end
 
-      check_in.acknowledge_as_employee!(acknowledgement: @acknowledgement, notes: @notes)
+      check_in.acknowledge_as_employee!(
+        acknowledgement: @acknowledgement,
+        notes: @notes,
+        request_info: @request_info
+      )
       Result.ok(check_in)
     rescue ActiveRecord::RecordInvalid => e
       Result.err(e.record.errors.full_messages.to_sentence.presence || "Could not save acknowledgement.")

@@ -4,13 +4,14 @@ module CheckIns
   # Acknowledges every check-in in the payload that is Agree or Disagree.
   # Leave Unacknowledged entries are skipped. Continues on per-item failures.
   class BulkAcknowledgeCheckInsService
-    def self.call(teammate:, acknowledgements:)
-      new(teammate: teammate, acknowledgements: acknowledgements).call
+    def self.call(teammate:, acknowledgements:, request_info: {})
+      new(teammate: teammate, acknowledgements: acknowledgements, request_info: request_info).call
     end
 
-    def initialize(teammate:, acknowledgements:)
+    def initialize(teammate:, acknowledgements:, request_info: {})
       @teammate = teammate
       @acknowledgements = acknowledgements || {}
+      @request_info = request_info || {}
     end
 
     def call
@@ -29,7 +30,8 @@ module CheckIns
           check_in_type: check_in_type,
           check_in_id: check_in_id,
           acknowledgement: acknowledgement,
-          notes: notes
+          notes: notes,
+          request_info: @request_info
         )
 
         if result.ok?

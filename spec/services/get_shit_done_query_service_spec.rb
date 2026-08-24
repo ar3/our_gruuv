@@ -69,7 +69,10 @@ RSpec.describe GetShitDoneQueryService do
       observable_moment = create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
       observable_moment.reload # Ensure associations are loaded
       
-      create(:maap_snapshot, employee_company_teammate: company_teammate, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      create(:assignment_check_in, :officially_completed,
+             teammate: company_teammate,
+             assignment: create(:assignment, company: company),
+             official_check_in_completed_at: 1.day.ago)
       create(:observation, observer: person, company: company, published_at: nil)
       # Goal needs to meet check_in_eligible criteria
       goal = create(:goal, owner: company_teammate, company: company, started_at: Time.current, deleted_at: nil, completed_at: nil, most_likely_target_date: 1.month.from_now, goal_type: 'quantitative_key_result')
@@ -78,7 +81,7 @@ RSpec.describe GetShitDoneQueryService do
       expect(observable_moment.primary_potential_observer).to eq(company_teammate)
       
       count = service.total_pending_count
-      # Should have at least 3 (observable moment, maap snapshot, observation)
+      # Should have at least 3 (observable moment, pending check-in ack, observation)
       # Goal may or may not be included depending on check_in_eligible scope
       expect(count).to be >= 3
     end

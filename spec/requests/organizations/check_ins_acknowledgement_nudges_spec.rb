@@ -35,9 +35,12 @@ RSpec.describe 'Check-in acknowledgement nudges', type: :request do
       expect(response.body).to include('Unacknowledged')
     end
 
-    it 'shows Yes when teammate has pending snapshot' do
-      create(:maap_snapshot, :executed, employee_company_teammate: employee_teammate, company: company,
-                                         creator_company_teammate: manager_teammate)
+    it 'shows Yes when teammate has pending check-in acknowledgement' do
+      employment = create(:employment_tenure, teammate: employee_teammate, company: company, started_at: 1.year.ago)
+      create(:position_check_in, :closed,
+             teammate: employee_teammate,
+             employment_tenure: employment,
+             official_check_in_completed_at: 1.day.ago)
 
       get organization_check_ins_acknowledgement_nudges_path(company, manager_id: 'everyone')
       expect(response).to have_http_status(:success)
@@ -47,8 +50,11 @@ RSpec.describe 'Check-in acknowledgement nudges', type: :request do
 
   describe 'POST /organizations/:organization_id/check_ins_acknowledgement_nudges/nudge' do
     before do
-      create(:maap_snapshot, :executed, employee_company_teammate: employee_teammate, company: company,
-                                         creator_company_teammate: manager_teammate)
+      employment = create(:employment_tenure, teammate: employee_teammate, company: company, started_at: 1.year.ago)
+      create(:position_check_in, :closed,
+             teammate: employee_teammate,
+             employment_tenure: employment,
+             official_check_in_completed_at: 1.day.ago)
     end
 
     it 'sends a nudge and redirects with notice' do
@@ -60,6 +66,7 @@ RSpec.describe 'Check-in acknowledgement nudges', type: :request do
       expect(response).to redirect_to(organization_check_ins_acknowledgement_nudges_path(company, manager_id: 'everyone'))
       follow_redirect!
       expect(response.body).to include('Nudge sent.')
+      expect(Notification.where(notification_type: 'check_in_acknowledgement_nudge').last.notifiable).to eq(employee_teammate)
     end
   end
 end

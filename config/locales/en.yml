@@ -41,7 +41,7 @@ en:
     clarity_hub_see_up_next_link: "See what's up next for %{employee_name} and %{manager_name}"
     clarity_hub_see_full_queue_and_why: "See full queue & why"
     switch_teammate_for_clarity_hub: "Switch teammate for Clarity Check-Ins"
-    view_audit_clarity_check_in_acknowledgements: "View %{count} audit/clarity check-in acknowledgements"
+    view_audit_clarity_check_in_acknowledgements: "Acknowledge %{count} check-ins"
     finalize_clarity_check_ins_both_sides: "Finalize clarity check-ins that both sides have completed."
     view_latest_clarity_check_ins_description: "Get a simple view of the most recent clarity check-ins at a glance."
     choose_any_for_clarity_check_in: "You can choose anything for a clarity check-in."

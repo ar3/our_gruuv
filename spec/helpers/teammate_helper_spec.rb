@@ -252,21 +252,32 @@ RSpec.describe TeammateHelper, type: :helper do
 
   describe '#pending_acknowledgements_count' do
     it 'returns the correct count' do
-      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
-      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
-      
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: assignment,
+             official_check_in_completed_at: 1.day.ago)
+      create(:position_check_in, :closed,
+             teammate: teammate,
+             employment_tenure: employment_tenure,
+             official_check_in_completed_at: 1.day.ago)
+
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(2)
     end
 
     it 'returns 0 when no pending acknowledgements' do
-      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: 1.day.ago)
-      
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: assignment,
+             official_check_in_completed_at: 1.day.ago,
+             employee_acknowledged_at: 1.hour.ago,
+             employee_acknowledgement: 'agree')
+
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(0)
     end
 
-    it 'excludes snapshots without effective_date' do
-      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: nil, employee_acknowledged_at: nil)
-      
+    it 'excludes unacknowledged snapshots without check-ins' do
+      create(:maap_snapshot, employee_company_teammate: teammate, company: organization, effective_date: Date.current, employee_acknowledged_at: nil)
+
       expect(helper.pending_acknowledgements_count(person, organization)).to eq(0)
     end
 

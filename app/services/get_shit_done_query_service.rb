@@ -14,9 +14,21 @@ class GetShitDoneQueryService
   end
 
   def maap_snapshots
-    return MaapSnapshot.none unless teammate
-    
-    MaapSnapshot.pending_acknowledgement_for(teammate).recent
+    # Legacy name kept for GSD callers; pending is now check-in acknowledgement count.
+    # Returns an empty relation; use pending_acknowledgement_count for the number.
+    MaapSnapshot.none
+  end
+
+  def pending_acknowledgement_count
+    return 0 unless teammate
+
+    pending_acknowledgement_queue.count
+  end
+
+  def pending_acknowledgement_queue
+    return empty_acknowledgement_queue unless teammate
+
+    CheckIns::AcknowledgementQueue.for(teammate: teammate)
   end
 
   def observation_drafts
@@ -70,7 +82,7 @@ class GetShitDoneQueryService
 
   def total_pending_count
     observable_moments.count +
-      maap_snapshots.count +
+      pending_acknowledgement_count +
       observation_drafts.count +
       silent_observations.count +
       feedback_expectation_mismatches.count +
@@ -82,6 +94,7 @@ class GetShitDoneQueryService
     {
       observable_moments: observable_moments,
       maap_snapshots: maap_snapshots,
+      pending_acknowledgement_count: pending_acknowledgement_count,
       observation_drafts: observation_drafts,
       silent_observations: silent_observations,
       feedback_expectation_mismatches: feedback_expectation_mismatches,
@@ -97,7 +110,7 @@ class GetShitDoneQueryService
 
     [
       { count: observable_moments.count, label: "Observable Moments" },
-      { count: maap_snapshots.count, label: I18n.t("terminology.clarity_check_ins_awaiting_acknowledgement") },
+      { count: pending_acknowledgement_count, label: I18n.t("terminology.clarity_check_ins_awaiting_acknowledgement") },
       { count: check_ins_awaiting_input.size, label: I18n.t("terminology.clarity_check_ins_awaiting_your_input") },
       { count: goals_needing_check_in.count, label: I18n.t("terminology.goal_confidence_checks") },
       { count: observation_drafts.count, label: "Observation Drafts" },
@@ -107,6 +120,14 @@ class GetShitDoneQueryService
   end
 
   private
+
+  def empty_acknowledgement_queue
+    CheckIns::AcknowledgementQueue::Result.new(
+      position_check_in: nil,
+      assignment_check_ins: [],
+      aspiration_check_ins: []
+    )
+  end
 
   def check_ins_awaiting_employee_input
     [AssignmentCheckIn, AspirationCheckIn, PositionCheckIn].flat_map do |klass|
