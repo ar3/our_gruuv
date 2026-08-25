@@ -761,6 +761,7 @@ Rails.application.routes.draw do
       get 'seats_titles_positions', to: 'insights#seats_titles_positions'
       get 'assignments', to: 'insights#assignments'
       get 'abilities', to: 'insights#abilities'
+      get 'values', to: 'insights#values'
       get 'goals', to: 'insights#goals'
       get 'who_is_doing_what', to: 'insights#who_is_doing_what'
       get 'check_ins_progress', to: 'insights#check_ins_progress'

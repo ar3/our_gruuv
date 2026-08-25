@@ -1,0 +1,51 @@
+- query = local_assigns.fetch(:query)
+- display = local_assigns.fetch(:display)
+- organization = local_assigns.fetch(:organization)
+- viewer_teammate = local_assigns.fetch(:viewer_teammate)
+- can_manage_employment = local_assigns.fetch(:can_manage_employment)
+- columns = Insights::AspirationRatingAlignmentQuery::AGREEMENT_COLUMNS
+- labels = Insights::AspirationRatingAlignmentQuery::COLUMN_LABELS
+
+- if query.aspirations.empty? && query.unplaced.empty?
+  .alert.alert-info No finalized values check-ins yet.
+- else
+  .table-responsive.mb-4
+    %table.table.table-bordered.mb-0.talent-density-viz-grid
+      %thead
+        %tr
+          %th.align-middle.text-muted.small Value ↓ / Agreement →
+          - columns.each do |column|
+            %th.text-center.small{style: "min-width: 8rem;"}= labels[column]
+      %tbody
+        - query.aspirations.each do |aspiration|
+          %tr
+            %th.align-middle.small{style: "min-width: 10rem;"}
+              = aspiration.name
+              - if aspiration.department.present?
+                %div.small.text-muted.fw-normal= aspiration.department.name
+            - columns.each do |column|
+              %td.align-top{style: "min-width: 8rem; min-height: 4rem;"}
+                .d-flex.flex-wrap.gap-1.align-items-start
+                  - query.cell(aspiration, column).each do |point|
+                    = render "organizations/insights/values_clarity_marker",
+                      point: point,
+                      display: display,
+                      organization: organization,
+                      viewer_teammate: viewer_teammate,
+                      can_manage_employment: can_manage_employment
+
+  - if query.unplaced.any?
+    %h3.h6 People / check-ins not yet plotted
+    %p.small.text-muted Need employee, manager, and final ratings on a finalized values check-in.
+    %ul.list-unstyled.mb-0
+      - query.unplaced.each do |point|
+        %li.mb-2
+          = render "organizations/insights/values_clarity_marker",
+            point: point,
+            display: display,
+            organization: organization,
+            viewer_teammate: viewer_teammate,
+            can_manage_employment: can_manage_employment
+          %span.small.text-muted.ms-2
+            = point.aspiration.name
+            · incomplete emp/mgr/final trio

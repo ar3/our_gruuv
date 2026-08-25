@@ -400,6 +400,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Values',
+            icon: 'bi-heart',
+            path: organization_insights_values_path(current_organization),
+            policy_check: -> { policy(current_company).view_aspirations? },
+            coming_soon: false
+          },
+          {
             label: 'Goals',
             icon: 'bi-bullseye',
             path: organization_insights_goals_path(current_organization),

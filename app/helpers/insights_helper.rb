@@ -225,4 +225,63 @@ module InsightsHelper
     else '—'
     end
   end
+
+  # Names only when display=names. Manage employment sees everyone; others only self + hierarchy.
+  def values_insights_clarity_reveal_name?(point, viewer_teammate:, can_manage_employment:, display:)
+    return false unless display.to_s == 'names'
+    return true if can_manage_employment
+    return false unless viewer_teammate
+
+    subject = point.teammate
+    return true if subject.id == viewer_teammate.id
+    return true if viewer_teammate.in_managerial_hierarchy_of?(subject)
+
+    false
+  end
+
+  def values_insights_clarity_marker_popover(point, reveal_name:)
+    name = if reveal_name
+             ERB::Util.html_escape(point.teammate.person.display_name)
+           else
+             'Teammate'
+           end
+    aspiration = ERB::Util.html_escape(point.aspiration.name)
+    emp = ERB::Util.html_escape(point.check_in.employee_rating.to_s.humanize)
+    mgr = ERB::Util.html_escape(point.check_in.manager_rating.to_s.humanize)
+    final = ERB::Util.html_escape(point.check_in.official_rating.to_s.humanize)
+    column = ERB::Util.html_escape(
+      Insights::AspirationRatingAlignmentQuery::COLUMN_LABELS[point.agreement] || 'Incomplete'
+    )
+    arrow = ERB::Util.html_escape(talent_density_alignment_arrow_label(point))
+
+    <<~HTML.squish
+      <div class="text-start">
+        #{name}<br>
+        Value: #{aspiration}<br>
+        Employee: #{emp}<br>
+        Manager: #{mgr}<br>
+        Final: #{final}<br>
+        Pattern: #{column}<br>
+        Arrow: #{arrow}
+      </div>
+    HTML
+  end
+
+  def values_insights_path_options(timeframe:, custom_from: nil, custom_to: nil, display: nil)
+    opts = {}
+    opts[:timeframe] = timeframe.to_s unless timeframe.blank? || timeframe.to_s == '90_days'
+    if timeframe.to_s == 'custom' || timeframe == :custom
+      opts[:timeframe] = 'custom'
+      opts[:from] = custom_from if custom_from.present?
+      opts[:to] = custom_to if custom_to.present?
+    end
+    opts[:display] = display if display.present? && display.to_s != 'dots'
+    opts
+  end
+
+  def values_insights_timeframe_link_opts(opts)
+    merged = opts.dup
+    merged[:display] ||= 'names' if @clarity_display == 'names'
+    merged
+  end
 end

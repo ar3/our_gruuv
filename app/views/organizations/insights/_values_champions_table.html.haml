@@ -1,0 +1,21 @@
+- rows = local_assigns.fetch(:rows)
+- empty_label = local_assigns.fetch(:empty_label)
+
+- if rows.blank?
+  %p.text-muted.small.mb-0= empty_label
+- else
+  .table-responsive
+    %table.table.table-sm.mb-0
+      %thead
+        %tr
+          %th #
+          %th Person
+          %th.text-end OGOs
+          %th.text-end Points
+      %tbody
+        - rows.each_with_index do |row, index|
+          %tr
+            %td.text-muted= index + 1
+            %td= row.teammate.person.display_name
+            %td.text-end= row.ogo_count
+            %td.text-end= number_with_precision(row.points, precision: 0, strip_insignificant_zeros: true)

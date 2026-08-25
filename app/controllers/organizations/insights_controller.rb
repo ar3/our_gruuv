@@ -178,7 +178,38 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @milestones_earned_chart_data = abilities_milestones_earned_chart_data(company, chart_range)
     @observation_ratings_chart_data = abilities_observation_ratings_chart_data(company, chart_range)
   end
-  
+
+  def values
+    authorize company, :view_aspirations?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
+
+    @values_query = Insights::ValuesLivingAndChampionsQuery.new(
+      company: company,
+      published_at_range: range
+    )
+    @living_ranked = @values_query.living_ranked
+
+    @can_manage_employment = policy(company).manage_employment?
+    @clarity_display = params[:display].to_s == 'names' ? 'names' : 'dots'
+
+    clarity_teammates = CompanyTeammate
+      .for_organization_hierarchy(company)
+      .where.not(first_employed_at: nil)
+      .where(last_terminated_at: nil)
+      .includes(:person)
+      .to_a
+    aspirations = Aspiration.for_company(company).includes(:department).ordered.to_a
+    @clarity_query = Insights::AspirationRatingAlignmentQuery.new(
+      teammates: clarity_teammates,
+      aspirations: aspirations
+    )
+  end
+
   def goals
     authorize company, :view_goals?
 
@@ -672,6 +703,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     links << { label: 'Seats, Titles, Positions', path: organization_insights_seats_titles_positions_path(organization) } if policy(company).view_seats?
     links << { label: 'Assignments', path: organization_insights_assignments_path(organization) } if policy(company).view_assignments?
     links << { label: 'Abilities', path: organization_insights_abilities_path(organization) } if policy(company).view_abilities?
+    links << { label: 'Values', path: organization_insights_values_path(organization) } if policy(company).view_aspirations?
     links << { label: 'Goals', path: organization_insights_goals_path(organization) } if policy(company).view_goals?
     links << { label: 'Prompts', path: organization_insights_prompts_path(organization) } if policy(company).view_prompts?
     links << { label: 'Huddles', path: huddles_review_organization_path(organization) } if policy(organization).show?
