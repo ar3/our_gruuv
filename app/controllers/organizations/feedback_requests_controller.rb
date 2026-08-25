@@ -27,13 +27,14 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @observations = @feedback_request.observations.includes(:observer, :observed_teammates, :feedback_request_question).order(created_at: :asc)
     @responder_records_by_teammate_id = @feedback_request.feedback_request_responders.index_by(&:teammate_id)
     @observations_by_observer_id = @feedback_request.observations.group_by(&:observer_id)
-    # Latest observation per observer+question (multiple submissions allowed over time)
-    @observation_by_observer_and_question = @feedback_request.observations
-      .order(created_at: :asc)
-      .index_by { |o| [o.observer_id, o.feedback_request_question_id] }
     @observation_visibility_query = ObservationVisibilityQuery.new(current_person, company)
     @answer_url = answer_organization_feedback_request_url(organization, @feedback_request)
     @suggested_share_message = helpers.feedback_request_suggested_share_message(@feedback_request, @answer_url)
+    @responder_submission_rows = helpers.feedback_request_responder_submission_rows(
+      responders: @responders,
+      observations: @observations,
+      responder_records_by_teammate_id: @responder_records_by_teammate_id
+    )
 
     @notifications_sent = @feedback_request.respondent_notifications_sent
     @notifications_by_teammate_id = @notifications_sent.group_by { |n| n.metadata&.dig("teammate_id")&.to_i }
@@ -479,11 +480,17 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         .find_or_create_by!(teammate_id: current_company_teammate.id)
       responder_record.update!(completed_at: complete ? Time.current : nil)
 
-      saved_observation = Array(result.value).first
-      redirect_path = if saved_observation.present?
-        organization_observation_path(organization, saved_observation)
-      elsif policy(@feedback_request).show?
-        organization_feedback_request_path(organization, @feedback_request)
+      redirect_path = if complete
+        saved_observations = Array(result.value)
+        if saved_observations.size > 1
+          ogos_from_organization_company_teammate_path(organization, "me")
+        elsif saved_observations.size == 1
+          organization_observation_path(organization, saved_observations.first)
+        elsif policy(@feedback_request).show?
+          organization_feedback_request_path(organization, @feedback_request)
+        else
+          ogos_feedback_requests_organization_company_teammate_path(organization, "me")
+        end
       else
         ogos_feedback_requests_organization_company_teammate_path(organization, "me")
       end

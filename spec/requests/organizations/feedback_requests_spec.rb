@@ -709,7 +709,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       }.to change { Observation.count }.by(2)
     end
 
-    it 'redirects to observation show page on success' do
+    it 'redirects to observation show page when completing a single OGO' do
       feedback_request.reload # Ensure questions are loaded
       question = feedback_request.feedback_request_questions.first
       post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
@@ -724,6 +724,20 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       }
       observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
       expect(response).to redirect_to(organization_observation_path(company, observation))
+    end
+
+    it 'redirects to OGOs from page when completing more than one OGO' do
+      feedback_request.reload
+      questions = feedback_request.feedback_request_questions
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          questions[0].id.to_s => { story: 'Answer 1', privacy_level: 'observed_and_managers' },
+          questions[1].id.to_s => { story: 'Answer 2', privacy_level: 'observed_and_managers' }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_complete: 'Save and Complete'
+      }
+      expect(response).to redirect_to(ogos_from_organization_company_teammate_path(company, "me"))
     end
 
     it 'sets completed_at when Save and Complete is clicked' do
@@ -757,7 +771,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         privacy_level: 'observed_and_managers',
         save_and_keep_incomplete: 'Save and Keep Incomplete'
       }
-      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(ogos_feedback_requests_organization_company_teammate_path(company, "me"))
       responder_record.reload
       expect(responder_record.completed_at).to be_nil
     end

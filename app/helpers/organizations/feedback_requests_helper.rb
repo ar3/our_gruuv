@@ -58,6 +58,59 @@ module Organizations
       MSG
     end
 
+    # One row per submission batch so multiple answers from the same person each appear.
+    # Published answers in the same minute are treated as one complete submission.
+    ResponderSubmissionRow = Struct.new(
+      :responder,
+      :responder_record,
+      :completed_at,
+      :observations_by_question_id,
+      :incomplete,
+      keyword_init: true
+    )
+
+    def feedback_request_responder_submission_rows(responders:, observations:, responder_records_by_teammate_id:)
+      rows = []
+      responders.each do |responder|
+        record = responder_records_by_teammate_id[responder.id]
+        person_observations = observations.select { |o| o.observer_id == responder.person_id }
+        published = person_observations.select(&:published?)
+        drafts = person_observations.reject(&:published?)
+
+        published
+          .group_by { |o| o.published_at.to_i / 60 }
+          .sort_by { |minute, _| -minute }
+          .each do |_minute, batch|
+            rows << ResponderSubmissionRow.new(
+              responder: responder,
+              responder_record: record,
+              completed_at: batch.map(&:published_at).compact.min,
+              observations_by_question_id: batch.group_by(&:feedback_request_question_id),
+              incomplete: false
+            )
+          end
+
+        if drafts.any?
+          rows << ResponderSubmissionRow.new(
+            responder: responder,
+            responder_record: record,
+            completed_at: nil,
+            observations_by_question_id: drafts.group_by(&:feedback_request_question_id),
+            incomplete: true
+          )
+        elsif published.empty?
+          rows << ResponderSubmissionRow.new(
+            responder: responder,
+            responder_record: record,
+            completed_at: record&.completed_at,
+            observations_by_question_id: {},
+            incomplete: record&.completed_at.blank?
+          )
+        end
+      end
+      rows
+    end
+
     # Display labels used on the answer page instead of enum values (strongly_agree, etc.)
     def observation_rating_display_label(rating)
       return ObservationRating.display_label('na') if rating.blank?

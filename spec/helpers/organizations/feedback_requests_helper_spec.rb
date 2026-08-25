@@ -148,4 +148,58 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
       expect(helper.feedback_request_wizard_step_name(99)).to eq('Step 99')
     end
   end
+
+  describe '#feedback_request_responder_submission_rows' do
+    let(:company) { create(:organization) }
+    let(:requestor) { create(:company_teammate, organization: company) }
+    let(:subject_teammate) { create(:company_teammate, organization: company) }
+    let(:responder) { create(:company_teammate, organization: company) }
+    let(:feedback_request) do
+      create(:feedback_request,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Test'
+      )
+    end
+    let(:question) do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+    end
+
+    it 'creates one row per completed submission with completed_at from published_at' do
+      question
+      feedback_request.feedback_request_responders.create!(teammate: responder, completed_at: Time.current)
+      first = create(:observation, :published,
+        observer: responder.person,
+        company: company,
+        feedback_request_question: question,
+        published_at: 2.days.ago,
+        story: 'First'
+      )
+      first.observees.destroy_all
+      first.observees.create!(teammate: subject_teammate)
+      second = create(:observation, :published,
+        observer: responder.person,
+        company: company,
+        feedback_request_question: question,
+        published_at: 1.hour.ago,
+        story: 'Second'
+      )
+      second.observees.destroy_all
+      second.observees.create!(teammate: subject_teammate)
+
+      rows = helper.feedback_request_responder_submission_rows(
+        responders: [responder],
+        observations: [first, second],
+        responder_records_by_teammate_id: feedback_request.feedback_request_responders.index_by(&:teammate_id)
+      )
+
+      expect(rows.size).to eq(2)
+      expect(rows.map(&:incomplete)).to eq([false, false])
+      expect(rows.first.completed_at).to be_within(1.second).of(second.published_at)
+      expect(rows.second.completed_at).to be_within(1.second).of(first.published_at)
+      expect(rows.first.observations_by_question_id[question.id]).to contain_exactly(second)
+      expect(rows.second.observations_by_question_id[question.id]).to contain_exactly(first)
+    end
+  end
 end

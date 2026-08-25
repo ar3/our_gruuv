@@ -182,10 +182,10 @@
                     - else
                       = question.question_text.truncate(40)
             %tbody
-              - @responders.each do |responder|
-                - responder_record = @responder_records_by_teammate_id[responder.id]
+              - @responder_submission_rows.each do |row|
+                - responder = row.responder
                 - is_current_user = responder == current_company_teammate
-                - completed = responder_record&.completed_at.present?
+                - completed = row.completed_at.present?
                 - nudges = @notifications_by_teammate_id[responder.id] || []
                 - last_nudge = nudges.first
                 %tr
@@ -196,8 +196,8 @@
                       %div
                         = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
                         - if completed
-                          .form-text.mb-0 Request completed on #{format_time_in_user_timezone(responder_record.completed_at)}
-                        - elsif is_current_user
+                          .form-text.text-muted.mb-0 Completed on #{format_time_in_user_timezone(row.completed_at)}
+                        - elsif row.incomplete && is_current_user
                           .mt-1
                             = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
                   %td
@@ -211,25 +211,28 @@
                         - if nudges.size > 1
                           %span.text-muted
                             · #{nudges.size} nudges
-                    - if !completed && can_nudge
+                    - if row.incomplete && can_nudge
                       = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request, teammate_id: responder.id),
                                   method: :post,
                                   class: "btn btn-sm btn-outline-secondary py-0 px-2",
                                   form: { class: "d-inline-block mt-1", style: "display: inline;" } do
                         Nudge
                   - @questions.each do |question|
-                    - obs = @observation_by_observer_and_question[[responder.person_id, question.id]]
+                    - observations = Array(row.observations_by_question_id[question.id])
+                    - visible = observations.select { |obs| @observation_visibility_query.visible_to?(obs) }
                     %td
-                      - if obs && @observation_visibility_query.visible_to?(obs)
-                        = link_to "View", organization_observation_path(organization, obs), class: "btn btn-sm btn-outline-primary"
+                      - if visible.any?
+                        .d-flex.flex-column.align-items-start.gap-1
+                          - visible.each do |obs|
+                            = link_to "View", organization_observation_path(organization, obs), class: "btn btn-sm btn-outline-primary"
                       - else
                         %span.text-muted --
       - else
         %ul.list-unstyled.mb-0
-          - @responders.each do |responder|
-            - responder_record = @responder_records_by_teammate_id[responder.id]
+          - @responder_submission_rows.each do |row|
+            - responder = row.responder
             - is_current_user = responder == current_company_teammate
-            - completed = responder_record&.completed_at.present?
+            - completed = row.completed_at.present?
             - nudges = @notifications_by_teammate_id[responder.id] || []
             - last_nudge = nudges.first
             %li.mb-3
@@ -240,8 +243,8 @@
                   %div
                     = link_to responder.person.display_name, internal_organization_company_teammate_path(organization, responder), class: "text-decoration-none"
                     - if completed
-                      .form-text.mb-0 Request completed on #{format_time_in_user_timezone(responder_record.completed_at)}
-                    - elsif is_current_user
+                      .form-text.text-muted.mb-0 Completed on #{format_time_in_user_timezone(row.completed_at)}
+                    - elsif row.incomplete && is_current_user
                       .mt-1
                         = link_to "Respond", answer_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-sm btn-outline-primary"
                 %div
@@ -255,7 +258,7 @@
                       - if nudges.size > 1
                         %span.text-muted
                           · #{nudges.size} nudges
-                  - if !completed && can_nudge
+                  - if row.incomplete && can_nudge
                     = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request, teammate_id: responder.id),
                                 method: :post,
                                 class: "btn btn-sm btn-outline-secondary py-0 px-2",
