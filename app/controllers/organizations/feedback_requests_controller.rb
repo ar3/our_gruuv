@@ -473,10 +473,11 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     )
     
     if result.ok?
-      responder_record = @feedback_request.feedback_request_responders.find_by(teammate_id: current_company_teammate.id)
-      if responder_record
-        responder_record.update!(completed_at: complete ? Time.current : nil)
-      end
+      # Open-link answerers aren't pre-listed; ensure a responder row so incomplete
+      # work appears in their "Waiting on …" inbox and completion can be tracked.
+      responder_record = @feedback_request.feedback_request_responders
+        .find_or_create_by!(teammate_id: current_company_teammate.id)
+      responder_record.update!(completed_at: complete ? Time.current : nil)
 
       saved_observation = Array(result.value).first
       redirect_path = if saved_observation.present?

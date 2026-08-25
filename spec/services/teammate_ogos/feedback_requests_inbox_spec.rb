@@ -43,6 +43,25 @@ RSpec.describe TeammateOgos::FeedbackRequestsInbox do
     expect(section(:asked_for_others).rows.map(&:feedback_request)).to eq([for_others])
   end
 
+  it "includes open-link incomplete answers in Waiting on after a responder row exists" do
+    open_request = create(:feedback_request, :ready_open_link,
+      company: organization,
+      requestor_teammate: requestor,
+      subject_of_feedback_teammate: other
+    )
+    open_request.feedback_request_responders.create!(teammate: teammate, completed_at: nil)
+
+    expect(section(:waiting).rows.map(&:feedback_request)).to include(open_request)
+  end
+
+  it "excludes completed responder rows from Waiting on unless show_closed" do
+    request = create(:feedback_request, company: organization, requestor_teammate: requestor, subject_of_feedback_teammate: other)
+    request.feedback_request_responders.create!(teammate: teammate, completed_at: Time.current)
+
+    expect(section(:waiting).rows).to be_empty
+    expect(call(show_closed: true)[:sections].find { |s| s.key == :waiting }.rows.map(&:feedback_request)).to include(request)
+  end
+
   it "hides archived requests unless show_closed" do
     create(:feedback_request, :archived, company: organization, requestor_teammate: requestor, subject_of_feedback_teammate: teammate)
 

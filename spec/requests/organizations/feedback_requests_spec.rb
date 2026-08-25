@@ -762,6 +762,28 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(responder_record.completed_at).to be_nil
     end
 
+    it 'creates a responder row for open-link answerers on incomplete save so it appears in Waiting on' do
+      other_person = create(:person)
+      other_teammate = create(:company_teammate, person: other_person, organization: company)
+      feedback_request.feedback_request_responders.destroy_all
+      feedback_request.update!(open_to_anyone: true)
+      sign_in_as_teammate_for_request(other_person, company)
+
+      question = feedback_request.feedback_request_questions.first
+      expect {
+        post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+          answers: {
+            question.id.to_s => { story: 'Open link draft', privacy_level: 'observed_and_managers' }
+          },
+          privacy_level: 'observed_and_managers',
+          save_and_keep_incomplete: 'Save and Keep Incomplete'
+        }
+      }.to change { feedback_request.feedback_request_responders.count }.by(1)
+
+      responder_record = feedback_request.feedback_request_responders.find_by!(teammate_id: other_teammate.id)
+      expect(responder_record.completed_at).to be_nil
+    end
+
     it 'keeps observations as drafts when Save and Keep Incomplete is clicked' do
       feedback_request.reload
       question = feedback_request.feedback_request_questions.first
