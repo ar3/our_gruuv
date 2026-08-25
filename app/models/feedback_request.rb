@@ -1,6 +1,6 @@
 class FeedbackRequest < ApplicationRecord
   include Notifiable
-  
+
   belongs_to :company, class_name: 'Organization'
   belongs_to :requestor_teammate, class_name: 'CompanyTeammate'
   belongs_to :subject_of_feedback_teammate, class_name: 'CompanyTeammate'
@@ -16,6 +16,9 @@ class FeedbackRequest < ApplicationRecord
 
   # Validations
   validates :company, :requestor_teammate_id, :subject_of_feedback_teammate_id, :subject_line, presence: true
+  validates :open_to_anyone, inclusion: { in: [true, false] }
+
+  attribute :open_to_anyone, :boolean, default: true
 
   # Soft delete methods
   def soft_delete!
@@ -28,6 +31,11 @@ class FeedbackRequest < ApplicationRecord
 
   def open?
     !archived? && deleted_at.nil?
+  end
+
+  # Respondent-only requests need at least one named person who can answer.
+  def requires_named_responders?
+    !open_to_anyone?
   end
 
   # Check if any responders have answered (created observations)
@@ -55,12 +63,13 @@ class FeedbackRequest < ApplicationRecord
 
   # State determination based on attributes (no enum needed)
   # States: invalid, ready, active, archived
-  
+
   def invalid?
-    # Invalid if: no questions, any question blank, or no responders
-    feedback_request_questions.empty? || 
-    feedback_request_questions.any? { |q| q.question_text.blank? } ||
-    responders.empty?
+    return true if feedback_request_questions.empty?
+    return true if feedback_request_questions.any? { |q| q.question_text.blank? }
+    return true if requires_named_responders? && responders.empty?
+
+    false
   end
 
   def ready?
@@ -111,6 +120,11 @@ class FeedbackRequest < ApplicationRecord
     active? || ready?
   end
 
+  # Answerable when configured (not invalid/archived).
+  def answerable?
+    !archived? && !invalid?
+  end
+
   # Validation method (kept for compatibility, but doesn't update state anymore)
   def validate_state!
     # State is now computed, so this method is mainly for ensuring data integrity
@@ -118,5 +132,22 @@ class FeedbackRequest < ApplicationRecord
     if invalid?
       Rails.logger.warn "FeedbackRequest #{id} is in invalid state"
     end
+  end
+
+  # Finder that accepts bare ids or human-readable id-slug params.
+  def self.find_by_param(param)
+    return find(param) if param.to_s.match?(/\A\d+\z/)
+
+    id = param.to_s.split('-').first
+    find(id)
+  end
+
+  def to_param
+    slug_parts = []
+    subject_name = subject_of_feedback_teammate&.person&.casual_name
+    slug_parts << subject_name if subject_name.present?
+    slug_parts << subject_line if subject_line.present?
+    slug = slug_parts.map { |part| part.to_s.parameterize }.reject(&:blank?).join('-')
+    slug.present? ? "#{id}-#{slug}" : id.to_s
   end
 end

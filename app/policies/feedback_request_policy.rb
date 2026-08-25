@@ -77,10 +77,20 @@ class FeedbackRequestPolicy < ApplicationPolicy
   def answer?
     return false unless viewing_teammate
     return false if viewing_teammate.terminated?
-    return false if record.archived?
+    return false unless record.answerable?
+    return false unless viewing_teammate.organization_id == record.company_id
 
-    # Must be a designated responder
+    return true if record.open_to_anyone?
     record.responders.include?(viewing_teammate)
+  end
+
+  # Any company teammate with the link can open the answer URL.
+  # Non-respondents on respondent-only requests see related OGOs instead of the form.
+  def view_answer_link?
+    return false unless viewing_teammate
+    return false if viewing_teammate.terminated?
+    return false if record.archived?
+    viewing_teammate.organization_id == record.company_id
   end
 
   def add_responder?

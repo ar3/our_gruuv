@@ -27,11 +27,15 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
   end
 
   let(:question_with_position_rateable) do
+    position_major_level = create(:position_major_level)
+    position_level = create(:position_level, position_major_level: position_major_level)
+    title = create(:title, position_major_level: position_major_level, company: company)
+    position = create(:position, title: title, position_level: position_level)
     create(:feedback_request_question,
       feedback_request: feedback_request,
       question_text: 'How did they show up in role?',
       position: 3,
-      rateable: create(:position, company: company)
+      rateable: position
     )
   end
 
@@ -187,11 +191,10 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
       end
     end
 
-    context 'when an observation already exists for the question from this responder' do
-      it 'updates the existing observation instead of creating a new one' do
+    context 'when an unpublished draft already exists for the question from this responder' do
+      it 'updates the draft instead of creating a new one' do
         question_with_rateable
         feedback_request.feedback_request_responders.find_or_create_by!(teammate_id: responder.id)
-        existing = nil
         described_class.call(
           feedback_request: feedback_request,
           answers: {
@@ -206,6 +209,7 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
         )
         existing = Observation.find_by(feedback_request_question_id: question_with_rateable.id, observer_id: responder.person_id)
         expect(existing).to be_present
+        expect(existing).not_to be_published
         expect(existing.story).to eq('Original story.')
         expect(existing.observation_ratings.find_by(rateable: question_with_rateable.rateable).rating).to eq('agree')
 
@@ -227,6 +231,51 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
         existing.reload
         expect(existing.story).to eq('Updated story.')
         expect(existing.observation_ratings.find_by(rateable: question_with_rateable.rateable).rating).to eq('strongly_agree')
+      end
+    end
+
+    context 'when a published observation already exists for the question from this responder' do
+      it 'creates a new observation instead of updating the published one' do
+        question_with_rateable
+        feedback_request.feedback_request_responders.find_or_create_by!(teammate_id: responder.id)
+        described_class.call(
+          feedback_request: feedback_request,
+          answers: {
+            question_with_rateable.id.to_s => {
+              story: 'First published story.',
+              rating: 'agree',
+              privacy_level: 'observed_and_managers'
+            }
+          },
+          responder_teammate: responder,
+          privacy_level: 'observed_and_managers',
+          complete: true
+        )
+        first = Observation.find_by(feedback_request_question_id: question_with_rateable.id, observer_id: responder.person_id)
+        expect(first).to be_published
+
+        expect {
+          described_class.call(
+            feedback_request: feedback_request,
+            answers: {
+              question_with_rateable.id.to_s => {
+                story: 'Second submission.',
+                rating: 'strongly_agree',
+                privacy_level: 'observed_and_managers'
+              }
+            },
+            responder_teammate: responder,
+            privacy_level: 'observed_and_managers',
+            complete: true
+          )
+        }.to change { Observation.count }.by(1)
+
+        first.reload
+        expect(first.story).to eq('First published story.')
+        second = Observation.where(feedback_request_question_id: question_with_rateable.id, observer_id: responder.person_id).order(:id).last
+        expect(second.id).not_to eq(first.id)
+        expect(second.story).to eq('Second submission.')
+        expect(second).to be_published
       end
     end
 

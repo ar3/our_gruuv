@@ -4,6 +4,7 @@ FactoryBot.define do
     association :requestor_teammate, factory: [:company_teammate]
     association :subject_of_feedback_teammate, factory: [:company_teammate]
     subject_line { "Feedback request #{rand(1000)}" }
+    open_to_anyone { true }
     deleted_at { nil }
 
     after(:build) do |feedback_request|
@@ -16,22 +17,38 @@ FactoryBot.define do
       deleted_at { Time.current }
     end
 
+    trait :respondents_only do
+      open_to_anyone { false }
+    end
+
     trait :ready do
       after(:create) do |feedback_request|
-        # Create questions and responders to make it ready (not invalid)
+        create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Test question?', position: 1)
+        # Open-by-default requests are ready with questions alone
+      end
+    end
+
+    trait :ready_respondents_only do
+      open_to_anyone { false }
+      after(:create) do |feedback_request|
         create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Test question?', position: 1)
         responder = create(:company_teammate, organization: feedback_request.company)
         feedback_request.feedback_request_responders.create!(teammate: responder)
       end
     end
 
+    trait :ready_open_link do
+      open_to_anyone { true }
+      after(:create) do |feedback_request|
+        create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Test question?', position: 1)
+      end
+    end
+
     trait :active do
       after(:create) do |feedback_request|
-        # Create questions and responders to make it ready
         create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Test question?', position: 1)
         responder = create(:company_teammate, organization: feedback_request.company)
         feedback_request.feedback_request_responders.create!(teammate: responder)
-        # Create a notification to mark it as active
         feedback_request.notifications.create!(
           notification_type: 'feedback_request',
           status: 'sent_successfully',
@@ -41,7 +58,7 @@ FactoryBot.define do
     end
 
     trait :invalid do
-      # Invalid by default (no questions or responders)
+      # Invalid by default without questions
     end
 
     trait :with_questions do

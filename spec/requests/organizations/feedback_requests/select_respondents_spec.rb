@@ -45,15 +45,17 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
   end
 
   describe 'GET /organizations/:organization_id/feedback_requests/:id/select_respondents' do
-    it 'renders the select_respondents page with selection-pages toolbar' do
+    it 'renders the who-can-respond page with open-to-anyone checkbox and selection toolbar' do
       get select_respondents_organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Select Respondents')
-      expect(response.body).to include('Step 4: Select Respondents')
+      expect(response.body).to include('Who Can Respond')
+      expect(response.body).to include('Step 4: Who Can Respond')
+      expect(response.body).to include('Open to anyone with the link')
       expect(response.body).to include('selection-toolbar')
       expect(response.body).to include('Search teammates')
-      expect(response.body).to include('Save with these respondents')
+      expect(response.body).to include('Save who can respond')
       expect(response.body).to include('respondent_ids[]')
+      expect(response.body).to include('name="open_to_anyone"')
     end
 
     it 'pre-checks existing respondents' do
@@ -73,15 +75,53 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
   end
 
   describe 'PATCH /organizations/:organization_id/feedback_requests/:id/update_respondents' do
-    it 'batch-saves respondents and redirects to show' do
+    it 'saves open request with named respondents' do
       expect {
         patch update_respondents_organization_feedback_request_path(company, feedback_request),
-              params: { respondent_ids: [responder_teammate.id, other_responder_teammate.id] }
+              params: { open_to_anyone: '1', respondent_ids: [responder_teammate.id, other_responder_teammate.id] }
       }.to change { FeedbackRequestResponder.count }.by(2)
 
       expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
       expect(feedback_request.responders.reload).to contain_exactly(responder_teammate, other_responder_teammate)
-      expect(feedback_request.reload.ready?).to be true
+      expect(feedback_request.reload.open_to_anyone).to be true
+      expect(feedback_request.ready?).to be true
+    end
+
+    it 'saves open request without named respondents' do
+      patch update_respondents_organization_feedback_request_path(company, feedback_request),
+            params: { open_to_anyone: '1', respondent_ids: [] }
+
+      expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+      expect(feedback_request.reload.open_to_anyone).to be true
+      expect(feedback_request.responders).to be_empty
+      expect(feedback_request).to be_ready
+    end
+
+    it 'keeps named respondents when staying open' do
+      feedback_request.feedback_request_responders.create!(teammate_id: responder_teammate.id)
+
+      patch update_respondents_organization_feedback_request_path(company, feedback_request),
+            params: { open_to_anyone: '1', respondent_ids: [responder_teammate.id] }
+
+      expect(feedback_request.responders.reload).to contain_exactly(responder_teammate)
+      expect(feedback_request.reload.open_to_anyone).to be true
+    end
+
+    it 'requires named respondents when closed' do
+      patch update_respondents_organization_feedback_request_path(company, feedback_request),
+            params: { open_to_anyone: '0', respondent_ids: [] }
+      expect(response).to redirect_to(select_respondents_organization_feedback_request_path(company, feedback_request))
+      expect(flash[:alert]).to include('named respondent')
+    end
+
+    it 'saves respondents-only with named people' do
+      patch update_respondents_organization_feedback_request_path(company, feedback_request),
+            params: { open_to_anyone: '0', respondent_ids: [responder_teammate.id] }
+
+      expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+      expect(feedback_request.reload.open_to_anyone).to be false
+      expect(feedback_request.responders).to contain_exactly(responder_teammate)
+      expect(feedback_request).to be_ready
     end
 
     it 'replaces the respondent set (adds and removes)' do
@@ -89,7 +129,7 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
       feedback_request.feedback_request_responders.create!(teammate_id: other_responder_teammate.id)
 
       patch update_respondents_organization_feedback_request_path(company, feedback_request),
-            params: { respondent_ids: [responder_teammate.id] }
+            params: { open_to_anyone: '1', respondent_ids: [responder_teammate.id] }
 
       expect(feedback_request.responders.reload).to contain_exactly(responder_teammate)
     end
@@ -99,17 +139,10 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
       feedback_request.feedback_request_responders.create!(teammate_id: responder_teammate.id, completed_at: completed_at)
 
       patch update_respondents_organization_feedback_request_path(company, feedback_request),
-            params: { respondent_ids: [responder_teammate.id, other_responder_teammate.id] }
+            params: { open_to_anyone: '1', respondent_ids: [responder_teammate.id, other_responder_teammate.id] }
 
       kept = feedback_request.feedback_request_responders.find_by!(teammate_id: responder_teammate.id)
       expect(kept.completed_at).to be_within(1.second).of(completed_at)
-    end
-
-    it 'redirects with error if no respondents selected' do
-      patch update_respondents_organization_feedback_request_path(company, feedback_request),
-            params: { respondent_ids: [] }
-      expect(response).to redirect_to(select_respondents_organization_feedback_request_path(company, feedback_request))
-      expect(flash[:alert]).to include('select at least one respondent')
     end
   end
 end

@@ -215,6 +215,20 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response.body).not_to include('Nobody has been nudged yet')
     end
 
+    it 'shows share link and suggested message for open permalink requests' do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      feedback_request.update!(open_to_anyone: true)
+      sign_in_as_teammate_for_request(requestor_person, company)
+
+      get organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Share this feedback request')
+      expect(response.body).to include('Copy link')
+      expect(response.body).to include('Suggested message')
+      expect(response.body).to include(answer_organization_feedback_request_path(company, feedback_request))
+      expect(response.body).to include('Open to anyone with the link')
+    end
+
     it 'shows prior nudges in the Nudge column' do
       create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
       feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
@@ -276,7 +290,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get select_focus_organization_feedback_request_path(company, feedback_request)
       expect(response.body).to include('Step 1: Who & Why'.gsub('&', '&amp;'))
       expect(response.body).to include('Step 2: Select Focus')
-      expect(response.body).to include('Step 4: Select Respondents')
+      expect(response.body).to include('Step 4: Who Can Respond')
     end
   end
 
@@ -343,7 +357,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response.body).to include('Step 1: Who & Why'.gsub('&', '&amp;'))
       expect(response.body).to include('Step 2: Select Focus')
       expect(response.body).to include('Step 3: Edit Questions')
-      expect(response.body).to include('Step 4: Select Respondents')
+      expect(response.body).to include('Step 4: Who Can Respond')
     end
 
     it 'requires authorization' do
@@ -446,15 +460,39 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       get answer_organization_feedback_request_path(company, feedback_request)
       expect(response).to have_http_status(:success)
       expect(response.body).to match(/Answer|Question/)
+      expect(response.body).to include('Submit a new set of observations')
     end
 
-    it 'requires authorization (must be a responder)' do
+    it 'shows a related-OGOs page for non-respondents when request is respondents-only' do
+      feedback_request.update!(open_to_anyone: false)
       other_person = create(:person)
-      other_teammate = create(:company_teammate, person: other_person, organization: company)
+      create(:company_teammate, person: other_person, organization: company)
       sign_in_as_teammate_for_request(other_person, company)
 
       get answer_organization_feedback_request_path(company, feedback_request)
-      expect(response).to have_http_status(:redirect)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('view only')
+      expect(response.body).to include('limited to named respondents')
+      expect(response.body).to include('Observations about')
+      expect(response.body).not_to include('Save and Complete')
+    end
+
+    it 'allows any company teammate to answer when open_to_anyone' do
+      feedback_request.feedback_request_responders.destroy_all
+      feedback_request.update!(open_to_anyone: true)
+      other_person = create(:person)
+      create(:company_teammate, person: other_person, organization: company)
+      sign_in_as_teammate_for_request(other_person, company)
+
+      get answer_organization_feedback_request_path(company, feedback_request)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Submit a new set of observations')
+    end
+
+    it 'accepts human-readable id-slug answer URLs' do
+      get answer_organization_feedback_request_path(company, feedback_request.to_param)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Submit a new set of observations')
     end
 
     context 'with a Position focus question (story-only, no assignment/ability/aspiration rating block)' do
@@ -543,7 +581,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       end
     end
 
-    context 'when the responder has a previously saved observation for a question' do
+    context 'when the responder has a previously published observation for a question' do
       before do
         FeedbackRequestQuestion.where(feedback_request: feedback_request).destroy_all
       end
@@ -556,7 +594,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
           rateable: assignment
         )
         feedback_request.feedback_request_responders.find_or_create_by!(teammate_id: requestor_teammate.id)
-        obs = create(:observation,
+        obs = create(:observation, :published,
           observer: requestor_person,
           company: company,
           story: 'My previous saved story.',
@@ -570,13 +608,51 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         obs
       end
 
-      it 'defaults story and rating from the observation and shows link to the observation' do
+      it 'starts a blank new submission and notes the prior published observation' do
         get answer_organization_feedback_request_path(company, feedback_request)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('My previous saved story.')
-        expect(response.body).to include('the observation itself')
+        expect(response.body).to include('Submit a new set of observations')
+        expect(response.body).to include('You’ve submitted')
         expect(response.body).to include(organization_observation_path(company, existing_observation))
-        expect(response.body).to include('created from your answer')
+        expect(response.body).not_to include('My previous saved story.')
+        expect(response.body).not_to include('Incomplete draft')
+      end
+    end
+
+    context 'when the responder has an incomplete draft for a question' do
+      before do
+        FeedbackRequestQuestion.where(feedback_request: feedback_request).destroy_all
+      end
+      let!(:draft_observation) do
+        assignment = create(:assignment, company: company)
+        question = create(:feedback_request_question,
+          feedback_request: feedback_request,
+          question_text: 'How did they do?',
+          position: 1,
+          rateable: assignment
+        )
+        feedback_request.feedback_request_responders.find_or_create_by!(teammate_id: requestor_teammate.id)
+        obs = create(:observation,
+          observer: requestor_person,
+          company: company,
+          story: 'My draft story.',
+          feedback_request_question: question,
+          privacy_level: :observed_and_managers,
+          published_at: nil
+        )
+        obs.observees.destroy_all
+        obs.observees.build(teammate: subject_teammate)
+        obs.save!
+        obs.observation_ratings.create!(rateable: assignment, rating: 'agree')
+        obs
+      end
+
+      it 'prefills from the draft and shows the draft note' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('My draft story.')
+        expect(response.body).to include('Incomplete draft')
+        expect(response.body).to include(organization_observation_path(company, draft_observation))
       end
     end
   end
@@ -760,7 +836,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       }.not_to change { Observation.count }
     end
 
-    it 'updates existing observation when saving again (does not create a second observation)' do
+    it 'updates an incomplete draft when saving again (does not create a second observation)' do
       feedback_request.reload
       feedback_request.feedback_request_questions.destroy_all
       assignment = create(:assignment, company: company)
@@ -806,6 +882,42 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       observation.reload
       expect(observation.story).to eq('Updated story.')
       expect(observation.observation_ratings.find_by(rateable: assignment).rating).to eq('strongly_agree')
+    end
+
+    it 'creates a new observation after a prior complete submission' do
+      feedback_request.reload
+      feedback_request.feedback_request_questions.destroy_all
+      question = create(:feedback_request_question,
+        feedback_request: feedback_request,
+        question_text: 'How did they do?',
+        position: 1
+      )
+      feedback_request.reload
+
+      post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => { story: 'First complete.', privacy_level: 'observed_and_managers' }
+        },
+        privacy_level: 'observed_and_managers',
+        save_and_complete: 'Save and Complete'
+      }
+      first = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
+      expect(first).to be_published
+
+      expect {
+        post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
+          answers: {
+            question.id.to_s => { story: 'Second complete.', privacy_level: 'observed_and_managers' }
+          },
+          privacy_level: 'observed_and_managers',
+          save_and_complete: 'Save and Complete'
+        }
+      }.to change { Observation.count }.by(1)
+
+      expect(first.reload.story).to eq('First complete.')
+      second = Observation.where(feedback_request_question_id: question.id, observer_id: requestor_person.id).order(:id).last
+      expect(second.story).to eq('Second complete.')
+      expect(second).to be_published
     end
 
     it 'persists per-question privacy level when respondent chooses different visibility per answer' do

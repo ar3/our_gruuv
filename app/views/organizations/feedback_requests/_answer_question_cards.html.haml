@@ -76,8 +76,11 @@
             - if existing_observation && !disabled
               %hr.mt-3.mb-2
               %p.small.text-muted.mb-0
-                This observation was #{existing_observation.published_at? ? "published" : "created"} from your answer. You can update it here, or edit it further on
-                = link_to "the observation itself", organization_observation_path(organization, existing_observation), class: "text-muted"
+                Incomplete draft
+                - if existing_observation.created_at
+                  from #{format_time_in_user_timezone(existing_observation.created_at)}
+                — saving updates this draft. Completing publishes it as an OGO. Prior published answers from this request are not changed.
+                = link_to "Open draft observation", organization_observation_path(organization, existing_observation), class: "text-muted"
                 \.
             = render "organizations/feedback_requests/answer_privacy_selector",
                 field_name: "answers[#{question.id}][privacy_level]",
@@ -105,8 +108,11 @@
         - if existing_observation && !disabled
           %hr.mt-3.mb-2
           %p.small.text-muted.mb-0
-            This observation was #{existing_observation.published_at? ? "published" : "created"} from your answer. You can update it here, or edit it further on
-            = link_to "the observation itself", organization_observation_path(organization, existing_observation), class: "text-muted"
+            Incomplete draft
+            - if existing_observation.created_at
+              from #{format_time_in_user_timezone(existing_observation.created_at)}
+            — saving updates this draft. Completing publishes it as an OGO. Prior published answers from this request are not changed.
+            = link_to "Open draft observation", organization_observation_path(organization, existing_observation), class: "text-muted"
             \.
         - unless disabled
           .form-text.mt-1

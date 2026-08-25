@@ -12,6 +12,30 @@
       %i.bi.bi-reply.me-2
       Answer Feedback Request
 
+.alert.alert-light.border.mb-3{role: "status"}
+  %strong Submit a new set of observations.
+  This form creates new OGOs for
+  %strong= @feedback_request.subject_of_feedback_teammate.person.display_name
+  when you save.
+  - if @observation_by_question_id.any?
+    You have an incomplete draft in progress below — saving updates that draft until you mark it complete.
+  - elsif @prior_published_observations.any?
+    You have submitted before; those earlier OGOs stay as they are.
+
+- if @prior_published_observations.any?
+  .alert.alert-secondary.mb-3
+    %p.mb-2.small
+      %strong Side note:
+      You’ve submitted #{pluralize(@prior_published_observations.size, "observation")} from this request before.
+    %ul.mb-0.small
+      - @prior_published_observations.first(5).each do |observation|
+        %li
+          = link_to organization_observation_path(organization, observation) do
+            - label = observation.feedback_request_question&.question_text.to_s.truncate(60).presence || "Observation"
+            = "#{label} · #{format_time_in_user_timezone(observation.published_at)}"
+      - if @prior_published_observations.size > 5
+        %li.text-muted …and #{@prior_published_observations.size - 5} more
+
 .card.mb-3
   .card-header
     %h5.mb-0 Request Details
@@ -19,6 +43,10 @@
     %p
       %strong Subject:
       = @feedback_request.subject_of_feedback_teammate.person.display_name
+    - if @feedback_request.subject_line.present?
+      %p
+        %strong Subject line:
+        = @feedback_request.subject_line
     %p.mb-0
       %strong Resources:
       - rateables = @questions.map(&:rateable).compact.uniq

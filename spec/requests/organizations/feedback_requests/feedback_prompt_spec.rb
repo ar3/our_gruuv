@@ -46,7 +46,7 @@ RSpec.describe 'Organizations::FeedbackRequests::FeedbackPrompt', type: :request
       expect(response.body).to include('Step 1: Who & Why'.gsub('&', '&amp;'))
       expect(response.body).to include('Step 2: Select Focus')
       expect(response.body).to include('Step 3: Edit Questions')
-      expect(response.body).to include('Step 4: Select Respondents')
+      expect(response.body).to include('Step 4: Who Can Respond')
     end
 
     it 'defaults blank assignment question to sentiment outcomes separated by double newlines' do

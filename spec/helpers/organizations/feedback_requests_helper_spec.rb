@@ -32,7 +32,7 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
         expect(helper.feedback_request_wizard_step_enabled?(feedback_request, 3)).to be false
       end
 
-      it 'disables step 4 (Select Respondents)' do
+      it 'disables step 4 (Who Can Respond)' do
         expect(helper.feedback_request_wizard_step_enabled?(feedback_request, 4)).to be false
       end
     end
@@ -141,7 +141,7 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
       expect(helper.feedback_request_wizard_step_name(1)).to eq('Who & Why')
       expect(helper.feedback_request_wizard_step_name(2)).to eq('Select Focus')
       expect(helper.feedback_request_wizard_step_name(3)).to eq('Edit Questions')
-      expect(helper.feedback_request_wizard_step_name(4)).to eq('Select Respondents')
+      expect(helper.feedback_request_wizard_step_name(4)).to eq('Who Can Respond')
     end
 
     it 'returns fallback for unknown step' do

@@ -24,11 +24,16 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
     @responders = @feedback_request.responders.includes(:person)
-    @observations = @feedback_request.observations.includes(:observer, :observed_teammates, :feedback_request_question)
+    @observations = @feedback_request.observations.includes(:observer, :observed_teammates, :feedback_request_question).order(created_at: :asc)
     @responder_records_by_teammate_id = @feedback_request.feedback_request_responders.index_by(&:teammate_id)
     @observations_by_observer_id = @feedback_request.observations.group_by(&:observer_id)
-    @observation_by_observer_and_question = @feedback_request.observations.index_by { |o| [o.observer_id, o.feedback_request_question_id] }
+    # Latest observation per observer+question (multiple submissions allowed over time)
+    @observation_by_observer_and_question = @feedback_request.observations
+      .order(created_at: :asc)
+      .index_by { |o| [o.observer_id, o.feedback_request_question_id] }
     @observation_visibility_query = ObservationVisibilityQuery.new(current_person, company)
+    @answer_url = answer_organization_feedback_request_url(organization, @feedback_request)
+    @suggested_share_message = helpers.feedback_request_suggested_share_message(@feedback_request, @answer_url)
 
     @notifications_sent = @feedback_request.respondent_notifications_sent
     @notifications_by_teammate_id = @notifications_sent.group_by { |n| n.metadata&.dig("teammate_id")&.to_i }
@@ -105,7 +110,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
         redirect_to select_focus_organization_feedback_request_path(organization, @feedback_request)
       elsif @feedback_request.feedback_request_questions.any? { |q| q.question_text.blank? }
         redirect_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request)
-      elsif @feedback_request.responders.empty?
+      elsif @feedback_request.requires_named_responders? && @feedback_request.responders.empty?
         redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request)
       else
         @feedback_request.validate_state!
@@ -402,15 +407,18 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       return
     end
 
+    open_to_anyone = ActiveModel::Type::Boolean.new.cast(params[:open_to_anyone])
+    open_to_anyone = true if open_to_anyone.nil?
+
     requested_ids = Array(params[:respondent_ids]).map(&:to_i).reject(&:zero?).uniq
     eligible_ids = CompanyTeammate
       .where(organization: company, id: requested_ids, last_terminated_at: nil)
       .pluck(:id)
       .to_set
 
-    if eligible_ids.empty?
+    if !open_to_anyone && eligible_ids.empty?
       redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request),
-                  alert: 'Please select at least one respondent.'
+                  alert: 'Select at least one named respondent, or keep the request open to anyone with the link.'
       return
     end
 
@@ -419,6 +427,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     ids_to_remove = current_ids - eligible_ids
 
     FeedbackRequestResponder.transaction do
+      @feedback_request.update!(open_to_anyone: open_to_anyone)
       ids_to_add.each do |teammate_id|
         @feedback_request.feedback_request_responders.create!(teammate_id: teammate_id)
       end
@@ -428,28 +437,24 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @feedback_request.validate_state!
 
     redirect_to organization_feedback_request_path(organization, @feedback_request),
-                notice: 'Respondents were saved.'
+                notice: 'Who can respond was saved.'
   end
 
   def answer
-    authorize @feedback_request, :answer?
+    authorize @feedback_request, :view_answer_link?
     if @feedback_request.archived?
       redirect_to ogos_feedback_requests_organization_company_teammate_path(organization, "me"),
                   notice: 'This feedback request has been archived and is no longer accepting responses.'
       return
     end
 
-    @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
-    # Existing observations from this responder, keyed by question id (for prefilling and observation link)
-    @observation_by_question_id = @feedback_request.observations
-      .where(observer: current_person)
-      .includes(:observation_ratings)
-      .index_by(&:feedback_request_question_id)
-    
-    # Load resources for optional ratings (for questions without rateable)
-    @assignments = company.assignments.ordered
-    @abilities = company.abilities.order(:name)
-    @aspirations = company.aspirations.ordered
+    if policy(@feedback_request).answer?
+      load_answer_page_assigns
+      render :answer
+    else
+      load_restricted_answer_page_assigns
+      render :answer_restricted
+    end
   end
 
   def submit_answers
@@ -484,14 +489,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       notice = complete ? 'Your feedback has been submitted and marked complete.' : 'Your feedback has been saved and kept incomplete.'
       redirect_to redirect_path, notice: notice
     else
-      @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
-      @observation_by_question_id = @feedback_request.observations
-        .where(observer: current_person)
-        .includes(:observation_ratings)
-        .index_by(&:feedback_request_question_id)
-      @assignments = company.assignments.ordered
-      @abilities = company.abilities.order(:name)
-      @aspirations = company.aspirations.ordered
+      load_answer_page_assigns
       
       flash[:alert] = result.error
       render :answer, status: :unprocessable_entity
@@ -499,6 +497,45 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   end
 
   private
+
+  def load_answer_page_assigns
+    @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
+    # Prefill only unpublished drafts so a new submission after complete starts blank.
+    @observation_by_question_id = @feedback_request.observations
+      .drafts
+      .where(observer: current_person)
+      .includes(:observation_ratings)
+      .index_by(&:feedback_request_question_id)
+    @prior_published_observations = @feedback_request.observations
+      .published
+      .where(observer: current_person)
+      .includes(:feedback_request_question)
+      .order(published_at: :desc)
+    @assignments = company.assignments.ordered
+    @abilities = company.abilities.order(:name)
+    @aspirations = company.aspirations.ordered
+  end
+
+  def load_restricted_answer_page_assigns
+    subject = @feedback_request.subject_of_feedback_teammate
+    visibility_query = ObservationVisibilityQuery.new(current_person, company)
+    @subject_teammate = subject
+    @related_observations = visibility_query.visible_observations
+      .published
+      .joins(:observed_teammates)
+      .where(teammates: { id: subject.id })
+      .includes(:observer, :observed_teammates, :feedback_request_question)
+      .order(published_at: :desc)
+      .limit(25)
+    @subject_observations_path = organization_observations_path(
+      organization,
+      involving_teammate_id: subject.id
+    )
+    @new_observation_path = select_type_organization_observations_path(
+      organization,
+      observee_ids: [subject.id]
+    )
+  end
 
   def redirect_to_my_ogos_feedback_requests
     raise ActiveRecord::RecordNotFound, "Unknown teammate" if current_company_teammate.blank?
@@ -605,7 +642,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
   end
 
   def set_feedback_request
-    @feedback_request = FeedbackRequest.find(params[:id])
+    @feedback_request = FeedbackRequest.find_by_param(params[:id])
   end
 
   def feedback_request_params

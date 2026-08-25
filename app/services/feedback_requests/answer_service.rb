@@ -33,7 +33,9 @@ module FeedbackRequests
           story = raw_story.presence || default_story_for_rating_only(question, rating)
           privacy_level = fetch_val(answer_data, :privacy_level).presence || @privacy_level
 
-          observation = Observation.find_by(
+          # Only update an unpublished draft for this question+observer.
+          # Published answers are left alone so a later submission creates new OGOs.
+          observation = Observation.drafts.find_by(
             feedback_request_question_id: question.id,
             observer_id: @responder_teammate.person_id
           )
@@ -151,7 +153,12 @@ module FeedbackRequests
       question_text = question.question_text.presence || question.prompt_default_text.presence || ''
       subject_name = @feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'the subject'
       rating_phrase = rating.to_s.humanize.downcase
-      object_name = question.rateable&.name.presence || question.rateable&.title.presence || 'this'
+      rateable = question.rateable
+      object_name =
+        rateable&.try(:name).presence ||
+        rateable&.try(:title).presence ||
+        rateable&.try(:display_name).presence ||
+        'this'
 
       sentence = "My experience is that #{subject_name} has shown a #{rating_phrase} example of #{object_name}."
       question_text.present? ? "#{question_text} #{sentence}" : sentence

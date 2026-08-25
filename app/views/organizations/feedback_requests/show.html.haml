@@ -29,6 +29,29 @@
     .col-12
       = render "nudge_to_notify_respondents"
 
+- if policy(@feedback_request).update? && @feedback_request.open_to_anyone? && !@feedback_request.invalid? && !@feedback_request.archived?
+  .card.mb-4{ role: "region", "aria-labelledby": "share-link" }
+    .card-header
+      %h5.mb-0{ id: "share-link" }
+        %i.bi.bi-link-45deg.me-2
+        Share this feedback request
+    .card-body
+      %p.text-muted.mb-3
+        Anyone logged in to this company can open the answer link and submit new OGOs. Paste it into Asana, Slack, or your email signature.
+      .mb-3{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy link", "clipboard-success-message-value": "Copied!" }}
+        %label.form-label.small.mb-1 Answer link
+        .d-flex.flex-wrap.align-items-start.gap-2
+          %code.flex-grow-1.p-2.bg-light.border.rounded.small{style: "word-break: break-all;", "data-clipboard-target": "source"}= @answer_url
+          %button.btn.btn-sm.btn-outline-secondary.flex-shrink-0{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
+            %i.bi.bi-clipboard.me-1
+            %span{"data-clipboard-target": "buttonLabel"} Copy link
+      .mb-0{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy message", "clipboard-success-message-value": "Copied!" }}
+        %label.form-label.small.mb-1 Suggested message
+        %pre.mb-2.p-3.bg-light.border.rounded.small{style: "white-space: pre-wrap; word-break: break-word;", "data-clipboard-target": "source"}= @suggested_share_message
+        %button.btn.btn-sm.btn-outline-secondary{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
+          %i.bi.bi-clipboard.me-1
+          %span{"data-clipboard-target": "buttonLabel"} Copy message
+
 .row
   .col-md-8
     .card.mb-4{ role: "region", "aria-labelledby": "request-details" }
@@ -46,6 +69,9 @@
             %p
               %strong Subject Line:
               = @feedback_request.subject_line
+            %p
+              %strong Who can respond:
+              = feedback_request_open_to_anyone_label(@feedback_request)
             %p.mb-0
               %strong State:
               - case @feedback_request.state
@@ -65,7 +91,7 @@
               %strong Questions:
               = @questions.count
             %p
-              %strong Responders:
+              %strong Named responders:
               = @responders.count
             %p.mb-0
               %strong Observations:
@@ -91,10 +117,10 @@
             = link_to feedback_prompt_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
               %i.bi.bi-question-circle.me-2
               Edit Questions
-          - elsif @feedback_request.responders.empty?
+          - elsif @feedback_request.requires_named_responders? && @feedback_request.responders.empty?
             = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
               %i.bi.bi-people.me-2
-              Select Respondents
+              Who Can Respond
           - else
             = link_to edit_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-secondary btn-sm w-100 mb-2" do
               %i.bi.bi-pencil.me-2
@@ -102,7 +128,7 @@
         - if @feedback_request.can_add_responders? && policy(@feedback_request).update?
           = link_to select_respondents_organization_feedback_request_path(organization, @feedback_request), class: "btn btn-outline-info btn-sm w-100 mb-2" do
             %i.bi.bi-person-plus.me-2
-            Modify Respondents
+            Who Can Respond
         - if policy(@feedback_request).destroy?
           - if @feedback_request.archived?
             = button_to restore_organization_feedback_request_path(organization, @feedback_request), method: :post, class: "btn btn-outline-success btn-sm w-100 mb-2" do
@@ -115,7 +141,11 @@
 
 .card.mb-3
   .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
-    %h5.mb-0 Responders
+    %h5.mb-0
+      - if @feedback_request.open_to_anyone?
+        Named responders
+      - else
+        Responders
     - if can_nudge
       = button_to notify_respondents_organization_feedback_request_path(organization, @feedback_request),
                   method: :post,
@@ -124,7 +154,12 @@
         %i.bi.bi-bell.me-1
         Nudge all
   .card-body
-    - if @responders.any?
+    - if !@feedback_request.open_to_anyone? && @responders.empty?
+      %p.text-muted.mb-0 No named responders yet — required while this request is not open to anyone with the link.
+    - elsif @feedback_request.open_to_anyone? && @responders.empty?
+      %p.text-muted.mb-0
+        Open to anyone with the link. Named respondents are optional for Slack nudges and inbox.
+    - elsif @responders.any?
       - if @questions.any?
         .table-responsive
           %table.table.table-sm.table-hover.align-middle

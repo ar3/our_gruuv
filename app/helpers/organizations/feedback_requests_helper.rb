@@ -6,7 +6,7 @@ module Organizations
       1 => { name: 'Who & Why', path_method: :edit_organization_feedback_request_path },
       2 => { name: 'Select Focus', path_method: :select_focus_organization_feedback_request_path },
       3 => { name: 'Edit Questions', path_method: :feedback_prompt_organization_feedback_request_path },
-      4 => { name: 'Select Respondents', path_method: :select_respondents_organization_feedback_request_path }
+      4 => { name: 'Who Can Respond', path_method: :select_respondents_organization_feedback_request_path }
     }.freeze
 
     def feedback_request_wizard_step_enabled?(feedback_request, step)
@@ -42,6 +42,20 @@ module Organizations
 
     def feedback_request_wizard_step_name(step)
       FEEDBACK_REQUEST_WIZARD_STEPS.fetch(step, {})[:name] || "Step #{step}"
+    end
+
+    def feedback_request_open_to_anyone_label(feedback_request)
+      feedback_request.open_to_anyone? ? 'Open to anyone with the link' : 'Named respondents only'
+    end
+
+    def feedback_request_suggested_share_message(feedback_request, answer_url)
+      subject_name = feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'them'
+      subject_line = feedback_request.subject_line.presence || 'this work'
+      <<~MSG.strip
+        Could you share quick feedback on #{subject_line}? It goes to #{subject_name} in OurGruuv as an observation.
+
+        #{answer_url}
+      MSG
     end
 
     # Display labels used on the answer page instead of enum values (strongly_agree, etc.)

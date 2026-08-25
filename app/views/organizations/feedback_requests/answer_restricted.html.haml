@@ -1,0 +1,59 @@
+- content_for :title, "Feedback request (view only)"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Feedback Requests", url: organization_feedback_requests_path(organization) }, { label: "View only", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-eye.me-2
+      Feedback request — view only
+    - if @feedback_request.subject_line.present?
+      %small.text-muted.ms-2= @feedback_request.subject_line
+
+.alert.alert-light.border.mb-4{role: "status"}
+  %strong This request is limited to named respondents.
+  You can still explore observations about
+  %strong= @subject_teammate.person.display_name
+  below, or write a new OGO about them — you just can’t complete this feedback request.
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 Request details
+  .card-body
+    %p
+      %strong Subject:
+      = @subject_teammate.person.display_name
+    - if @feedback_request.subject_line.present?
+      %p.mb-0
+        %strong Subject line:
+        = @feedback_request.subject_line
+
+.card.mb-4
+  .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+    %h5.mb-0 Observations about #{@subject_teammate.person.casual_name}
+    .d-flex.flex-wrap.gap-2
+      = link_to @subject_observations_path, class: "btn btn-sm btn-outline-secondary" do
+        %i.bi.bi-collection.me-1
+        All involving them
+      = link_to @new_observation_path, class: "btn btn-sm btn-primary" do
+        %i.bi.bi-plus-lg.me-1
+        New OGO about them
+  .card-body
+    - if @related_observations.any?
+      %ul.list-unstyled.mb-0
+        - @related_observations.each do |observation|
+          %li.mb-3.pb-3.border-bottom
+            = link_to organization_observation_path(organization, observation), class: "text-decoration-none" do
+              %strong= observation.story.to_s.truncate(120).presence || "Observation"
+            .small.text-muted.mt-1
+              By #{observation.observer.display_name}
+              - if observation.published_at
+                · #{format_time_in_user_timezone(observation.published_at)}
+    - else
+      %p.text-muted.mb-0
+        No visible published observations about
+        = @subject_teammate.person.casual_name
+        yet.
+        = link_to "Write one", @new_observation_path
+        = "."

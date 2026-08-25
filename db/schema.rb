@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_24_183000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_25_110542) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -656,6 +656,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_24_183000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "subject_line"
+    t.boolean "open_to_anyone", default: true, null: false
     t.index ["company_id"], name: "index_feedback_requests_on_company_id"
     t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
     t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"

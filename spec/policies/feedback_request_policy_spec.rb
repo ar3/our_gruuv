@@ -220,7 +220,8 @@ RSpec.describe FeedbackRequestPolicy, type: :policy do
   permissions :answer? do
     it "allows responder to answer" do
       feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
-      expect(subject).to permit(pundit_user_responder, feedback_request)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      expect(subject).to permit(pundit_user_responder, feedback_request.reload)
     end
 
     it "denies requestor from answering (unless they are also a responder)" do
@@ -229,15 +230,32 @@ RSpec.describe FeedbackRequestPolicy, type: :policy do
 
     it "allows requestor to answer if they are also a responder" do
       feedback_request.feedback_request_responders.create!(teammate: requestor_teammate)
-      expect(subject).to permit(pundit_user_requestor, feedback_request)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      expect(subject).to permit(pundit_user_requestor, feedback_request.reload)
     end
 
     it "denies subject from answering (unless they are also a responder)" do
       expect(subject).not_to permit(pundit_user_subject, feedback_request)
     end
 
-    it "denies other users from answering" do
-      expect(subject).not_to permit(pundit_user_other, feedback_request)
+    it "denies other users from answering when request is respondents-only" do
+      feedback_request.update!(open_to_anyone: false)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      expect(subject).not_to permit(pundit_user_other, feedback_request.reload)
+    end
+
+    it "allows any company teammate when open_to_anyone and request is answerable" do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      expect(subject).to permit(pundit_user_other, feedback_request.reload)
+      expect(subject).to permit(pundit_user_requestor, feedback_request)
+      expect(subject).to permit(pundit_user_subject, feedback_request)
+    end
+
+    it "allows any company teammate when open_to_anyone even if named responders exist" do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+      feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      expect(subject).to permit(pundit_user_other, feedback_request.reload)
     end
 
     it "denies terminated teammates from answering" do
@@ -245,8 +263,21 @@ RSpec.describe FeedbackRequestPolicy, type: :policy do
       responder_teammate.update!(first_employed_at: 1.year.ago) unless responder_teammate.first_employed_at
       responder_teammate.update!(last_terminated_at: Date.current)
       feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
       pundit_user_responder_terminated = OpenStruct.new(user: responder_teammate.reload, impersonating_teammate: nil)
-      expect(subject).not_to permit(pundit_user_responder_terminated, feedback_request)
+      expect(subject).not_to permit(pundit_user_responder_terminated, feedback_request.reload)
+    end
+  end
+
+  permissions :view_answer_link? do
+    it "allows any company teammate to open the answer URL" do
+      expect(subject).to permit(pundit_user_other, feedback_request)
+      expect(subject).to permit(pundit_user_requestor, feedback_request)
+    end
+
+    it "denies archived requests" do
+      feedback_request.soft_delete!
+      expect(subject).not_to permit(pundit_user_other, feedback_request)
     end
   end
 
