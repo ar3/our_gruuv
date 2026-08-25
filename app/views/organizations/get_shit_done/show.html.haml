@@ -49,6 +49,11 @@
 - else
   - completed_categories << { title: 'Feedback to clean up', icon: 'bi-chat-left-text', description: 'Published Feedback OGOs that still need a constructive rating' }
 
+- if @feedback_requests_awaiting_response.any?
+  = render partial: 'organizations/get_shit_done/feedback_requests_section'
+- else
+  - completed_categories << { title: 'Feedback Requests', icon: 'bi-chat-dots', description: 'Open feedback requests waiting for your response' }
+
 - if completed_categories.any?
   .row.mt-5.pt-4
     .col-12

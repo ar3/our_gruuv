@@ -404,41 +404,55 @@ RSpec.describe GetShitDoneQueryService do
     end
   end
 
-  describe '#pending_category_breakdown' do
-    it 'returns empty when teammate is nil' do
-      expect(described_class.new(teammate: nil).pending_category_breakdown).to eq([])
+  describe '#feedback_requests_awaiting_response' do
+    let(:requestor) { create(:company_teammate, organization: company) }
+    let(:subject_teammate) { create(:company_teammate, organization: company) }
+
+    it 'includes incomplete requests where the teammate is a responder' do
+      request = create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate
+      )
+      request.feedback_request_responders.create!(teammate: teammate, completed_at: nil)
+
+      expect(service.feedback_requests_awaiting_response).to include(request)
     end
 
-    it 'lists only non-empty categories with Get Shit Done page labels' do
-      create(:observation, observer: person, company: company, published_at: nil)
-      rows = service.pending_category_breakdown
-      expect(rows).to include(hash_including(count: 1, label: "Observation Drafts"))
-      expect(rows).to all(include(:count, :label))
-      expect(rows.none? { |r| r[:count].zero? }).to be true
+    it 'excludes completed responder rows' do
+      request = create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate
+      )
+      request.feedback_request_responders.create!(teammate: teammate, completed_at: Time.current)
+
+      expect(service.feedback_requests_awaiting_response).not_to include(request)
     end
 
-    it 'includes Silent Observations when present' do
-      create(:observation,
-             observer: person,
-             company: company,
-             published_at: Time.current,
-             privacy_level: :observed_only,
-             story: "For silent breakdown #{SecureRandom.hex(4)}")
-      rows = service.pending_category_breakdown
-      expect(rows).to include(hash_including(count: 1, label: "Silent Observations"))
+    it 'excludes archived requests' do
+      request = create(:feedback_request, :ready_open_link, :archived,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate
+      )
+      request.feedback_request_responders.create!(teammate: teammate, completed_at: nil)
+
+      expect(service.feedback_requests_awaiting_response).not_to include(request)
     end
 
-    it 'includes Feedback to clean up when present' do
-      create(:observation,
-             observer: person,
-             company: company,
-             observation_type: :feedback,
-             created_as_type: 'feedback',
-             published_at: Time.current,
-             privacy_level: :observed_and_managers,
-             story: "Feedback mismatch #{SecureRandom.hex(4)}")
-      rows = service.pending_category_breakdown
-      expect(rows).to include(hash_including(count: 1, label: "Feedback to clean up"))
+    it 'is included in total_pending_count and pending_category_breakdown' do
+      request = create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate
+      )
+      request.feedback_request_responders.create!(teammate: teammate, completed_at: nil)
+
+      expect(service.total_pending_count).to eq(1)
+      expect(service.pending_category_breakdown).to include(
+        hash_including(count: 1, label: 'Feedback Requests')
+      )
     end
   end
 end

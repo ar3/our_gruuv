@@ -1,0 +1,51 @@
+- requests_count = @feedback_requests_awaiting_response.count
+= render 'shared/section_header',
+         title: 'Feedback Requests',
+         icon: 'bi-chat-dots',
+         description: 'Open feedback requests waiting for your response',
+         collapsible: true,
+         collapse_target: 'feedbackRequestsSection',
+         status_indicator: :warning
+
+-# Summary view (shown when collapsed) — warning alert style
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#feedbackRequestsSection", "aria-expanded" => "false", "aria-controls" => "feedbackRequestsSection", style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(requests_count, 'feedback request') + ' waiting for your response'
+
+-# Collapsible content
+.collapse#feedbackRequestsSection
+  .card.mb-4
+    .card-body
+      - if @feedback_requests_awaiting_response.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Subject
+                %th About
+                %th Requested
+                %th Action
+            %tbody
+              - @feedback_requests_awaiting_response.each do |feedback_request|
+                - subject = feedback_request.subject_of_feedback_teammate
+                %tr
+                  %td
+                    %strong= feedback_request.subject_line.presence || 'Feedback request'
+                    - if feedback_request.requestor_teammate
+                      %br
+                      %small.text-muted
+                        Requested by #{feedback_request.requestor_teammate.person.casual_name}
+                  %td
+                    - if subject
+                      = subject.person.display_name
+                    - else
+                      %span.text-muted —
+                  %td
+                    %small= feedback_request.created_at.strftime('%b %d, %Y')
+                  %td
+                    = link_to "Respond",
+                              answer_organization_feedback_request_path(organization, feedback_request),
+                              class: "btn btn-primary btn-sm"
+      - else
+        %p.text-muted.mb-0 No open feedback requests waiting on you.

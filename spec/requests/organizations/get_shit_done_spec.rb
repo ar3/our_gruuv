@@ -307,6 +307,27 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('Observation Drafts')
       expect(response.body).to include('Silent Observations')
       expect(response.body).to include('Feedback to clean up')
+      expect(response.body).to include('Feedback Requests')
+    end
+
+    it 'shows incomplete feedback requests awaiting my response' do
+      requestor = create(:company_teammate, organization: company)
+      subject_teammate = create(:company_teammate, organization: company)
+      feedback_request = create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Ship retro feedback'
+      )
+      feedback_request.feedback_request_responders.create!(teammate: teammate, completed_at: nil)
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Feedback Requests')
+      expect(response.body).to include('Ship retro feedback')
+      expect(response.body).to include('Open feedback requests waiting for your response')
+      expect(response.body).to include(answer_organization_feedback_request_path(company, feedback_request))
     end
 
     it 'lists silent observations (published, non-journal, no notifications, yours)' do

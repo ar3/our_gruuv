@@ -13,6 +13,7 @@ module Digest
       observation_drafts: 'Observation Drafts',
       silent_observations: 'Silent Observations',
       feedback_expectation_mismatches: 'Feedback to clean up',
+      feedback_requests_awaiting_response: 'Feedback Requests',
       goals_needing_check_in: -> { I18n.t('terminology.goal_confidence_checks') },
       check_ins_awaiting_input: -> { I18n.t('terminology.clarity_check_ins_awaiting_your_input') }
     }.freeze
@@ -540,6 +541,8 @@ module Digest
         collection.map { |s| "#{s.change_type.humanize}: #{slack_escape(s.reason.to_s.truncate(60))}" }
       when :observation_drafts, :silent_observations, :feedback_expectation_mismatches
         collection.map { |o| observation_draft_label(o) }
+      when :feedback_requests_awaiting_response
+        collection.map { |request| feedback_request_label(request) }
       when :goals_needing_check_in
         collection.map { |goal| goal_check_in_label(goal) }
       when :check_ins_awaiting_input
@@ -547,6 +550,13 @@ module Digest
       else
         []
       end
+    end
+
+    def feedback_request_label(feedback_request)
+      subject_line = slack_escape(feedback_request.subject_line.to_s.presence || 'Feedback request')
+      about = slack_escape(feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'someone')
+      url = slack_app_url(:answer_organization_feedback_request_url, @organization, feedback_request)
+      "#{subject_line} (about #{about}) <#{url}|Respond>"
     end
 
     def goal_check_in_label(goal)

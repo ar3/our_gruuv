@@ -66,6 +66,24 @@ class GetShitDoneQueryService
     ).recent
   end
 
+  # Open feedback requests where this teammate is a named/incomplete responder.
+  def feedback_requests_awaiting_response
+    return FeedbackRequest.none unless teammate && company
+
+    FeedbackRequest
+      .not_deleted
+      .where(company: company)
+      .joins(:feedback_request_responders)
+      .where(feedback_request_responders: { teammate_id: teammate.id, completed_at: nil })
+      .includes(
+        :requestor_teammate,
+        { subject_of_feedback_teammate: :person },
+        :feedback_request_questions
+      )
+      .distinct
+      .order(created_at: :desc)
+  end
+
   def goals_needing_check_in
     return Goal.none unless teammate
     
@@ -86,6 +104,7 @@ class GetShitDoneQueryService
       observation_drafts.count +
       silent_observations.count +
       feedback_expectation_mismatches.count +
+      feedback_requests_awaiting_response.count +
       goals_needing_check_in.count +
       check_ins_awaiting_input.size
   end
@@ -98,6 +117,7 @@ class GetShitDoneQueryService
       observation_drafts: observation_drafts,
       silent_observations: silent_observations,
       feedback_expectation_mismatches: feedback_expectation_mismatches,
+      feedback_requests_awaiting_response: feedback_requests_awaiting_response,
       goals_needing_check_in: goals_needing_check_in,
       check_ins_awaiting_input: check_ins_awaiting_input,
       total_pending: total_pending_count
@@ -115,7 +135,8 @@ class GetShitDoneQueryService
       { count: goals_needing_check_in.count, label: I18n.t("terminology.goal_confidence_checks") },
       { count: observation_drafts.count, label: "Observation Drafts" },
       { count: silent_observations.count, label: "Silent Observations" },
-      { count: feedback_expectation_mismatches.count, label: "Feedback to clean up" }
+      { count: feedback_expectation_mismatches.count, label: "Feedback to clean up" },
+      { count: feedback_requests_awaiting_response.count, label: "Feedback Requests" }
     ].select { |row| row[:count].positive? }
   end
 
