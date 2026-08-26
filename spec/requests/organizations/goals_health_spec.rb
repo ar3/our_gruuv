@@ -65,11 +65,16 @@ RSpec.describe "Goals Health", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Goals Health nudge")
       expect(response.body).to include("goalsHealthNudge")
+      expect(response.body).to include("health-dashboard-toolbar__nudge")
+      expect(response.body).to include("health-dashboard-toolbar__leading")
       expect(response.body).to include("Message preview")
       expect(response.body).to include("Send nudge now")
       expect(response.body).to include("Sends to")
       expect(response.body).to include('aria-expanded="false"')
       expect(response.body).to include("collapse")
+      expect(response.body).to include("health-dashboard-nudge-panel")
+      # Send controls appear before History in the expand panel markup.
+      expect(response.body.index("Send nudge now")).to be < response.body.index(">History<")
     end
 
     it "uses aggregate counts that ignore privacy for table/spotlight data" do

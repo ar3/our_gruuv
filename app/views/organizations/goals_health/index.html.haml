@@ -61,21 +61,22 @@
 
 .row.justify-content-center.mb-3
   .col-lg-12
+    - nudge_aside = nil
+    - nudge_below = nil
+    - if @goals_health_nudge_manager.present?
+      - nudge_locals = { manager: @goals_health_nudge_manager, skip_level: @goals_health_nudge_skip_level, recipients: @goals_health_nudge_recipients, message: @goals_health_nudge_message, last_nudge: @last_goals_health_nudge, manager_id: @current_manager_filter }
+      - nudge_aside = capture do
+        = render "organizations/goals_health/nudge_trigger", **nudge_locals
+      - nudge_below = capture do
+        = render "organizations/goals_health/nudge_expand", **nudge_locals
     = render "organizations/health/dashboard_toolbar",
       organization: @organization,
       current: :goals_health,
       manager_id: @current_manager_filter,
       show_switcher: false,
-      other_actions: goals_health_other_actions(@organization, manager_id: @current_manager_filter)
-
-- if @goals_health_nudge_manager.present?
-  = render "organizations/goals_health/nudge_panel",
-    manager: @goals_health_nudge_manager,
-    skip_level: @goals_health_nudge_skip_level,
-    recipients: @goals_health_nudge_recipients,
-    message: @goals_health_nudge_message,
-    last_nudge: @last_goals_health_nudge,
-    manager_id: @current_manager_filter
+      other_actions: goals_health_other_actions(@organization, manager_id: @current_manager_filter),
+      aside_html: nudge_aside,
+      below_html: nudge_below
 
 .row.justify-content-center.mb-2
   .col-lg-12
