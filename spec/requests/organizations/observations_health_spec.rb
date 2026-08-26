@@ -41,6 +41,16 @@ RSpec.describe "Observations Health", type: :request do
       expect(response.body).to include(organization_goals_health_path(company, manager_id: "everyone"))
     end
 
+    it "shows a collapsed Observations Health nudge panel for a concrete manager filter" do
+      report_teammate = create(:teammate, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      create(:employment_tenure, teammate: report_teammate, company: company, manager_teammate: teammate, started_at: 1.month.ago)
+
+      get organization_observations_health_path(company), params: { manager_id: "CompanyTeammate_#{teammate.id}" }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Observations Health, nudge for")
+      expect(response.body).to include("healthNudge-observations_health")
+    end
+
     it "with manager_id=just_me returns success" do
       get organization_observations_health_path(company), params: { manager_id: "just_me" }
       expect(response).to have_http_status(:success)

@@ -1,18 +1,19 @@
 # frozen_string_literal: true
 
-module Goals
-  # Sends a Slack MPIM with an auto-generated Goals Health nudge.
+module HealthNudges
+  # Sends a Slack MPIM with an auto-generated health nudge.
   # Recipient scopes:
   #   "manager" — viewer + selected manager
   #   "manager_and_skip" — viewer + selected manager + manager's manager
-  # Notification notifiable is the selected manager.
-  class HealthNudgeService
-    HEALTH_OBJECT = "goals_health"
+  class Service
     RECIPIENT_SCOPES = %w[manager manager_and_skip].freeze
+    NOTIFICATION_TYPE = "health_nudge"
+    LEGACY_GOALS_NOTIFICATION_TYPE = "goals_health_nudge"
 
-    def self.call(organization:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
+    def self.call(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
       new(
         organization: organization,
+        health_object: health_object,
         manager_teammate: manager_teammate,
         nudger_company_teammate: nudger_company_teammate,
         spotlight_stats: spotlight_stats,
@@ -20,20 +21,30 @@ module Goals
       ).call
     end
 
-    def self.last_delivered_for(manager_teammate:)
+    def self.last_delivered_for(manager_teammate:, health_object:)
       return nil unless manager_teammate
 
+      object = health_object.to_s
       manager_teammate.notifications
-        .goals_health_nudges
+        .where(notification_type: notification_types_for(object))
         .successful
         .where.not(message_id: nil)
+        .where("metadata ->> 'health_object' = ? OR (metadata ->> 'health_object' IS NULL AND ? = 'goals_health')", object, object)
         .order(created_at: :desc)
         .first
     end
 
+    def self.notification_types_for(health_object)
+      if health_object.to_s == "goals_health"
+        [ NOTIFICATION_TYPE, LEGACY_GOALS_NOTIFICATION_TYPE ]
+      else
+        [ NOTIFICATION_TYPE ]
+      end
+    end
+
     def self.skip_level_for(manager_teammate:, organization:)
       company = organization.root_company || organization
-      HealthManagerPerson.manager_teammate_for(manager_teammate, company: company)
+      Goals::HealthManagerPerson.manager_teammate_for(manager_teammate, company: company)
     end
 
     def self.normalize_recipient_scope(scope)
@@ -54,15 +65,37 @@ module Goals
       list.compact.uniq
     end
 
-    def initialize(organization:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
+    def self.spotlight_stats_from_protect_flow_plan(plan)
+      progress = plan.fetch(:progress)
+      people_count = progress[:people_count].to_i
+      healthy = progress[:healthy_people_count].to_i
+      {
+        total_employees: people_count,
+        healthy_count: healthy,
+        warning_count: 0,
+        needs_attention_count: people_count - healthy,
+        ok_count: 0,
+        concerning_count: people_count - healthy,
+        current_unhealthy_vectors: progress[:current_unhealthy_count].to_i,
+        improved_vector_count: progress[:improved_vector_count].to_i,
+        start_unhealthy_count: progress[:start_unhealthy_count].to_i,
+        week_start: plan[:week_start]
+      }
+    end
+
+    def initialize(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
       @organization = organization
+      @health_object = health_object.to_s
       @manager_teammate = manager_teammate
       @nudger_company_teammate = nudger_company_teammate
       @spotlight_stats = spotlight_stats
       @recipient_scope = self.class.normalize_recipient_scope(recipient_scope)
+      @config = Registry.fetch(@health_object)
     end
 
     def call
+      return Result.err("Unknown health page for nudge.") unless Registry.valid?(@health_object)
+
       if @nudger_company_teammate.blank?
         return Result.err("You must be signed in as a teammate in this organization to send a nudge.")
       end
@@ -97,18 +130,19 @@ module Goals
       dm_result = slack_service.open_or_create_group_dm(user_ids: slack_user_ids)
       return Result.err(dm_result[:error].presence || "Could not open Slack group DM.") unless dm_result[:success]
 
-      message = HealthNudgeMessage.new(
+      message = Message.new(
+        health_object: @health_object,
         organization: @organization,
         manager_teammate: @manager_teammate,
         spotlight_stats: @spotlight_stats
       )
 
       notification = @manager_teammate.notifications.create!(
-        notification_type: "goals_health_nudge",
+        notification_type: NOTIFICATION_TYPE,
         status: "preparing_to_send",
         metadata: {
           "channel" => dm_result[:channel_id],
-          "health_object" => HEALTH_OBJECT,
+          "health_object" => @health_object,
           "recipient_scope" => @recipient_scope,
           "nudger_company_teammate_id" => @nudger_company_teammate.id,
           "manager_company_teammate_id" => @manager_teammate.id,

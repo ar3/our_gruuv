@@ -37,7 +37,7 @@ RSpec.describe "Goals Health", type: :request do
       expect(response.body).not_to include("data-bs-toggle=\"popover\"")
     end
 
-    it "shows object/lens header switchers for Goals Health" do
+    it "shows object/lens header switchers and health dashboard switcher for Goals Health" do
       get organization_goals_health_path(company)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Switch object")
@@ -45,14 +45,16 @@ RSpec.describe "Goals Health", type: :request do
       expect(response.body).to include(organization_goals_path(company))
       expect(response.body).to include(organization_insights_goals_path(company))
       expect(response.body).to include(organization_sitemap_path(company))
-      expect(response.body).not_to include('aria-label="Health dashboards"')
+      expect(response.body).to include('aria-label="Health dashboards"')
+      expect(response.body).to include(organization_check_ins_health_path(company, manager_id: "everyone"))
+      expect(response.body).to include(organization_observations_health_path(company, manager_id: "everyone"))
     end
 
     it "hides the Goals Health nudge panel unless a concrete manager is selected" do
       get organization_goals_health_path(company)
       expect(response).to have_http_status(:success)
-      expect(response.body).not_to include("Goals Health nudge")
-      expect(response.body).not_to include("goalsHealthNudge")
+      expect(response.body).not_to include("Goals Health, nudge for")
+      expect(response.body).not_to include("healthNudge-goals_health")
     end
 
     it "shows a collapsed Goals Health nudge panel for a concrete manager filter" do
@@ -63,10 +65,13 @@ RSpec.describe "Goals Health", type: :request do
 
       get organization_goals_health_path(company), params: { manager_id: "CompanyTeammate_#{teammate.id}" }
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Goals Health nudge")
-      expect(response.body).to include("goalsHealthNudge")
+      expect(response.body).to include("Goals Health, nudge for")
+      expect(response.body).to include("healthNudge-goals_health")
       expect(response.body).to include("health-dashboard-toolbar__nudge")
+      expect(response.body).to include("health-dashboard-toolbar__secondary")
       expect(response.body).to include("health-dashboard-toolbar__leading")
+      expect(response.body).to include("col-md-7")
+      expect(response.body).to include("col-md-5")
       expect(response.body).to include("Message preview")
       expect(response.body).to include("Send to me and")
       expect(response.body).to include("Send to me,")
@@ -177,13 +182,14 @@ RSpec.describe "Goals Health", type: :request do
                manager_id: "CompanyTeammate_#{manager_teammate.id}",
                recipient_scope: "manager"
              }
-      end.to change(Notification.where(notification_type: "goals_health_nudge"), :count).by(1)
+      end.to change(Notification.where(notification_type: "health_nudge"), :count).by(1)
 
       expect(response).to redirect_to(
         organization_goals_health_path(company, manager_id: "CompanyTeammate_#{manager_teammate.id}")
       )
       expect(flash[:notice]).to eq("Goals Health nudge sent.")
-      expect(Notification.where(notification_type: "goals_health_nudge").last.metadata["recipient_scope"]).to eq("manager")
+      expect(Notification.where(notification_type: "health_nudge").last.metadata["health_object"]).to eq("goals_health")
+      expect(Notification.where(notification_type: "health_nudge").last.metadata["recipient_scope"]).to eq("manager")
     end
 
     it "sends a manager_and_skip nudge when requested" do
@@ -208,8 +214,8 @@ RSpec.describe "Goals Health", type: :request do
         organization_goals_health_path(company, manager_id: "CompanyTeammate_#{manager_teammate.id}")
       )
       expect(flash[:notice]).to eq("Goals Health nudge sent.")
-      # viewer is also the skip-level manager in this setup
-      expect(Notification.where(notification_type: "goals_health_nudge").last.metadata["recipient_scope"]).to eq("manager_and_skip")
+      expect(Notification.where(notification_type: "health_nudge").last.metadata["health_object"]).to eq("goals_health")
+      expect(Notification.where(notification_type: "health_nudge").last.metadata["recipient_scope"]).to eq("manager_and_skip")
     end
 
     it "rejects non-concrete manager filters" do

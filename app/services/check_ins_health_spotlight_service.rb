@@ -28,7 +28,7 @@ class CheckInsHealthSpotlightService
   end
 
   delegate :filtered_teammates, :filtered_teammate_ids, :available_manager_filter_options, :default_manager_filter_value,
-           :normalize_manager_filter, to: :filtering
+           :normalize_manager_filter, :manager_filter_viewable?, to: :filtering
 
   def paginated_index_data(manager_id, page:, items: 25)
     scope = filtered_teammates(manager_id)

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Organizations::MilestonesHealthController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::HealthNudgeActions
+
   before_action :require_authentication
   after_action :verify_authorized
 
@@ -16,6 +18,19 @@ class Organizations::MilestonesHealthController < Organizations::OrganizationNam
     @employee_rows = all_rows[@pagy.offset, @pagy.items]
     @current_manager_filter = params[:manager_id]
     @available_manager_filter_options = milestones_health_spotlight_service.available_manager_filter_options
+    assign_health_nudge_context!(health_object: "milestones_health", spotlight_stats: @spotlight_stats)
+  end
+
+  def nudge
+    authorize @organization, :milestones_health?
+    apply_filter_default_if_needed
+
+    spotlight_stats = milestones_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])[:spotlight_stats]
+    perform_health_nudge!(
+      health_object: "milestones_health",
+      spotlight_stats: spotlight_stats,
+      redirect_path: organization_milestones_health_path(@organization, manager_id: params[:manager_id])
+    )
   end
 
   def export_employee_summary
@@ -69,6 +84,10 @@ class Organizations::MilestonesHealthController < Organizations::OrganizationNam
     return if params[:manager_id].present?
 
     params[:manager_id] = milestones_health_spotlight_service.default_manager_filter_value
+  end
+
+  def health_nudge_manager_filter_viewable?(manager_id)
+    milestones_health_spotlight_service.filtering.manager_filter_viewable?(manager_id)
   end
 
   def require_authentication

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Organizations::ObservationsHealthController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::HealthNudgeActions
+
   before_action :require_authentication
   after_action :verify_authorized
 
@@ -16,6 +18,19 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     @employee_rows = all_rows[@pagy.offset, @pagy.items]
     @current_manager_filter = params[:manager_id]
     @available_manager_filter_options = observations_health_spotlight_service.available_manager_filter_options
+    assign_health_nudge_context!(health_object: "observations_health", spotlight_stats: @spotlight_stats)
+  end
+
+  def nudge
+    authorize @organization, :observations_health?
+    apply_filter_default_if_needed
+
+    spotlight_stats = observations_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])[:spotlight_stats]
+    perform_health_nudge!(
+      health_object: "observations_health",
+      spotlight_stats: spotlight_stats,
+      redirect_path: organization_observations_health_path(@organization, manager_id: params[:manager_id])
+    )
   end
 
   def refresh
@@ -83,6 +98,10 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     return if params[:manager_id].present?
 
     params[:manager_id] = observations_health_spotlight_service.default_manager_filter_value
+  end
+
+  def health_nudge_manager_filter_viewable?(manager_id)
+    observations_health_spotlight_service.filtering.manager_filter_viewable?(manager_id)
   end
 
   def queue_observations_health_refresh(teammate_id)

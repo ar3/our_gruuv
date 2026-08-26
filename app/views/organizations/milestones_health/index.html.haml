@@ -59,11 +59,14 @@
 
 .row.justify-content-center.mb-3
   .col-lg-12
+    - nudge_captures = health_nudge_toolbar_captures(manager_id: @current_manager_filter)
     = render "organizations/health/dashboard_toolbar",
       organization: @organization,
       current: :milestones_health,
       manager_id: @current_manager_filter,
-      other_actions: milestones_health_other_actions(@organization, manager_id: @current_manager_filter)
+      other_actions: milestones_health_other_actions(@organization, manager_id: @current_manager_filter),
+      aside_html: nudge_captures[:aside_html],
+      below_html: nudge_captures[:below_html]
 
 .row.justify-content-center.mb-2
   .col-lg-12

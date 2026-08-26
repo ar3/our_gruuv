@@ -1,0 +1,9 @@
+-# locals: label, collapse_id, manager
+- trigger_text = "#{label}, nudge for #{health_nudge_casual_name(manager)}"
+
+.health-dashboard-nudge-trigger
+  %button.btn.btn-link.btn-sm.text-decoration-none.text-body.p-0.w-100.text-start.d-flex.align-items-center.justify-content-between.gap-2{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": "false", "aria-controls": collapse_id}
+    %span.text-truncate
+      %i.bi.bi-bell.me-1
+      = trigger_text
+    %i.bi.bi-chevron-down.flex-shrink-0

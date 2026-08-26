@@ -1,5 +1,6 @@
 class Organizations::CheckInsHealthController < Organizations::OrganizationNamespaceBaseController
   include Organizations::CheckInsHealthTeammateFiltering
+  include Organizations::HealthNudgeActions
 
   before_action :require_authentication
   after_action :verify_authorized
@@ -19,6 +20,19 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     @employee_health_data = data.fetch(:rows)
     @current_manager_filter = params[:manager_id]
     @available_manager_filter_options = check_ins_health_spotlight_service.available_manager_filter_options
+    assign_health_nudge_context!(health_object: "check_ins_health", spotlight_stats: @spotlight_stats)
+  end
+
+  def nudge
+    authorize @organization, :check_ins_health?
+    apply_filter_default_if_needed
+
+    spotlight_stats = check_ins_health_spotlight_service.spotlight_stats_for(params[:manager_id])
+    perform_health_nudge!(
+      health_object: "check_ins_health",
+      spotlight_stats: spotlight_stats,
+      redirect_path: organization_check_ins_health_path(@organization, manager_id: params[:manager_id])
+    )
   end
 
   def export
@@ -107,6 +121,10 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
       current_company_teammate: current_company_teammate,
       manage_employment: policy(@organization).manage_employment?
     )
+  end
+
+  def health_nudge_manager_filter_viewable?(manager_id)
+    check_ins_health_spotlight_service.filtering.manager_filter_viewable?(manager_id)
   end
 
   def managers_with_direct_reports_for_by_manager(company)

@@ -73,6 +73,14 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response.body).not_to include("Top items")
     end
 
+    it "shows an Overall Health nudge panel for a concrete manager filter" do
+      get organization_protect_flow_path(company, manager_id: "CompanyTeammate_#{manager.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Overall Health, nudge for")
+      expect(response.body).to include("healthNudge-protect_flow")
+    end
+
     it "rejects everyone scope and falls back to my direct employees" do
       get organization_protect_flow_path(company, manager_id: "everyone")
 

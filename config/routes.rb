@@ -138,7 +138,9 @@ Rails.application.routes.draw do
     end
 
     # Protect Flow — manager weekly focus across direct reports
-    resource :protect_flow, only: [:show], controller: 'organizations/protect_flow'
+    resource :protect_flow, only: [:show], controller: 'organizations/protect_flow' do
+      post :nudge, on: :member
+    end
 
     # Org data integrity debug (employment managers)
     resource :debug, only: [:show], controller: 'organizations/debug' do
@@ -247,6 +249,9 @@ Rails.application.routes.draw do
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'
     post :goals_health_nudge, to: 'organizations/goals_health#nudge'
+    post :check_ins_health_nudge, to: 'organizations/check_ins_health#nudge'
+    post :milestones_health_nudge, to: 'organizations/milestones_health#nudge'
+    post :observations_health_nudge, to: 'organizations/observations_health#nudge'
     get :milestones_health, to: 'organizations/milestones_health#index'
     get :milestones_health_employee_summary_export, to: 'organizations/milestones_health#export_employee_summary'
     post :milestones_health_refresh, to: 'organizations/milestones_health#refresh', as: :milestones_health_refresh

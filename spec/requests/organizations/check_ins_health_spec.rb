@@ -39,6 +39,16 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response.body).to include('aria-label="Health dashboards"')
     end
 
+    it "shows a collapsed Check-ins Health nudge panel for a concrete manager filter" do
+      report_teammate = create(:teammate, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      create(:employment_tenure, teammate: report_teammate, company: company, manager_teammate: teammate, started_at: 1.month.ago)
+
+      get organization_check_ins_health_path(company), params: { manager_id: "CompanyTeammate_#{teammate.id}" }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Check-ins Health, nudge for")
+      expect(response.body).to include("healthNudge-check_ins_health")
+    end
+
     it 'shows By manager link when user can view by manager' do
       get organization_check_ins_health_path(company)
       expect(response).to have_http_status(:success)

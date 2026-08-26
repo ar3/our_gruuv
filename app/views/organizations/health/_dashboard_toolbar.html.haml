@@ -1,51 +1,57 @@
 -# locals: organization, current, manager_id (optional), other_actions (Array of action hashes),
 -#         show_switcher (optional, default true), aside_html (optional), below_html (optional)
 -# action: { label:, path:, icon: (optional), method: :get|:post (optional), html: (optional escape hatch) }
--# aside_html sits on the left of the row with the switcher; other_actions stay on the right.
--# below_html expands full width under the toolbar row.
+-# Layout: one 7/5 row — left = switcher + thin nudge trigger; right = other actions.
+-# below_html expands full width under that row.
 - other_actions = Array(local_assigns[:other_actions])
 - show_switcher = local_assigns.fetch(:show_switcher, true)
 - aside_html = local_assigns[:aside_html]
 - below_html = local_assigns[:below_html]
 - pages = show_switcher ? health_dashboard_switcher_pages(organization, manager_id: manager_id) : []
+- show_switcher_buttons = pages.size > 1
+- show_row = show_switcher_buttons || aside_html.present? || other_actions.any?
 
 .health-dashboard-toolbar-block.mb-3
-  .health-dashboard-toolbar.d-flex.flex-wrap.justify-content-between.align-items-start.gap-3
-    .health-dashboard-toolbar__leading.d-flex.flex-wrap.align-items-stretch.gap-3
-      .health-dashboard-toolbar__switcher
-        - if pages.size > 1
-          .btn-group{role: "group", "aria-label" => "Health dashboards"}
-            - pages.each do |page|
-              = link_to page[:path], class: health_dashboard_switcher_button_class(page[:key], current) do
-                %i.bi{class: "#{page[:icon]} me-1"}
-                = page[:label]
-      - if aside_html.present?
-        .health-dashboard-toolbar__nudge
-          = aside_html
-    - if other_actions.any?
-      .health-dashboard-toolbar__other-actions
-        .health-dashboard-other-actions
-          .health-dashboard-other-actions__label Other actions
-          .row.row-cols-1.row-cols-sm-2.g-1
-            - other_actions.each do |action|
-              .col
-                - if action[:html].present?
-                  = action[:html]
-                - elsif action[:method].to_s.downcase == "post"
-                  = button_to action[:path], method: :post, class: "btn btn-link btn-sm text-decoration-none text-body-secondary p-0 text-start", form: { class: "d-inline" }, disabled: action[:disabled] do
-                    - if action[:icon].present?
-                      %i.bi{class: "#{action[:icon]} me-1"}
-                    = action[:label]
-                - elsif action[:disabled]
-                  %span.small.text-muted{title: action[:title], "data-bs-toggle" => ("tooltip" if action[:title].present?), "data-bs-placement" => "top"}
-                    - if action[:icon].present?
-                      %i.bi{class: "#{action[:icon]} me-1"}
-                    = action[:label]
-                - else
-                  = link_to action[:path], class: "small text-decoration-none text-body-secondary", title: action[:title] do
-                    - if action[:icon].present?
-                      %i.bi{class: "#{action[:icon]} me-1"}
-                    = action[:label]
+  - if show_row
+    .row.g-3.align-items-start.health-dashboard-toolbar__secondary
+      .col-md-7
+        .health-dashboard-toolbar__leading.d-flex.flex-column.gap-2
+          - if show_switcher_buttons
+            .health-dashboard-toolbar__switcher
+              .btn-group.flex-wrap{role: "group", "aria-label" => "Health dashboards"}
+                - pages.each do |page|
+                  = link_to page[:path], class: health_dashboard_switcher_button_class(page[:key], current) do
+                    %i.bi{class: "#{page[:icon]} me-1"}
+                    = page[:label]
+          - if aside_html.present?
+            .health-dashboard-toolbar__nudge
+              = aside_html
+      .col-md-5
+        - if other_actions.any?
+          .health-dashboard-toolbar__other-actions
+            .health-dashboard-other-actions
+              .health-dashboard-other-actions__label Other actions
+              .row.row-cols-1.row-cols-sm-2.g-1
+                - other_actions.each do |action|
+                  .col
+                    - if action[:html].present?
+                      = action[:html]
+                    - elsif action[:method].to_s.downcase == "post"
+                      = button_to action[:path], method: :post, class: "btn btn-link btn-sm text-decoration-none text-body-secondary p-0 text-start", form: { class: "d-inline" }, disabled: action[:disabled] do
+                        - if action[:icon].present?
+                          %i.bi{class: "#{action[:icon]} me-1"}
+                        = action[:label]
+                    - elsif action[:disabled]
+                      %span.small.text-muted{title: action[:title], "data-bs-toggle" => ("tooltip" if action[:title].present?), "data-bs-placement" => "top"}
+                        - if action[:icon].present?
+                          %i.bi{class: "#{action[:icon]} me-1"}
+                        = action[:label]
+                    - else
+                      = link_to action[:path], class: "small text-decoration-none text-body-secondary", title: action[:title] do
+                        - if action[:icon].present?
+                          %i.bi{class: "#{action[:icon]} me-1"}
+                        = action[:label]
+
   - if below_html.present?
     .health-dashboard-toolbar__below.mt-2
       = below_html

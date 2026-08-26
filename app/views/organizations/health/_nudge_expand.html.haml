@@ -1,11 +1,11 @@
--# locals: manager, skip_level, recipients_manager, recipients_manager_and_skip, message, last_nudge, manager_id
-- collapse_id = "goalsHealthNudge"
-- can_send_manager = goals_health_nudge_can_send?(recipients_manager)
-- can_send_manager_and_skip = skip_level.present? && goals_health_nudge_can_send?(recipients_manager_and_skip)
-- manager_disabled_reason = goals_health_nudge_send_disabled_reason(recipients_manager, viewer: current_company_teammate)
-- skip_disabled_reason = goals_health_nudge_send_disabled_reason(recipients_manager_and_skip, viewer: current_company_teammate, skip_required: true, skip_level: skip_level)
-- manager_only_label = goals_health_nudge_manager_only_button_label(manager)
-- manager_and_skip_label = goals_health_nudge_manager_and_skip_button_label(manager, skip_level)
+-# locals: label, collapse_id, nudge_path, manager, skip_level, recipients_manager, recipients_manager_and_skip,
+-#         message, last_nudge, manager_id
+- can_send_manager = health_nudge_can_send?(recipients_manager)
+- can_send_manager_and_skip = skip_level.present? && health_nudge_can_send?(recipients_manager_and_skip)
+- manager_disabled_reason = health_nudge_send_disabled_reason(recipients_manager, viewer: current_company_teammate)
+- skip_disabled_reason = health_nudge_send_disabled_reason(recipients_manager_and_skip, viewer: current_company_teammate, skip_required: true, skip_level: skip_level)
+- manager_only_label = health_nudge_manager_only_button_label(manager)
+- manager_and_skip_label = health_nudge_manager_and_skip_button_label(manager, skip_level)
 
 .collapse{id: collapse_id}
   .health-dashboard-nudge-panel
@@ -14,9 +14,11 @@
       .border.rounded.bg-light.p-3.small{style: "white-space: pre-wrap;"}= message.preview_plain
 
     .mb-3
-      = form_with url: organization_goals_health_nudge_path(@organization), method: :post, local: true, data: { turbo: false }, html: { class: "mb-0" } do
+      = form_with url: nudge_path, method: :post, local: true, data: { turbo: false }, html: { class: "mb-0" } do
         = hidden_field_tag :manager_id, manager_id
-        .btn-group.flex-wrap{role: "group", "aria-label" => "Send Goals Health nudge"}
+        - if params[:week_start].present?
+          = hidden_field_tag :week_start, params[:week_start]
+        .btn-group.flex-wrap{role: "group", "aria-label" => "Send #{label} nudge"}
           %button.btn.btn-primary{type: "submit", name: "recipient_scope", value: "manager", disabled: !can_send_manager, title: manager_disabled_reason}
             %i.bi.bi-send.me-1
             = manager_only_label
@@ -43,4 +45,4 @@
             %span.text-muted
               To #{prior_recipients.filter_map { |tm| tm.person&.display_name }.to_sentence}.
       - else
-        %p.small.text-muted.mb-0 No Goals Health nudge has been sent for this manager yet.
+        %p.small.text-muted.mb-0 No #{label} nudge has been sent for this manager yet.

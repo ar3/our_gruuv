@@ -41,6 +41,17 @@
       - if params[:week_start].present?
         = hidden_field_tag :week_start, params[:week_start]
 
+.row.justify-content-center.mb-3
+  .col-lg-12
+    - nudge_captures = health_nudge_toolbar_captures(manager_id: @current_manager_filter)
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :protect_flow,
+      manager_id: @current_manager_filter,
+      other_actions: [],
+      aside_html: nudge_captures[:aside_html],
+      below_html: nudge_captures[:below_html]
+
 = render "organizations/protect_flow/week_picker",
          available_weeks: @plan[:available_weeks],
          week_start: @plan[:week_start],

@@ -36,6 +36,15 @@ RSpec.describe "Milestones Health", type: :request do
       expect(response.body).to include(organization_check_ins_health_path(company, manager_id: "everyone"))
       expect(response.body).to include(organization_observations_health_path(company, manager_id: "everyone"))
     end
+    it "shows a collapsed Milestones Health nudge panel for a concrete manager filter" do
+      report_teammate = create(:teammate, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+      create(:employment_tenure, teammate: report_teammate, company: company, manager_teammate: teammate, started_at: 1.month.ago)
+
+      get organization_milestones_health_path(company), params: { manager_id: "CompanyTeammate_#{teammate.id}" }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Milestones Health, nudge for")
+      expect(response.body).to include("healthNudge-milestones_health")
+    end
   end
 
   describe "GET /organizations/:organization_id/milestones_health_employee_summary_export" do

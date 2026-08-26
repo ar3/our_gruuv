@@ -1,4 +1,6 @@
 class Organizations::GoalsHealthController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::HealthNudgeActions
+
   before_action :require_authentication
   after_action :verify_authorized
 
@@ -14,36 +16,19 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     @employee_rows = all_rows[@pagy.offset, @pagy.items]
     @current_manager_filter = params[:manager_id]
     @available_manager_filter_options = goals_health_spotlight_service.available_manager_filter_options
-    assign_goals_health_nudge_context!(spotlight_stats: @spotlight_stats)
+    assign_health_nudge_context!(health_object: "goals_health", spotlight_stats: @spotlight_stats)
   end
 
   def nudge
     authorize @organization, :goals_health?
     apply_filter_default_if_needed
 
-    manager = resolve_concrete_manager_teammate(params[:manager_id])
-    unless manager
-      redirect_to organization_goals_health_path(@organization, manager_id: params[:manager_id]),
-                  alert: "Select a specific manager to send a Goals Health nudge."
-      return
-    end
-
     spotlight_stats = goals_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])[:spotlight_stats]
-    result = Goals::HealthNudgeService.call(
-      organization: @organization,
-      manager_teammate: manager,
-      nudger_company_teammate: current_company_teammate,
+    perform_health_nudge!(
+      health_object: "goals_health",
       spotlight_stats: spotlight_stats,
-      recipient_scope: params[:recipient_scope]
+      redirect_path: organization_goals_health_path(@organization, manager_id: params[:manager_id])
     )
-
-    if result.ok?
-      redirect_to organization_goals_health_path(@organization, manager_id: params[:manager_id]),
-                  notice: "Goals Health nudge sent."
-    else
-      redirect_to organization_goals_health_path(@organization, manager_id: params[:manager_id]),
-                  alert: result.error
-    end
   end
 
   def export
@@ -87,43 +72,8 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     params[:manager_id] = goals_health_spotlight_service.default_manager_filter_value
   end
 
-  def assign_goals_health_nudge_context!(spotlight_stats:)
-    @goals_health_nudge_manager = resolve_concrete_manager_teammate(params[:manager_id])
-    return unless @goals_health_nudge_manager
-
-    @goals_health_nudge_skip_level = Goals::HealthNudgeService.skip_level_for(
-      manager_teammate: @goals_health_nudge_manager,
-      organization: @organization
-    )
-    @goals_health_nudge_recipients_manager = Goals::HealthNudgeService.recipient_teammates(
-      manager_teammate: @goals_health_nudge_manager,
-      nudger_company_teammate: current_company_teammate,
-      organization: @organization,
-      recipient_scope: "manager"
-    )
-    @goals_health_nudge_recipients_manager_and_skip = Goals::HealthNudgeService.recipient_teammates(
-      manager_teammate: @goals_health_nudge_manager,
-      nudger_company_teammate: current_company_teammate,
-      organization: @organization,
-      recipient_scope: "manager_and_skip"
-    )
-    @goals_health_nudge_message = Goals::HealthNudgeMessage.new(
-      organization: @organization,
-      manager_teammate: @goals_health_nudge_manager,
-      spotlight_stats: spotlight_stats
-    )
-    @last_goals_health_nudge = Goals::HealthNudgeService.last_delivered_for(
-      manager_teammate: @goals_health_nudge_manager
-    )
-  end
-
-  def resolve_concrete_manager_teammate(manager_id)
-    return nil unless manager_id.to_s =~ /\ACompanyTeammate_(\d+)\z/
-
-    mgr_id = Regexp.last_match(1).to_i
-    return nil unless goals_health_spotlight_service.manager_filter_viewable?(mgr_id)
-
-    CompanyTeammate.for_organization_hierarchy(@organization).find_by(id: mgr_id)
+  def health_nudge_manager_filter_viewable?(manager_id)
+    goals_health_spotlight_service.manager_filter_viewable?(manager_id)
   end
 
   def build_visible_goals_by_teammate(teammates)
