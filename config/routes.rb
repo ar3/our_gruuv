@@ -246,6 +246,7 @@ Rails.application.routes.draw do
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'
+    post :goals_health_nudge, to: 'organizations/goals_health#nudge'
     get :milestones_health, to: 'organizations/milestones_health#index'
     get :milestones_health_employee_summary_export, to: 'organizations/milestones_health#export_employee_summary'
     post :milestones_health_refresh, to: 'organizations/milestones_health#refresh', as: :milestones_health_refresh

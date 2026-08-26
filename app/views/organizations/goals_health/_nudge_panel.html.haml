@@ -1,0 +1,46 @@
+-# locals: manager, skip_level, recipients, message, last_nudge, manager_id
+- collapse_id = "goalsHealthNudge"
+- can_send = goals_health_nudge_can_send?(recipients)
+- disabled_reason = goals_health_nudge_send_disabled_reason(recipients, viewer: current_company_teammate)
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-white.border-0.py-2
+        %button.btn.btn-link.text-decoration-none.text-body.p-0.w-100.text-start.d-flex.align-items-center.justify-content-between{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": "false", "aria-controls": collapse_id}
+          %span
+            %i.bi.bi-bell.me-2
+            Goals Health nudge
+            %small.text-muted.ms-2 for #{manager.person&.display_name}
+          %i.bi.bi-chevron-down
+      .collapse{id: collapse_id}
+        .card-body.pt-0
+          .row
+            .col-md-7
+              %label.form-label.fw-semibold.small.text-muted.mb-1 Message preview
+              .border.rounded.bg-light.p-3.small{style: "white-space: pre-wrap;"}= message.preview_plain
+            .col-md-5
+              %label.form-label.fw-semibold.small.text-muted.mb-1 History
+              - if last_nudge.present?
+                %p.small.mb-3
+                  Last nudge
+                  - if last_nudge.slack_url.present?
+                    = link_to "sent", last_nudge.slack_url, target: "_blank", rel: "noopener"
+                  - else
+                    sent
+                  #{time_ago_in_words(last_nudge.created_at)} ago
+                  by #{last_nudge.nudger_company_teammate&.person&.casual_name || "someone"}.
+                  - recipient_ids = Array(last_nudge.metadata&.dig("recipient_company_teammate_ids"))
+                  - if recipient_ids.any?
+                    - prior_recipients = CompanyTeammate.where(id: recipient_ids).includes(:person)
+                    %span.text-muted
+                      To #{prior_recipients.filter_map { |tm| tm.person&.display_name }.to_sentence}.
+              - else
+                %p.small.text-muted.mb-3 No Goals Health nudge has been sent for this manager yet.
+
+              = button_to organization_goals_health_nudge_path(@organization), method: :post, params: { manager_id: manager_id }, class: "btn btn-primary", disabled: !can_send, form: { data: { turbo: false } }, title: disabled_reason do
+                %i.bi.bi-send.me-1
+                = last_nudge.present? ? "Send nudge again" : "Send nudge now"
+              %p.small.text-muted.mb-0.mt-2= goals_health_nudge_recipient_sentence(recipients, viewer: current_company_teammate)
+              - if skip_level.nil?
+                %p.small.text-muted.mb-0.mt-1 This manager has no manager on file, so the skip-level recipient is omitted.

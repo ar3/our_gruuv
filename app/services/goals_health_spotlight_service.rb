@@ -100,6 +100,10 @@ class GoalsHealthSpotlightService
     options
   end
 
+  def manager_filter_viewable?(manager_id)
+    manager_viewable?(manager_id)
+  end
+
   private
 
   def row_for(teammate, goals, records, attachment_facts)

@@ -65,6 +65,15 @@
       manager_id: @current_manager_filter,
       other_actions: goals_health_other_actions(@organization, manager_id: @current_manager_filter)
 
+- if @goals_health_nudge_manager.present?
+  = render "organizations/goals_health/nudge_panel",
+    manager: @goals_health_nudge_manager,
+    skip_level: @goals_health_nudge_skip_level,
+    recipients: @goals_health_nudge_recipients,
+    message: @goals_health_nudge_message,
+    last_nudge: @last_goals_health_nudge,
+    manager_id: @current_manager_filter
+
 .row.justify-content-center.mb-2
   .col-lg-12
     .d-flex.justify-content-between.align-items-center

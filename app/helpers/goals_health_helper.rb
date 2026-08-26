@@ -109,4 +109,34 @@ module GoalsHealthHelper
       edit_organization_prompt_path(@organization, sole.id)
     end
   end
+
+  def goals_health_nudge_recipient_sentence(recipients, viewer:)
+    named = recipients.filter_map do |tm|
+      next "you" if viewer && tm.id == viewer.id
+
+      tm.person&.display_name
+    end
+    "Sends to #{named.to_sentence}."
+  end
+
+  def goals_health_nudge_can_send?(recipients)
+    return false if recipients.blank?
+    return false if recipients.any? { |tm| tm.slack_user_id.blank? }
+
+    recipients.map(&:slack_user_id).uniq.length >= 2
+  end
+
+  def goals_health_nudge_send_disabled_reason(recipients, viewer:)
+    return "You must be a teammate in this organization." if viewer.blank?
+
+    missing = recipients.select { |tm| tm.slack_user_id.blank? }
+    if missing.any?
+      names = missing.map { |tm| tm.id == viewer.id ? "you" : (tm.person&.display_name || "a recipient") }
+      return "Slack required for #{names.to_sentence}."
+    end
+
+    return "Need at least two distinct Slack accounts." if recipients.map(&:slack_user_id).uniq.length < 2
+
+    nil
+  end
 end
