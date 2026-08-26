@@ -27,7 +27,7 @@ module CheckInsHealthBarsHelper
     "light_green" => "Both sides completed — ready to finalize",
     "light_blue" => "Employee completed; awaiting manager check-in",
     "light_purple" => "Manager completed; awaiting employee check-in",
-    "orange" => "Check-in overdue — start the process",
+    "orange" => "Check-in due soon — start the process",
     "red" => "Needs attention — no progress on open check-in",
     "green_striped" => "Healthy — previous check-in awaiting acknowledgment",
     "neon_green_striped" => "Healthy — previous check-in finalized and acknowledged",
