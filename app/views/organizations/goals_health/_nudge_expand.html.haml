@@ -1,7 +1,11 @@
--# locals: manager, skip_level, recipients, message, last_nudge, manager_id
+-# locals: manager, skip_level, recipients_manager, recipients_manager_and_skip, message, last_nudge, manager_id
 - collapse_id = "goalsHealthNudge"
-- can_send = goals_health_nudge_can_send?(recipients)
-- disabled_reason = goals_health_nudge_send_disabled_reason(recipients, viewer: current_company_teammate)
+- can_send_manager = goals_health_nudge_can_send?(recipients_manager)
+- can_send_manager_and_skip = skip_level.present? && goals_health_nudge_can_send?(recipients_manager_and_skip)
+- manager_disabled_reason = goals_health_nudge_send_disabled_reason(recipients_manager, viewer: current_company_teammate)
+- skip_disabled_reason = goals_health_nudge_send_disabled_reason(recipients_manager_and_skip, viewer: current_company_teammate, skip_required: true, skip_level: skip_level)
+- manager_only_label = goals_health_nudge_manager_only_button_label(manager)
+- manager_and_skip_label = goals_health_nudge_manager_and_skip_button_label(manager, skip_level)
 
 .collapse{id: collapse_id}
   .health-dashboard-nudge-panel
@@ -10,12 +14,17 @@
       .border.rounded.bg-light.p-3.small{style: "white-space: pre-wrap;"}= message.preview_plain
 
     .mb-3
-      = button_to organization_goals_health_nudge_path(@organization), method: :post, params: { manager_id: manager_id }, class: "btn btn-primary", disabled: !can_send, form: { data: { turbo: false } }, title: disabled_reason do
-        %i.bi.bi-send.me-1
-        = last_nudge.present? ? "Send nudge again" : "Send nudge now"
-      %p.small.text-muted.mb-0.mt-2= goals_health_nudge_recipient_sentence(recipients, viewer: current_company_teammate)
-      - if skip_level.nil?
-        %p.small.text-muted.mb-0.mt-1 This manager has no manager on file, so the skip-level recipient is omitted.
+      = form_with url: organization_goals_health_nudge_path(@organization), method: :post, local: true, data: { turbo: false }, html: { class: "mb-0" } do
+        = hidden_field_tag :manager_id, manager_id
+        .btn-group.flex-wrap{role: "group", "aria-label" => "Send Goals Health nudge"}
+          %button.btn.btn-primary{type: "submit", name: "recipient_scope", value: "manager", disabled: !can_send_manager, title: manager_disabled_reason}
+            %i.bi.bi-send.me-1
+            = manager_only_label
+          %button.btn.btn-outline-secondary{type: "submit", name: "recipient_scope", value: "manager_and_skip", disabled: !can_send_manager_and_skip, title: skip_disabled_reason}
+            %i.bi.bi-send.me-1
+            = manager_and_skip_label
+      - if skip_level.blank?
+        %p.small.text-muted.mb-0.mt-2 Unavailable — this manager has no manager on file for the second send option.
 
     %div
       %label.form-label.fw-semibold.small.text-muted.mb-1 History

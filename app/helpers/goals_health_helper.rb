@@ -119,6 +119,19 @@ module GoalsHealthHelper
     "Sends to #{named.to_sentence}."
   end
 
+  def goals_health_nudge_casual_name(teammate)
+    person = teammate&.person
+    person&.casual_name.presence || person&.first_name.presence || person&.display_name.presence || "them"
+  end
+
+  def goals_health_nudge_manager_only_button_label(manager)
+    "Send to me and #{goals_health_nudge_casual_name(manager)}"
+  end
+
+  def goals_health_nudge_manager_and_skip_button_label(manager, skip_level)
+    "Send to me, #{goals_health_nudge_casual_name(manager)}, and #{goals_health_nudge_casual_name(skip_level)}"
+  end
+
   def goals_health_nudge_can_send?(recipients)
     return false if recipients.blank?
     return false if recipients.any? { |tm| tm.slack_user_id.blank? }
@@ -126,8 +139,9 @@ module GoalsHealthHelper
     recipients.map(&:slack_user_id).uniq.length >= 2
   end
 
-  def goals_health_nudge_send_disabled_reason(recipients, viewer:)
+  def goals_health_nudge_send_disabled_reason(recipients, viewer:, skip_required: false, skip_level: nil)
     return "You must be a teammate in this organization." if viewer.blank?
+    return "This manager has no manager on file." if skip_required && skip_level.nil?
 
     missing = recipients.select { |tm| tm.slack_user_id.blank? }
     if missing.any?

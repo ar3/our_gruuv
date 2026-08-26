@@ -68,13 +68,14 @@ RSpec.describe "Goals Health", type: :request do
       expect(response.body).to include("health-dashboard-toolbar__nudge")
       expect(response.body).to include("health-dashboard-toolbar__leading")
       expect(response.body).to include("Message preview")
-      expect(response.body).to include("Send nudge now")
-      expect(response.body).to include("Sends to")
+      expect(response.body).to include("Send to me and")
+      expect(response.body).to include("Send to me,")
+      expect(response.body).to include('name="recipient_scope"')
+      expect(response.body).to include("btn-outline-secondary")
       expect(response.body).to include('aria-expanded="false"')
       expect(response.body).to include("collapse")
       expect(response.body).to include("health-dashboard-nudge-panel")
-      # Send controls appear before History in the expand panel markup.
-      expect(response.body.index("Send nudge now")).to be < response.body.index(">History<")
+      expect(response.body.index("Send to me and")).to be < response.body.index(">History<")
     end
 
     it "uses aggregate counts that ignore privacy for table/spotlight data" do
@@ -158,11 +159,13 @@ RSpec.describe "Goals Health", type: :request do
       create(:teammate_identity, :slack, teammate: manager_teammate, uid: "U_MGR")
     end
 
-    it "sends a nudge and redirects with notice" do
+    it "sends a manager-only nudge and redirects with notice" do
       slack_service = instance_double(SlackService)
       allow(SlackService).to receive(:new).with(company).and_return(slack_service)
-      allow(slack_service).to receive(:open_or_create_group_dm)
-        .and_return({ success: true, channel_id: "G123" })
+      allow(slack_service).to receive(:open_or_create_group_dm) do |user_ids:|
+        expect(user_ids).to match_array(%w[U_VIEWER U_MGR])
+        { success: true, channel_id: "G123" }
+      end
       allow(slack_service).to receive(:post_message) do |notification_id|
         Notification.find(notification_id).update!(status: "sent_successfully", message_id: "9.9")
         { success: true, message_id: "9.9" }
@@ -170,17 +173,48 @@ RSpec.describe "Goals Health", type: :request do
 
       expect do
         post organization_goals_health_nudge_path(company),
-             params: { manager_id: "CompanyTeammate_#{manager_teammate.id}" }
+             params: {
+               manager_id: "CompanyTeammate_#{manager_teammate.id}",
+               recipient_scope: "manager"
+             }
       end.to change(Notification.where(notification_type: "goals_health_nudge"), :count).by(1)
 
       expect(response).to redirect_to(
         organization_goals_health_path(company, manager_id: "CompanyTeammate_#{manager_teammate.id}")
       )
       expect(flash[:notice]).to eq("Goals Health nudge sent.")
+      expect(Notification.where(notification_type: "goals_health_nudge").last.metadata["recipient_scope"]).to eq("manager")
+    end
+
+    it "sends a manager_and_skip nudge when requested" do
+      slack_service = instance_double(SlackService)
+      allow(SlackService).to receive(:new).with(company).and_return(slack_service)
+      allow(slack_service).to receive(:open_or_create_group_dm) do |user_ids:|
+        expect(user_ids).to match_array(%w[U_VIEWER U_MGR])
+        { success: true, channel_id: "G456" }
+      end
+      allow(slack_service).to receive(:post_message) do |notification_id|
+        Notification.find(notification_id).update!(status: "sent_successfully", message_id: "8.8")
+        { success: true, message_id: "8.8" }
+      end
+
+      post organization_goals_health_nudge_path(company),
+           params: {
+             manager_id: "CompanyTeammate_#{manager_teammate.id}",
+             recipient_scope: "manager_and_skip"
+           }
+
+      expect(response).to redirect_to(
+        organization_goals_health_path(company, manager_id: "CompanyTeammate_#{manager_teammate.id}")
+      )
+      expect(flash[:notice]).to eq("Goals Health nudge sent.")
+      # viewer is also the skip-level manager in this setup
+      expect(Notification.where(notification_type: "goals_health_nudge").last.metadata["recipient_scope"]).to eq("manager_and_skip")
     end
 
     it "rejects non-concrete manager filters" do
-      post organization_goals_health_nudge_path(company), params: { manager_id: "everyone" }
+      post organization_goals_health_nudge_path(company),
+           params: { manager_id: "everyone", recipient_scope: "manager" }
       expect(response).to redirect_to(organization_goals_health_path(company, manager_id: "everyone"))
       expect(flash[:alert]).to include("specific manager")
     end

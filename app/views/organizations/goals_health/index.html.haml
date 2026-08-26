@@ -64,7 +64,7 @@
     - nudge_aside = nil
     - nudge_below = nil
     - if @goals_health_nudge_manager.present?
-      - nudge_locals = { manager: @goals_health_nudge_manager, skip_level: @goals_health_nudge_skip_level, recipients: @goals_health_nudge_recipients, message: @goals_health_nudge_message, last_nudge: @last_goals_health_nudge, manager_id: @current_manager_filter }
+      - nudge_locals = { manager: @goals_health_nudge_manager, skip_level: @goals_health_nudge_skip_level, recipients_manager: @goals_health_nudge_recipients_manager, recipients_manager_and_skip: @goals_health_nudge_recipients_manager_and_skip, message: @goals_health_nudge_message, last_nudge: @last_goals_health_nudge, manager_id: @current_manager_filter }
       - nudge_aside = capture do
         = render "organizations/goals_health/nudge_trigger", **nudge_locals
       - nudge_below = capture do

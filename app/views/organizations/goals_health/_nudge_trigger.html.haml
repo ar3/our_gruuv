@@ -1,7 +1,5 @@
--# locals: manager, skip_level, recipients, message, last_nudge, manager_id
+-# locals: manager (other nudge locals ignored; kept so index can pass one hash)
 - collapse_id = "goalsHealthNudge"
-- can_send = goals_health_nudge_can_send?(recipients)
-- disabled_reason = goals_health_nudge_send_disabled_reason(recipients, viewer: current_company_teammate)
 
 .health-dashboard-nudge-trigger
   %button.btn.btn-link.text-decoration-none.text-body.p-0.w-100.text-start.d-flex.align-items-center.justify-content-between.gap-2{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": "false", "aria-controls": collapse_id}

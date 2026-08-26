@@ -26,7 +26,7 @@ RSpec.describe Goals::HealthNudgeService do
   end
 
   describe ".call" do
-    it "creates a goals_health_nudge notification and posts to a Slack group DM" do
+    it "sends manager_and_skip to viewer, manager, and skip-level" do
       slack_service = instance_double(SlackService)
       allow(SlackService).to receive(:new).with(company).and_return(slack_service)
       allow(slack_service).to receive(:open_or_create_group_dm) do |user_ids:|
@@ -42,7 +42,8 @@ RSpec.describe Goals::HealthNudgeService do
         organization: company,
         manager_teammate: manager_teammate,
         nudger_company_teammate: nudger_teammate,
-        spotlight_stats: stats
+        spotlight_stats: stats,
+        recipient_scope: "manager_and_skip"
       )
 
       expect(result.ok?).to be true
@@ -51,12 +52,41 @@ RSpec.describe Goals::HealthNudgeService do
       expect(n.notifiable).to eq(manager_teammate)
       expect(n.metadata["channel"]).to eq("G_GOALS_NUDGE")
       expect(n.metadata["health_object"]).to eq("goals_health")
+      expect(n.metadata["recipient_scope"]).to eq("manager_and_skip")
       expect(n.metadata["nudger_company_teammate_id"]).to eq(nudger_teammate.id)
       expect(n.metadata["recipient_company_teammate_ids"]).to match_array(
         [ nudger_teammate.id, manager_teammate.id, skip_teammate.id ]
       )
       expect(n.message_id).to eq("111.222")
       expect(n.fallback_text).to include("Goals Health")
+    end
+
+    it "sends manager scope to viewer and manager only" do
+      slack_service = instance_double(SlackService)
+      allow(SlackService).to receive(:new).with(company).and_return(slack_service)
+      allow(slack_service).to receive(:open_or_create_group_dm) do |user_ids:|
+        expect(user_ids).to match_array(%w[U_MANAGER U_NUDGER])
+        { success: true, channel_id: "G_MGR_ONLY" }
+      end
+      allow(slack_service).to receive(:post_message) do |notification_id|
+        Notification.find(notification_id).update!(status: "sent_successfully", message_id: "333.444")
+        { success: true, message_id: "333.444" }
+      end
+
+      result = described_class.call(
+        organization: company,
+        manager_teammate: manager_teammate,
+        nudger_company_teammate: nudger_teammate,
+        spotlight_stats: stats,
+        recipient_scope: "manager"
+      )
+
+      expect(result.ok?).to be true
+      n = result.value[:notification]
+      expect(n.metadata["recipient_scope"]).to eq("manager")
+      expect(n.metadata["recipient_company_teammate_ids"]).to match_array(
+        [ nudger_teammate.id, manager_teammate.id ]
+      )
     end
 
     it "returns an error when a recipient lacks Slack" do
@@ -66,11 +96,27 @@ RSpec.describe Goals::HealthNudgeService do
         organization: company,
         manager_teammate: manager_teammate,
         nudger_company_teammate: nudger_teammate,
-        spotlight_stats: stats
+        spotlight_stats: stats,
+        recipient_scope: "manager"
       )
 
       expect(result.ok?).to be false
       expect(result.error).to include("Slack")
+    end
+
+    it "returns an error for manager_and_skip when there is no skip-level manager" do
+      manager_teammate.employment_tenures.update_all(manager_teammate_id: nil)
+
+      result = described_class.call(
+        organization: company,
+        manager_teammate: manager_teammate,
+        nudger_company_teammate: nudger_teammate,
+        spotlight_stats: stats,
+        recipient_scope: "manager_and_skip"
+      )
+
+      expect(result.ok?).to be false
+      expect(result.error).to include("no manager on file")
     end
   end
 

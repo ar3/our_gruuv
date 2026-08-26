@@ -33,7 +33,8 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
       organization: @organization,
       manager_teammate: manager,
       nudger_company_teammate: current_company_teammate,
-      spotlight_stats: spotlight_stats
+      spotlight_stats: spotlight_stats,
+      recipient_scope: params[:recipient_scope]
     )
 
     if result.ok?
@@ -94,10 +95,17 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
       manager_teammate: @goals_health_nudge_manager,
       organization: @organization
     )
-    @goals_health_nudge_recipients = Goals::HealthNudgeService.recipient_teammates(
+    @goals_health_nudge_recipients_manager = Goals::HealthNudgeService.recipient_teammates(
       manager_teammate: @goals_health_nudge_manager,
       nudger_company_teammate: current_company_teammate,
-      organization: @organization
+      organization: @organization,
+      recipient_scope: "manager"
+    )
+    @goals_health_nudge_recipients_manager_and_skip = Goals::HealthNudgeService.recipient_teammates(
+      manager_teammate: @goals_health_nudge_manager,
+      nudger_company_teammate: current_company_teammate,
+      organization: @organization,
+      recipient_scope: "manager_and_skip"
     )
     @goals_health_nudge_message = Goals::HealthNudgeMessage.new(
       organization: @organization,

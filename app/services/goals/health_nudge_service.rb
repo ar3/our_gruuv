@@ -1,17 +1,22 @@
 # frozen_string_literal: true
 
 module Goals
-  # Sends a Slack MPIM (viewer + manager + manager's manager when available) with an
-  # auto-generated Goals Health nudge. Notification notifiable is the selected manager.
+  # Sends a Slack MPIM with an auto-generated Goals Health nudge.
+  # Recipient scopes:
+  #   "manager" — viewer + selected manager
+  #   "manager_and_skip" — viewer + selected manager + manager's manager
+  # Notification notifiable is the selected manager.
   class HealthNudgeService
     HEALTH_OBJECT = "goals_health"
+    RECIPIENT_SCOPES = %w[manager manager_and_skip].freeze
 
-    def self.call(organization:, manager_teammate:, nudger_company_teammate:, spotlight_stats:)
+    def self.call(organization:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
       new(
         organization: organization,
         manager_teammate: manager_teammate,
         nudger_company_teammate: nudger_company_teammate,
-        spotlight_stats: spotlight_stats
+        spotlight_stats: spotlight_stats,
+        recipient_scope: recipient_scope
       ).call
     end
 
@@ -31,27 +36,48 @@ module Goals
       HealthManagerPerson.manager_teammate_for(manager_teammate, company: company)
     end
 
-    def self.recipient_teammates(manager_teammate:, nudger_company_teammate:, organization:)
-      skip = skip_level_for(manager_teammate: manager_teammate, organization: organization)
-      [ nudger_company_teammate, manager_teammate, skip ].compact.uniq
+    def self.normalize_recipient_scope(scope)
+      value = scope.to_s
+      return value if RECIPIENT_SCOPES.include?(value)
+
+      nil
     end
 
-    def initialize(organization:, manager_teammate:, nudger_company_teammate:, spotlight_stats:)
+    def self.recipient_teammates(manager_teammate:, nudger_company_teammate:, organization:, recipient_scope:)
+      scope = normalize_recipient_scope(recipient_scope)
+      return [] if scope.blank?
+
+      list = [ nudger_company_teammate, manager_teammate ]
+      if scope == "manager_and_skip"
+        list << skip_level_for(manager_teammate: manager_teammate, organization: organization)
+      end
+      list.compact.uniq
+    end
+
+    def initialize(organization:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
       @organization = organization
       @manager_teammate = manager_teammate
       @nudger_company_teammate = nudger_company_teammate
       @spotlight_stats = spotlight_stats
+      @recipient_scope = self.class.normalize_recipient_scope(recipient_scope)
     end
 
     def call
       if @nudger_company_teammate.blank?
         return Result.err("You must be signed in as a teammate in this organization to send a nudge.")
       end
+      return Result.err("Choose who to include on the nudge.") if @recipient_scope.blank?
+
+      if @recipient_scope == "manager_and_skip" &&
+         self.class.skip_level_for(manager_teammate: @manager_teammate, organization: @organization).blank?
+        return Result.err("This manager has no manager on file, so that send option is unavailable.")
+      end
 
       intended = self.class.recipient_teammates(
         manager_teammate: @manager_teammate,
         nudger_company_teammate: @nudger_company_teammate,
-        organization: @organization
+        organization: @organization,
+        recipient_scope: @recipient_scope
       )
 
       missing_slack = intended.select { |tm| tm.slack_user_id.blank? }
@@ -83,6 +109,7 @@ module Goals
         metadata: {
           "channel" => dm_result[:channel_id],
           "health_object" => HEALTH_OBJECT,
+          "recipient_scope" => @recipient_scope,
           "nudger_company_teammate_id" => @nudger_company_teammate.id,
           "manager_company_teammate_id" => @manager_teammate.id,
           "recipient_company_teammate_ids" => intended.map(&:id),
