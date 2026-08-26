@@ -2,18 +2,25 @@
 - clarity_hub_page_help_id = 'clarityHubPageHelp'
 
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+  .d-flex.flex-column.gap-2
+    - object_lens_trailing = capture do
+      = render 'shared/page_help/header_info_button',
+               collapse_id: clarity_hub_page_help_id,
+               tooltip: 'Clarity Check-Ins hub: five ways to check in and what is up next. Click for details.'
+    = render "shared/object_lens_header/switchers",
+             organization: organization,
+             current_object: :check_ins,
+             current_lens: :list,
+             trailing: object_lens_trailing
+    .d-flex.align-items-center.flex-wrap.gap-2.fs-4.fw-medium
       = render "shared/teammate_context/title_dropdown",
                organization: organization,
                selected_teammate: @selected_teammate,
                viewable_teammate_groups: @viewable_teammate_groups,
                path_for_teammate: ->(tm) { hub_organization_company_teammate_check_ins_path(organization, tm) },
-               switch_aria_label: switch_teammate_for_clarity_hub_label
+               switch_aria_label: switch_teammate_for_clarity_hub_label,
+               trigger_fs_class: "fs-4"
       %span= " - #{clarity_hub_label}"
-      = render 'shared/page_help/header_info_button',
-               collapse_id: clarity_hub_page_help_id,
-               tooltip: 'Clarity Check-Ins hub: five ways to check in and what is up next. Click for details.'
 
 - content_for :header_action do
   = render "people/view_switcher"

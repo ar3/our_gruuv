@@ -1,10 +1,12 @@
 -# locals: organization, selected_teammate, viewable_teammate_groups
 -# Optional: path_for_teammate — Proc (teammate) -> URL. Default is check-in status page; set explicitly for other flows.
 -# Optional: switch_aria_label — dropdown trigger aria-label
+-# Optional: trigger_fs_class — Bootstrap font-size class for the trigger (default fs-1)
 - path_for_teammate = local_assigns.fetch(:path_for_teammate) { ->(tm) { review_most_recent_organization_company_teammate_check_ins_path(organization, tm) } }
 - switch_aria_label = local_assigns.fetch(:switch_aria_label) { "Switch employee for check-in statuses" }
+- trigger_fs_class = local_assigns.fetch(:trigger_fs_class) { "fs-1" }
 .dropdown.d-inline-flex.align-items-center
-  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => switch_aria_label}
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fw-medium.text-decoration-none{type: "button", class: trigger_fs_class, "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => switch_aria_label}
     = teammate_profile_image(selected_teammate, size: 32)
     %span= selected_teammate.person.casual_name
   %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}

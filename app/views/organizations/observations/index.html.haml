@@ -1,10 +1,11 @@
 - content_for :title, "Observations"
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-eye.me-2
-      Culture of Feedback and Recognition – 360•365
+  .d-flex.align-items-center.justify-content-between.gap-2.flex-wrap
+    = render "shared/object_lens_header/switchers",
+             organization: @organization,
+             current_object: :observations,
+             current_lens: :list
     .d-flex.align-items-center
       - if policy(Observation).create?
         = link_to select_type_organization_observations_path(@organization), class: "btn btn-primary ml-2" do

@@ -77,11 +77,6 @@ module HealthDashboardsHelper
         method: :post
       },
       {
-        label: "Company Observations Insights",
-        path: organization_insights_observations_path(organization),
-        icon: "bi-bar-chart-steps"
-      },
-      {
         label: "Download OGOs (CSV)",
         path: organization_observations_health_export_path(organization, manager_id: manager_id),
         icon: "bi-download"
@@ -114,11 +109,6 @@ module HealthDashboardsHelper
     end
 
     actions << {
-      label: "Check-ins Progress",
-      path: organization_insights_check_ins_progress_path(organization),
-      icon: "bi-bar-chart-steps"
-    }
-    actions << {
       label: "Download check-ins (CSV)",
       path: organization_check_ins_health_export_path(organization, manager_id: manager_id),
       icon: "bi-download"
@@ -133,11 +123,6 @@ module HealthDashboardsHelper
 
   def milestones_health_other_actions(organization, manager_id:)
     [
-      {
-        label: "Company Abilities Insights",
-        path: organization_insights_abilities_path(organization),
-        icon: "bi-bar-chart-steps"
-      },
       {
         label: "Refresh all in this view",
         path: organization_milestones_health_refresh_all_path(organization, manager_id: manager_id),

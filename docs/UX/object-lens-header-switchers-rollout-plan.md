@@ -1,6 +1,6 @@
 # Object × Lens header switchers — rollout plan
 
-**Status:** Phase 1 in progress (shared chrome + Overall + Goals wired). Gate: manual test Overall ↔ Goals across all three lenses.
+**Status:** Phase 2 complete (Observations, Check-ins, Abilities wired). Health domain switchers kept. Gate: manual test full v1 matrix; approve before Phase 3.
 
 **Pattern:** Two H1-style dropdowns in `content_for :header` (same interaction as `shared/teammate_context/title_dropdown`):
 
@@ -83,10 +83,10 @@ Ship the dual header on the smallest useful matrix, prove preserve-lens navigati
 
 | # | Object | Pages to wire |
 |---|--------|----------------|
-| 2.1 | Observations | Index, Observations Health, Observations Insights |
-| 2.2 | Check-ins | Own clarity check-in hub (List), Check-ins Health, Check-ins Progress |
-| 2.3 | Abilities | Abilities index, Milestones Health, Abilities Insights |
-| 2.4 | Cleanup | Remove remaining Health dashboard switcher / Other actions / View Analytics where superseded |
+| 2.1 | Observations ✅ | Index, Observations Health, Observations Insights |
+| 2.2 | Check-ins ✅ | Own clarity check-in hub (List), Check-ins Health, Check-ins Progress |
+| 2.3 | Abilities ✅ | Abilities index, Milestones Health, Abilities Insights |
+| 2.4 | Cleanup (partial) ✅ | Removed Insights-duplicate Other actions / View Analytics / Milestones Health outline btn. **Health domain switchers kept.** |
 
 **Gate:** Full v1 matrix works; main Insights nav can stay as alternate entry.
 

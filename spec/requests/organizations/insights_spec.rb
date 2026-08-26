@@ -165,6 +165,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'renders observations insights page with charts and tables' do
       get organization_insights_observations_path(organization)
       expect(response.body).to include('Insights: Observations')
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include('Switch page type')
       expect(response.body).to include('Published observations by journal and notifications')
       expect(response.body).to include('observations-publish-category-chart')
       expect(response.body).to include('observations-publish-category-pie-chart')
@@ -349,6 +351,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
     it 'renders Check-ins Progress insights page with timeframe links and charts' do
       get organization_insights_check_ins_progress_path(organization)
       expect(response.body).to include(I18n.t('terminology.insights_clarity_check_ins_progress'))
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include('Switch page type')
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
@@ -706,10 +710,14 @@ RSpec.describe 'Organizations::Insights', type: :request do
     end
 
     it 'renders abilities insights page with chart containers and timeframe links' do
+      allow_any_instance_of(OrganizationPolicy).to receive(:milestones_health?).and_return(true)
       get organization_insights_abilities_path(organization)
       expect(response.body).to include('Insights: Abilities')
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include('Switch page type')
       expect(response.body).to include('page-context-nav')
       expect(response.body).to include(organization_abilities_path(organization))
+      expect(response.body).to include(organization_milestones_health_path(organization))
       expect(response.body).to include('Distribution of defined Milestones per Ability')
       expect(response.body).to include('Abilities by number of Assignments (grouped by Required Milestone)')
       expect(response.body).to include('Below are time-based analytics')

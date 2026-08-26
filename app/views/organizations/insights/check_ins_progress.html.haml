@@ -3,10 +3,10 @@
 - chart_title_period = @chart_title_period
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-clipboard-check.me-2
-      = insights_clarity_check_ins_progress_label
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :check_ins,
+           current_lens: :insights
 
 = render 'timeframe_selector',
   timeframe: @timeframe,

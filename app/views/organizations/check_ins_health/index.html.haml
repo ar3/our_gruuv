@@ -2,13 +2,15 @@
 - page_help_id = "checkInsHealthPageHelp"
 
 - content_for :header do
-  .d-flex.flex-wrap.align-items-center.gap-2
-    %h1.mb-0.d-flex.align-items-center.gap-2
-      %i.bi.bi-clipboard-check
-      Check-ins Health Dashboard
-      = render "shared/page_help/header_info_button",
-               collapse_id: page_help_id,
-               tooltip: "Quickly monitor who needs clarity support. Click for a full breakdown of this page."
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Quickly monitor who needs clarity support. Click for a full breakdown of this page."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :check_ins,
+           current_lens: :health,
+           trailing: object_lens_trailing
 
 .mb-4
   = content_for :go_back_link

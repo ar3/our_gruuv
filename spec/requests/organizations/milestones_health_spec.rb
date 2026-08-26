@@ -26,7 +26,9 @@ RSpec.describe "Milestones Health", type: :request do
       expect(response.body).to include("Other actions")
       expect(response.body).to include("health-dashboard-toolbar")
       expect(response.body).to include("Gruuv Health")
-      expect(response.body).to include("Company Abilities Insights")
+      expect(response.body).to include("Switch object")
+      expect(response.body).to include("Switch page type")
+      expect(response.body).not_to include("Company Abilities Insights")
     end
 
     it "shows health dashboard switcher with links to other health pages" do

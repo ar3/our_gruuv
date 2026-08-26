@@ -2,13 +2,15 @@
 - page_help_id = "observationsHealthPageHelp"
 
 - content_for :header do
-  .d-flex.flex-wrap.align-items-center.gap-2
-    %h1.mb-0.d-flex.align-items-center.gap-2
-      %i.bi.bi-eye
-      Observations Health Dashboard
-      = render "shared/page_help/header_info_button",
-               collapse_id: page_help_id,
-               tooltip: "See who is giving and receiving feedback and whether OGO patterns look healthy. Click for a full breakdown."
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See who is giving and receiving feedback and whether OGO patterns look healthy. Click for a full breakdown."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :observations,
+           current_lens: :health,
+           trailing: object_lens_trailing
 
 .mb-4
   = content_for :go_back_link
