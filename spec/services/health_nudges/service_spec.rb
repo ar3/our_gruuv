@@ -24,6 +24,53 @@ RSpec.describe HealthNudges::Service do
   end
 
   describe ".call" do
+    it "posts one Slack thread reply per employee entry" do
+      employee = create(:teammate, :assigned_employee, organization: company)
+      slack_service = instance_double(SlackService)
+      allow(SlackService).to receive(:new).with(company).and_return(slack_service)
+      allow(slack_service).to receive(:open_or_create_group_dm)
+        .and_return({ success: true, channel_id: "G_THREADS" })
+      posted_ids = []
+      allow(slack_service).to receive(:post_message) do |notification_id|
+        posted_ids << notification_id
+        Notification.find(notification_id).update!(status: "sent_successfully", message_id: "#{notification_id}.0")
+        { success: true, message_id: "#{notification_id}.0" }
+      end
+
+      entries = HealthNudges::EmployeeEntries.from_goals_rows(
+        [
+          {
+            teammate: employee,
+            person: employee.person,
+            status: :concerning,
+            eh_status: EngagementHealth::NEEDS_ATTENTION,
+            status_lines: {
+              EngagementHealth::NEEDS_ATTENTION => { active: 1, completed: 0, draft: 0 }
+            }
+          }
+        ]
+      )
+
+      result = described_class.call(
+        organization: company,
+        health_object: "goals_health",
+        manager_teammate: manager_teammate,
+        nudger_company_teammate: nudger_teammate,
+        spotlight_stats: stats,
+        recipient_scope: "manager",
+        employee_entries: entries
+      )
+
+      expect(result.ok?).to be true
+      expect(posted_ids.size).to eq(2)
+      main = Notification.find(posted_ids.first)
+      thread = Notification.find(posted_ids.last)
+      expect(main.main_thread_id).to be_nil
+      expect(thread.main_thread).to eq(main)
+      expect(thread.fallback_text).to include(employee.person.casual_name)
+      expect(thread.rich_message.first["type"] || thread.rich_message.first[:type]).to eq("section")
+    end
+
     it "creates a health_nudge notification for check-ins health" do
       slack_service = instance_double(SlackService)
       allow(SlackService).to receive(:new).with(company).and_return(slack_service)

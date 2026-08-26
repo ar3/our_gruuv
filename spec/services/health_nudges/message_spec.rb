@@ -54,7 +54,29 @@ RSpec.describe HealthNudges::Message do
     expect(message.body_mrkdwn).to include("Overall Health check-in")
     expect(message.body_mrkdwn).to include("Overall Health for your direct reports")
     expect(message.body_mrkdwn).to include("Open Overall Health for your team")
+    expect(message.body_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
+    expect(message.body_mrkdwn).to include(
+      "<#{HealthNudges::Registry::FLOW_TED_URL}|Mihaly Csikszentmihalyi>"
+    )
     expect(message.body_mrkdwn).not_to include("Protect Flow")
+    expect(message.body_mrkdwn).not_to include("—")
     expect(message.dashboard_url).to include("/protect_flow")
+  end
+
+  it "includes Clarity Check-ins why copy with TED link for check-ins health" do
+    message = described_class.new(
+      health_object: "check_ins_health",
+      organization: company,
+      manager_teammate: manager_teammate,
+      spotlight_stats: stats
+    )
+
+    expect(message.body_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
+    expect(message.body_mrkdwn).to include("Why this matters?")
+    expect(message.body_mrkdwn).to include(
+      "<#{HealthNudges::Registry::FLOW_TED_URL}|Mihaly Csikszentmihalyi>"
+    )
+    expect(message.body_mrkdwn).to include("Challenge (what are the expectations)")
+    expect(message.body_mrkdwn).not_to include("—")
   end
 end

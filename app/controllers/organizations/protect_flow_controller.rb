@@ -29,6 +29,7 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
     perform_health_nudge!(
       health_object: "protect_flow",
       spotlight_stats: HealthNudges::Service.spotlight_stats_from_protect_flow_plan(@plan),
+      employee_entries: HealthNudges::EmployeeEntries.from_protect_flow_people(@plan[:people]),
       redirect_path: organization_protect_flow_path(@organization, **redirect_params)
     )
   end

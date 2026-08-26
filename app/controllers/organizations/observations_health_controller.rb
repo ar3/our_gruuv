@@ -25,10 +25,11 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     authorize @organization, :observations_health?
     apply_filter_default_if_needed
 
-    spotlight_stats = observations_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])[:spotlight_stats]
+    data = observations_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])
     perform_health_nudge!(
       health_object: "observations_health",
-      spotlight_stats: spotlight_stats,
+      spotlight_stats: data[:spotlight_stats],
+      employee_entries: HealthNudges::EmployeeEntries.from_observations_rows(data[:rows]),
       redirect_path: organization_observations_health_path(@organization, manager_id: params[:manager_id])
     )
   end

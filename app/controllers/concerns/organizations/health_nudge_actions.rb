@@ -40,7 +40,7 @@ module Organizations
       )
     end
 
-    def perform_health_nudge!(health_object:, spotlight_stats:, redirect_path:)
+    def perform_health_nudge!(health_object:, spotlight_stats:, redirect_path:, employee_entries: [])
       config = HealthNudges::Registry.fetch(health_object)
       manager = resolve_health_nudge_manager_teammate
       unless manager
@@ -54,7 +54,8 @@ module Organizations
         manager_teammate: manager,
         nudger_company_teammate: current_company_teammate,
         spotlight_stats: spotlight_stats,
-        recipient_scope: params[:recipient_scope]
+        recipient_scope: params[:recipient_scope],
+        employee_entries: employee_entries
       )
 
       if result.ok?

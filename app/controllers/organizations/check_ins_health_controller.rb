@@ -27,10 +27,11 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed
 
-    spotlight_stats = check_ins_health_spotlight_service.spotlight_stats_for(params[:manager_id])
+    data = check_ins_health_spotlight_service.rows_and_spotlight_for(params[:manager_id])
     perform_health_nudge!(
       health_object: "check_ins_health",
-      spotlight_stats: spotlight_stats,
+      spotlight_stats: data[:spotlight_stats],
+      employee_entries: HealthNudges::EmployeeEntries.from_check_ins_rows(data[:rows]),
       redirect_path: organization_check_ins_health_path(@organization, manager_id: params[:manager_id])
     )
   end

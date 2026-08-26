@@ -5,19 +5,21 @@ module HealthNudges
   # Recipient scopes:
   #   "manager" — viewer + selected manager
   #   "manager_and_skip" — viewer + selected manager + manager's manager
+  # Optional employee_entries become one Slack thread reply each (profile + status + detail).
   class Service
     RECIPIENT_SCOPES = %w[manager manager_and_skip].freeze
     NOTIFICATION_TYPE = "health_nudge"
     LEGACY_GOALS_NOTIFICATION_TYPE = "goals_health_nudge"
 
-    def self.call(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
+    def self.call(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:, employee_entries: [])
       new(
         organization: organization,
         health_object: health_object,
         manager_teammate: manager_teammate,
         nudger_company_teammate: nudger_company_teammate,
         spotlight_stats: spotlight_stats,
-        recipient_scope: recipient_scope
+        recipient_scope: recipient_scope,
+        employee_entries: employee_entries
       ).call
     end
 
@@ -29,6 +31,7 @@ module HealthNudges
         .where(notification_type: notification_types_for(object))
         .successful
         .where.not(message_id: nil)
+        .where(main_thread_id: nil)
         .where("metadata ->> 'health_object' = ? OR (metadata ->> 'health_object' IS NULL AND ? = 'goals_health')", object, object)
         .order(created_at: :desc)
         .first
@@ -83,13 +86,14 @@ module HealthNudges
       }
     end
 
-    def initialize(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:)
+    def initialize(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:, employee_entries: [])
       @organization = organization
       @health_object = health_object.to_s
       @manager_teammate = manager_teammate
       @nudger_company_teammate = nudger_company_teammate
       @spotlight_stats = spotlight_stats
       @recipient_scope = self.class.normalize_recipient_scope(recipient_scope)
+      @employee_entries = Array(employee_entries)
       @config = Registry.fetch(@health_object)
     end
 
@@ -130,39 +134,71 @@ module HealthNudges
       dm_result = slack_service.open_or_create_group_dm(user_ids: slack_user_ids)
       return Result.err(dm_result[:error].presence || "Could not open Slack group DM.") unless dm_result[:success]
 
+      channel_id = dm_result[:channel_id]
       message = Message.new(
         health_object: @health_object,
         organization: @organization,
         manager_teammate: @manager_teammate,
-        spotlight_stats: @spotlight_stats
+        spotlight_stats: @spotlight_stats,
+        employee_count: @employee_entries.size
       )
+
+      shared_metadata = {
+        "channel" => channel_id,
+        "health_object" => @health_object,
+        "recipient_scope" => @recipient_scope,
+        "nudger_company_teammate_id" => @nudger_company_teammate.id,
+        "manager_company_teammate_id" => @manager_teammate.id,
+        "recipient_company_teammate_ids" => intended.map(&:id),
+        "spotlight_stats" => @spotlight_stats.stringify_keys,
+        "employee_entry_count" => @employee_entries.size
+      }
 
       notification = @manager_teammate.notifications.create!(
         notification_type: NOTIFICATION_TYPE,
         status: "preparing_to_send",
-        metadata: {
-          "channel" => dm_result[:channel_id],
-          "health_object" => @health_object,
-          "recipient_scope" => @recipient_scope,
-          "nudger_company_teammate_id" => @nudger_company_teammate.id,
-          "manager_company_teammate_id" => @manager_teammate.id,
-          "recipient_company_teammate_ids" => intended.map(&:id),
-          "spotlight_stats" => @spotlight_stats.stringify_keys
-        },
+        metadata: shared_metadata,
         rich_message: message.slack_blocks,
         fallback_text: message.fallback_text
       )
 
       post_result = slack_service.post_message(notification.id)
-      if post_result[:success]
-        Result.ok(notification: notification.reload)
-      else
-        Result.err(post_result[:error].presence || "Slack failed to post the nudge.")
+      unless post_result[:success]
+        return Result.err(post_result[:error].presence || "Slack failed to post the nudge.")
       end
+
+      notification.reload
+      post_employee_thread_replies!(
+        slack_service: slack_service,
+        main_notification: notification,
+        shared_metadata: shared_metadata
+      )
+
+      Result.ok(notification: notification)
     rescue Slack::Web::Api::Errors::SlackError => e
       Result.err("Slack error: #{e.message}")
     rescue StandardError => e
       Result.err(e.message)
+    end
+
+    private
+
+    def post_employee_thread_replies!(slack_service:, main_notification:, shared_metadata:)
+      @employee_entries.each do |entry|
+        thread_message = EmployeeThreadMessage.new(entry: entry)
+        thread_notification = @manager_teammate.notifications.create!(
+          notification_type: NOTIFICATION_TYPE,
+          main_thread: main_notification,
+          status: "preparing_to_send",
+          metadata: shared_metadata.merge(
+            "employee_teammate_id" => entry[:teammate_id] || entry["teammate_id"],
+            "employee_status" => entry[:status] || entry["status"]
+          ),
+          rich_message: thread_message.slack_blocks,
+          fallback_text: thread_message.fallback_text
+        )
+        slack_service.post_message(thread_notification.id)
+      end
     end
   end
 end

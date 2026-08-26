@@ -5,13 +5,14 @@ module HealthNudges
   class Message
     include Rails.application.routes.url_helpers
 
-    def initialize(health_object:, organization:, manager_teammate:, spotlight_stats:, url_options: nil)
+    def initialize(health_object:, organization:, manager_teammate:, spotlight_stats:, url_options: nil, employee_count: 0)
       @health_object = health_object.to_s
       @config = Registry.fetch(@health_object)
       @organization = organization
       @manager_teammate = manager_teammate
       @stats = spotlight_stats.symbolize_keys
       @url_options = url_options || default_url_options
+      @employee_count = employee_count.to_i
     end
 
     def manager_name
@@ -33,7 +34,7 @@ module HealthNudges
     end
 
     def body_mrkdwn
-      [
+      lines = [
         "*#{@config.fetch(:title)}*",
         "",
         greeting_line,
@@ -41,10 +42,14 @@ module HealthNudges
         summary_line,
         *(unhealthy? ? [ "", @config.fetch(:importance) ] : []),
         "",
-        closing_line,
-        "",
-        "<#{dashboard_url}|#{dashboard_link_label}>"
-      ].join("\n")
+        closing_line
+      ]
+      if @employee_count.positive?
+        lines << ""
+        lines << "Details for each person are in the thread (#{@employee_count} #{'person'.pluralize(@employee_count)})."
+      end
+      lines.concat([ "", "<#{dashboard_url}|#{dashboard_link_label}>" ])
+      lines.join("\n")
     end
 
     def fallback_text
@@ -95,7 +100,7 @@ module HealthNudges
     private
 
     def greeting_line
-      "Hi #{manager_name} — #{@config.fetch(:greeting)}."
+      "Hi #{manager_name} ... #{@config.fetch(:greeting)}."
     end
 
     def summary_line
@@ -145,7 +150,7 @@ module HealthNudges
       if @stats[:total_employees].to_i.zero?
         @config.fetch(:empty_closing)
       elsif unhealthy?
-        "You're not alone in this — happy to help untangle anything that needs more context."
+        "You're not alone in this ... happy to help untangle anything that needs more context."
       else
         @config.fetch(:healthy_closing)
       end
