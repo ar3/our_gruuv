@@ -37,11 +37,15 @@ RSpec.describe "Goals Health", type: :request do
       expect(response.body).not_to include("data-bs-toggle=\"popover\"")
     end
 
-    it "shows health dashboard switcher with links to check-ins and observations health" do
+    it "shows object/lens header switchers for Goals Health" do
       get organization_goals_health_path(company)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(organization_check_ins_health_path(company, manager_id: "everyone"))
-      expect(response.body).to include(organization_observations_health_path(company, manager_id: "everyone"))
+      expect(response.body).to include("Switch object")
+      expect(response.body).to include("Switch page type")
+      expect(response.body).to include(organization_goals_path(company))
+      expect(response.body).to include(organization_insights_goals_path(company))
+      expect(response.body).to include(organization_sitemap_path(company))
+      expect(response.body).not_to include('aria-label="Health dashboards"')
     end
 
     it "hides the Goals Health nudge panel unless a concrete manager is selected" do

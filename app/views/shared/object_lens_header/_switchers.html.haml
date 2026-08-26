@@ -1,0 +1,50 @@
+-# locals: organization, current_object, current_lens
+-# Optional: trailing — HTML after the switchers (page help, badges). Prefer capture { }.
+- current_object = local_assigns.fetch(:current_object).to_sym
+- current_lens = local_assigns.fetch(:current_lens).to_sym
+- objects = object_lens_menu_objects(organization, current_object: current_object, current_lens: current_lens)
+- lenses = object_lens_menu_lenses(organization, current_object: current_object, current_lens: current_lens)
+- object_label = object_lens_object_label(current_object)
+- lens_label = object_lens_lens_label(current_lens)
+- trailing = local_assigns[:trailing]
+
+.d-flex.align-items-center.gap-2.flex-wrap
+  .dropdown.d-inline-flex.align-items-center
+    %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Switch object"}
+      %span= object_label
+    %ul.dropdown-menu.py-1
+      - objects.each_with_index do |object, index|
+        - if index == 1 && objects.first[:key] == :overall
+          %li
+            %hr.dropdown-divider.my-1
+        %li
+          - if object[:current]
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %span.flex-grow-1= object[:label]
+              %i.bi.bi-check-circle.text-success
+          - elsif object[:path].present?
+            = link_to object[:path], class: "dropdown-item d-flex align-items-center gap-2" do
+              = object[:label]
+          - else
+            .dropdown-item.text-muted.disabled= object[:label]
+
+  %span.text-muted.fs-1.fw-light.user-select-none{aria: {hidden: true}} ·
+
+  .dropdown.d-inline-flex.align-items-center
+    %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Switch page type"}
+      %span= lens_label
+    %ul.dropdown-menu.py-1
+      - lenses.each do |lens|
+        %li
+          - if lens[:current]
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %span.flex-grow-1= lens[:label]
+              %i.bi.bi-check-circle.text-success
+          - elsif lens[:path].present?
+            = link_to lens[:path], class: "dropdown-item d-flex align-items-center gap-2" do
+              = lens[:label]
+          - else
+            .dropdown-item.text-muted.disabled= lens[:label]
+
+  - if trailing.present?
+    = trailing

@@ -4,13 +4,15 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Insights", url: organization_insights_path(@organization) }, { label: "OG Scorecard", url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-bar-chart-line.me-2
-      Insights: OG Scorecard
-      %span.d-inline-flex.align-items-center.ms-2{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "Weekly metrics and targets. Click for definitions and how to read this table."}
-        %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#ogScorecardPageInfo", "aria-expanded" => "false", "aria-controls" => "ogScorecardPageInfo", "aria-label" => "Show page explanation"}
-          %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+  - object_lens_trailing = capture do
+    %span.d-inline-flex.align-items-center{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "Weekly metrics and targets. Click for definitions and how to read this table."}
+      %button.btn.btn-link.p-0.text-body{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#ogScorecardPageInfo", "aria-expanded" => "false", "aria-controls" => "ogScorecardPageInfo", "aria-label" => "Show page explanation"}
+        %i.bi.bi-info-circle.fs-1.lh-1.align-middle{style: "text-shadow: 0 1px 3px rgba(0,0,0,0.25);"}
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :overall,
+           current_lens: :insights,
+           trailing: object_lens_trailing
 
 .collapse.mb-4#ogScorecardPageInfo
   .alert.alert-info.mb-0

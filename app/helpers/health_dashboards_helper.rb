@@ -55,12 +55,6 @@ module HealthDashboardsHelper
 
   def goals_health_other_actions(organization, manager_id:)
     [
-      { label: "My goals", path: organization_goals_path(organization), icon: "bi-bullseye" },
-      {
-        label: "Company Goal Insights",
-        path: organization_insights_goals_path(organization),
-        icon: "bi-bar-chart-steps"
-      },
       {
         label: "Download goals (CSV)",
         path: organization_goals_health_export_path(organization, manager_id: manager_id),

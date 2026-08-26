@@ -6,10 +6,10 @@
 - chart_title_period = @chart_title_period
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-bar-chart-line.me-2
-      Insights: Goals
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :goals,
+           current_lens: :insights
 
 = render 'timeframe_selector',
   timeframe: @timeframe,
@@ -18,15 +18,6 @@
   custom_from: @insights_custom_from,
   custom_to: @insights_custom_to,
   wrapper_class: 'mb-4'
-
-.row.justify-content-center.mb-3
-  .col-lg-12.d-flex.gap-2.flex-wrap.align-items-center
-    = link_to organization_goals_path(@organization), class: "btn btn-outline-primary" do
-      %i.bi.bi-bullseye.me-2
-      My goals
-    = link_to organization_goals_health_path(@organization), class: "btn btn-outline-secondary" do
-      %i.bi.bi-activity.me-2
-      Goals Health Dashboard
 
 - charts_after_first = [{ dom_id: 'goals-lifecycle-chart', card_heading: "Goals lifecycle by week (#{chart_title_period})", chart_title: "Goals lifecycle by week (#{chart_title_period})", y_axis_title: 'Number of goals', header_class: 'bg-info text-white', header_icon: 'bi-calendar-week', chart_data: @goals_lifecycle_chart_data }]
 - charts_after_second = [{ dom_id: 'goals-association-chart', card_heading: "Goals by association & status (#{chart_title_period})", chart_title: "Goals by association and status (#{chart_title_period})", y_axis_title: 'Number of goals', header_class: 'bg-dark text-white', header_icon: 'bi-link-45deg', chart_data: @goals_association_chart_data }]

@@ -5,17 +5,21 @@
 - historical = @plan[:historical]
 
 - content_for :header do
-  .d-flex.flex-wrap.align-items-center.gap-2
-    %h1.mb-0.d-flex.align-items-center.gap-2
-      Protect Flow
-      = render "shared/page_help/header_info_button",
-               collapse_id: page_help_id,
-               tooltip: "Protect flow — stale clarity kills it. Click for details."
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Protect flow — stale clarity kills it. Click for details."
     %span.badge.text-bg-warning
       %i.bi.bi-flask.me-1
       Beta
-  %p.text-muted.mb-0
-    Protect flow — stale clarity kills it. About 30 focused minutes per person this week.
+  .d-flex.flex-column.gap-1
+    = render "shared/object_lens_header/switchers",
+             organization: @organization,
+             current_object: :overall,
+             current_lens: :health,
+             trailing: object_lens_trailing
+    %p.text-muted.mb-0
+      Protect flow — stale clarity kills it. About 30 focused minutes per person this week.
 
 .collapse.mb-4{id: page_help_id}
   = render "organizations/protect_flow/page_help"
@@ -36,13 +40,6 @@
           = f.submit "Go", class: "btn btn-primary btn-lg w-100"
       - if params[:week_start].present?
         = hidden_field_tag :week_start, params[:week_start]
-
-.row.justify-content-center.mb-3
-  .col-lg-12
-    = render "organizations/health/dashboard_switcher",
-             organization: @organization,
-             current: :protect_flow,
-             manager_id: @current_manager_filter
 
 = render "organizations/protect_flow/week_picker",
          available_weeks: @plan[:available_weeks],

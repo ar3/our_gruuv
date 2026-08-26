@@ -610,9 +610,14 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it 'renders goals insights page with timeframe links' do
+    it 'renders goals insights page with timeframe links and object/lens switchers' do
+      allow_any_instance_of(OrganizationPolicy).to receive(:goals_health?).and_return(true)
       get organization_insights_goals_path(organization)
       expect(response.body).to include('Insights: Goals')
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include('Switch page type')
+      expect(response.body).to include(organization_goals_path(organization))
+      expect(response.body).to include(organization_goals_health_path(organization))
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')

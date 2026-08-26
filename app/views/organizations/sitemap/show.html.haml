@@ -4,11 +4,13 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Sitemap", url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-map.me-2
-      Sitemap
-    %span.badge.bg-secondary.ms-2= "#{@sitemap_entry_count} pages"
+  - object_lens_trailing = capture do
+    %span.badge.bg-secondary= "#{@sitemap_entry_count} pages"
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :overall,
+           current_lens: :directory,
+           trailing: object_lens_trailing
 
 .row.justify-content-center.mb-4
   .col-lg-12
