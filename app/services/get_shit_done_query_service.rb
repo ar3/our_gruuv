@@ -113,6 +113,7 @@ class GetShitDoneQueryService
     {
       observable_moments: observable_moments,
       maap_snapshots: maap_snapshots,
+      pending_acknowledgements: pending_acknowledgement_queue.items,
       pending_acknowledgement_count: pending_acknowledgement_count,
       observation_drafts: observation_drafts,
       silent_observations: silent_observations,

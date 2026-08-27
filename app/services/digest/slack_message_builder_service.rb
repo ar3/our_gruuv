@@ -9,7 +9,7 @@ module Digest
 
     GSD_CATEGORY_LABELS = {
       observable_moments: 'Observable Moments',
-      maap_snapshots: -> { I18n.t('terminology.clarity_check_ins_awaiting_acknowledgement') },
+      pending_acknowledgements: -> { I18n.t('terminology.clarity_check_ins_awaiting_acknowledgement') },
       observation_drafts: 'Observation Drafts',
       silent_observations: 'Silent Observations',
       feedback_expectation_mismatches: 'Feedback to clean up',
@@ -537,8 +537,13 @@ module Digest
       case key
       when :observable_moments
         collection.map { |m| slack_escape(m.digest_sentence) }
-      when :maap_snapshots
-        collection.map { |s| "#{s.change_type.humanize}: #{slack_escape(s.reason.to_s.truncate(60))}" }
+      when :pending_acknowledgements
+        acknowledge_url = slack_app_url(
+          :acknowledge_organization_company_teammate_check_ins_url,
+          @organization,
+          @teammate
+        )
+        collection.map { |c| acknowledgement_check_in_label(c, acknowledge_url) }
       when :observation_drafts, :silent_observations, :feedback_expectation_mismatches
         collection.map { |o| observation_draft_label(o) }
       when :feedback_requests_awaiting_response
@@ -550,6 +555,17 @@ module Digest
       else
         []
       end
+    end
+
+    def acknowledgement_check_in_label(check_in, acknowledge_url)
+      subject = case check_in
+                when AssignmentCheckIn then check_in.assignment&.title
+                when AspirationCheckIn then check_in.aspiration&.name
+                when PositionCheckIn then check_in.employment_tenure&.position&.display_name
+                else nil
+                end
+      subject = slack_escape(subject.presence || I18n.t('terminology.slack_clarity_check_in_subject_default'))
+      "#{subject} <#{acknowledge_url}|Acknowledge>"
     end
 
     def feedback_request_label(feedback_request)

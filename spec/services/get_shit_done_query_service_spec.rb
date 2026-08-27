@@ -394,6 +394,8 @@ RSpec.describe GetShitDoneQueryService do
       
       expect(result).to have_key(:observable_moments)
       expect(result).to have_key(:maap_snapshots)
+      expect(result).to have_key(:pending_acknowledgements)
+      expect(result).to have_key(:pending_acknowledgement_count)
       expect(result).to have_key(:observation_drafts)
       expect(result).to have_key(:silent_observations)
       expect(result).to have_key(:feedback_expectation_mismatches)

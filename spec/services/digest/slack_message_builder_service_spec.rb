@@ -150,6 +150,7 @@ RSpec.describe Digest::SlackMessageBuilderService do
         total_pending: 1,
         observable_moments: [],
         maap_snapshots: [],
+        pending_acknowledgements: [],
         observation_drafts: [],
         silent_observations: [],
         feedback_expectation_mismatches: [observation],
@@ -165,6 +166,39 @@ RSpec.describe Digest::SlackMessageBuilderService do
       payload = result.find { |p| p[:text].include?('Feedback to clean up') }
       expect(payload).to be_present
       expect(payload[:text]).to include('Needs a constructive rating')
+    end
+
+    it 'includes a Clarity check-ins awaiting acknowledgement thread when pending' do
+      company = organization.root_company || organization
+      assignment = create(:assignment, company: company, title: 'Acknowledge Me Assignment')
+      check_in = create(:assignment_check_in, :officially_completed,
+                        teammate: teammate,
+                        assignment: assignment,
+                        official_check_in_completed_at: 1.day.ago)
+      gsd_items = {
+        total_pending: 1,
+        observable_moments: [],
+        maap_snapshots: [],
+        pending_acknowledgements: [check_in],
+        pending_acknowledgement_count: 1,
+        observation_drafts: [],
+        silent_observations: [],
+        feedback_expectation_mismatches: [],
+        goals_needing_check_in: [],
+        check_ins_awaiting_input: []
+      }
+      allow(GetShitDoneQueryService).to receive(:new).and_return(instance_double(GetShitDoneQueryService, all_pending_items: gsd_items))
+      allow(Digest::AboutMeContentService).to receive(:new).and_return(instance_double(Digest::AboutMeContentService, sections: []))
+
+      builder = described_class.new(teammate: teammate, organization: organization)
+      result = builder.gsd_thread_payloads
+      main = builder.main_message
+
+      payload = result.find { |p| p[:text].include?('Clarity check-ins awaiting acknowledgement') }
+      expect(payload).to be_present
+      expect(payload[:text]).to include('Acknowledge Me Assignment')
+      expect(payload[:text]).to include('Acknowledge')
+      expect(main[:blocks].first.dig(:text, :text)).to include('Clarity check-ins awaiting acknowledgement')
     end
   end
 
