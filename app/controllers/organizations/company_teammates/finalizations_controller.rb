@@ -73,6 +73,8 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
       organization: organization,
       viewer_teammate: current_company_teammate
     )
+
+    @pending_acknowledgement_count = CheckIns::AcknowledgementQueue.pending_count_for(teammate: @teammate)
   end
   
   def create

@@ -119,9 +119,18 @@
   - else
     .row.mt-4
       .col-12
-        .alert.alert-info
-          %i.bi.bi-info-circle.me-2
-          %strong= no_clarity_check_ins_ready_for_finalization_label
+        - if @pending_acknowledgement_count.to_i.positive?
+          .alert.alert-warning.d-flex.align-items-center.flex-wrap.gap-2
+            %span
+              %i.bi.bi-exclamation-triangle.me-2
+              %strong= nothing_to_review_but_acknowledgements_needed_label(count: @pending_acknowledgement_count)
+            = link_to go_to_acknowledge_clarity_check_ins_label,
+                      acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
+                      class: 'btn btn-sm btn-warning'
+        - else
+          .alert.alert-info
+            %i.bi.bi-info-circle.me-2
+            %strong= no_clarity_check_ins_ready_for_finalization_label
 
 :javascript
   document.addEventListener('DOMContentLoaded', function() {

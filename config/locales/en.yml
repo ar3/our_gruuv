@@ -94,6 +94,10 @@ en:
     close_selected_clarity_check_ins: "Close selected clarity check-ins and open new ones"
     manager_will_finalize_clarity_check_ins: "Your manager will finalize these clarity check-ins. You can view the status below."
     no_clarity_check_ins_ready_for_finalization: "No clarity check-ins are ready for finalization at this time."
+    nothing_to_review_but_acknowledgements_needed:
+      one: "Nothing to review right now, but %{count} check-in needs acknowledgement."
+      other: "Nothing to review right now, but %{count} check-ins need acknowledgement."
+    go_to_acknowledge_clarity_check_ins: "Go to Acknowledge"
     finalize_clarity_check_ins_for_person: "Finalize clarity check-ins for %{name}"
     finalize_clarity_check_ins_breadcrumb: "Finalize clarity check-ins"
     clarity_check_ins_awaiting_input_description: "Clarity check-ins where the other participant has completed their side"

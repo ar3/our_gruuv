@@ -82,6 +82,30 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
       expect(response.body).to include('Updated forecast')
       expect(response.body).to include('Energy bar guide')
     end
+
+    context "when nothing is ready to finalize" do
+      before { position_check_in.destroy! }
+
+      it "shows the empty finalization banner" do
+        get organization_company_teammate_finalization_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("No clarity check-ins are ready for finalization at this time.")
+        expect(response.body).not_to include("Go to Acknowledge")
+      end
+
+      it "points to acknowledge when finalized check-ins still need acknowledgement" do
+        create(:position_check_in, :closed, teammate: employee_teammate, employment_tenure: employment_tenure)
+
+        get organization_company_teammate_finalization_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Nothing to review right now, but 1 check-in needs acknowledgement.")
+        expect(response.body).to include("Go to Acknowledge")
+        expect(response.body).to include(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
+        expect(response.body).not_to include("No clarity check-ins are ready for finalization at this time.")
+      end
+    end
   end
 
   describe "POST /organizations/:org_id/company_teammates/:company_teammate_id/finalization" do

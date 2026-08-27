@@ -245,6 +245,14 @@ module TerminologyHelper
     terminology(:no_clarity_check_ins_ready_for_finalization)
   end
 
+  def nothing_to_review_but_acknowledgements_needed_label(count:)
+    terminology(:nothing_to_review_but_acknowledgements_needed, count: count)
+  end
+
+  def go_to_acknowledge_clarity_check_ins_label
+    terminology(:go_to_acknowledge_clarity_check_ins)
+  end
+
   def finalize_clarity_check_ins_for_person_label(name:)
     terminology(:finalize_clarity_check_ins_for_person, name: name)
   end
