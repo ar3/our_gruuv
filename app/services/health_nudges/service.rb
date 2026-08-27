@@ -173,6 +173,12 @@ module HealthNudges
         main_notification: notification,
         shared_metadata: shared_metadata
       )
+      post_importance_thread_reply!(
+        slack_service: slack_service,
+        main_notification: notification,
+        shared_metadata: shared_metadata,
+        message: message
+      )
 
       Result.ok(notification: notification)
     rescue Slack::Web::Api::Errors::SlackError => e
@@ -199,6 +205,20 @@ module HealthNudges
         )
         slack_service.post_message(thread_notification.id)
       end
+    end
+
+    def post_importance_thread_reply!(slack_service:, main_notification:, shared_metadata:, message:)
+      return unless message.include_importance_thread?
+
+      thread_notification = @manager_teammate.notifications.create!(
+        notification_type: NOTIFICATION_TYPE,
+        main_thread: main_notification,
+        status: "preparing_to_send",
+        metadata: shared_metadata.merge("thread_kind" => "importance"),
+        rich_message: message.importance_slack_blocks,
+        fallback_text: message.importance_fallback_text
+      )
+      slack_service.post_message(thread_notification.id)
     end
   end
 end

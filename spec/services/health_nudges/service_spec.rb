@@ -62,13 +62,18 @@ RSpec.describe HealthNudges::Service do
       )
 
       expect(result.ok?).to be true
-      expect(posted_ids.size).to eq(2)
+      expect(posted_ids.size).to eq(3)
       main = Notification.find(posted_ids.first)
-      thread = Notification.find(posted_ids.last)
+      teammate_thread = Notification.find(posted_ids[1])
+      why_thread = Notification.find(posted_ids.last)
       expect(main.main_thread_id).to be_nil
-      expect(thread.main_thread).to eq(main)
-      expect(thread.fallback_text).to include(employee.person.casual_name)
-      expect(thread.rich_message.first["type"] || thread.rich_message.first[:type]).to eq("section")
+      expect(main.fallback_text).not_to include("Fresh Goal Confidence check-ins")
+      expect(teammate_thread.main_thread).to eq(main)
+      expect(teammate_thread.fallback_text).to include(employee.person.casual_name)
+      expect(teammate_thread.rich_message.first["type"] || teammate_thread.rich_message.first[:type]).to eq("section")
+      expect(why_thread.main_thread).to eq(main)
+      expect(why_thread.metadata["thread_kind"]).to eq("importance")
+      expect(why_thread.fallback_text).to include("Fresh Goal Confidence check-ins")
     end
 
     it "creates a health_nudge notification for check-ins health" do

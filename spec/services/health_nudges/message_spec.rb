@@ -24,7 +24,10 @@ RSpec.describe HealthNudges::Message do
 
     expect(message.body_mrkdwn).to include("Goals Health check-in")
     expect(message.body_mrkdwn).to include("Goal Confidence")
-    expect(message.body_mrkdwn).to include("Fresh Goal Confidence check-ins")
+    expect(message.body_mrkdwn).not_to include("Fresh Goal Confidence check-ins")
+    expect(message.body_mrkdwn).not_to include("Why this matters is in the thread")
+    expect(message.include_importance_thread?).to be true
+    expect(message.importance_mrkdwn).to include("Fresh Goal Confidence check-ins")
     expect(message.dashboard_url).to start_with("http")
     expect(message.dashboard_url).to include("/goals_health")
     expect(message.body_mrkdwn).to include("<#{message.dashboard_url}|")
@@ -54,8 +57,9 @@ RSpec.describe HealthNudges::Message do
     expect(message.body_mrkdwn).to include("Overall Health check-in")
     expect(message.body_mrkdwn).to include("Overall Health for your direct reports")
     expect(message.body_mrkdwn).to include("Open Overall Health for your team")
-    expect(message.body_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
-    expect(message.body_mrkdwn).to include(
+    expect(message.body_mrkdwn).not_to include("We do Clarity check-ins for 3 reasons")
+    expect(message.importance_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
+    expect(message.importance_mrkdwn).to include(
       "<#{HealthNudges::Registry::FLOW_TED_URL}|Mihaly Csikszentmihalyi>"
     )
     expect(message.body_mrkdwn).not_to include("Protect Flow")
@@ -71,12 +75,16 @@ RSpec.describe HealthNudges::Message do
       spotlight_stats: stats
     )
 
-    expect(message.body_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
-    expect(message.body_mrkdwn).to include("Why this matters?")
-    expect(message.body_mrkdwn).to include(
+    expect(message.body_mrkdwn).not_to include("We do Clarity check-ins for 3 reasons")
+    expect(message.include_importance_thread?).to be true
+    expect(message.importance_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
+    expect(message.importance_mrkdwn).to include("Why this matters?")
+    expect(message.importance_mrkdwn).to include(
       "<#{HealthNudges::Registry::FLOW_TED_URL}|Mihaly Csikszentmihalyi>"
     )
-    expect(message.body_mrkdwn).to include("Challenge (what are the expectations)")
-    expect(message.body_mrkdwn).not_to include("—")
+    expect(message.importance_mrkdwn).to include("Challenge (what are the expectations)")
+    expect(message.importance_mrkdwn).not_to include("—")
+    expect(message.preview_plain).to include("Thread after teammate details")
+    expect(message.preview_plain).to include("We do Clarity check-ins for 3 reasons")
   end
 end

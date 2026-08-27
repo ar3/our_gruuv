@@ -33,6 +33,31 @@ module HealthNudges
       @config.fetch(:dashboard_link_label)
     end
 
+    # Why copy posts as its own Slack thread reply after teammate details (when unhealthy).
+    def include_importance_thread?
+      unhealthy?
+    end
+
+    def importance_mrkdwn
+      "*Why*\n\n#{@config.fetch(:importance)}"
+    end
+
+    def importance_fallback_text
+      "Why: #{@config.fetch(:importance)}"
+    end
+
+    def importance_slack_blocks
+      [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: importance_mrkdwn
+          }
+        }
+      ]
+    end
+
     def body_mrkdwn
       lines = [
         "*#{@config.fetch(:title)}*",
@@ -40,7 +65,6 @@ module HealthNudges
         greeting_line,
         "",
         summary_line,
-        *(unhealthy? ? [ "", @config.fetch(:importance) ] : []),
         "",
         closing_line
       ]
@@ -56,7 +80,6 @@ module HealthNudges
       parts = [
         "#{@config.fetch(:title)} for #{manager_name}'s team:",
         summary_line,
-        *(unhealthy? ? [ @config.fetch(:importance) ] : []),
         "Open: #{dashboard_url}"
       ]
       parts.join(" ")
@@ -91,13 +114,23 @@ module HealthNudges
     end
 
     def preview_plain
-      body_mrkdwn
+      parts = [ strip_mrkdwn(body_mrkdwn) ]
+      if include_importance_thread?
+        parts << ""
+        parts << "(Thread after teammate details)"
+        parts << strip_mrkdwn(importance_mrkdwn)
+      end
+      parts.join("\n")
+    end
+
+    private
+
+    def strip_mrkdwn(text)
+      text
         .gsub(/\*(.*?)\*/, '\1')
         .gsub(/<(.*?)\|(.*?)>/, '\2 (\1)')
         .gsub(/<(.*?)>/, '\1')
     end
-
-    private
 
     def greeting_line
       "Hi #{manager_name} ... #{@config.fetch(:greeting)}."
