@@ -72,6 +72,37 @@ RSpec.describe AssignmentSurveys::Results do
     expect(assignment_row[:overall_average]).to eq(5.0)
   end
 
+  it "aggregates personal alignment on the 1/3/5/6 scale" do
+    create(
+      :assignment_survey_response,
+      :complete,
+      company_teammate: teammate,
+      assignment: assignment,
+      personal_alignment: "only_if_necessary"
+    )
+    other = create(:teammate, :assigned_employee, organization: organization)
+    create(
+      :assignment_survey_response,
+      :complete,
+      company_teammate: other,
+      assignment: assignment,
+      personal_alignment: "love"
+    )
+
+    results = described_class.new(
+      organization: organization,
+      teammates: CompanyTeammate.where(id: [ teammate.id, other.id ])
+    )
+
+    alignment = results.assignment_rows.find { |row| row[:assignment_id] == assignment.id }
+      .fetch(:distributions)
+      .fetch(:personal_alignment)
+
+    expect(alignment[:counts]).to eq({ 1 => 1, 3 => 0, 5 => 0, 6 => 1 })
+    expect(alignment[:average]).to eq(3.5)
+    expect(alignment[:total]).to eq(2)
+  end
+
   describe "assignment sort" do
     let(:alpha) { create(:assignment, company: organization, title: "Alpha role") }
     let(:middle) { create(:assignment, company: organization, title: "Middle role") }

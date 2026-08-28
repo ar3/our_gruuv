@@ -1,0 +1,36 @@
+-# locals: distributions
+- labels = AssignmentSurveyResponse::PERSONAL_ALIGNMENT_OPTIONS.index_by(&:last).transform_values(&:first)
+- score_by_value = AssignmentSurveyResponse::PERSONAL_ALIGNMENT_SCORES
+- data = distributions.fetch(:personal_alignment)
+.mb-3
+  .d-flex.justify-content-between.align-items-center.gap-2.flex-wrap.mb-2
+    %h4.h6.mb-0 Personal alignment
+    .small.text-muted.d-inline-flex.align-items-center.gap-1
+      %span Average
+      = render "quality_average", distributions: distributions, dimension: :personal_alignment, title: "Personal alignment"
+      %span / 6
+  - score_by_value.sort_by { |_value, score| score }.each do |value, score|
+    - label = labels.fetch(value)
+    - count = data[:counts].fetch(score, 0)
+    - percentage = data[:total].positive? ? ((count.to_f / data[:total]) * 100).round : 0
+    - rating_set = data.fetch(:rating_sets, {}).fetch(score, {})
+    .row.g-2.align-items-center.mb-1
+      .col-5.col-md-4.small= label
+      .col
+        %progress.assignment-survey-distribution-progress.w-100{value: percentage, max: 100, "aria-label": "Personal alignment: #{label}"} #{percentage}%
+      .col-auto.small.text-muted.assignment-survey-distribution-count
+        - if count.positive?
+          %span{role: "button",
+            tabindex: "0",
+            "aria-label": "#{count} responses for Personal alignment: #{label}. Hover for teammate and assignment counts.",
+            "data-bs-toggle": "popover",
+            "data-bs-trigger": "hover focus",
+            "data-bs-placement": "left",
+            "data-bs-html": "true",
+            "data-bs-content": assignment_survey_rating_set_popover_content(
+              teammate_count: rating_set.fetch(:teammate_count, 0),
+              assignment_count: rating_set.fetch(:assignment_count, 0)
+            ),
+            style: "cursor: help;"}= count
+        - else
+          = count

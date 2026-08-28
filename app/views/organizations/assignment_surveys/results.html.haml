@@ -104,23 +104,33 @@
                     dimension: :relevant,
                     title: "Relevant",
                     show_label: true
+                  = render "quality_average",
+                    distributions: row[:distributions],
+                    dimension: :personal_alignment,
+                    title: "Personal alignment",
+                    show_label: true
                 %span.badge.text-bg-secondary #{row[:response_count]} responses
-            .row.g-4.mt-2
-              .col-12.col-lg-4
+            %p.mb-3.mt-2
+              = link_to organization_assignment_path(organization, row[:assignment_id]) do
+                Go to #{row[:title]} to see responses you have access to, just for this Assignment
+            .row.g-4
+              .col-12.col-lg-3
                 = render "distribution",
                   distributions: row[:distributions],
                   dimension: :understandable,
                   title: "Understandable"
-              .col-12.col-lg-4
+              .col-12.col-lg-3
                 = render "distribution",
                   distributions: row[:distributions],
                   dimension: :possible,
                   title: "Possible"
-              .col-12.col-lg-4
+              .col-12.col-lg-3
                 = render "distribution",
                   distributions: row[:distributions],
                   dimension: :relevant,
                   title: "Relevant"
+              .col-12.col-lg-3
+                = render "personal_alignment_distribution", distributions: row[:distributions]
 - elsif !@results.show_overall_results?
   .alert.alert-info
     No submitted feedback scores are available yet for the people or assignments you can see.

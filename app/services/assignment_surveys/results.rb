@@ -172,7 +172,27 @@ module AssignmentSurveys
         end
         average = values.any? ? (values.sum.to_f / values.size).round(2) : nil
         [ dimension, { counts: counts, average: average, total: values.size, rating_sets: rating_sets } ]
+      end.merge(personal_alignment: personal_alignment_distribution_for(responses))
+    end
+
+    def personal_alignment_distribution_for(responses)
+      rated = responses.select do |response|
+        response.personal_alignment.present? &&
+          AssignmentSurveyResponse::PERSONAL_ALIGNMENT_SCORES.key?(response.personal_alignment)
       end
+      scores = rated.map { |response| AssignmentSurveyResponse::PERSONAL_ALIGNMENT_SCORES.fetch(response.personal_alignment) }
+      score_keys = AssignmentSurveyResponse::PERSONAL_ALIGNMENT_SCORES.values.uniq.sort
+      counts = score_keys.index_with { |score| scores.count(score) }
+      rating_sets = score_keys.index_with do |score|
+        set = rated.select { |response| AssignmentSurveyResponse::PERSONAL_ALIGNMENT_SCORES.fetch(response.personal_alignment) == score }
+        {
+          teammate_count: set.map(&:teammate_id).uniq.size,
+          assignment_count: set.map(&:assignment_id).uniq.size
+        }
+      end
+      average = scores.any? ? (scores.sum.to_f / scores.size).round(2) : nil
+
+      { counts: counts, average: average, total: scores.size, rating_sets: rating_sets }
     end
 
     def overall_average_for(distributions)

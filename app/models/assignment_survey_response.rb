@@ -14,6 +14,13 @@ class AssignmentSurveyResponse < ApplicationRecord
     [ "Like", "like", 4 ],
     [ "Love", "love", 6 ]
   ].freeze
+  # Numeric scores for aggregating personal alignment (results averages / charts).
+  PERSONAL_ALIGNMENT_SCORES = {
+    "only_if_necessary" => 1,
+    "neutral" => 3,
+    "like" => 5,
+    "love" => 6
+  }.freeze
 
   belongs_to :company_teammate, class_name: "CompanyTeammate", foreign_key: :teammate_id
   alias_method :teammate, :company_teammate
