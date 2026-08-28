@@ -45,6 +45,14 @@ module AssignmentSurveysHelper
     safe_join(parts)
   end
 
+  def hide_fresh_assignment_feedback_fields?(due_status, response, form_errors: nil)
+    return false if form_errors.present?
+    return false unless due_status&.early?
+    return false if response.content?
+
+    true
+  end
+
   def assignment_survey_quality_aria_label(signal, dimension_title: nil)
     return "No average yet" if signal.blank?
 

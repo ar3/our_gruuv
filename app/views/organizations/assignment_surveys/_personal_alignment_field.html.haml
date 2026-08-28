@@ -1,0 +1,17 @@
+-# Locals: field (fields_for builder for AssignmentSurveyResponse)
+.mb-4
+  %fieldset
+    %legend.h6.mb-2 How do you feel about taking on this assignment?
+    .d-flex.flex-wrap.gap-2
+      - AssignmentSurveyResponse::PERSONAL_ALIGNMENT_BUTTONS.each do |label, value, likert_tone|
+        - input_id = "#{field.object_name}_personal_alignment_#{value}".parameterize(separator: "_")
+        = field.radio_button :personal_alignment,
+          value,
+          id: input_id,
+          class: "btn-check",
+          autocomplete: "off"
+        = field.label :personal_alignment,
+          label,
+          for: input_id,
+          value: value,
+          class: "btn btn-sm btn-likert btn-likert-#{likert_tone}"

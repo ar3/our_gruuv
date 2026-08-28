@@ -25,3 +25,18 @@
           = flash[:error]
         %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
 
+  - if flash[:assignment_survey_cta_assignment_id].present? && current_organization.present?
+    - cta_assignment_id = flash[:assignment_survey_cta_assignment_id]
+    - cta_title = flash[:assignment_survey_cta_assignment_title].presence || "this assignment"
+    .toast.align-items-center.text-bg-primary.border-0{role: "alert", "aria-live": "polite", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "12000"}
+      .d-flex
+        .toast-body
+          %i.bi.bi-clipboard2-check.me-2
+          Check-in saved. Consider updating how
+          %strong= cta_title
+          feels to take on.
+          = link_to "Give feedback",
+            organization_assignment_survey_path(current_organization, assignment_id: cta_assignment_id, anchor: "assignment-survey-response-#{cta_assignment_id}"),
+            class: "link-light fw-semibold ms-1"
+        %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+

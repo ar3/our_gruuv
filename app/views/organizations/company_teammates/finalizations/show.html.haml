@@ -132,6 +132,19 @@
             %i.bi.bi-info-circle.me-2
             %strong= no_clarity_check_ins_ready_for_finalization_label
 
+- if @view_mode == :employee && policy(organization).assignment_survey? && @assignment_survey_due_count.to_i.positive?
+  .row.mt-4
+    .col-12
+      .alert.alert-warning.d-flex.align-items-center.flex-wrap.gap-2
+        %span
+          %i.bi.bi-clipboard2-check.me-2
+          %strong
+            #{@assignment_survey_due_count} assignment#{'s' if @assignment_survey_due_count != 1} could use feedback after your check-in.
+          You can update how they feel to take on anytime.
+        = link_to "Give assignment feedback",
+                  organization_assignment_survey_path(organization),
+                  class: 'btn btn-sm btn-warning'
+
 :javascript
   document.addEventListener('DOMContentLoaded', function() {
     const checkboxes = document.querySelectorAll('.finalize-checkbox');

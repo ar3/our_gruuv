@@ -232,3 +232,10 @@
       != assignment_check_in_body_html
 
   = render "organizations/teammates/assignments/research_sections"
+
+  - if @viewer_is_check_in_employee && policy(@organization).assignment_survey?
+    = render "shared/assignment_surveys/cta_banner",
+      organization: @organization,
+      assignment: @assignment,
+      due_status: @assignment_survey_due_status,
+      viewer_holds_assignment: true

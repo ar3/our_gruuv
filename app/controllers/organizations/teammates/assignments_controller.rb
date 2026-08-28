@@ -67,6 +67,12 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       teammate_id: @teammate.id
     )
 
+    @assignment_survey_due_status = AssignmentSurveys::DueStatus.for(
+      teammate: @teammate,
+      assignment: @assignment
+    )
+    @viewer_is_check_in_employee = current_person == @teammate.person
+
     # Get current employment for position connection
     @current_employment = @teammate.employment_tenures.active.first
     @position_assignment = nil

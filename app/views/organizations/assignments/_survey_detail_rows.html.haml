@@ -1,0 +1,45 @@
+-# Locals: rows, history_points, scope_label
+- rows = local_assigns.fetch(:rows)
+- history_points = local_assigns.fetch(:history_points)
+- scope_label = local_assigns.fetch(:scope_label)
+
+%p.small.text-muted Showing detailed responses for #{scope_label}. Includes names and comments.
+
+.table-responsive.mb-4
+  %table.table.table-sm.align-middle
+    %thead
+      %tr
+        %th Teammate
+        %th Submitted
+        %th Alignment
+        %th Und.
+        %th Pos.
+        %th Rel.
+        %th Comment
+    %tbody
+      - rows.each do |row|
+        %tr
+          %td= row.teammate.person.casual_name
+          %td.small= row.submitted_at ? l(row.submitted_at, format: :long) : "—"
+          %td= row.personal_alignment&.humanize || "—"
+          %td= row.understandable_rating || "—"
+          %td= row.possible_rating || "—"
+          %td= row.relevant_rating || "—"
+          %td.small= row.comment.presence || "—"
+
+- teammate_history = history_points.group_by(&:teammate_id)
+- if teammate_history.any?
+  %h6.fw-semibold Sentiment over time
+  - rows.each do |row|
+    - points = teammate_history[row.teammate.id]
+    - next if points.blank? || points.size < 2
+    .mb-3
+      %div.small.fw-semibold= row.teammate.person.casual_name
+      %ul.small.mb-0
+        - points.each do |point|
+          %li
+            = point.submitted_at ? l(point.submitted_at.to_date, format: :long) : "—"
+            — und #{point.understandable_rating || "—"}
+            / pos #{point.possible_rating || "—"}
+            / rel #{point.relevant_rating || "—"}
+            / #{point.personal_alignment&.humanize || "—"}

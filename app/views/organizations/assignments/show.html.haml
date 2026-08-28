@@ -271,6 +271,15 @@
               - else
                 %span.text-muted These analytics will be available once 5 or more teammates have had a finalized check-in.
 
+    = render "organizations/assignments/survey_analytics", analytics: @survey_analytics
+
+    - if @viewer_holds_assignment && policy(@organization).assignment_survey?
+      = render "shared/assignment_surveys/cta_banner",
+        organization: @organization,
+        assignment: @assignment,
+        due_status: @survey_cta_due_status,
+        viewer_holds_assignment: true
+
     - if @teammates_with_finalized_check_ins_count > 5
       :javascript
         (function() {

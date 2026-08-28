@@ -1,0 +1,29 @@
+-# locals: form, response_fields, single_assignment_focus
+= response_fields.hidden_field :id
+= render "personal_alignment_field", field: response_fields
+= render "rating_field",
+  field: response_fields,
+  attribute: :understandable_rating,
+  prompt: assignment_survey_understandable_prompt(response_fields.object.snapshot_title)
+= render "rating_field",
+  field: response_fields,
+  attribute: :possible_rating,
+  prompt: assignment_survey_possible_prompt(response_fields.object.snapshot_title)
+= render "rating_field",
+  field: response_fields,
+  attribute: :relevant_rating,
+  prompt: assignment_survey_relevant_prompt(response_fields.object.snapshot_title)
+= response_fields.label :comment, class: "form-label fw-semibold" do
+  (Optional) Assignments are designed to provide extreme clarity and accountability... It helps us achieve this clarity if you add a comment to anything that is less than "Agree"
+= response_fields.text_area :comment,
+  class: "form-control",
+  rows: 3,
+  placeholder: "What would make this assignment clearer, more possible, or more relevant?"
+.text-end.mt-3
+  = form.button(single_assignment_focus ? "Submit feedback" : "Submit what I've filled out so far",
+    type: :submit,
+    name: "finalize",
+    value: "1",
+    class: "btn btn-outline-secondary btn-sm")
+  - unless single_assignment_focus
+    %p.small.text-muted.mb-0.mt-1 ... or fill them all out and save at the end

@@ -5,28 +5,25 @@ RSpec.describe AssignmentSurveys::Results do
   let(:teammate) { create(:teammate, :assigned_employee, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
 
-  it "uses only each teammate's latest finalized submission in aggregates" do
-    first = create(:assignment_survey_submission, company_teammate: teammate)
+  it "uses only each teammate's latest submitted response per assignment in aggregates" do
     create(
       :assignment_survey_response,
-      submission: first,
+      company_teammate: teammate,
       assignment: assignment,
       understandable_rating: 1,
       possible_rating: 1,
-      relevant_rating: 1
+      relevant_rating: 1,
+      submitted_at: 2.days.ago
     )
-    first.finalize!
-
-    second = create(:assignment_survey_submission, company_teammate: teammate)
     create(
       :assignment_survey_response,
-      submission: second,
+      company_teammate: teammate,
       assignment: assignment,
       understandable_rating: 6,
       possible_rating: 5,
-      relevant_rating: 4
+      relevant_rating: 4,
+      submitted_at: 1.day.ago
     )
-    second.finalize!
 
     results = described_class.new(
       organization: organization,
@@ -38,7 +35,7 @@ RSpec.describe AssignmentSurveys::Results do
     expect(understandable[:counts].fetch(1)).to eq(0)
     expect(understandable[:counts].fetch(6)).to eq(1)
     expect(understandable[:rating_sets].fetch(6)).to eq(teammate_count: 1, assignment_count: 1)
-    expect(results.participation_rows.first[:submission_count]).to eq(2)
+    expect(results.participation_rows.first[:response_count]).to eq(2)
   end
 
   it "counts distinct teammates and assignments in each rating set" do
@@ -46,24 +43,17 @@ RSpec.describe AssignmentSurveys::Results do
     other_assignment = create(:assignment, company: organization)
 
     [ teammate, other_teammate ].each do |survey_teammate|
-      submission = create(:assignment_survey_submission, company_teammate: survey_teammate)
-      create(
-        :assignment_survey_response,
-        submission: submission,
-        assignment: assignment,
-        understandable_rating: 6,
-        possible_rating: 5,
-        relevant_rating: 4
-      )
-      create(
-        :assignment_survey_response,
-        submission: submission,
-        assignment: other_assignment,
-        understandable_rating: 6,
-        possible_rating: 3,
-        relevant_rating: 2
-      )
-      submission.finalize!
+      [ assignment, other_assignment ].each do |rated_assignment|
+        create(
+          :assignment_survey_response,
+          :complete,
+          company_teammate: survey_teammate,
+          assignment: rated_assignment,
+          understandable_rating: 6,
+          possible_rating: rated_assignment == assignment ? 5 : 3,
+          relevant_rating: rated_assignment == assignment ? 4 : 2
+        )
+      end
     end
 
     results = described_class.new(
@@ -90,35 +80,29 @@ RSpec.describe AssignmentSurveys::Results do
     before do
       other = create(:teammate, :assigned_employee, organization: organization)
 
-      teammate_submission = create(:assignment_survey_submission, company_teammate: teammate)
-      [
-        [ alpha, 4, 4, 4 ],
-        [ middle, 2, 2, 2 ],
-        [ zeta, 6, 6, 6 ]
-      ].each do |rated_assignment, understandable, possible, relevant|
+      [ alpha, middle, zeta ].each do |rated_assignment|
         create(
           :assignment_survey_response,
-          submission: teammate_submission,
+          :complete,
+          company_teammate: teammate,
           assignment: rated_assignment,
           snapshot_title: rated_assignment.title,
-          understandable_rating: understandable,
-          possible_rating: possible,
-          relevant_rating: relevant
+          understandable_rating: rated_assignment == alpha ? 4 : (rated_assignment == middle ? 2 : 6),
+          possible_rating: rated_assignment == alpha ? 4 : (rated_assignment == middle ? 2 : 6),
+          relevant_rating: rated_assignment == alpha ? 4 : (rated_assignment == middle ? 2 : 6)
         )
       end
-      teammate_submission.finalize!
 
-      other_submission = create(:assignment_survey_submission, company_teammate: other)
       create(
         :assignment_survey_response,
-        submission: other_submission,
+        :complete,
+        company_teammate: other,
         assignment: middle,
         snapshot_title: middle.title,
         understandable_rating: 1,
         possible_rating: 1,
         relevant_rating: 1
       )
-      other_submission.finalize!
     end
 
     def titles_for(sort)
@@ -148,26 +132,23 @@ RSpec.describe AssignmentSurveys::Results do
     other_assignment = create(:assignment, company: organization, title: "Other role")
 
     [ teammate, other ].each do |survey_teammate|
-      submission = create(:assignment_survey_submission, company_teammate: survey_teammate)
       create(
         :assignment_survey_response,
-        submission: submission,
+        :complete,
+        company_teammate: survey_teammate,
         assignment: assignment,
-        snapshot_title: assignment.title,
-        understandable_rating: 6,
-        possible_rating: 6,
-        relevant_rating: 6
+        snapshot_title: assignment.title
       )
       create(
         :assignment_survey_response,
-        submission: submission,
+        :complete,
+        company_teammate: survey_teammate,
         assignment: other_assignment,
         snapshot_title: other_assignment.title,
         understandable_rating: 1,
         possible_rating: 1,
         relevant_rating: 1
       )
-      submission.finalize!
     end
 
     results = described_class.new(

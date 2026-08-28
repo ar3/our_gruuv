@@ -88,7 +88,7 @@
             %p.text-muted.mb-0= view_latest_clarity_check_ins_description
           %i.bi.bi-table.display-4.text-info
 
-.row.g-3
+.row.g-3.mb-4
   .col-12.col-lg-6
     = link_to organization_company_teammate_finalization_path(organization, @teammate), class: "text-decoration-none" do
       - review_card_class = @ready_for_review_count.to_i.positive? ? "border-warning" : "border-secondary"
@@ -112,17 +112,46 @@
               - else
                 No check-ins waiting for acknowledgement.
           %i.bi.bi-journal-check.display-4.text-dark
-    = link_to audit_organization_employee_path(organization, @teammate),
-              class: "btn btn-link btn-sm ps-0 text-muted d-inline-flex align-items-center gap-1 mt-2" do
-      %span View audit — every major change to the job description over time
-      %i.bi.bi-box-arrow-up-right.flex-shrink-0{aria: {hidden: true}}
 
-.row.mt-2.mb-4
-  .col-12.col-sm-10.offset-sm-1
+- if policy(organization).assignment_survey? && @assignment_survey_available
+  - secondary_col_class = "col-12 col-lg-4"
+- else
+  - secondary_col_class = "col-12 col-lg-6"
+.row.g-3.mb-4
+  - if policy(organization).assignment_survey? && @assignment_survey_available
+    %div{class: secondary_col_class}
+      = link_to organization_assignment_survey_path(organization), class: "text-decoration-none" do
+        - survey_card_class = @assignment_survey_due_count.to_i.positive? ? "border-warning" : "border-light"
+        .card.h-100.hover-lift.bg-light{class: survey_card_class, style: "cursor: pointer;"}
+          .card-body.p-3.d-flex.justify-content-between.align-items-start.gap-3
+            .flex-grow-1
+              %h5.fw-semibold.mb-1.text-body
+                - if @assignment_survey_due_count.to_i.positive?
+                  Give feedback on #{@assignment_survey_due_count} assignment#{'s' if @assignment_survey_due_count != 1}
+                - else
+                  Give assignment feedback
+              %p.small.text-muted.mb-0
+                - if @assignment_survey_due_count.to_i.positive?
+                  After a check-in or assignment change — update how they feel to take on.
+                - else
+                  Optional. You're up to date — you can still give feedback early.
+            %i.bi.bi-clipboard2-check.fs-2.text-muted
+
+  %div{class: secondary_col_class}
+    = link_to audit_organization_employee_path(organization, @teammate), class: "text-decoration-none" do
+      .card.h-100.hover-lift.bg-light.border-light{style: "cursor: pointer;"}
+        .card-body.p-3.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            %h5.fw-semibold.mb-1.text-body View audit
+            %p.small.text-muted.mb-0 Every major change to the job description over time.
+          %i.bi.bi-clock-history.fs-2.text-muted
+
+  %div{class: secondary_col_class}
     = link_to up_next_organization_company_teammate_check_ins_path(organization, @teammate),
-              class: "text-decoration-none text-body d-block" do
-      .border.rounded.p-4.bg-light.hover-lift
-        %h4.fw-semibold.mb-2.d-inline-flex.align-items-center.gap-2.flex-wrap
-          %span= clarity_hub_see_up_next_link_label(employee_name: @employee_name, manager_name: @manager_name)
-          %i.bi.bi-box-arrow-up-right.flex-shrink-0.text-muted{aria: {hidden: true}}
-        %p.text-muted.mb-0= clarity_hub_see_up_next_description_label
+              class: "text-decoration-none" do
+      .card.h-100.hover-lift.bg-light.border-light{style: "cursor: pointer;"}
+        .card-body.p-3.d-flex.justify-content-between.align-items-start.gap-3
+          .flex-grow-1
+            %h5.fw-semibold.mb-1.text-body= clarity_hub_see_up_next_link_label(employee_name: @employee_name, manager_name: @manager_name)
+            %p.small.text-muted.mb-0= clarity_hub_see_up_next_description_label
+          %i.bi.bi-list-ol.fs-2.text-muted

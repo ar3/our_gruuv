@@ -25,23 +25,28 @@ module AssignmentSurveys
 
     def participation_rows
       teammates.map do |teammate|
-        history = submissions_by_teammate.fetch(teammate.id, [])
-        draft = history.find(&:draft?)
-        latest_finalized = history.find(&:finalized?)
+        teammate_responses = responses_by_teammate.fetch(teammate.id, [])
+        submitted = teammate_responses.select(&:submitted?)
+        in_progress = teammate_responses.select(&:in_progress?)
+        in_progress_with_content = in_progress.select(&:content?)
+        latest_submitted = submitted.max_by { |response| [ response.submitted_at || Time.at(0), response.id ] }
+
+        status =
+          if in_progress_with_content.any?
+            :in_progress
+          elsif submitted.any?
+            :submitted
+          else
+            :not_started
+          end
 
         {
           teammate: teammate,
-          status: draft ? :draft : (latest_finalized ? :finalized : :not_started),
-          draft: draft,
-          latest_finalized: latest_finalized,
-          submission_count: history.count(&:finalized?)
+          status: status,
+          in_progress_count: in_progress_with_content.size,
+          latest_submitted: latest_submitted,
+          response_count: submitted.size
         }
-      end
-    end
-
-    def latest_finalized_submissions
-      @latest_finalized_submissions ||= teammates.filter_map do |teammate|
-        submissions_by_teammate.fetch(teammate.id, []).find(&:finalized?)
       end
     end
 
@@ -83,11 +88,11 @@ module AssignmentSurveys
     end
 
     def finalized_teammate_count
-      latest_finalized_submissions.size
+      latest_responses.map(&:teammate_id).uniq.size
     end
 
-    def draft_teammate_count
-      participation_rows.count { |row| row[:status] == :draft }
+    def in_progress_teammate_count
+      participation_rows.count { |row| row[:status] == :in_progress }
     end
 
     def not_started_teammate_count
@@ -96,41 +101,49 @@ module AssignmentSurveys
 
     private
 
-    def submissions_by_teammate
-      @submissions_by_teammate ||= begin
-        scope = AssignmentSurveySubmission
-          .where(organization: organization, teammate_id: teammates.map(&:id))
-          .includes(:responses)
-          .latest_first
-        scope.group_by(&:teammate_id)
-      end
+    def responses_by_teammate
+      @responses_by_teammate ||= AssignmentSurveyResponse
+        .where(organization: organization, teammate_id: teammates.map(&:id))
+        .includes(:assignment)
+        .to_a
+        .group_by(&:teammate_id)
     end
 
     def latest_responses
-      @latest_responses ||= latest_finalized_submissions.flat_map(&:responses)
+      @latest_responses ||= latest_responses_from(responses_by_teammate.values.flatten.select(&:submitted?))
     end
 
     def org_wide_responses_for_maintained
       return [] if maintained_assignment_ids.empty?
 
       @org_wide_responses_for_maintained ||= begin
-        submissions = AssignmentSurveySubmission
+        responses = AssignmentSurveyResponse
+          .submitted
           .where(organization: organization)
-          .finalized
-          .latest_first
-          .includes(:responses)
+          .includes(:assignment)
+          .latest_submitted_first
           .to_a
 
-        latest_by_teammate = submissions.group_by(&:teammate_id).transform_values(&:first)
-        latest_by_teammate.values.flat_map(&:responses).select do |response|
+        latest_responses_from(responses).select do |response|
           maintained_assignment_ids.include?(response.assignment_id)
         end
       end
     end
 
+    def latest_responses_from(responses)
+      keyed = {}
+      responses.sort_by { |response| [ response.submitted_at || Time.at(0), response.id ] }.reverse_each do |response|
+        next unless response.content?
+
+        key = [ response.teammate_id, response.assignment_id ]
+        keyed[key] ||= response
+      end
+      keyed.values
+    end
+
     def rows_from_responses(responses)
       responses.group_by(&:assignment_id).values.map do |grouped|
-        latest_response = grouped.max_by(&:created_at)
+        latest_response = grouped.max_by(&:submitted_at)
         distributions = distributions_for(grouped)
         {
           assignment_id: latest_response.assignment_id,
@@ -152,7 +165,7 @@ module AssignmentSurveys
           [
             rating,
             {
-              teammate_count: set.map { |response| response.submission.teammate_id }.uniq.size,
+              teammate_count: set.map(&:teammate_id).uniq.size,
               assignment_count: set.map(&:assignment_id).uniq.size
             }
           ]
@@ -172,10 +185,8 @@ module AssignmentSurveys
     def sort_assignment_rows(rows)
       case assignment_sort
       when "average"
-        # Lowest overall average first so problems scan to the top; missing averages last.
         rows.sort_by { |row| [ row[:overall_average].nil? ? 1 : 0, row[:overall_average] || 0, row[:title].downcase ] }
       when "responses"
-        # Most responses first; title as stable secondary key.
         rows.sort_by { |row| [ -row[:response_count], row[:title].downcase ] }
       else
         rows.sort_by { |row| row[:title].downcase }

@@ -185,6 +185,16 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       teammate_id: @teammate.id
     )
 
+    survey_assignments = AssignmentSurveys::ResponseWorkspace.assignment_rows_for(
+      organization: organization,
+      teammate: @teammate
+    ).map(&:first)
+    @assignment_survey_due_count = AssignmentSurveys::DueStatus.for_teammate(
+      teammate: @teammate,
+      assignments: survey_assignments
+    ).count(&:due?)
+    @assignment_survey_available = survey_assignments.any?
+
     next_result = CheckIns::SingleItemCheckInNextItemService.call(
       teammate: @teammate,
       organization: organization,
@@ -880,6 +890,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
           completion_service = CheckInCompletionService.new(check_in)
           if @view_mode == :employee
             completion_service.complete_employee_side!
+            flash[:assignment_survey_cta_assignment_id] = assignment.id
+            flash[:assignment_survey_cta_assignment_title] = assignment.title
           elsif @view_mode == :manager
             completion_service.complete_manager_side!(completed_by: current_company_teammate)
           end

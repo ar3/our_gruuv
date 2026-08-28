@@ -1,0 +1,90 @@
+-# Locals: analytics (AssignmentSurveys::AssignmentAnalytics::Result)
+- analytics = local_assigns.fetch(:analytics)
+
+.card.mb-4{ role: "region", "aria-labelledby": "assignment-survey-analytics" }
+  .card-header
+    %h5.mb-0{ id: "assignment-survey-analytics" }
+      %i.bi.bi-clipboard2-pulse.me-2
+      Assignment experience survey
+  .card-body
+    %p.text-muted.small
+      Feedback from people who have taken on this assignment. Public aggregates hide names and comments.
+      Privileged sections are collapsed by default.
+
+    .border.rounded.p-3.mb-3
+      %h6.fw-semibold Most recent sentiment (everyone)
+      - if analytics.public_threshold_met?
+        .row.g-3
+          - AssignmentSurveys::Results::DIMENSIONS.each do |dimension, _attribute|
+            - dist = analytics.public_distributions[dimension]
+            .col-md-4
+              %div.small.text-muted.text-uppercase= dimension.to_s.humanize
+              - if dist && dist[:total].to_i.positive?
+                %div
+                  Avg
+                  %strong= dist[:average]
+                  %span.text-muted (n=#{dist[:total]})
+              - else
+                %span.text-muted No ratings yet
+          .col-12
+            %div.small.text-muted.text-uppercase.mb-1 Personal alignment
+            .d-flex.flex-wrap.gap-2
+              - analytics.personal_alignment_counts.each do |value, count|
+                - next if count.zero?
+                %span.badge.text-bg-light.border
+                  = value.humanize
+                  = count
+      - else
+        %p.mb-0.text-muted
+          Not enough responses yet for a shared view (need more than #{AssignmentSurveys::AssignmentAnalytics::PUBLIC_THRESHOLD}; currently #{analytics.respondent_count}).
+
+    .accordion#assignment-survey-privileged-analytics
+      .accordion-item
+        %h2.accordion-header{id: "heading-people-manager-survey"}
+          %button.accordion-button.collapsed{type: "button",
+            data: { "bs-toggle": "collapse", "bs-target": "#collapse-people-manager-survey" },
+            "aria-expanded": "false",
+            "aria-controls": "collapse-people-manager-survey"}
+            People-manager detail (your reports)
+        .accordion-collapse.collapse{id: "collapse-people-manager-survey",
+          "aria-labelledby": "heading-people-manager-survey",
+          data: { "bs-parent": "#assignment-survey-privileged-analytics" }}
+          .accordion-body
+            - if analytics.people_manager_eligible?
+              - if analytics.people_manager_rows.any?
+                = render "organizations/assignments/survey_detail_rows",
+                  rows: analytics.people_manager_rows,
+                  history_points: analytics.history_points,
+                  scope_label: "your reports"
+              - else
+                %p.text-muted.mb-0 None of your reports have submitted feedback for this assignment yet.
+            - else
+              %p.text-muted.mb-0
+                Managers can see their employees' results here.
+
+      .accordion-item
+        %h2.accordion-header{id: "heading-org-wide-survey"}
+          %button.accordion-button.collapsed{type: "button",
+            data: { "bs-toggle": "collapse", "bs-target": "#collapse-org-wide-survey" },
+            "aria-expanded": "false",
+            "aria-controls": "collapse-org-wide-survey"}
+            MAAP manager / maintainer detail (everyone)
+        .accordion-collapse.collapse{id: "collapse-org-wide-survey",
+          "aria-labelledby": "heading-org-wide-survey",
+          data: { "bs-parent": "#assignment-survey-privileged-analytics" }}
+          .accordion-body
+            - if analytics.org_wide_eligible?
+              - if analytics.org_wide_rows.any?
+                = render "organizations/assignments/survey_detail_rows",
+                  rows: analytics.org_wide_rows,
+                  history_points: analytics.history_points,
+                  scope_label: "all respondents"
+              - else
+                %p.text-muted.mb-0 No one has submitted feedback for this assignment yet.
+            - else
+              %p.text-muted.mb-0
+                Those who are MAAP Managers or who maintain this Assignment can see survey results:
+                - if analytics.maap_or_maintainer_names.any?
+                  = analytics.maap_or_maintainer_names.to_sentence
+                - else
+                  %em (none listed yet)

@@ -19,33 +19,28 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     sign_in_as_teammate_for_request(person, organization)
   end
 
-  it "renders the beta survey and creates a personalized draft" do
+  it "renders the beta survey and opens the feedback form" do
     get organization_assignment_survey_path(organization)
 
     expect(response).to have_http_status(:success)
     expect(response.body).to include("Assignment Experience Survey")
     expect(response.body).to include("Beta")
-    expect(response.body).to include("This survey is identifiable")
-
-    post organization_assignment_survey_path(organization)
-
-    expect(response).to redirect_to(organization_assignment_survey_path(organization))
-    submission = teammate.assignment_survey_submissions.draft.first
-    expect(submission.responses.map(&:assignment_id)).to eq([ assignment.id ])
+    expect(response.body).to include("This feedback is identifiable")
+    expect(teammate.assignment_survey_responses.in_progress.pluck(:assignment_id)).to eq([ assignment.id ])
   end
 
-  it "autosaves and finalizes a complete survey" do
-    submission = AssignmentSurveys::DraftBuilder.new(
+  it "autosaves and submits filled feedback (including a subset)" do
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
       organization: organization,
       teammate: teammate
-    ).call
-    survey_response = submission.responses.first
+    ).call.first
     response_params = {
       "0" => {
         id: survey_response.id,
         understandable_rating: 5,
         possible_rating: 4,
         relevant_rating: 6,
+        personal_alignment: "like",
         comment: "Clear and useful"
       }
     }
@@ -53,93 +48,114 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     patch organization_assignment_survey_path(organization),
           params: {
             autosave: "1",
-            assignment_survey_submission: { responses_attributes: response_params }
+            assignment_survey_responses: response_params
           },
           headers: { "ACCEPT" => "application/json" }
 
     expect(response).to have_http_status(:success)
     expect(response.parsed_body).to include("ok" => true)
     expect(survey_response.reload.comment).to eq("Clear and useful")
+    expect(survey_response.personal_alignment).to eq("like")
 
     patch organization_assignment_survey_path(organization),
           params: {
             finalize: "1",
-            assignment_survey_submission: { responses_attributes: response_params }
+            assignment_survey_responses: response_params
           }
 
     expect(response).to redirect_to(organization_assignment_survey_path(organization))
-    expect(submission.reload).to be_finalized
+    expect(teammate.assignment_survey_responses.submitted).to exist
+    expect(teammate.assignment_survey_responses.in_progress).not_to exist
   end
 
-  it "rejects finalization when ratings are incomplete" do
-    AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
+  it "rejects submit when nothing has content" do
+    AssignmentSurveys::ResponseWorkspace.new(organization: organization, teammate: teammate).call
 
     patch organization_assignment_survey_path(organization),
-          params: {
-            finalize: "1",
-            assignment_survey_submission: { responses_attributes: {} }
-          }
+          params: { finalize: "1" }
 
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include("Every assignment needs all three ratings")
-    expect(teammate.assignment_survey_submissions.draft).to exist
+    expect(response.body).to include("Add feedback on at least one assignment")
+    expect(teammate.assignment_survey_responses.in_progress).to exist
   end
 
-  it "deletes a draft" do
-    AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
+  it "clears in-progress responses" do
+    AssignmentSurveys::ResponseWorkspace.new(organization: organization, teammate: teammate).call
 
     delete organization_assignment_survey_path(organization)
 
     expect(response).to redirect_to(organization_assignment_survey_path(organization))
-    expect(teammate.assignment_survey_submissions.draft).not_to exist
+    expect(teammate.assignment_survey_responses.in_progress).not_to exist
   end
 
-  it "asks for confirmation before starting another survey within 30 days" do
-    submission = AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
-    submission.responses.each do |survey_response|
-      survey_response.update!(
-        understandable_rating: 5,
-        possible_rating: 4,
-        relevant_rating: 6
-      )
-    end
-    submission.finalize!
+  it "shows due messaging and opens the feedback form directly" do
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate
+    ).call.first
+    survey_response.update!(
+      understandable_rating: 5,
+      possible_rating: 4,
+      relevant_rating: 6
+    )
+    survey_response.submit!
 
     get organization_assignment_survey_path(organization)
 
     expect(response).to have_http_status(:success)
-    expect(response.body).to include("less than 30 days ago")
-    expect(response.body).to include("Start another one anyway?")
+    expect(response.body).to include("After each assignment check-in")
+    expect(response.body).not_to include("Start or update feedback")
+    expect(response.body).to include("Submit filled feedback").or include("Submit feedback")
+    expect(response.body).to include("Click here to give feedback early")
+    expect(response.body).to include("Your feedback is up to date")
+    expect(response.body).to include("collapse show fresh-feedback-toggle-#{assignment.id}")
   end
 
-  it "does not ask for confirmation when the latest survey is older than 30 days" do
-    submission = AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
-    submission.responses.each do |survey_response|
-      survey_response.update!(
-        understandable_rating: 5,
-        possible_rating: 4,
-        relevant_rating: 6
-      )
-    end
-    submission.finalize!
-    submission.update_columns(finalized_at: 31.days.ago)
+  it "shows the feedback form when fresh feedback already has unsaved content" do
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate
+    ).call.first
+    survey_response.update!(
+      understandable_rating: 5,
+      possible_rating: 4,
+      relevant_rating: 6
+    )
+    survey_response.submit!
+
+    in_progress = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate
+    ).call.first
+    in_progress.update!(understandable_rating: 4)
 
     get organization_assignment_survey_path(organization)
 
     expect(response).to have_http_status(:success)
-    expect(response.body).not_to include("less than 30 days ago")
+    expect(response.body).not_to include("Click here to give feedback early")
+    expect(response.body).to include("Feedback fresh")
+  end
+
+  it "opens directly to one assignment when assignment_id is present" do
+    get organization_assignment_survey_path(organization, assignment_id: assignment.id)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include("Submit feedback")
+    expect(response.body).to include("assignment-survey-response-#{assignment.id}")
   end
 
   it "shows results and exports CSV" do
-    submission = AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
-    submission.responses.each do |survey_response|
-      survey_response.update!(
-        understandable_rating: 5,
-        possible_rating: 4,
-        relevant_rating: 6
-      )
-    end
-    submission.finalize!
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate
+    ).call.first
+    survey_response.update!(
+      understandable_rating: 5,
+      possible_rating: 4,
+      relevant_rating: 6,
+      personal_alignment: "love"
+    )
+    survey_response.submit!
 
     get results_organization_assignment_survey_path(organization)
 
@@ -175,6 +191,7 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     expect(response).to have_http_status(:success)
     expect(response.content_type).to include("text/csv")
     expect(response.body).to include("Understandable (1-6)")
+    expect(response.body).to include("Personal alignment")
     expect(response.body).to include("5")
   end
 
@@ -192,16 +209,16 @@ RSpec.describe "Assignment Experience Survey", type: :request do
       create(:employment_tenure, company_teammate: manager, company: organization)
       create(:employment_tenure, company_teammate: peer, company: organization)
       employment_tenure.update!(manager_teammate: manager)
-      AssignmentSurveys::DraftBuilder.new(organization: organization, teammate: teammate).call
+      create(:assignment_survey_response, :partial, company_teammate: teammate, assignment: assignment)
       sign_in_as_teammate_for_request(manager_person, organization)
     end
 
-    it "can see a report's draft answers" do
+    it "can see a report's in-progress status" do
       get results_organization_assignment_survey_path(organization)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(person.display_name)
-      expect(response.body).to include("View draft")
+      expect(response.body).to include("In progress")
       expect(response.body).not_to include(peer_person.display_name)
     end
   end
@@ -219,17 +236,16 @@ RSpec.describe "Assignment Experience Survey", type: :request do
       create(:employment_tenure, company_teammate: other_rater, company: organization)
       create(:object_maintainer, maintainable: assignment_with_scores, company_teammate: maintainer)
 
-      submission = create(:assignment_survey_submission, company_teammate: other_rater, organization: organization)
       create(
         :assignment_survey_response,
-        submission: submission,
+        :complete,
+        company_teammate: other_rater,
         assignment: assignment_with_scores,
         snapshot_title: assignment_with_scores.title,
         understandable_rating: 6,
         possible_rating: 5,
         relevant_rating: 4
       )
-      submission.finalize!
 
       sign_in_as_teammate_for_request(maintainer_person, organization)
     end
@@ -241,7 +257,6 @@ RSpec.describe "Assignment Experience Survey", type: :request do
       expect(response.body).to include("Results by assignment")
       expect(response.body).to include("Maintained Role")
       expect(response.body).to include("Org-wide (maintainer)")
-      expect(response.body).not_to include("View responses")
       expect(response.body).not_to include(other_rater.person.display_name)
     end
   end

@@ -268,7 +268,7 @@ Rails.application.routes.draw do
              only: [:show, :create, :update, :destroy] do
       get :results
       get :export
-      get "submissions/:submission_id", action: :submission, as: :submission
+      get "teammates/:teammate_id/responses", action: :teammate_responses, as: :teammate_responses
     end
 
     # Employment management wizard

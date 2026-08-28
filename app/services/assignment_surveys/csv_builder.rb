@@ -5,16 +5,16 @@ module AssignmentSurveys
     HEADERS = [
       "Teammate",
       "Email",
-      "Submission ID",
-      "Submission status",
-      "Started at",
-      "Finalized at",
-      "Latest finalized submission",
+      "Response ID",
+      "Status",
+      "Submitted at",
+      "Latest for assignment",
       "Assignment",
       "Assignment source",
       "Understandable (1-6)",
       "Possible (1-6)",
       "Relevant (1-6)",
+      "Personal alignment",
       "Comment"
     ].freeze
 
@@ -27,14 +27,12 @@ module AssignmentSurveys
       CSV.generate(headers: true) do |csv|
         csv << HEADERS
         teammates.sort_by { |teammate| teammate.person.display_name.downcase }.each do |teammate|
-          teammate_submissions = submissions_by_teammate.fetch(teammate.id, [])
-          if teammate_submissions.empty?
+          teammate_responses = responses_by_teammate.fetch(teammate.id, [])
+          if teammate_responses.empty?
             csv << empty_row_for(teammate)
           else
-            teammate_submissions.each do |submission|
-              submission.responses.each do |response|
-                csv << response_row(teammate, submission, response)
-              end
+            teammate_responses.each do |response|
+              csv << response_row(teammate, response)
             end
           end
         end
@@ -45,18 +43,25 @@ module AssignmentSurveys
 
     attr_reader :organization, :teammates
 
-    def submissions_by_teammate
-      @submissions_by_teammate ||= AssignmentSurveySubmission
+    def responses_by_teammate
+      @responses_by_teammate ||= AssignmentSurveyResponse
         .where(organization: organization, teammate_id: teammates.map(&:id))
-        .includes(:responses)
-        .latest_first
+        .includes(:assignment)
+        .order(submitted_at: :desc, id: :desc)
         .group_by(&:teammate_id)
     end
 
-    def latest_finalized_ids
-      @latest_finalized_ids ||= submissions_by_teammate.values.filter_map do |submissions|
-        submissions.find(&:finalized?)&.id
-      end.to_set
+    def latest_submitted_ids
+      @latest_submitted_ids ||= begin
+        ids = Set.new
+        responses_by_teammate.each_value do |responses|
+          responses.select(&:submitted?).group_by(&:assignment_id).each_value do |group|
+            latest = group.max_by { |response| [ response.submitted_at || Time.at(0), response.id ] }
+            ids << latest.id
+          end
+        end
+        ids
+      end
     end
 
     def empty_row_for(teammate)
@@ -68,20 +73,20 @@ module AssignmentSurveys
       ]
     end
 
-    def response_row(teammate, submission, response)
+    def response_row(teammate, response)
       [
         teammate.person.display_name,
         teammate.person.email,
-        submission.id,
-        submission.status,
-        submission.created_at.iso8601,
-        submission.finalized_at&.iso8601,
-        latest_finalized_ids.include?(submission.id),
+        response.id,
+        response.submitted? ? "submitted" : "in_progress",
+        response.submitted_at&.iso8601,
+        response.submitted? && latest_submitted_ids.include?(response.id),
         response.snapshot_title,
         response.source_label,
         response.understandable_rating,
         response.possible_rating,
         response.relevant_rating,
+        response.personal_alignment,
         response.comment
       ]
     end

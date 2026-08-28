@@ -180,6 +180,18 @@ class Organizations::AssignmentsController < ApplicationController
       @most_popular_official_rating = nil
     end
 
+    @survey_analytics = AssignmentSurveys::AssignmentAnalytics.new(
+      assignment: @assignment,
+      viewer: current_company_teammate,
+      organization: @organization
+    ).call
+
+    viewer_holds = @assignment.assignment_tenures.active.exists?(teammate_id: current_company_teammate&.id)
+    @survey_cta_due_status = if viewer_holds && current_company_teammate
+      AssignmentSurveys::DueStatus.for(teammate: current_company_teammate, assignment: @assignment)
+    end
+    @viewer_holds_assignment = viewer_holds
+
     # Most popular employee_personal_alignment (if >5 teammates with finalized check-ins)
     if @teammates_with_finalized_check_ins_count > 5
       alignment_check_ins = AssignmentCheckIn

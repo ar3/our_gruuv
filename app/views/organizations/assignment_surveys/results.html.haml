@@ -4,13 +4,13 @@
 .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-4
   %p.text-muted.mb-0
     - if @results.show_people_results?
-      Showing people you are authorized to support. Draft answers are included only in individual results.
+      Showing people you are authorized to support. In-progress answers appear only on the take-feedback page.
     - else
       Showing org-wide score cards for assignments you maintain. Individual answers stay with the managerial hierarchy.
     - if @maintained_assignment_ids.present?
       %span.ms-1
         Assignment score cards you maintain include
-        %strong org-wide finalized responses
+        %strong org-wide submitted responses
         (not only people in your hierarchy).
   - if @results.show_people_results?
     = link_to export_organization_assignment_survey_path(organization), class: "btn btn-outline-primary" do
@@ -27,13 +27,13 @@
     .col-12.col-md-3
       .card.h-100.border-success
         .card-body
-          .text-muted Finalized
+          .text-muted Submitted
           .display-6.text-success= @results.finalized_teammate_count
     .col-12.col-md-3
       .card.h-100.border-warning
         .card-body
-          .text-muted Draft
-          .display-6.text-warning= @results.draft_teammate_count
+          .text-muted In progress
+          .display-6.text-warning= @results.in_progress_teammate_count
     .col-12.col-md-3
       .card.h-100.border-secondary
         .card-body
@@ -46,7 +46,7 @@
       %h2.h4.mb-0 Current overall results
     .card-body
       %p.text-muted
-        Uses only each teammate's latest finalized survey among people you support. Distributions are primary; averages are a quick OG-graded reference.
+        Uses each teammate's latest submitted feedback per assignment among people you support. Distributions are primary; averages are a quick OG-graded reference.
       = render "quality_legend"
       .row.g-4.mt-1
         .col-12.col-lg-4
@@ -123,7 +123,7 @@
                   title: "Relevant"
 - elsif !@results.show_overall_results?
   .alert.alert-info
-    No finalized survey scores are available yet for the people or assignments you can see.
+    No submitted feedback scores are available yet for the people or assignments you can see.
 
 - if @results.show_people_results?
   .card.mb-4
@@ -135,8 +135,8 @@
           %tr
             %th Teammate
             %th Current status
-            %th Finalized versions
-            %th Latest finalized
+            %th Submitted responses
+            %th Latest submitted
             %th
         %tbody
           - @results.participation_rows.each do |row|
@@ -144,24 +144,19 @@
               %td.fw-semibold= row[:teammate].person.display_name
               %td
                 - case row[:status]
-                - when :draft
-                  %span.badge.text-bg-warning Draft
-                - when :finalized
-                  %span.badge.text-bg-success Finalized
+                - when :in_progress
+                  %span.badge.text-bg-warning In progress
+                - when :submitted
+                  %span.badge.text-bg-success Submitted
                 - else
                   %span.badge.text-bg-secondary Not started
-              %td= row[:submission_count]
+              %td= row[:response_count]
               %td
-                - if row[:latest_finalized]
-                  = l(row[:latest_finalized].finalized_at, format: :short)
+                - if row[:latest_submitted]
+                  = l(row[:latest_submitted].submitted_at, format: :short)
                 - else
                   %span.text-muted —
               %td.text-end
-                - if row[:draft]
-                  = link_to "View draft",
-                    submission_organization_assignment_survey_path(organization, row[:draft].id),
-                    class: "btn btn-sm btn-outline-warning"
-                - elsif row[:latest_finalized]
-                  = link_to "View responses",
-                    submission_organization_assignment_survey_path(organization, row[:latest_finalized].id),
-                    class: "btn btn-sm btn-outline-primary"
+                = link_to "View responses",
+                  teammate_responses_organization_assignment_survey_path(organization, row[:teammate]),
+                  class: "btn btn-sm btn-outline-primary"

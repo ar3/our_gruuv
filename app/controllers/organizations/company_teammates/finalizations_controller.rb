@@ -75,6 +75,16 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     )
 
     @pending_acknowledgement_count = CheckIns::AcknowledgementQueue.pending_count_for(teammate: @teammate)
+
+    survey_assignments = AssignmentSurveys::ResponseWorkspace.assignment_rows_for(
+      organization: organization,
+      teammate: @teammate
+    ).map(&:first)
+    @assignment_survey_due_statuses = AssignmentSurveys::DueStatus.for_teammate(
+      teammate: @teammate,
+      assignments: survey_assignments
+    )
+    @assignment_survey_due_count = @assignment_survey_due_statuses.count(&:due?)
   end
   
   def create

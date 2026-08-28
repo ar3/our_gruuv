@@ -1,0 +1,26 @@
+-# Locals: organization:, assignment:, due_status: (optional AssignmentSurveys::DueStatus::Result), viewer_holds_assignment: (bool)
+- return unless local_assigns[:viewer_holds_assignment]
+- organization = local_assigns.fetch(:organization)
+- assignment = local_assigns.fetch(:assignment)
+- due_status = local_assigns[:due_status]
+- survey_path = organization_assignment_survey_path(organization, assignment_id: assignment.id, anchor: "assignment-survey-response-#{assignment.id}")
+- card_class = due_status&.due? ? "border-warning" : "border-secondary"
+
+.alert.alert-light.border.d-flex.flex-wrap.align-items-center.justify-content-between.gap-3.mt-4{class: card_class}
+  %div
+    %strong.d-block Assignment experience feedback
+    - if due_status&.due?
+      %span.text-muted
+        - if due_status.never_submitted?
+          You haven't shared how this assignment feels to take on yet.
+        - elsif due_status.reason == :check_in_since
+          You've checked in since your last feedback — consider updating your take.
+        - else
+          This assignment changed since your last feedback — consider updating your take.
+    - elsif due_status&.early?
+      %span.text-muted
+        Your feedback is up to date. You can still give feedback early.
+    - else
+      %span.text-muted
+        Optional: tell management how this assignment feels to take on.
+  = link_to "Give feedback", survey_path, class: "btn btn-sm #{due_status&.due? ? 'btn-warning' : 'btn-outline-primary'}"

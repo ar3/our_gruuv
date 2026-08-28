@@ -4,134 +4,142 @@
 .alert.alert-warning.d-flex.gap-2.align-items-start
   %i.bi.bi-eye-fill.mt-1
   %div
-    %strong This survey is identifiable.
-    Your draft and finalized answers are visible to your employment managers and managerial hierarchy.
+    %strong This feedback is identifiable.
+    Your answers are visible to your employment managers and managerial hierarchy.
 
-- if @draft
-  - if @draft.errors.any?
+- unless @single_assignment_focus
+  .alert.alert-info.d-flex.gap-2.align-items-start
+    %i.bi.bi-arrow-repeat.mt-1
+    %div
+      After each assignment check-in—or whenever an assignment changes—consider updating how you feel about taking it on.
+      You can submit feedback for some assignments now and leave others for later.
+
+  - if @due_count.to_i.positive?
+    .alert.alert-light.border.mb-4
+      %strong #{@due_count} assignment#{'s' if @due_count != 1} need feedback attention
+      %span.text-muted — based on a check-in or assignment change since your last response.
+
+- if @in_progress_responses.any?
+  - if @form_errors.present?
     .alert.alert-danger
       %strong Please fix the following:
       %ul.mb-0
-        - @draft.errors.full_messages.each do |message|
+        - @form_errors.each do |message|
           %li= message
 
-  .card.mb-4
-    .card-body
-      .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
-        %div
-          %h2.h4.mb-1 Survey in progress
-          %p.text-muted.mb-0
-            #{@draft.complete_response_count} of #{@draft.responses.size} assignments fully rated
-        .d-flex.align-items-center.gap-2
-          %span.badge.text-bg-warning Draft
-          = button_to "Delete draft",
+  - unless @single_assignment_focus
+    .card.mb-4
+      .card-body
+        .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+          %div
+            %h2.h4.mb-1 Assignment feedback
+            %p.text-muted.mb-0
+              #{@in_progress_responses.count(&:content?)} of #{@in_progress_responses.size} assignments have feedback ready to submit
+          = button_to "Clear unsaved progress",
             organization_assignment_survey_path(organization),
             method: :delete,
             class: "btn btn-sm btn-outline-danger",
-            form: { data: { turbo_confirm: "Delete this draft? Your answers will be lost." } }
-      %progress.assignment-survey-completion-progress.w-100.mt-3{value: @draft.progress_percentage,
-        max: 100,
-        "aria-label": "Survey completion"} #{@draft.progress_percentage}%
+            form: { data: { turbo_confirm: "Clear everything you've entered but not submitted yet?" } }
+        - progress = @in_progress_responses.empty? ? 0 : ((@in_progress_responses.count(&:content?).to_f / @in_progress_responses.size) * 100).round
+        %progress.assignment-survey-completion-progress.w-100.mt-3{value: progress,
+          max: 100,
+          "aria-label": "Feedback completion"} #{progress}%
 
-  = form_with model: @draft,
-    scope: :assignment_survey_submission,
-    url: organization_assignment_survey_path(organization),
+  = form_with url: organization_assignment_survey_path(organization, assignment_id: @focus_assignment_id),
     method: :patch,
     local: true,
     data: { controller: "check-in-autosave",
       action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit",
       check_in_autosave_debounce_ms_value: 1200,
-      check_in_autosave_message_value: "Your latest survey changes may still be saving. Leave this page?" } do |form|
-    = form.fields_for :responses do |response_fields|
-      - response = response_fields.object
-      .row.mt-5.mb-3
-        .col-12
-          .d-flex.align-items-center
-            %h3.text-primary.mb-0.me-3
-              %i.bi.bi-clipboard2-check.me-2
-              = response.snapshot_title
-            .flex-grow-1
-              %hr.border-primary
-            %span.badge.text-bg-secondary.ms-3= response.source_label
-      .mb-4
-        - if response.snapshot_tagline.present?
-          %p.text-muted= response.snapshot_tagline
-        %details.mb-3
-          %summary.fw-semibold Assignment outcomes and required activities
-          .row.g-3.mt-1
-            .col-12.col-lg-6
-              %h4.h6 Outcomes
-              - if response.snapshot_outcomes.any?
-                %ul.mb-0
-                  - response.snapshot_outcomes.each do |outcome|
-                    %li= outcome["description"]
-              - else
-                %p.text-muted.mb-0 No outcomes are documented.
-            .col-12.col-lg-6
-              %h4.h6 Required activities
-              - if response.snapshot_required_activities.present?
-                .markdown-content= render_markdown(response.snapshot_required_activities)
-              - else
-                %p.text-muted.mb-0 No required activities are documented.
-        = response_fields.hidden_field :id
-        = render "rating_field",
-          field: response_fields,
-          attribute: :understandable_rating,
-          prompt: assignment_survey_understandable_prompt(response.snapshot_title)
-        = render "rating_field",
-          field: response_fields,
-          attribute: :possible_rating,
-          prompt: assignment_survey_possible_prompt(response.snapshot_title)
-        = render "rating_field",
-          field: response_fields,
-          attribute: :relevant_rating,
-          prompt: assignment_survey_relevant_prompt(response.snapshot_title)
-        = response_fields.label :comment, class: "form-label fw-semibold" do
-          (Optional) Assignments are designed to provide extreme clarity and accountability... It helps us achieve this clarity if you add a comment to anything that is less than "Agree"
-        = response_fields.text_area :comment,
-          class: "form-control",
-          rows: 3,
-          placeholder: "What would make this assignment clearer, more possible, or more relevant?"
+      check_in_autosave_message_value: "Your latest changes may still be saving. Leave this page?" } do |form|
+    - @in_progress_responses.each_with_index do |response, index|
+      - next if @focus_assignment_id.present? && response.assignment_id != @focus_assignment_id
+      - due_status = @due_statuses&.[](response.assignment_id)
+      - hide_fresh_feedback = hide_fresh_assignment_feedback_fields?(due_status, response, form_errors: @form_errors)
+      - toggle_target = ".fresh-feedback-toggle-#{response.assignment_id}"
+      = fields_for "assignment_survey_responses[#{index}]", response do |response_fields|
+        .row.mt-5.mb-3{id: "assignment-survey-response-#{response.assignment_id}"}
+          .col-12
+            .d-flex.align-items-center.flex-wrap.gap-2
+              %h3.text-primary.mb-0.me-3
+                %i.bi.bi-clipboard2-check.me-2
+                = response.snapshot_title
+              .flex-grow-1
+                %hr.border-primary
+              %span.badge.text-bg-secondary= response.source_label
+              - if due_status&.due?
+                %span.badge.text-bg-warning Feedback due
+              - elsif due_status&.early? && !hide_fresh_feedback
+                %span.badge.text-bg-success Feedback fresh — you can still update early
+        .mb-4
+          - if response.snapshot_tagline.present?
+            %p.text-muted= response.snapshot_tagline
+          - if due_status&.early? && due_status.latest_submitted_at.present? && !hide_fresh_feedback
+            %p.small.text-muted.mb-2
+              Last submitted #{l(due_status.latest_submitted_at.to_date, format: :long)}. Your work is done here, but you can give feedback early.
+          %details.mb-3
+            %summary.fw-semibold Assignment outcomes and required activities
+            .row.g-3.mt-1
+              .col-12.col-lg-6
+                %h4.h6 Outcomes
+                - if response.snapshot_outcomes.any?
+                  %ul.mb-0
+                    - response.snapshot_outcomes.each do |outcome|
+                      %li= outcome["description"]
+                - else
+                  %p.text-muted.mb-0 No outcomes are documented.
+              .col-12.col-lg-6
+                %h4.h6 Required activities
+                - if response.snapshot_required_activities.present?
+                  .markdown-content= render_markdown(response.snapshot_required_activities)
+                - else
+                  %p.text-muted.mb-0 No required activities are documented.
+          - if hide_fresh_feedback
+            %div{class: "collapse show fresh-feedback-toggle-#{response.assignment_id}"}
+              .alert.alert-success.py-3.mb-0
+                %i.bi.bi-check-circle-fill.me-2{style: "font-size: 1.15rem;"}
+                - if due_status.latest_submitted_at.present?
+                  %span
+                    Last submitted #{l(due_status.latest_submitted_at.to_date, format: :long)}.
+                    Your feedback is up to date.
+                - else
+                  %span Your feedback is up to date.
+                .mt-2
+                  %a{href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => toggle_target, "aria-expanded" => "false"}
+                    Click here to give feedback early
+            %div{class: "collapse fresh-feedback-toggle-#{response.assignment_id}"}
+              = render "assignment_response_form",
+                form: form,
+                response_fields: response_fields,
+                single_assignment_focus: @single_assignment_focus
+          - else
+            = render "assignment_response_form",
+              form: form,
+              response_fields: response_fields,
+              single_assignment_focus: @single_assignment_focus
+          - if @focus_assignment_id.present?
+            = hidden_field_tag "response_ids[]", response.id
 
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-3.mb-4
       %span.text-muted.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}
       .d-flex.gap-2.ms-auto
-        = form.submit "Save draft", class: "btn btn-outline-primary"
-        = form.button "Finalize survey",
+        - unless @single_assignment_focus
+          = form.submit "Save progress", class: "btn btn-outline-primary"
+        = form.button @single_assignment_focus ? "Submit feedback" : "Submit filled feedback",
           type: :submit,
           name: "finalize",
           value: "1",
-          class: "btn btn-primary",
-          data: { turbo_confirm: "Finalize this survey? You will not be able to edit it afterward." }
+          class: "btn btn-primary"
 - else
   .card.mb-4
     .card-body.text-center.py-5
-      %i.bi.bi-clipboard2-check.display-4.text-primary
-      %h2.h4.mt-3= @finalized_submissions.any? ? "Ready for another perspective?" : "Share your assignment experience"
-      %p.text-muted.mx-auto.assignment-survey-intro
-        A new survey captures the active assignments you hold and the assignments required by your current position. Suggested assignments are excluded.
-      - if @recent_finalized
-        = button_to "Start a new survey",
-          organization_assignment_survey_path(organization),
-          method: :post,
-          class: "btn btn-primary",
-          form: { data: { turbo_confirm: "You finalized a survey on #{l(@latest_finalized.finalized_at.to_date, format: :long)}, less than 30 days ago. Start another one anyway?" } }
-      - else
-        = button_to "Start a new survey",
-          organization_assignment_survey_path(organization),
-          method: :post,
-          class: "btn btn-primary"
+      %i.bi.bi-clipboard2-check.display-4.text-muted
+      %h2.h4.mt-3 No assignments to rate
+      %p.text-muted.mx-auto
+        You need an active or required assignment before you can give feedback here.
 
-- if @finalized_submissions.any?
-  %h2.h4 Previous finalized surveys
-  .list-group.mb-4
-    - @finalized_submissions.each_with_index do |submission, index|
-      = link_to submission_organization_assignment_survey_path(organization, submission.id),
-        class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do
-        %span
-          Finalized #{l(submission.finalized_at, format: :long)}
-          - if index.zero?
-            %span.badge.text-bg-primary.ms-2 Current
-        %span.text-muted
-          #{submission.responses.count} assignments
-          %i.bi.bi-chevron-right.ms-1
+- if @submitted_responses.any? && !@single_assignment_focus
+  .d-flex.justify-content-end.mb-4
+    = link_to "View your feedback history",
+      teammate_responses_organization_assignment_survey_path(organization, current_company_teammate),
+      class: "btn btn-outline-secondary btn-sm"

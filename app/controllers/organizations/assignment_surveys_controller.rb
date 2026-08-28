@@ -4,18 +4,14 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
 
   def show
     authorize @organization, :assignment_survey?
+    ensure_response_workspace!
     load_take_survey
   end
 
   def create
     authorize @organization, :assignment_survey?
-    submission = AssignmentSurveys::DraftBuilder.new(
-      organization: @organization,
-      teammate: current_company_teammate
-    ).call
-
-    if submission
-      redirect_to organization_assignment_survey_path(@organization), notice: "Your survey draft is ready."
+    if ensure_response_workspace!
+      redirect_to survey_take_path, notice: "Ready to give feedback."
     else
       redirect_to organization_assignment_survey_path(@organization),
                   alert: "You do not have any active or required assignments to rate yet."
@@ -24,56 +20,50 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
 
   def update
     authorize @organization, :assignment_survey?
-    @draft = current_company_teammate.assignment_survey_submissions
-      .where(organization: @organization)
-      .draft
-      .includes(:responses)
-      .first!
-
-    @draft.assign_attributes(submission_params)
+    apply_response_updates!
     finalize_requested = params[:finalize].present?
 
-    if @draft.save
-      if finalize_requested
-        @draft.finalize!
-        redirect_to organization_assignment_survey_path(@organization),
-                    notice: "Your assignment experience survey was finalized."
-      else
-        respond_to do |format|
-          format.html do
-            redirect_to organization_assignment_survey_path(@organization), notice: "Draft saved."
-          end
-          format.json { render json: { ok: true, saved_at: Time.current.iso8601 } }
-        end
+    if finalize_requested
+      begin
+        AssignmentSurveys::Submitter.new(
+          teammate: current_company_teammate,
+          organization: @organization,
+          response_ids: params[:response_ids]
+        ).call
+        redirect_to survey_take_path,
+                    notice: "Assignment feedback submitted. You can update any assignment again anytime."
+      rescue AssignmentSurveys::Submitter::Error => e
+        ensure_response_workspace!
+        load_take_survey
+        @form_errors = [ e.message ]
+        render :show, status: :unprocessable_entity
       end
     else
       respond_to do |format|
         format.html do
-          load_take_survey
-          render :show, status: :unprocessable_entity
+          redirect_to survey_take_path, notice: "Progress saved."
         end
-        format.json { render json: { ok: false, errors: @draft.errors.full_messages }, status: :unprocessable_entity }
+        format.json { render json: { ok: true, saved_at: Time.current.iso8601 } }
       end
     end
-  rescue ActiveRecord::RecordInvalid
-    @draft.reload
+  rescue ActiveRecord::RecordInvalid => e
+    ensure_response_workspace!
     load_take_survey
-    @draft.errors.add(:base, "Every assignment needs all three ratings before finalizing")
+    @form_errors = e.record.errors.full_messages
     render :show, status: :unprocessable_entity
   end
 
   def destroy
     authorize @organization, :assignment_survey?
-    draft = current_company_teammate.assignment_survey_submissions
+    scope = current_company_teammate.assignment_survey_responses
+      .in_progress
       .where(organization: @organization)
-      .draft
-      .first
 
-    if draft
-      draft.destroy!
-      redirect_to organization_assignment_survey_path(@organization), notice: "Draft deleted."
+    if scope.exists?
+      scope.destroy_all
+      redirect_to organization_assignment_survey_path(@organization), notice: "Unsaved progress cleared."
     else
-      redirect_to organization_assignment_survey_path(@organization), alert: "No draft to delete."
+      redirect_to organization_assignment_survey_path(@organization), alert: "Nothing to clear."
     end
   end
 
@@ -89,12 +79,19 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
     )
   end
 
-  def submission
+  def teammate_responses
     authorize @organization, :assignment_survey_results?
-    @submission = AssignmentSurveySubmission
-      .where(organization: @organization, teammate_id: visible_teammates.select(:id))
-      .includes(:company_teammate, :responses)
-      .find(params[:submission_id])
+    @teammate = visible_teammates.find(params[:teammate_id])
+    @submitted_responses = @teammate.assignment_survey_responses
+      .where(organization: @organization)
+      .submitted
+      .includes(:assignment)
+      .order(submitted_at: :desc, id: :desc)
+    @in_progress_responses = @teammate.assignment_survey_responses
+      .where(organization: @organization)
+      .in_progress
+      .includes(:assignment)
+      .order(:snapshot_title)
   end
 
   def export
@@ -113,44 +110,78 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
     redirect_to root_path, alert: "Please log in to access this page." unless current_company_teammate
   end
 
+  def ensure_response_workspace!
+    workspace = AssignmentSurveys::ResponseWorkspace.new(
+      organization: @organization,
+      teammate: current_company_teammate,
+      assignment_ids: params[:assignment_id].presence
+    )
+    responses = workspace.call
+    responses.any?
+  end
+
   def load_take_survey
-    @draft ||= current_company_teammate.assignment_survey_submissions
+    @focus_assignment_id = params[:assignment_id].presence&.to_i
+    @workspace = AssignmentSurveys::ResponseWorkspace.new(
+      organization: @organization,
+      teammate: current_company_teammate,
+      assignment_ids: params[:assignment_id].presence
+    )
+    @in_progress_responses = @workspace.in_progress_responses.to_a
+    @single_assignment_focus = @focus_assignment_id.present?
+    @submitted_responses = current_company_teammate.assignment_survey_responses
       .where(organization: @organization)
-      .draft
-      .includes(:responses)
-      .first
-    @finalized_submissions = current_company_teammate.assignment_survey_submissions
-      .where(organization: @organization)
-      .finalized
-      .latest_first
-    @latest_finalized = @finalized_submissions.first
-    @recent_finalized = @latest_finalized&.finalized_at.present? &&
-      @latest_finalized.finalized_at > 30.days.ago
+      .submitted
+      .latest_submitted_first
+      .includes(:assignment)
+      .limit(20)
+
+    assignment_rows = AssignmentSurveys::ResponseWorkspace.assignment_rows_for(
+      organization: @organization,
+      teammate: current_company_teammate
+    )
+    @survey_assignments = assignment_rows.map(&:first)
+    @due_statuses = AssignmentSurveys::DueStatus.for_teammate(
+      teammate: current_company_teammate,
+      assignments: @survey_assignments
+    ).index_by { |status| status.assignment.id }
+    @due_count = @due_statuses.values.count(&:due?)
+  end
+
+  def apply_response_updates!
+    response_params = params.fetch(:assignment_survey_responses, ActionController::Parameters.new).permit!
+    return if response_params.blank?
+
+    response_params.each do |_index, attrs|
+      response = current_company_teammate.assignment_survey_responses.in_progress.find(attrs[:id])
+      response.update!(attrs.except(:id).permit(
+        :understandable_rating,
+        :possible_rating,
+        :relevant_rating,
+        :personal_alignment,
+        :comment
+      ))
+    end
+  end
+
+  def survey_take_path
+    options = {}
+    options[:assignment_id] = params[:assignment_id] if params[:assignment_id].present?
+    if params[:assignment_id].present?
+      options[:anchor] = "assignment-survey-response-#{params[:assignment_id]}"
+    end
+    organization_assignment_survey_path(@organization, **options)
   end
 
   def visible_teammates
     @visible_teammates ||= people_results_visible_teammates
   end
 
-  # Individual results / free-text stay hierarchy (or employment-admin) scoped.
-  # Maintainers do not expand this set — they get org-wide score cards only.
   def people_results_visible_teammates
     if policy(@organization).manage_employment?
       @organization.company_teammates.employed
     else
       CompanyTeammate.self_and_reporting_hierarchy(current_company_teammate, @organization).employed
     end
-  end
-
-  def submission_params
-    params.fetch(:assignment_survey_submission, ActionController::Parameters.new).permit(
-      responses_attributes: [
-        :id,
-        :understandable_rating,
-        :possible_rating,
-        :relevant_rating,
-        :comment
-      ]
-    )
   end
 end
