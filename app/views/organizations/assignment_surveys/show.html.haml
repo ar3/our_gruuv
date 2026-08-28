@@ -1,19 +1,7 @@
 = render "header"
 = render "tabs", active_tab: :take
 
-.alert.alert-warning.d-flex.gap-2.align-items-start
-  %i.bi.bi-eye-fill.mt-1
-  %div
-    %strong This feedback is identifiable.
-    Your answers are visible to your employment managers and managerial hierarchy.
-
 - unless @single_assignment_focus
-  .alert.alert-info.d-flex.gap-2.align-items-start
-    %i.bi.bi-arrow-repeat.mt-1
-    %div
-      After each assignment check-in—or whenever an assignment changes—consider updating how you feel about taking it on.
-      You can submit feedback for some assignments now and leave others for later.
-
   - if @due_count.to_i.positive?
     .alert.alert-light.border.mb-4
       %strong #{@due_count} assignment#{'s' if @due_count != 1} need feedback attention
@@ -26,24 +14,6 @@
       %ul.mb-0
         - @form_errors.each do |message|
           %li= message
-
-  - unless @single_assignment_focus
-    .card.mb-4
-      .card-body
-        .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
-          %div
-            %h2.h4.mb-1 Assignment feedback
-            %p.text-muted.mb-0
-              #{@in_progress_responses.count(&:content?)} of #{@in_progress_responses.size} assignments have feedback ready to submit
-          = button_to "Clear unsaved progress",
-            organization_assignment_survey_path(organization),
-            method: :delete,
-            class: "btn btn-sm btn-outline-danger",
-            form: { data: { turbo_confirm: "Clear everything you've entered but not submitted yet?" } }
-        - progress = @in_progress_responses.empty? ? 0 : ((@in_progress_responses.count(&:content?).to_f / @in_progress_responses.size) * 100).round
-        %progress.assignment-survey-completion-progress.w-100.mt-3{value: progress,
-          max: 100,
-          "aria-label": "Feedback completion"} #{progress}%
 
   = form_with url: organization_assignment_survey_path(organization, assignment_id: @focus_assignment_id),
     method: :patch,
@@ -122,14 +92,16 @@
 
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-3.mb-4
       %span.text-muted.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}
-      .d-flex.gap-2.ms-auto
-        - unless @single_assignment_focus
+      .d-flex.gap-2.ms-auto.flex-wrap.justify-content-end
+        - if @single_assignment_focus
+          = render "single_assignment_submit_buttons", form: form
+        - else
           = form.submit "Save progress", class: "btn btn-outline-primary"
-        = form.button @single_assignment_focus ? "Submit feedback" : "Submit filled feedback",
-          type: :submit,
-          name: "finalize",
-          value: "1",
-          class: "btn btn-primary"
+          = form.button "Submit filled feedback",
+            type: :submit,
+            name: "finalize",
+            value: "1",
+            class: "btn btn-primary"
 - else
   .card.mb-4
     .card-body.text-center.py-5
@@ -143,3 +115,5 @@
     = link_to "View your feedback history",
       teammate_responses_organization_assignment_survey_path(organization, current_company_teammate),
       class: "btn btn-outline-secondary btn-sm"
+
+= render "identifiable_notice"

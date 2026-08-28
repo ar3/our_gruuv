@@ -1,0 +1,25 @@
+-# locals: response
+- labels = { 1 => "Strongly disagree", 2 => "Disagree", 3 => "Somewhat disagree", 4 => "Somewhat agree", 5 => "Agree", 6 => "Strongly agree" }
+.mb-0
+  %p.text-muted.small.mb-3
+    Submitted #{l(response.submitted_at, format: :long)}
+  - if response.personal_alignment.present?
+    .mb-3
+      %h4.h6 Personal alignment
+      %p.mb-0= response.personal_alignment.humanize
+  .row.g-3
+    - [["Understandable", response.understandable_rating], ["Possible", response.possible_rating], ["Relevant", response.relevant_rating]].each do |title, rating|
+      .col-12.col-md-4
+        .border.border-2.rounded.p-3.h-100{class: ("likert-answer-border-#{rating}" if rating)}
+          .text-muted.small= title
+          - if rating
+            .fw-semibold{class: "likert-answer-text-#{rating}"}= labels.fetch(rating)
+            .likert-scale-dots.mt-2{"aria-label": "#{labels.fetch(rating)} (#{rating} of 6)"}
+              - (1..6).each do |value|
+                %span.likert-dot{class: "likert-dot-#{value} #{'filled' if value == rating}", title: labels.fetch(value)}
+          - else
+            .text-muted Not answered
+  - if response.comment.present?
+    .mt-3
+      %h4.h6 Comment
+      = simple_format(response.comment, {}, wrapper_tag: "div")

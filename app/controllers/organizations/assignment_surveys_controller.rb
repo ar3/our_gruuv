@@ -1,4 +1,6 @@
 class Organizations::AssignmentSurveysController < Organizations::OrganizationNamespaceBaseController
+  FINALIZE_AFTER_OPTIONS = %w[stay assignment others].freeze
+
   before_action :require_authentication
   after_action :verify_authorized
 
@@ -21,7 +23,7 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
   def update
     authorize @organization, :assignment_survey?
     apply_response_updates!
-    finalize_requested = params[:finalize].present?
+    finalize_requested = params[:finalize].present? || FINALIZE_AFTER_OPTIONS.include?(params[:finalize_after].to_s)
 
     if finalize_requested
       begin
@@ -30,7 +32,7 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
           organization: @organization,
           response_ids: params[:response_ids]
         ).call
-        redirect_to survey_take_path,
+        redirect_to finalize_redirect_path,
                     notice: "Assignment feedback submitted. You can update any assignment again anytime."
       rescue AssignmentSurveys::Submitter::Error => e
         ensure_response_workspace!
@@ -171,6 +173,19 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
       options[:anchor] = "assignment-survey-response-#{params[:assignment_id]}"
     end
     organization_assignment_survey_path(@organization, **options)
+  end
+
+  def finalize_redirect_path
+    assignment_id = params[:assignment_id].presence&.to_i
+
+    case params[:finalize_after].to_s
+    when "assignment"
+      organization_assignment_path(@organization, assignment_id) if assignment_id.positive?
+    when "others"
+      organization_assignment_survey_path(@organization)
+    else
+      survey_take_path
+    end || survey_take_path
   end
 
   def visible_teammates

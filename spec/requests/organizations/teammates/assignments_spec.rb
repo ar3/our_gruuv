@@ -518,4 +518,70 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       end
     end
   end
+
+  describe "assignment experience feedback" do
+    before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+    it "shows the latest submitted feedback and update control in research" do
+      create(
+        :assignment_survey_response,
+        :complete,
+        company_teammate: employee_teammate,
+        assignment: assignment,
+        personal_alignment: "like",
+        submitted_at: 2.days.ago
+      )
+
+      get assignment_show_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("assignment experience feedback")
+      expect(response.body).to include("Latest submission")
+      expect(response.body).to include("Personal alignment")
+      expect(response.body).to include("Like")
+      expect(response.body).to include("Give feedback")
+      expect(response.body).to include("research-survey-feedback")
+    end
+
+    it "shows full feedback history for the assignment" do
+      create(
+        :assignment_survey_response,
+        :complete,
+        company_teammate: employee_teammate,
+        assignment: assignment,
+        understandable_rating: 3,
+        possible_rating: 3,
+        relevant_rating: 3,
+        personal_alignment: "neutral",
+        submitted_at: 5.days.ago
+      )
+      create(
+        :assignment_survey_response,
+        :complete,
+        company_teammate: employee_teammate,
+        assignment: assignment,
+        understandable_rating: 6,
+        possible_rating: 6,
+        relevant_rating: 6,
+        personal_alignment: "love",
+        submitted_at: 1.day.ago
+      )
+
+      get assignment_show_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Latest submission")
+      expect(response.body).to include("Earlier submission")
+      expect(response.body).to include("Love")
+      expect(response.body).to include("Neutral")
+    end
+
+    it "shows the update control when no feedback exists yet" do
+      get assignment_show_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("No feedback submitted yet for this assignment")
+      expect(response.body).to include("Give feedback")
+    end
+  end
 end

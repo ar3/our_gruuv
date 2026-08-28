@@ -1,0 +1,24 @@
+%section#research-survey-feedback.mb-4
+  .card
+    .card-header
+      %h6.mb-0 #{@teammate.person.casual_name}'s assignment experience feedback
+    .card-body
+      - if @assignment_survey_responses.any?
+        - @assignment_survey_responses.each_with_index do |response, index|
+          - unless index.zero?
+            %hr.my-4
+          %p.small.fw-semibold.text-muted.mb-2
+            - if index.zero?
+              Latest submission
+            - else
+              Earlier submission
+          = render "shared/assignment_surveys/response_summary", response: response
+      - else
+        %p.text-muted.mb-0 No feedback submitted yet for this assignment.
+
+  - if @viewer_is_check_in_employee && policy(@organization).assignment_survey?
+    = render "shared/assignment_surveys/cta_banner",
+      organization: @organization,
+      assignment: @assignment,
+      due_status: @assignment_survey_due_status,
+      viewer_holds_assignment: true

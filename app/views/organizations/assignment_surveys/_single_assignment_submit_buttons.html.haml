@@ -1,0 +1,17 @@
+-# locals: form
+.d-flex.flex-wrap.gap-2.justify-content-end
+  = form.button "Submit and stay here",
+    type: :submit,
+    name: "finalize_after",
+    value: "stay",
+    class: "btn btn-primary"
+  = form.button "Submit and go to assignment page",
+    type: :submit,
+    name: "finalize_after",
+    value: "assignment",
+    class: "btn btn-outline-primary"
+  = form.button "Submit and fill out other surveys",
+    type: :submit,
+    name: "finalize_after",
+    value: "others",
+    class: "btn btn-outline-secondary"

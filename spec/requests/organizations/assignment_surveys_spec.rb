@@ -140,8 +140,61 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     get organization_assignment_survey_path(organization, assignment_id: assignment.id)
 
     expect(response).to have_http_status(:success)
-    expect(response.body).to include("Submit feedback")
+    expect(response.body).to include("Submit and stay here")
+    expect(response.body).to include("Submit and go to assignment page")
+    expect(response.body).to include("Submit and fill out other surveys")
     expect(response.body).to include("assignment-survey-response-#{assignment.id}")
+  end
+
+  it "redirects after single-assignment submit based on finalize_after" do
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate,
+      assignment_ids: [ assignment.id ]
+    ).call.first
+    response_params = {
+      "0" => {
+        id: survey_response.id,
+        understandable_rating: 5,
+        possible_rating: 4,
+        relevant_rating: 6
+      }
+    }
+    base_params = {
+      assignment_id: assignment.id,
+      response_ids: [ survey_response.id ],
+      assignment_survey_responses: response_params
+    }
+
+    patch organization_assignment_survey_path(organization, assignment_id: assignment.id),
+          params: base_params.merge(finalize_after: "stay")
+    expect(response).to redirect_to(
+      organization_assignment_survey_path(organization, assignment_id: assignment.id, anchor: "assignment-survey-response-#{assignment.id}")
+    )
+
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate,
+      assignment_ids: [ assignment.id ]
+    ).call.first
+    response_params["0"][:id] = survey_response.id
+    base_params[:response_ids] = [ survey_response.id ]
+
+    patch organization_assignment_survey_path(organization, assignment_id: assignment.id),
+          params: base_params.merge(finalize_after: "assignment")
+    expect(response).to redirect_to(organization_assignment_path(organization, assignment.id))
+
+    survey_response = AssignmentSurveys::ResponseWorkspace.new(
+      organization: organization,
+      teammate: teammate,
+      assignment_ids: [ assignment.id ]
+    ).call.first
+    response_params["0"][:id] = survey_response.id
+    base_params[:response_ids] = [ survey_response.id ]
+
+    patch organization_assignment_survey_path(organization, assignment_id: assignment.id),
+          params: base_params.merge(finalize_after: "others")
+    expect(response).to redirect_to(organization_assignment_survey_path(organization))
   end
 
   it "shows results and exports CSV" do

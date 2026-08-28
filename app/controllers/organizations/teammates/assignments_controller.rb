@@ -71,6 +71,12 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       teammate: @teammate,
       assignment: @assignment
     )
+    @assignment_survey_responses = @teammate.assignment_survey_responses
+      .submitted
+      .where(organization: organization, assignment: @assignment)
+      .latest_submitted_first
+      .to_a
+    @latest_assignment_survey_response = @assignment_survey_responses.first
     @viewer_is_check_in_employee = current_person == @teammate.person
 
     # Get current employment for position connection
