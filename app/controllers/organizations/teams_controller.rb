@@ -2,7 +2,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   include ProfileImageParams
 
   before_action :require_authentication
-  before_action :set_team, only: [:show, :edit, :update, :archive, :manage_members, :update_members]
+  before_action :set_team, only: [:show, :edit, :update, :archive, :manage_members, :update_members, :manage_assignment_needs, :update_assignment_needs]
 
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
@@ -45,6 +45,8 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     else
       Observation.none
     end
+
+    @assignment_roster = ::Teams::AssignmentRoster.new(@team)
   end
 
   def new
@@ -148,6 +150,30 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
              end
     
     redirect_to organization_team_path(@organization, @team), notice: notice
+  end
+
+  def manage_assignment_needs
+    authorize @team, :update?
+
+    @assignments = @organization.assignments.unarchived
+      .includes(:department)
+      .order(:title)
+    @need_types_by_assignment_id = @team.team_assignment_needs.pluck(:assignment_id, :need_type).to_h
+  end
+
+  def update_assignment_needs
+    authorize @team, :update?
+
+    raw_need_types = params[:need_types].presence&.to_unsafe_h || {}
+    need_types_by_assignment_id = raw_need_types.each_with_object({}) do |(assignment_id, need_type), hash|
+      next if need_type.blank?
+
+      hash[assignment_id.to_i] = need_type
+    end
+
+    ::Teams::AssignmentNeedsSync.new(team: @team, need_types_by_assignment_id: need_types_by_assignment_id).call
+
+    redirect_to organization_team_path(@organization, @team), notice: "Team assignment needs were updated."
   end
 
   private

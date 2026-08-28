@@ -9,6 +9,7 @@ module ApplicationHelper
   include GoalsHelper
   include GroupAvatarHelper
   include AssociableGoalsHelper
+  include TeamAssignmentNeedsHelper
 
   # For +*_organization_company_teammate_path(organization, teammate)+ — pass this as the teammate
   # segment so links to your own hub use +/company_teammates/me/+ (portable when sharing with yourself).

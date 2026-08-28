@@ -1,0 +1,49 @@
+-# locals: rows, team, organization
+
+.table-responsive
+  %table.table.table-hover.mb-0
+    %thead
+      %tr
+        %th Assignment
+        %th Taking it on for the team
+        %th Could cover
+        %th
+    %tbody
+      - rows.each do |row|
+        %tr
+          %td
+            = link_to organization_assignment_path(organization, row.assignment), class: "text-decoration-none fw-semibold" do
+              = row.assignment.title
+          %td
+            - if row.coverer_statuses.any?
+              %ul.list-unstyled.mb-0
+                - row.coverer_statuses.each do |status|
+                  %li.mb-1
+                    = link_to organization_company_teammate_path(organization, status.coverer.company_teammate), class: "text-decoration-none" do
+                      = status.coverer.company_teammate.person.preferred_first_then_last_display_name
+                    - discrepancy_badges = team_assignment_coverer_discrepancy_badges(status)
+                    - if discrepancy_badges.present?
+                      .mt-1= discrepancy_badges
+            - else
+              %span.text-muted Nobody named yet
+          %td
+            - if row.could_cover_teammates.any?
+              - collapse_id = "could-cover-#{row.need.id}"
+              %button.btn.btn-link.btn-sm.p-0.text-start.text-decoration-none{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id}
+                %i.bi.bi-chevron-right.me-1
+                Could cover
+                %span.text-muted
+                  (#{row.could_cover_teammates.size})
+              .collapse{id: collapse_id}
+                %ul.list-unstyled.mb-0.mt-2
+                  - row.could_cover_teammates.each do |teammate|
+                    %li
+                      = link_to organization_company_teammate_path(organization, teammate), class: "text-decoration-none small" do
+                        = teammate.person.preferred_first_then_last_display_name
+            - else
+              %span.text-muted —
+          %td.text-end
+            - if policy(team).update?
+              = link_to manage_coverers_organization_team_assignment_need_path(organization, team, row.need), class: "btn btn-sm btn-outline-secondary" do
+                %i.bi.bi-people.me-1
+                Add/remove who is taking this on for the team

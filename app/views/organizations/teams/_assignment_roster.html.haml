@@ -1,0 +1,35 @@
+-# locals: roster, team, organization
+
+.card.mb-4
+  .card-header.d-flex.justify-content-between.align-items-center
+    %h5.mb-0
+      %i.bi.bi-briefcase.me-2
+      Team Assignments
+    - if policy(team).update?
+      = link_to manage_assignment_needs_organization_team_path(organization, team), class: "btn btn-sm btn-outline-primary" do
+        %i.bi.bi-list-check.me-1
+        Manage assignments
+  .card-body
+    - if roster.any_needs?
+      - if roster.required_rows.any?
+        %h6.fw-semibold.mb-3 Required for the team
+        = render "organizations/teams/assignment_roster_rows",
+          rows: roster.required_rows,
+          team: team,
+          organization: organization
+
+      - if roster.nice_to_have_rows.any?
+        %h6.fw-semibold.mb-3{class: roster.required_rows.any? ? "mt-4" : ""}
+          Nice-to-have for the team
+        = render "organizations/teams/assignment_roster_rows",
+          rows: roster.nice_to_have_rows,
+          team: team,
+          organization: organization
+    - else
+      .alert.alert-light.mb-0
+        %p.mb-0
+          %i.bi.bi-info-circle.me-2
+          This team has not identified any assignments it depends on yet.
+          - if policy(team).update?
+            = link_to "Identify team assignments", manage_assignment_needs_organization_team_path(organization, team), class: "alert-link"
+            to clarify expectations.

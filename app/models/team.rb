@@ -8,6 +8,8 @@ class Team < ApplicationRecord
   has_many :company_teammates, through: :team_members
   has_many :people, through: :company_teammates, source: :person
   has_many :huddles, dependent: :destroy
+  has_many :team_assignment_needs, dependent: :destroy
+  has_many :needed_assignments, through: :team_assignment_needs, source: :assignment
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
   has_one :team_asana_link, dependent: :destroy
 

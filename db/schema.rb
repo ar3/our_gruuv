@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_28_030000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_28_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1925,6 +1925,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_28_030000) do
     t.index ["team_id"], name: "index_team_asana_links_on_team_id", unique: true
   end
 
+  create_table "team_assignment_coverers", force: :cascade do |t|
+    t.bigint "team_assignment_need_id", null: false
+    t.bigint "company_teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id"], name: "index_team_assignment_coverers_on_company_teammate_id"
+    t.index ["team_assignment_need_id", "company_teammate_id"], name: "index_team_assignment_coverers_on_need_and_teammate", unique: true
+    t.index ["team_assignment_need_id"], name: "index_team_assignment_coverers_on_team_assignment_need_id"
+  end
+
+  create_table "team_assignment_needs", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.bigint "assignment_id", null: false
+    t.string "need_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_team_assignment_needs_on_assignment_id"
+    t.index ["need_type"], name: "index_team_assignment_needs_on_need_type"
+    t.index ["team_id", "assignment_id"], name: "index_team_assignment_needs_on_team_id_and_assignment_id", unique: true
+    t.index ["team_id"], name: "index_team_assignment_needs_on_team_id"
+  end
+
   create_table "team_members", force: :cascade do |t|
     t.bigint "team_id", null: false
     t.bigint "company_teammate_id", null: false
@@ -2303,6 +2325,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_28_030000) do
   add_foreign_key "talent_density_stances", "organizations", column: "company_id"
   add_foreign_key "talent_density_stances", "teammates", column: "company_teammate_id"
   add_foreign_key "team_asana_links", "teams"
+  add_foreign_key "team_assignment_coverers", "team_assignment_needs"
+  add_foreign_key "team_assignment_coverers", "teammates", column: "company_teammate_id"
+  add_foreign_key "team_assignment_needs", "assignments"
+  add_foreign_key "team_assignment_needs", "teams"
   add_foreign_key "team_members", "teammates", column: "company_teammate_id"
   add_foreign_key "team_members", "teams"
   add_foreign_key "teammate_growth_results", "og_consultations"

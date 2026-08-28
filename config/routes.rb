@@ -815,6 +815,14 @@ Rails.application.routes.draw do
         patch :archive
         get :manage_members
         patch :update_members
+        get :manage_assignment_needs
+        patch :update_assignment_needs
+      end
+      resources :assignment_needs, only: [], module: :teams do
+        member do
+          get :manage_coverers
+          patch :update_coverers
+        end
       end
       resource :team_asana_link, path: 'asana_link', only: [:show, :create, :update], controller: 'teams/team_asana_links' do
         member do

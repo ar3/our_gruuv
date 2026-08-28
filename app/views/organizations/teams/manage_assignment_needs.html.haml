@@ -1,0 +1,75 @@
+- content_for :title, "Team Assignments - #{@team.name}"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @team.name, url: organization_team_path(@organization, @team) }, { label: "Team assignments", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0
+      %i.bi.bi-list-check.me-2
+      Team Assignments
+      %small.text-muted.ms-2
+        = @team.name
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-briefcase.me-2
+      What assignments does this team need?
+  .card-body
+    = form_with url: update_assignment_needs_organization_team_path(@organization, @team), method: :patch, local: true do |form|
+      %p.text-muted.mb-3
+        Identify assignments the team depends on. Mark each as
+        %strong required
+        or
+        %strong nice-to-have
+        for the team. You can name who is taking each assignment on from the team page.
+
+      - if @assignments.any?
+        .mb-3{data: {controller: "options-filter"}}
+          .mb-3
+            %label.visually-hidden{for: "assignment_need_search"} Filter assignments
+            %input.form-control.form-control-lg{type: "search", id: "assignment_need_search", placeholder: "Search assignments...", "aria-label": "Filter assignments", data: {options_filter_target: "input", action: "input->options-filter#filter"}}
+
+          .selection-page-columns{data: {options_filter_target: "list"}}
+            - @assignments.each do |assignment|
+              - current_need_type = @need_types_by_assignment_id[assignment.id]
+              .card.filterable-option.text-decoration-none.mb-2
+                .card-body.py-3
+                  .row.align-items-center.g-2
+                    .col-md-5
+                      %strong= assignment.title
+                      - if assignment.department
+                        %br
+                        %small.text-muted= assignment.department.display_name
+                    .col-md-7
+                      .d-flex.flex-wrap.gap-3
+                        .form-check
+                          = radio_button_tag "need_types[#{assignment.id}]",
+                            "",
+                            current_need_type.blank?,
+                            class: "form-check-input",
+                            id: "assignment_#{assignment.id}_none"
+                          = label_tag "assignment_#{assignment.id}_none", "Not needed", class: "form-check-label"
+                        .form-check
+                          = radio_button_tag "need_types[#{assignment.id}]",
+                            "required",
+                            current_need_type == "required",
+                            class: "form-check-input",
+                            id: "assignment_#{assignment.id}_required"
+                          = label_tag "assignment_#{assignment.id}_required", "Required", class: "form-check-label"
+                        .form-check
+                          = radio_button_tag "need_types[#{assignment.id}]",
+                            "nice_to_have",
+                            current_need_type == "nice_to_have",
+                            class: "form-check-input",
+                            id: "assignment_#{assignment.id}_nice_to_have"
+                          = label_tag "assignment_#{assignment.id}_nice_to_have", "Nice-to-have", class: "form-check-label"
+      - else
+        .alert.alert-info.mb-0
+          %i.bi.bi-info-circle.me-2
+          No assignments found in this organization.
+
+      .d-flex.gap-2.mt-3
+        = form.submit "Save Changes", class: "btn btn-primary btn-lg"
+        = link_to "Cancel", organization_team_path(@organization, @team), class: "btn btn-outline-secondary btn-lg"

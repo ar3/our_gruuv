@@ -1,10 +1,14 @@
 class DropAssignmentSurveySubmissions < ActiveRecord::Migration[8.0]
   def up
     remove_index :assignment_survey_responses,
-                 name: "index_assignment_survey_responses_on_submission_assignment"
-    remove_reference :assignment_survey_responses, :assignment_survey_submission, foreign_key: true
+                 name: "index_assignment_survey_responses_on_submission_assignment",
+                 if_exists: true
 
-    drop_table :assignment_survey_submissions
+    if column_exists?(:assignment_survey_responses, :assignment_survey_submission_id)
+      remove_reference :assignment_survey_responses, :assignment_survey_submission, foreign_key: true
+    end
+
+    drop_table :assignment_survey_submissions, if_exists: true
   end
 
   def down

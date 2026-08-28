@@ -64,6 +64,8 @@
                 = link_to "Add members", manage_members_organization_team_path(@organization, @team), class: "alert-link"
                 to get started.
 
+    = render "organizations/teams/assignment_roster", roster: @assignment_roster, team: @team, organization: @organization
+
     .card.mb-4
       .card-header
         %h5.mb-0

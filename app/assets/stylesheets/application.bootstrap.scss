@@ -2061,6 +2061,10 @@ body:has(.vertical-nav.open) .floating-toggle {
     page-break-inside: avoid;
     margin-bottom: 1rem;
   }
+
+  > .selection-page-full-width {
+    column-span: all;
+  }
 }
 
 // OG pro tips — reusable callouts (tone: loud | subtle; optionally collapsible)
