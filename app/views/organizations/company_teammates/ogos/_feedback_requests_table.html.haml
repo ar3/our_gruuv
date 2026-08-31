@@ -6,38 +6,38 @@
       %tr
         %th Subject
         %th Requestor
-        %th Focus
+        %th Request
         %th Questions
         %th Responses
         %th Status
-        %th Created
         %th Actions
     %tbody
       - rows.each do |row|
         - request = row.feedback_request
         - subject = request.subject_of_feedback_teammate
+        - questions = request.feedback_request_questions.sort_by(&:position)
         %tr{class: "#{'text-muted' if request.archived?}"}
           %td
             .d-flex.align-items-center.gap-2
               = teammate_profile_image(subject, size: 32)
               %span= subject.person.display_name
-          %td= request.requestor_teammate.person.display_name
           %td
-            - rateable = request.feedback_request_questions.first&.rateable
-            - if rateable
-              - case rateable.class.name
-              - when "Assignment"
-                %span.badge.bg-primary= rateable.title
-              - when "Ability"
-                %span.badge.bg-info= rateable.name
-              - when "Aspiration"
-                %span.badge.bg-success= rateable.name
-              - when "Position"
-                %span.badge.bg-dark= rateable.display_name
+            %div= request.requestor_teammate.person.display_name
+            %small.text-muted= format_time_in_user_timezone(request.created_at)
+          %td
+            %span= request.subject_line.presence || "Untitled request"
+          %td
+            - if questions.any?
+              %span.badge.bg-secondary{style: "cursor: pointer;",
+                "data-bs-toggle" => "popover",
+                "data-bs-trigger" => "hover focus",
+                "data-bs-placement" => "left",
+                "data-bs-html" => "true",
+                "data-bs-title" => "Questions",
+                "data-bs-content" => feedback_request_questions_popover_content(request),
+                tabindex: 0}= questions.size
             - else
-              %span.text-muted Generic
-          %td
-            %span.badge.bg-secondary= request.feedback_request_questions.size
+              %span.badge.bg-secondary 0
           %td
             %span= row.responses_label
             - if row.show_responder_details? && row.visible_responders.any?
@@ -54,7 +54,6 @@
             - state_class = request.archived? ? 'bg-secondary' : 'bg-success'
             - state_tooltip = feedback_request_state_tooltip(request)
             %span.badge{class: state_class, "data-bs-toggle": "tooltip", "data-bs-title": state_tooltip, title: state_tooltip}= state_label
-          %td= format_time_in_user_timezone(request.created_at)
           %td
             .btn-group.btn-group-sm
               - if policy(request).view_in_teammate_story?

@@ -188,6 +188,29 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
     end
   end
 
+  describe '#feedback_request_questions_popover_content' do
+    let(:feedback_request) do
+      create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate
+      )
+    end
+
+    it 'renders each question in its own markdown container' do
+      feedback_request.feedback_request_questions.destroy_all
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: '**First** question', position: 1)
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Second question', position: 2)
+      feedback_request.reload
+
+      html = helper.feedback_request_questions_popover_content(feedback_request)
+      expect(html).to include('markdown-content')
+      expect(html).to include('<strong>First</strong>')
+      expect(html).to include('Second question')
+      expect(html.scan('markdown-content').size).to eq(2)
+    end
+  end
+
   describe '#feedback_request_responder_submission_rows' do
     let(:company) { create(:organization) }
     let(:requestor) { create(:company_teammate, organization: company) }

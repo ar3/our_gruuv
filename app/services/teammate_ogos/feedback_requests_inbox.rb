@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module TeammateOgos
-  # Loads the teammate-scoped Feedback Requests inbox: four role sections in one scroll.
+  # Loads the teammate-scoped Feedback Requests inbox: three role sections in one scroll.
   class FeedbackRequestsInbox
     Section = Struct.new(
       :key,
@@ -40,7 +40,6 @@ module TeammateOgos
         sections: [
           waiting_section,
           about_section,
-          asked_about_self_section,
           asked_for_others_section
         ]
       }
@@ -73,11 +72,10 @@ module TeammateOgos
     end
 
     def about_section
-      # Requests about this person that someone else created (on their behalf).
+      # All requests about this person (self-requested or asked by someone else).
+      # Requestor column distinguishes who created it.
       scope = apply_open_or_closed(
-        base_scope
-          .where(subject_of_feedback_teammate_id: teammate.id)
-          .where.not(requestor_teammate_id: teammate.id)
+        base_scope.where(subject_of_feedback_teammate_id: teammate.id)
       )
 
       build_section(
@@ -85,26 +83,7 @@ module TeammateOgos
         title: "About #{casual}",
         icon: "bi-person",
         empty_heading: "No requests about #{casual}",
-        empty_message: "When a manager or teammate requests feedback about #{casual} on their behalf, those requests appear here.",
-        scope: scope
-      )
-    end
-
-    def asked_about_self_section
-      # They asked others for feedback about themselves.
-      scope = apply_open_or_closed(
-        base_scope.where(
-          requestor_teammate_id: teammate.id,
-          subject_of_feedback_teammate_id: teammate.id
-        )
-      )
-
-      build_section(
-        key: :asked_about_self,
-        title: "#{casual} asked of others",
-        icon: "bi-send",
-        empty_heading: "#{casual} hasn't asked others for feedback yet",
-        empty_message: "When #{casual} asks teammates for feedback about themselves, those requests appear here.",
+        empty_message: "When #{casual} or someone else requests feedback about #{casual}, those requests appear here.",
         scope: scope
       )
     end

@@ -29,18 +29,18 @@ RSpec.describe TeammateOgos::FeedbackRequestsInbox do
     create(:employment_tenure, teammate: requestor, company: organization, started_at: 1.year.ago, ended_at: nil)
   end
 
-  it "buckets requests into four non-overlapping sections" do
+  it "buckets requests into three non-overlapping sections" do
     waiting = create(:feedback_request, company: organization, requestor_teammate: requestor, subject_of_feedback_teammate: other)
     waiting.feedback_request_responders.create!(teammate: teammate)
 
-    about = create(:feedback_request, company: organization, requestor_teammate: requestor, subject_of_feedback_teammate: teammate)
-    self_ask = create(:feedback_request, company: organization, requestor_teammate: teammate, subject_of_feedback_teammate: teammate)
+    about_by_other = create(:feedback_request, company: organization, requestor_teammate: requestor, subject_of_feedback_teammate: teammate)
+    about_self_ask = create(:feedback_request, company: organization, requestor_teammate: teammate, subject_of_feedback_teammate: teammate)
     for_others = create(:feedback_request, company: organization, requestor_teammate: teammate, subject_of_feedback_teammate: other)
 
     expect(section(:waiting).rows.map(&:feedback_request)).to eq([waiting])
-    expect(section(:about).rows.map(&:feedback_request)).to eq([about])
-    expect(section(:asked_about_self).rows.map(&:feedback_request)).to eq([self_ask])
+    expect(section(:about).rows.map(&:feedback_request)).to contain_exactly(about_by_other, about_self_ask)
     expect(section(:asked_for_others).rows.map(&:feedback_request)).to eq([for_others])
+    expect(call[:sections].map(&:key)).to eq([:waiting, :about, :asked_for_others])
   end
 
   it "includes open-link incomplete answers in Waiting on after a responder row exists" do

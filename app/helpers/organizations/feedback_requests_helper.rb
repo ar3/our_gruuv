@@ -73,6 +73,22 @@ module Organizations
       end
     end
 
+    # HTML body for the Questions-count popover on the feedback requests inbox table.
+    def feedback_request_questions_popover_content(feedback_request)
+      questions = feedback_request.feedback_request_questions.sort_by { |q| q.position.to_i }
+      return content_tag(:p, 'No questions', class: 'mb-0 text-muted small') if questions.empty?
+
+      safe_join(
+        questions.each_with_index.map do |question, index|
+          classes = ['markdown-content', 'border', 'rounded', 'p-2', 'small']
+          classes << 'mb-2' unless index == questions.size - 1
+          content_tag(:div, class: classes.join(' ')) do
+            render_markdown(question.question_text.presence || '_(blank)_')
+          end
+        end
+      )
+    end
+
     def feedback_request_suggested_share_message(feedback_request, answer_url)
       subject_name = feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'them'
       subject_line = feedback_request.subject_line.presence || 'this work'

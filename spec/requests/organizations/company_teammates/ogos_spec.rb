@@ -106,16 +106,28 @@ RSpec.describe "Teammate OGOs page", type: :request do
   end
 
   describe "GET /organizations/:organization_id/company_teammates/:id/ogos/feedback_requests" do
-    it "renders the feedback requests inbox with four sections" do
+    it "renders the feedback requests inbox with three sections" do
+      other = create(:company_teammate, organization: organization)
+      create(:employment_tenure, teammate: other, company: organization, started_at: 1.year.ago, ended_at: nil)
+      create(:feedback_request, :ready_open_link,
+             company: organization,
+             requestor_teammate: teammate,
+             subject_of_feedback_teammate: other,
+             subject_line: "Ship retro feedback")
+
       get ogos_feedback_requests_organization_company_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("360° Feedback Requests")
       expect(response.body).to include("Waiting on #{person.casual_name}")
       expect(response.body).to include("About #{person.casual_name}")
-      expect(response.body).to include("#{person.casual_name} asked of others")
       expect(response.body).to include("#{person.casual_name} asked for others")
+      expect(response.body).not_to include("#{person.casual_name} asked of others")
       expect(response.body).to include("Show closed")
       expect(response.body).to include("archived")
+      expect(response.body).to include("Ship retro feedback")
+      expect(response.body).to include(">Request<")
+      expect(response.body).not_to include(">Focus<")
+      expect(response.body).to match(/data-bs-toggle=["']popover["']/)
     end
 
     it "supports the /me/ teammate alias" do
