@@ -12,13 +12,13 @@
       %small.text-muted.ms-2= @feedback_request.subject_line
     - case @feedback_request.state
     - when 'invalid'
-      %span.badge.bg-danger.ms-2 Invalid
+      %span.badge.bg-danger.ms-2{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Invalid
     - when 'ready'
-      %span.badge.bg-warning.ms-2 Ready
+      %span.badge.bg-warning.ms-2{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Ready
     - when 'active'
-      %span.badge.bg-success.ms-2 Active
+      %span.badge.bg-success.ms-2{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Active
     - when 'archived'
-      %span.badge.bg-secondary.ms-2 Archived
+      %span.badge.bg-secondary.ms-2{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Archived
 
 - can_nudge = policy(@feedback_request).update? && organization.slack_configured? && @responders.any?
 - incomplete_responders = @responder_records_by_teammate_id.values.any? { |record| record.completed_at.blank? }
@@ -76,13 +76,13 @@
               %strong State:
               - case @feedback_request.state
               - when 'invalid'
-                %span.badge.bg-danger Invalid
+                %span.badge.bg-danger{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Invalid
               - when 'ready'
-                %span.badge.bg-warning Ready
+                %span.badge.bg-warning{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Ready
               - when 'active'
-                %span.badge.bg-success Active
+                %span.badge.bg-success{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Active
               - when 'archived'
-                %span.badge.bg-secondary Archived
+                %span.badge.bg-secondary{"data-bs-toggle": "tooltip", "data-bs-title": feedback_request_state_tooltip(@feedback_request), title: feedback_request_state_tooltip(@feedback_request)} Archived
           .col-md-6
             %p
               %strong Created:

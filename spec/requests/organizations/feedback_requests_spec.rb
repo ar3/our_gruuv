@@ -571,13 +571,15 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('submit')
       end
 
-      it 'shows per-question privacy selector (Visible to) with observed_only, managers_only, observed_and_managers' do
+      it 'shows per-question privacy selector (Visible to) including public_to_company' do
         get answer_organization_feedback_request_path(company, feedback_request)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Visible to:')
         expect(response.body).to include('observed_only')
         expect(response.body).to include('managers_only')
         expect(response.body).to include('observed_and_managers')
+        expect(response.body).to include('public_to_company')
+        expect(response.body).to include("Public to #{company.name}")
       end
     end
 

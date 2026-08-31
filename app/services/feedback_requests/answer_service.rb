@@ -1,8 +1,15 @@
 module FeedbackRequests
   class AnswerService
     RATING_RATEABLE_TYPES = %w[Ability Assignment Aspiration].freeze
+    ALLOWED_PRIVACY_LEVELS = %w[
+      observed_only
+      managers_only
+      observed_and_managers
+      public_to_company
+    ].freeze
+    DEFAULT_PRIVACY_LEVEL = 'observed_and_managers'.freeze
 
-    def self.call(feedback_request:, answers:, responder_teammate:, privacy_level: 'observed_and_managers', complete: false)
+    def self.call(feedback_request:, answers:, responder_teammate:, privacy_level: DEFAULT_PRIVACY_LEVEL, complete: false)
       new(
         feedback_request: feedback_request,
         answers: answers,
@@ -12,11 +19,11 @@ module FeedbackRequests
       ).call
     end
 
-    def initialize(feedback_request:, answers:, responder_teammate:, privacy_level: 'observed_and_managers', complete: false)
+    def initialize(feedback_request:, answers:, responder_teammate:, privacy_level: DEFAULT_PRIVACY_LEVEL, complete: false)
       @feedback_request = feedback_request
       @answers = answers || {}
       @responder_teammate = responder_teammate
-      @privacy_level = privacy_level
+      @privacy_level = sanitize_privacy_level(privacy_level)
       @complete = complete
     end
 
@@ -31,7 +38,9 @@ module FeedbackRequests
           raw_story = fetch_val(answer_data, :story).to_s.presence.to_s
           rating = normalize_rating(fetch_val(answer_data, :rating))
           story = raw_story.presence || default_story_for_rating_only(question, rating)
-          privacy_level = fetch_val(answer_data, :privacy_level).presence || @privacy_level
+          privacy_level = sanitize_privacy_level(
+            fetch_val(answer_data, :privacy_level).presence || @privacy_level
+          )
 
           # Only update an unpublished draft for this question+observer.
           # Published answers are left alone so a later submission creates new OGOs.
@@ -126,6 +135,13 @@ module FeedbackRequests
     end
 
     private
+
+    def sanitize_privacy_level(value)
+      level = value.to_s
+      return level if ALLOWED_PRIVACY_LEVELS.include?(level)
+
+      DEFAULT_PRIVACY_LEVEL
+    end
 
     def has_story_or_rating?(answer_data)
       return false unless answer_data.respond_to?(:key?) && answer_data.respond_to?(:[])

@@ -50,10 +50,10 @@
                 No visible response yet:
                 = row.awaiting_responders.map { |r| r.person.display_name }.join(", ")
           %td
-            - if request.archived?
-              %span.badge.bg-secondary Archived
-            - else
-              %span.badge.bg-success= request.state.humanize
+            - state_label = request.archived? ? 'Archived' : request.state.humanize
+            - state_class = request.archived? ? 'bg-secondary' : 'bg-success'
+            - state_tooltip = feedback_request_state_tooltip(request)
+            %span.badge{class: state_class, "data-bs-toggle": "tooltip", "data-bs-title": state_tooltip, title: state_tooltip}= state_label
           %td= format_time_in_user_timezone(request.created_at)
           %td
             .btn-group.btn-group-sm

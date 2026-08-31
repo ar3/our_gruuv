@@ -48,6 +48,31 @@ module Organizations
       feedback_request.open_to_anyone? ? 'Open to anyone with the link' : 'Named respondents only'
     end
 
+    # Explains why the request is in its current derived state (invalid/ready/active/archived).
+    # Ready vs Active is about Slack nudges, not whether the answer link works.
+    def feedback_request_state_tooltip(feedback_request)
+      case feedback_request.state
+      when 'invalid'
+        reasons = []
+        reasons << 'add at least one question' if feedback_request.feedback_request_questions.empty?
+        if feedback_request.feedback_request_questions.any? { |q| q.question_text.blank? }
+          reasons << 'fill in every question'
+        end
+        if feedback_request.requires_named_responders? && feedback_request.responders.empty?
+          reasons << 'choose at least one named respondent'
+        end
+        reasons.any? ? "Not ready yet — #{reasons.to_sentence}." : 'This request is incomplete.'
+      when 'ready'
+        'Valid and answerable. Respondents have not been nudged via Slack yet (open-link sharing still works).'
+      when 'active'
+        'Valid and answerable. At least one Slack nudge has been sent to respondents.'
+      when 'archived'
+        'Archived — no longer accepting answers.'
+      else
+        nil
+      end
+    end
+
     def feedback_request_suggested_share_message(feedback_request, answer_url)
       subject_name = feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || 'them'
       subject_line = feedback_request.subject_line.presence || 'this work'

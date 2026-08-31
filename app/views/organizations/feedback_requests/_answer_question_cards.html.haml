@@ -87,6 +87,7 @@
                 current_value: existing_observation&.privacy_level&.to_s.presence || "observed_and_managers",
                 subject_casual_name: subject_casual_name,
                 manager_casual_name: manager_casual_name,
+                company_name: (organization&.name || @feedback_request&.company&.name),
                 disabled: disabled,
                 id_suffix: (disabled ? "_preview" : nil)
 
@@ -124,5 +125,6 @@
             current_value: existing_observation&.privacy_level&.to_s.presence || "observed_and_managers",
             subject_casual_name: subject_casual_name,
             manager_casual_name: manager_casual_name,
+            company_name: (organization&.name || @feedback_request&.company&.name),
             disabled: disabled,
             id_suffix: (disabled ? "_preview" : nil)

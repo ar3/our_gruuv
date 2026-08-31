@@ -1,14 +1,17 @@
-- # Thin button-group radio for per-question visibility. Options: observed_only, managers_only, observed_and_managers.
+- # Thin button-group radio for per-question visibility.
+- # Options: observed_only, managers_only, observed_and_managers, public_to_company.
 - field_name = local_assigns[:field_name]
 - current_value = (local_assigns[:current_value].presence || 'observed_and_managers').to_s
 - subject_name = local_assigns[:subject_casual_name].presence || 'the subject'
 - manager_name = local_assigns[:manager_casual_name].presence || 'their manager'
+- company_name = local_assigns[:company_name].presence || organization&.name || 'company'
 - disabled = local_assigns.fetch(:disabled, false)
 - id_suffix = local_assigns[:id_suffix].to_s
 
 - observed_only_id = "#{field_name.to_s.parameterize}_observed_only#{id_suffix}"
 - managers_only_id = "#{field_name.to_s.parameterize}_managers_only#{id_suffix}"
 - observed_and_managers_id = "#{field_name.to_s.parameterize}_observed_and_managers#{id_suffix}"
+- public_to_company_id = "#{field_name.to_s.parameterize}_public_to_company#{id_suffix}"
 
 .mt-3.pt-2.border-top
   .small.text-muted.mb-1 Visible to:
@@ -24,3 +27,7 @@
     %input{type: "radio", name: field_name, value: "observed_and_managers", id: observed_and_managers_id, checked: (current_value == 'observed_and_managers'), class: "btn-check", disabled: disabled}
     %label.btn.btn-outline-secondary.btn-sm{for: observed_and_managers_id, class: ("disabled" if disabled)}
       #{subject_name} and #{manager_name}
+
+    %input{type: "radio", name: field_name, value: "public_to_company", id: public_to_company_id, checked: (current_value == 'public_to_company'), class: "btn-check", disabled: disabled}
+    %label.btn.btn-outline-secondary.btn-sm{for: public_to_company_id, class: ("disabled" if disabled)}
+      Public to #{company_name}

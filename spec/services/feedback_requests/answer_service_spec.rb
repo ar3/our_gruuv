@@ -308,6 +308,46 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
         expect(obs1.privacy_level).to eq('observed_only')
         expect(obs2.privacy_level).to eq('managers_only')
       end
+
+      it 'allows public_to_company privacy' do
+        question_without_rateable
+        answers = {
+          question_without_rateable.id.to_s => {
+            story: 'Company-wide story',
+            privacy_level: 'public_to_company'
+          }
+        }
+
+        described_class.call(
+          feedback_request: feedback_request,
+          answers: answers,
+          responder_teammate: responder,
+          complete: false
+        )
+
+        obs = Observation.find_by(feedback_request_question_id: question_without_rateable.id, observer_id: responder.person_id)
+        expect(obs.privacy_level).to eq('public_to_company')
+      end
+
+      it 'falls back to observed_and_managers for disallowed privacy levels' do
+        question_without_rateable
+        answers = {
+          question_without_rateable.id.to_s => {
+            story: 'Should not go public to world',
+            privacy_level: 'public_to_world'
+          }
+        }
+
+        described_class.call(
+          feedback_request: feedback_request,
+          answers: answers,
+          responder_teammate: responder,
+          complete: false
+        )
+
+        obs = Observation.find_by(feedback_request_question_id: question_without_rateable.id, observer_id: responder.person_id)
+        expect(obs.privacy_level).to eq('observed_and_managers')
+      end
     end
 
     context 'when question rateable is a Position' do

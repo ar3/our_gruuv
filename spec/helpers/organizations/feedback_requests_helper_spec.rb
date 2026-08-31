@@ -149,6 +149,45 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
     end
   end
 
+  describe '#feedback_request_state_tooltip' do
+    let(:feedback_request) do
+      create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate
+      )
+    end
+
+    it 'explains ready as valid but not yet Slack-nudged' do
+      expect(helper.feedback_request_state_tooltip(feedback_request)).to include('not been nudged via Slack')
+    end
+
+    it 'explains active as Slack-nudged' do
+      allow(feedback_request).to receive(:notifications_sent?).and_return(true)
+      expect(helper.feedback_request_state_tooltip(feedback_request)).to include('Slack nudge has been sent')
+    end
+
+    it 'explains archived' do
+      feedback_request.soft_delete!
+      expect(helper.feedback_request_state_tooltip(feedback_request)).to include('Archived')
+    end
+
+    it 'explains invalid with missing named respondents' do
+      closed = create(:feedback_request,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate,
+        open_to_anyone: false,
+        subject_line: 'Closed'
+      )
+      closed.feedback_request_questions.destroy_all
+      create(:feedback_request_question, feedback_request: closed, question_text: 'Q?', position: 1)
+      closed.reload
+
+      expect(helper.feedback_request_state_tooltip(closed)).to include('named respondent')
+    end
+  end
+
   describe '#feedback_request_responder_submission_rows' do
     let(:company) { create(:organization) }
     let(:requestor) { create(:company_teammate, organization: company) }
