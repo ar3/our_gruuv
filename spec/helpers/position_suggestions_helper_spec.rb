@@ -89,5 +89,38 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
       expect(html).to include('aria-expanded="false"')
       expect(html).to include("Propose changes")
     end
+
+    it "places the chevron on the right when requested" do
+      html = helper.position_suggestion_collapse_toggle(
+        label: "Show processed",
+        collapse_id: "processed-1",
+        expanded: false,
+        chevron_position: :right,
+        subtle: true
+      )
+
+      expect(html).to include("text-muted")
+      expect(html.index("Show processed")).to be < html.index("bi-chevron-down")
+    end
+  end
+
+  describe "#position_suggestion_process_row_outcome" do
+    let(:comment) { instance_double(Comment, resolved?: true, resolved_at: 2.hours.ago) }
+    let(:row) do
+      PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :free_text,
+        label: "Comment",
+        anchor: "assignment-1",
+        comment: comment,
+        resolved: true
+      )
+    end
+
+    it "shows when the suggestion was resolved" do
+      html = helper.position_suggestion_process_row_outcome(row)
+
+      expect(html).to include("Resolved")
+      expect(html).to include("ago")
+    end
   end
 end

@@ -105,20 +105,30 @@ module PositionSuggestionsHelper
   end
 
   # Disclosure control for suggestion collapse panels (chevron + link styling, not a primary action).
-  def position_suggestion_collapse_toggle(label:, collapse_id:, expanded:)
+  def position_suggestion_collapse_toggle(label:, collapse_id:, expanded:, chevron_position: :left, subtle: false)
+    chevron_margin = chevron_position == :right ? "ms-1" : "me-1"
+    chevrons = [
+      tag.i(class: "bi bi-chevron-down collapsed #{chevron_margin}", aria: { hidden: true }),
+      tag.i(class: "bi bi-chevron-up not-collapsed #{chevron_margin}", aria: { hidden: true })
+    ]
+    label_span = tag.span(label)
+    parts = chevron_position == :right ? [label_span, *chevrons] : [*chevrons, label_span]
+
     tag.button(
       type: "button",
-      class: "btn btn-link btn-sm px-0 text-decoration-none",
+      class: ["btn btn-link btn-sm px-0 text-decoration-none", ("text-muted" if subtle)].compact.join(" "),
       data: { bs_toggle: "collapse", bs_target: "##{collapse_id}" },
       aria: { expanded: expanded ? "true" : "false", controls: collapse_id }
     ) do
-      safe_join(
-        [
-          tag.i(class: "bi bi-chevron-down collapsed me-1", aria: { hidden: true }),
-          tag.i(class: "bi bi-chevron-up not-collapsed me-1", aria: { hidden: true }),
-          tag.span(label)
-        ]
-      )
+      safe_join(parts)
     end
+  end
+
+  def position_suggestion_process_row_outcome(row)
+    comment = row.comment
+    return tag.span("Processed", class: "text-muted") unless comment&.resolved?
+
+    relative = position_suggestion_relative_time(comment.resolved_at)
+    safe_join(["Resolved ", relative], " ")
   end
 end

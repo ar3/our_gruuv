@@ -316,5 +316,53 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(response).to redirect_to(return_to)
       expect(comment.reload).to be_resolved
     end
+
+    it "moves resolved suggestions to a collapsible processed section" do
+      comment = Comment.create!(
+        commentable: assignment,
+        organization: organization,
+        creator: person,
+        position_suggestion: suggestion,
+        body: "Please lower this milestone"
+      )
+      comment.resolve!
+      sign_in_as_teammate_for_request(maap_person, organization)
+
+      get organization_position_suggestion_path(organization, suggestion)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Show the 1 change that has been processed")
+      expect(response.body).to include("Comment by #{person.casual_name} on Assignment Client Discovery")
+      expect(response.body).to include("Resolved")
+      expect(response.body).not_to include(
+        resolve_organization_comment_path(organization, comment, return_to: organization_position_suggestion_path(organization, suggestion))
+      )
+    end
+
+    it "moves a resolved milestone suggestion thread to the processed section" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+      assignment_ability = assignment.assignment_abilities.first
+
+      patch upsert_milestone_organization_position_suggestion_path(organization, suggestion),
+            params: {
+              milestoneable_type: "AssignmentAbility",
+              milestoneable_id: assignment_ability.id,
+              suggested_milestone_level: 3
+            }
+
+      thread_root = Comment.for_position_suggestion(suggestion)
+        .for_suggestion_thread_subject(assignment_ability)
+        .root_comments
+        .first
+      thread_root.resolve!
+      sign_in_as_teammate_for_request(maap_person, organization)
+
+      get organization_position_suggestion_path(organization, suggestion)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Show the 1 change that has been processed")
+      expect(response.body).to include("Communication at least Milestone 3")
+      expect(response.body).to include("Resolved")
+    end
   end
 end

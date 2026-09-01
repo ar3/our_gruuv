@@ -10,6 +10,8 @@
 - viewer_name = local_assigns[:viewer_casual_name]
 - timeline = local_assigns[:round_timeline] || []
 - process_rows = local_assigns[:process_rows] || []
+- open_process_rows = process_rows.reject(&:resolved)
+- processed_process_rows = process_rows.select(&:resolved)
 - return_to = local_assigns[:return_to]
 - panel_id = local_assigns.fetch(:panel_id, "top")
 - open = suggestion.open?
@@ -108,38 +110,43 @@
                 %h3.accordion-header
                   %button.accordion-button.collapsed.py-2.px-2.small{type: "button", data: { bs_toggle: "collapse", bs_target: "##{accordion_id}-body" }, aria: { expanded: "false", controls: "#{accordion_id}-body" }}
                     Process all suggestions
-                    %span.badge.text-bg-secondary.ms-2= process_rows.size
+                    %span.badge.text-bg-secondary.ms-2= open_process_rows.size
                 .accordion-collapse.collapse{id: "#{accordion_id}-body", data: { bs_parent: "##{accordion_id}" }}
                   .accordion-body.px-0.pt-2
-                    - if process_rows.empty?
+                    - if open_process_rows.empty?
                       %p.text-muted.small.mb-0 No open suggestion items yet.
                     - else
                       %ul.list-unstyled.mb-0
-                        - process_rows.each do |row|
+                        - open_process_rows.each do |row|
                           %li.border.rounded.p-2.mb-2
-                            .small.mb-2
-                              = row.label
-                              - if row.resolved
-                                %span.badge.bg-success.ms-1 Resolved
+                            .small.mb-2= row.label
                             .btn-group.btn-group-sm{role: "group"}
                               - if can_manage_maap
                                 = link_to "Comment", "##{row.anchor}", class: "btn btn-outline-primary"
                               - else
                                 %button.btn.btn-outline-primary{type: "button", disabled: true} Comment
-                              - if row.kind == :free_text
-                                - if row.comment && !row.resolved && can_manage_maap
-                                  = button_to "Resolve",
-                                              resolve_organization_comment_path(organization, row.comment, return_to: return_to),
-                                              method: :patch,
-                                              class: "btn btn-outline-success",
-                                              form: { class: "d-contents", data: { turbo: false } }
-                                - elsif row.resolved
-                                  %button.btn.btn-outline-success{type: "button", disabled: true} Resolved
-                                - else
-                                  %button.btn.btn-outline-success{type: "button", disabled: true} Resolve
+                              - if row.comment && can_manage_maap
+                                = link_to "Resolve",
+                                          resolve_organization_comment_path(organization, row.comment, return_to: return_to),
+                                          class: "btn btn-outline-success",
+                                          data: { turbo_method: :patch }
                               - else
+                                %button.btn.btn-outline-success{type: "button", disabled: true, title: (row.comment ? nil : "No comment thread yet")} Resolve
+                              - if row.kind != :free_text
                                 %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Accept Change
                                 %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Reject Change
+            - if processed_process_rows.any?
+              - processed_collapse_id = "processed-suggestions-#{panel_id}"
+              - processed_count = processed_process_rows.size
+              - processed_toggle_label = processed_count == 1 ? "Show the 1 change that has been processed" : "Show the #{processed_count} changes that have been processed"
+              .mt-2
+                = position_suggestion_collapse_toggle(label: processed_toggle_label, collapse_id: processed_collapse_id, expanded: false, chevron_position: :right, subtle: true)
+                .collapse{id: processed_collapse_id}
+                  %ul.list-unstyled.mb-0.mt-2
+                    - processed_process_rows.each do |row|
+                      %li.border.rounded.p-2.mb-2.bg-light
+                        .small.mb-1= row.label
+                        .small= position_suggestion_process_row_outcome(row)
         %li.mb-0.d-flex.align-items-start
           = position_suggestion_round_step_icon(!open ? :done : (maap_step == 3 ? :current : :todo))
           %span
