@@ -121,20 +121,31 @@
                           %li.border.rounded.p-2.mb-2
                             .small.mb-2= row.label
                             .btn-group.btn-group-sm{role: "group"}
+                              - bag_decision_actions = row.kind == :milestone && can_manage_maap
                               - if can_manage_maap
                                 = link_to "Comment", "##{row.anchor}", class: "btn btn-outline-primary"
                               - else
                                 %button.btn.btn-outline-primary{type: "button", disabled: true} Comment
-                              - if row.comment && can_manage_maap
-                                = link_to "Resolve",
-                                          resolve_organization_comment_path(organization, row.comment, return_to: return_to),
+                              - unless bag_decision_actions
+                                - if row.comment && can_manage_maap
+                                  = link_to "Resolve",
+                                            resolve_organization_comment_path(organization, row.comment, return_to: return_to),
+                                            class: "btn btn-outline-success",
+                                            data: { turbo_method: :patch }
+                                - else
+                                  %button.btn.btn-outline-success{type: "button", disabled: true, title: (row.comment ? nil : "No comment thread yet")} Resolve
+                              - if bag_decision_actions
+                                = link_to "Accept",
+                                          accept_milestone_organization_position_suggestion_path(organization, suggestion, milestone_id: row.milestone.id, return_to: return_to),
                                           class: "btn btn-outline-success",
-                                          data: { turbo_method: :patch }
-                              - else
-                                %button.btn.btn-outline-success{type: "button", disabled: true, title: (row.comment ? nil : "No comment thread yet")} Resolve
-                              - if row.kind != :free_text
-                                %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Accept Change
-                                %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Reject Change
+                                          data: { turbo_method: :patch, turbo_confirm: "Apply this milestone suggestion to live MAAP?" }
+                                = link_to "Reject",
+                                          reject_milestone_organization_position_suggestion_path(organization, suggestion, milestone_id: row.milestone.id, return_to: return_to),
+                                          class: "btn btn-outline-danger",
+                                          data: { turbo_method: :patch, turbo_confirm: "Reject this milestone suggestion without changing MAAP?" }
+                              - elsif row.kind != :free_text
+                                %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Accept
+                                %button.btn.btn-outline-secondary{type: "button", disabled: !can_manage_maap, onclick: (can_manage_maap ? "alert('Coming Soon')" : nil)} Reject
             - if processed_process_rows.any?
               - processed_collapse_id = "processed-suggestions-#{panel_id}"
               - processed_count = processed_process_rows.size
@@ -144,7 +155,7 @@
                 .collapse{id: processed_collapse_id}
                   %ul.list-unstyled.mb-0.mt-2
                     - processed_process_rows.each do |row|
-                      %li.border.rounded.p-2.mb-2.bg-light
+                      %li.border.rounded.p-2.mb-2{class: position_suggestion_processed_row_classes(row)}
                         .small.mb-1= row.label
                         .small= position_suggestion_process_row_outcome(row)
         %li.mb-0.d-flex.align-items-start

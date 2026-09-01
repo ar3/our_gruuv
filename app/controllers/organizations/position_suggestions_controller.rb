@@ -4,7 +4,7 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
   before_action :authenticate_person!
   before_action :set_suggestion, only: [
     :show, :join, :update_participation, :close, :create_comment, :upsert_milestone,
-    :upsert_assignment_draft, :upsert_assignment_link
+    :upsert_assignment_draft, :upsert_assignment_link, :accept_milestone, :reject_milestone
   ]
   after_action :verify_authorized
 
@@ -224,6 +224,34 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
     end
   end
 
+  def accept_milestone
+    authorize @suggestion, :accept_milestone?
+
+    milestone = find_suggestion_milestone!
+    result = PositionSuggestions::ProcessMilestoneDecisionService.call(
+      suggestion: @suggestion,
+      milestone: milestone,
+      decision: "accepted",
+      processed_by: current_company_teammate
+    )
+
+    redirect_after_milestone_decision(result, milestone, "accepted")
+  end
+
+  def reject_milestone
+    authorize @suggestion, :reject_milestone?
+
+    milestone = find_suggestion_milestone!
+    result = PositionSuggestions::ProcessMilestoneDecisionService.call(
+      suggestion: @suggestion,
+      milestone: milestone,
+      decision: "rejected",
+      processed_by: current_company_teammate
+    )
+
+    redirect_after_milestone_decision(result, milestone, "rejected")
+  end
+
   private
 
   def set_suggestion
@@ -372,6 +400,40 @@ class Organizations::PositionSuggestionsController < Organizations::Organization
       pa
     else
       raise ActiveRecord::RecordNotFound, "Unsupported milestoneable"
+    end
+  end
+
+  def find_suggestion_milestone!
+    milestone = @suggestion.milestones.find(params.require(:milestone_id))
+    unless milestone.milestoneable.is_a?(AssignmentAbility)
+      raise ActiveRecord::RecordNotFound, "Unsupported milestone suggestion"
+    end
+
+    milestone
+  end
+
+  def redirect_after_milestone_decision(result, milestone, decision)
+    anchor = milestone_anchor_for(milestone)
+    destination = params[:return_to].presence || organization_position_suggestion_path(organization, @suggestion, anchor: anchor)
+    if result.ok?
+      notice =
+        if decision == "accepted"
+          "Milestone suggestion accepted and applied to MAAP."
+        else
+          "Milestone suggestion rejected (MAAP unchanged)."
+        end
+      redirect_to destination, notice: notice
+    else
+      redirect_to destination, alert: Array(result.error).join(", ")
+    end
+  end
+
+  def milestone_anchor_for(milestone)
+    case milestone.milestoneable
+    when AssignmentAbility
+      "assignment-ability-#{milestone.milestoneable_id}"
+    else
+      "position-comments"
     end
   end
 

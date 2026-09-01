@@ -247,7 +247,7 @@ class PositionSuggestions::RoundSummaryBuilder
       )
     end
 
-    @suggestion.milestones.includes(:last_modified_by, milestoneable: [:ability, :assignment]).find_each do |milestone|
+    @suggestion.milestones.includes(:last_modified_by, processed_by: :person, milestoneable: [:ability, :assignment]).find_each do |milestone|
       root = milestone_thread_root(milestone)
       rows << ProcessRow.new(
         kind: :milestone,
@@ -257,7 +257,7 @@ class PositionSuggestions::RoundSummaryBuilder
         milestone: milestone,
         assignment_draft: nil,
         assignment_link: nil,
-        resolved: root&.resolved?
+        resolved: milestone.processed? || root&.resolved?
       )
     end
 

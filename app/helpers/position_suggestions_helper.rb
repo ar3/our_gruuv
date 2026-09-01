@@ -124,7 +124,30 @@ module PositionSuggestionsHelper
     end
   end
 
+  def position_suggestion_processed_row_classes(row)
+    milestone = row.milestone
+    if milestone&.accepted?
+      "border-success bg-light"
+    elsif milestone&.rejected?
+      "border-danger bg-light"
+    else
+      "bg-light"
+    end
+  end
+
   def position_suggestion_process_row_outcome(row)
+    milestone = row.milestone
+    if milestone&.accepted?
+      relative = position_suggestion_relative_time(milestone.processed_at)
+      name = milestone.processed_by&.person&.casual_name || "Someone"
+      return safe_join(["Accepted and applied by #{name} ", relative])
+    end
+    if milestone&.rejected?
+      relative = position_suggestion_relative_time(milestone.processed_at)
+      name = milestone.processed_by&.person&.casual_name || "Someone"
+      return safe_join(["Rejected by #{name} ", relative])
+    end
+
     comment = row.comment
     return tag.span("Processed", class: "text-muted") unless comment&.resolved?
 

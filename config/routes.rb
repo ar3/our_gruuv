@@ -200,6 +200,8 @@ Rails.application.routes.draw do
         patch :upsert_milestone
         patch :upsert_assignment_draft
         patch :upsert_assignment_link
+        patch :accept_milestone
+        patch :reject_milestone
       end
     end
 

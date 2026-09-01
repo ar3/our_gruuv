@@ -122,5 +122,75 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
       expect(html).to include("Resolved")
       expect(html).to include("ago")
     end
+
+    it "shows accepted milestone outcome" do
+      processor = instance_double(Person, casual_name: "Jordan")
+      processed_by = instance_double(CompanyTeammate, person: processor)
+      milestone = instance_double(
+        PositionSuggestionMilestone,
+        accepted?: true,
+        rejected?: false,
+        processed_at: 1.hour.ago,
+        processed_by: processed_by
+      )
+      milestone_row = PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :milestone,
+        label: "Milestone",
+        anchor: "assignment-ability-1",
+        comment: nil,
+        milestone: milestone,
+        resolved: true
+      )
+
+      html = helper.position_suggestion_process_row_outcome(milestone_row)
+
+      expect(html).to include("Accepted and applied by Jordan")
+      expect(html).to include("ago")
+    end
+
+    it "shows rejected milestone outcome" do
+      processor = instance_double(Person, casual_name: "Sam")
+      processed_by = instance_double(CompanyTeammate, person: processor)
+      milestone = instance_double(
+        PositionSuggestionMilestone,
+        accepted?: false,
+        rejected?: true,
+        processed_at: 30.minutes.ago,
+        processed_by: processed_by
+      )
+      milestone_row = PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :milestone,
+        label: "Milestone",
+        anchor: "assignment-ability-1",
+        comment: nil,
+        milestone: milestone,
+        resolved: true
+      )
+
+      html = helper.position_suggestion_process_row_outcome(milestone_row)
+
+      expect(html).to include("Rejected by Sam")
+      expect(html).to include("ago")
+    end
+  end
+
+  describe "#position_suggestion_processed_row_classes" do
+    it "uses success border for accepted milestones" do
+      milestone = instance_double(PositionSuggestionMilestone, accepted?: true, rejected?: false)
+      row = PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :milestone, label: "Milestone", anchor: "x", comment: nil, milestone: milestone, resolved: true
+      )
+
+      expect(helper.position_suggestion_processed_row_classes(row)).to eq("border-success bg-light")
+    end
+
+    it "uses danger border for rejected milestones" do
+      milestone = instance_double(PositionSuggestionMilestone, accepted?: false, rejected?: true)
+      row = PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :milestone, label: "Milestone", anchor: "x", comment: nil, milestone: milestone, resolved: true
+      )
+
+      expect(helper.position_suggestion_processed_row_classes(row)).to eq("border-danger bg-light")
+    end
   end
 end

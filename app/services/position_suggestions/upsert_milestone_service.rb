@@ -26,6 +26,9 @@ class PositionSuggestions::UpsertMilestoneService
     )
     record.suggested_milestone_level = @suggested_milestone_level
     record.last_modified_by = @modified_by
+    record.decision = nil
+    record.processed_by = nil
+    record.processed_at = nil
 
     if record.save
       notify_if_assignment_ability!(record)

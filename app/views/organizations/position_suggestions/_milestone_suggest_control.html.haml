@@ -16,15 +16,20 @@
   %strong= "#{current_level} — #{milestone_level_display(current_level)}"
   - if suggestion_milestone
     %span.mx-1 ·
-    Suggested:
-    %strong= "#{suggestion_milestone.suggested_milestone_level} — #{milestone_level_display(suggestion_milestone.suggested_milestone_level)}"
-    by
-    = suggestion_milestone.last_modified_by.person.display_name
-    = link_to "history",
-              organization_paper_trail_path(organization, item_type: "PositionSuggestionMilestone", item_id: suggestion_milestone.id),
-              class: "ms-1"
+    - if suggestion_milestone.accepted?
+      %span.badge.text-bg-success Accepted on MAAP
+    - elsif suggestion_milestone.rejected?
+      %span.badge.text-bg-secondary Rejected
+    - else
+      Suggested:
+      %strong= "#{suggestion_milestone.suggested_milestone_level} — #{milestone_level_display(suggestion_milestone.suggested_milestone_level)}"
+      by
+      = suggestion_milestone.last_modified_by.person.display_name
+      = link_to "history",
+                organization_paper_trail_path(organization, item_type: "PositionSuggestionMilestone", item_id: suggestion_milestone.id),
+                class: "ms-1"
 
-- if can_suggest
+- if can_suggest && !suggestion_milestone&.processed?
   = form_with url: upsert_milestone_organization_position_suggestion_path(organization, suggestion), method: :patch, local: true, html: { class: "milestone-suggest-form" } do
     = hidden_field_tag :milestoneable_type, "AssignmentAbility"
     = hidden_field_tag :milestoneable_id, assignment_ability.id

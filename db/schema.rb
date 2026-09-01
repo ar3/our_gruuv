@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_31_234000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_01_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -317,8 +317,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_31_234000) do
     t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
-    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying, 'like'::character varying, 'neutral'::character varying, 'prefer_not'::character varying, 'only_if_necessary'::character varying]::text[]))", name: "assignment_survey_responses_personal_alignment_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying::text, 'like'::character varying::text, 'neutral'::character varying::text, 'prefer_not'::character varying::text, 'only_if_necessary'::character varying::text]))", name: "assignment_survey_responses_personal_alignment_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -1510,10 +1510,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_31_234000) do
     t.bigint "last_modified_by_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "decision"
+    t.bigint "processed_by_id"
+    t.datetime "processed_at"
     t.index ["last_modified_by_id"], name: "index_position_suggestion_milestones_on_last_modified_by_id"
     t.index ["milestoneable_type", "milestoneable_id"], name: "index_position_suggestion_milestones_on_milestoneable"
     t.index ["position_suggestion_id", "milestoneable_type", "milestoneable_id"], name: "index_position_suggestion_milestones_unique", unique: true
     t.index ["position_suggestion_id"], name: "index_position_suggestion_milestones_on_position_suggestion_id"
+    t.index ["processed_by_id"], name: "index_position_suggestion_milestones_on_processed_by_id"
   end
 
   create_table "position_suggestion_participants", force: :cascade do |t|
@@ -2284,6 +2288,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_31_234000) do
   add_foreign_key "position_suggestion_assignments", "teammates", column: "last_modified_by_id"
   add_foreign_key "position_suggestion_milestones", "position_suggestions"
   add_foreign_key "position_suggestion_milestones", "teammates", column: "last_modified_by_id"
+  add_foreign_key "position_suggestion_milestones", "teammates", column: "processed_by_id"
   add_foreign_key "position_suggestion_participants", "position_suggestions"
   add_foreign_key "position_suggestion_participants", "teammates", column: "company_teammate_id"
   add_foreign_key "position_suggestions", "organizations"

@@ -221,6 +221,57 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
       expect(link.action).to eq("remove")
       expect(position.assignments.exists?(id: assignment.id)).to be true
     end
+
+    it "lets a MAAP manager accept a milestone suggestion into live MAAP" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+      maap_person = create(:person)
+      create(:company_teammate, person: maap_person, organization: organization, can_manage_maap: true)
+      sign_in_as_teammate_for_request(maap_person, organization)
+
+      patch upsert_milestone_organization_position_suggestion_path(organization, suggestion),
+            params: {
+              milestoneable_type: "AssignmentAbility",
+              milestoneable_id: assignment_ability.id,
+              suggested_milestone_level: 4
+            }
+
+      milestone = suggestion.milestones.find_by!(milestoneable: assignment_ability)
+      expect(assignment_ability.reload.milestone_level).to eq(2)
+
+      patch accept_milestone_organization_position_suggestion_path(organization, suggestion, milestone_id: milestone.id)
+
+      expect(response).to redirect_to(
+        organization_position_suggestion_path(organization, suggestion, anchor: "assignment-ability-#{assignment_ability.id}")
+      )
+      expect(assignment_ability.reload.milestone_level).to eq(4)
+      expect(milestone.reload).to be_accepted
+      expect(suggestion.can_complete?).to be true
+    end
+
+    it "shows Accept and Reject actions without Resolve for open milestone suggestions" do
+      allow(Comments::PostNotificationJob).to receive(:perform_and_get_result)
+      maap_person = create(:person)
+      create(:company_teammate, person: maap_person, organization: organization, can_manage_maap: true)
+      sign_in_as_teammate_for_request(maap_person, organization)
+
+      patch upsert_milestone_organization_position_suggestion_path(organization, suggestion),
+            params: {
+              milestoneable_type: "AssignmentAbility",
+              milestoneable_id: assignment_ability.id,
+              suggested_milestone_level: 4
+            }
+
+      milestone = suggestion.milestones.find_by!(milestoneable: assignment_ability)
+
+      get organization_position_suggestion_path(organization, suggestion)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Accept")
+      expect(response.body).to include("accept_milestone")
+      expect(response.body).to include("milestone_id=#{milestone.id}")
+      expect(response.body).to include("Reject")
+      expect(response.body).to include("reject_milestone")
+    end
   end
 
   describe "MAAP close" do
