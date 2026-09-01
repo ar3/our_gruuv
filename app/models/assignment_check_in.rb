@@ -7,6 +7,11 @@ class AssignmentCheckIn < ApplicationRecord
   belongs_to :assignment
   belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :maap_snapshot, optional: true
+  has_many :sourced_assignment_survey_responses,
+           class_name: "AssignmentSurveyResponse",
+           foreign_key: :source_assignment_check_in_id,
+           dependent: :nullify,
+           inverse_of: :source_assignment_check_in
 
   # Enums for ratings
   enum :employee_rating, {

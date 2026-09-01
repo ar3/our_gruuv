@@ -26,6 +26,7 @@ class AssignmentSurveyResponse < ApplicationRecord
   alias_method :teammate, :company_teammate
   belongs_to :organization
   belongs_to :assignment
+  belongs_to :source_assignment_check_in, class_name: "AssignmentCheckIn", optional: true
 
   validates :assignment_source, inclusion: { in: SOURCES }
   validates :snapshot_title, presence: true

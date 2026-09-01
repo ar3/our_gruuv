@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_28_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_31_072000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -311,9 +311,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_28_100000) do
     t.bigint "teammate_id", null: false
     t.bigint "organization_id", null: false
     t.datetime "submitted_at"
+    t.bigint "source_assignment_check_in_id"
     t.index ["assignment_id"], name: "index_assignment_survey_responses_on_assignment_id"
     t.index ["organization_id", "teammate_id", "submitted_at"], name: "idx_asr_org_teammate_submitted"
     t.index ["organization_id"], name: "index_assignment_survey_responses_on_organization_id"
+    t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
     t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
@@ -2149,6 +2151,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_28_100000) do
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_supply_relationships", "assignments", column: "consumer_assignment_id"
   add_foreign_key "assignment_supply_relationships", "assignments", column: "supplier_assignment_id"
+  add_foreign_key "assignment_survey_responses", "assignment_check_ins", column: "source_assignment_check_in_id"
   add_foreign_key "assignment_survey_responses", "assignments"
   add_foreign_key "assignment_survey_responses", "organizations"
   add_foreign_key "assignment_survey_responses", "teammates"
