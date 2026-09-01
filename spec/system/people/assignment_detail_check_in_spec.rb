@@ -48,9 +48,9 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       # Verify employee fields are present (assignment detail page uses sentence-style labels)
       expect(page).to have_content('Reflect on the past')
       expect(page).to have_content('Select percentage')
-      expect(page).to have_content('Select alignment')
       expect(page).to have_content('Select rating')
       expect(page).to have_content('Notes')
+      expect(page).not_to have_content('taking on this Assignment in the future')
 
       # Verify manager fields are NOT present
       expect(page).not_to have_content('Manager Rating')
@@ -60,7 +60,6 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
 
       # Fill form with nested format
       select '75%', from: "check_ins[assignment_check_ins][#{check_in.id}][actual_energy_percentage]"
-      select 'Love', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_personal_alignment]"
       select '🟢 Exceeding', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][employee_private_notes]", with: 'Great assignment!'
 
@@ -81,7 +80,6 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       # Verify data was saved
       check_in.reload
       expect(check_in.actual_energy_percentage).to eq(75)
-      expect(check_in.employee_personal_alignment).to eq('love')
       expect(check_in.employee_rating).to eq('exceeding')
       expect(check_in.employee_private_notes).to eq('Great assignment!')
       expect(check_in.employee_completed_at).to be_present
@@ -109,7 +107,6 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
 
       # Verify employee-only fields are NOT present (assignment detail uses sentence-style labels)
       expect(page).not_to have_content('When I think about how much of my energy')
-      expect(page).not_to have_content('Select alignment')
       expect(page).not_to have_content('Private Notes')
       
       check_in = open_assignment_check_in

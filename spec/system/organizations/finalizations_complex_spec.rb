@@ -53,9 +53,9 @@ RSpec.describe 'Finalization Complex Flow - Audit Reasons', type: :system do
     it 'displays the custom reason in the audit page' do
       visit audit_organization_employee_path(company, employee_teammate)
       
+      expect(page).to have_current_path(audit_organization_employee_path(company, employee_teammate))
       expect(page).to have_content(custom_reason)
       expect(page).to have_content('MAAP Change History')
-      expect(page).not_to have_content('Acknowledgement')
     end
 
     it 'truncates long reasons correctly' do

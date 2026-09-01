@@ -53,11 +53,6 @@ RSpec.describe AssignmentCheckInForm, type: :form do
       expect(form.errors[:actual_energy_percentage]).to include('must be in 0..100')
     end
 
-    it 'validates employee_personal_alignment inclusion' do
-      form.employee_personal_alignment = 'invalid_alignment'
-      expect(form).not_to be_valid
-      expect(form.errors[:employee_personal_alignment]).to include('is not included in the list')
-    end
   end
 
   describe 'save behavior' do
@@ -129,7 +124,6 @@ RSpec.describe AssignmentCheckInForm, type: :form do
       expect(form).to respond_to(:employee_private_notes)
       expect(form).to respond_to(:manager_private_notes)
       expect(form).to respond_to(:actual_energy_percentage)
-      expect(form).to respond_to(:employee_personal_alignment)
       expect(form).to respond_to(:status)
       expect(form).to respond_to(:assignment_id)
     end

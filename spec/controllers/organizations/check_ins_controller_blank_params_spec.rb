@@ -171,7 +171,6 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
               employee_rating: "",
               employee_private_notes: "",
               actual_energy_percentage: "",
-              employee_personal_alignment: "",
               status: "draft"
             }
           }
@@ -183,7 +182,6 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       expect(assignment_check_in.employee_rating).to be_nil
       expect(assignment_check_in.employee_private_notes).to be_nil
       expect(assignment_check_in.actual_energy_percentage).to be_nil
-      expect(assignment_check_in.employee_personal_alignment).to be_nil
       expect(assignment_check_in.manager_rating).to eq("meeting")
       expect(assignment_check_in.manager_private_notes).to eq("Manager row intact")
     end

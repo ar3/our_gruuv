@@ -242,9 +242,6 @@ class MaapChangeDetectionService
         if previous_employee_check_in['employee_rating'] != employee_data['employee_rating']
           changes << { field: 'employee_rating', current: previous_employee_check_in['employee_rating'], proposed: employee_data['employee_rating'] }
         end
-        if previous_employee_check_in['employee_personal_alignment'] != employee_data['employee_personal_alignment']
-          changes << { field: 'employee_personal_alignment', current: previous_employee_check_in['employee_personal_alignment'], proposed: employee_data['employee_personal_alignment'] }
-        end
         if previous_employee_check_in['employee_private_notes'] != employee_data['employee_private_notes']
           changes << { field: 'employee_private_notes', current: previous_employee_check_in['employee_private_notes'], proposed: employee_data['employee_private_notes'] }
         end
@@ -465,7 +462,6 @@ class MaapChangeDetectionService
       if previous_employee_check_in
         employee_changed = (previous_employee_check_in['actual_energy_percentage'] || 0) != (employee_data['actual_energy_percentage'] || 0) ||
           previous_employee_check_in['employee_rating'] != employee_data['employee_rating'] ||
-          previous_employee_check_in['employee_personal_alignment'] != employee_data['employee_personal_alignment'] ||
           previous_employee_check_in['employee_private_notes'] != employee_data['employee_private_notes'] ||
           previous_employee_check_in['employee_completed_at'].present? != employee_data['employee_completed_at'].present?
         return true if employee_changed

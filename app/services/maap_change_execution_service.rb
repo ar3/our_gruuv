@@ -195,8 +195,7 @@ class MaapChangeExecutionService
     check_in.update!(
       actual_energy_percentage: employee_data['actual_energy_percentage'],
       employee_rating: employee_data['employee_rating'],
-      employee_private_notes: employee_data['employee_private_notes'],
-      employee_personal_alignment: employee_data['employee_personal_alignment']
+      employee_private_notes: employee_data['employee_private_notes']
     )
     
     if employee_data['employee_completed_at']

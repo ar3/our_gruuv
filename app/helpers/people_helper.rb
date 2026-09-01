@@ -316,9 +316,6 @@ module PeopleHelper
         when :employee_rating
           current_value = change_data.current_check_in&.employee_rating || 'Not set'
           changes_list << "• Employee Rating: #{current_value} → #{new_value}"
-        when :employee_personal_alignment
-          current_value = change_data.current_check_in&.employee_personal_alignment || 'Not set'
-          changes_list << "• Personal Alignment: #{current_value} → #{new_value}"
         when :employee_private_notes
           changes_list << "• Employee Notes: Updated"
         when :manager_rating

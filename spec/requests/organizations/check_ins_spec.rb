@@ -383,9 +383,9 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(html).not_to include(organization_company_teammate_finalization_path(organization, other_teammate))
         
         # Verify Step 3 link uses the correct teammate
-        step3_path = audit_organization_employee_path(organization, employee_teammate)
+        step3_path = acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate)
         expect(html).to include(step3_path)
-        expect(html).not_to include(audit_organization_employee_path(organization, other_teammate))
+        expect(html).not_to include(acknowledge_organization_company_teammate_check_ins_path(organization, other_teammate))
       end
 
       it "shows bulk vs status intro with link to the check-in status page" do
@@ -449,7 +449,6 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           assignment: draft_assignment,
           employee_rating: "meeting",
           manager_rating: nil,
-          employee_personal_alignment: nil,
           employee_private_notes: nil,
           manager_private_notes: nil,
           shared_notes: nil,

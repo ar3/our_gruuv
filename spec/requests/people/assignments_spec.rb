@@ -112,7 +112,6 @@ RSpec.describe 'People::Assignments', type: :request do
                     check_in.id => {
                       assignment_id: assignment.id,
                       actual_energy_percentage: 75,
-                      employee_personal_alignment: 'love',
                       employee_rating: 'exceeding',
                       employee_private_notes: 'Great assignment!',
                       status: 'complete'
@@ -123,7 +122,6 @@ RSpec.describe 'People::Assignments', type: :request do
 
         check_in.reload
         expect(check_in.actual_energy_percentage).to eq(75)
-        expect(check_in.employee_personal_alignment).to eq('love')
         expect(check_in.employee_rating).to eq('exceeding')
         expect(check_in.employee_private_notes).to eq('Great assignment!')
         expect(check_in.employee_completed_at).to be_present
@@ -183,7 +181,6 @@ RSpec.describe 'People::Assignments', type: :request do
       it 'does not allow manager to update employee fields' do
         check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
         original_energy = check_in.actual_energy_percentage
-        original_alignment = check_in.employee_personal_alignment
         original_rating = check_in.employee_rating
         
         patch organization_company_teammate_check_ins_path(organization, employee_teammate),
@@ -193,7 +190,6 @@ RSpec.describe 'People::Assignments', type: :request do
                     check_in.id => {
                       assignment_id: assignment.id,
                       actual_energy_percentage: 80,
-                      employee_personal_alignment: 'like',
                       employee_rating: 'exceeding',
                       status: 'complete'
                     }
@@ -205,7 +201,6 @@ RSpec.describe 'People::Assignments', type: :request do
         # Employee fields should not be updated when submitted as manager
         # Controller should filter these out via parameter permitting
         expect(check_in.actual_energy_percentage).to eq(original_energy)
-        expect(check_in.employee_personal_alignment).to eq(original_alignment)
         expect(check_in.employee_rating).to eq(original_rating)
       end
     end

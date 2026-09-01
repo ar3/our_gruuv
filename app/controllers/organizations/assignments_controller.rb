@@ -152,9 +152,8 @@ class Organizations::AssignmentsController < ApplicationController
       .count
     
     @official_rating_distribution = []
-    @personal_alignment_distribution = []
 
-    # Rating/alignment analytics (if >5 teammates with finalized check-ins)
+    # Rating analytics (if >5 teammates with finalized check-ins)
     if @teammates_with_finalized_check_ins_count > 5
       rating_check_ins = AssignmentCheckIn
         .joins(:company_teammate)
@@ -192,32 +191,6 @@ class Organizations::AssignmentsController < ApplicationController
     end
     @viewer_holds_assignment = viewer_holds
 
-    # Most popular employee_personal_alignment (if >5 teammates with finalized check-ins)
-    if @teammates_with_finalized_check_ins_count > 5
-      alignment_check_ins = AssignmentCheckIn
-        .joins(:company_teammate)
-        .where(assignment: @assignment)
-        .closed
-        .where.not(employee_personal_alignment: nil)
-
-      alignment_counts = alignment_check_ins.group(:employee_personal_alignment).count
-      @most_popular_personal_alignment = alignment_counts.max_by { |_k, v| v }&.first
-      personal_alignment_colors = {
-        'love' => '#198754',     # green
-        'like' => '#0d6efd',     # blue
-        'neutral' => '#ffc107'   # yellow
-      }
-      @personal_alignment_distribution = alignment_counts.map do |alignment, count|
-        {
-          name: alignment.to_s.humanize,
-          y: count,
-          color: personal_alignment_colors.fetch(alignment.to_s, '#fd7e14') # orange fallback
-        }
-      end
-    else
-      @most_popular_personal_alignment = nil
-    end
-    
     scoped_assignment_ids = policy_scope(Assignment).where(company: @assignment.company).unarchived.pluck(:id)
     @accountability_flow = Assignments::AccountabilityFlowGraph.new(
       assignment: @assignment,

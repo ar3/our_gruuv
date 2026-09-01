@@ -5,7 +5,7 @@ module CheckIns
   # PATCH/POST can clear ratings, notes, and selects (bulk + 1-by-1). Only keys present in
   # +attrs+ are touched — missing keys are not interpreted as "clear".
   class CoerceBlankCheckInAttrs
-    ASSIGNMENT_EMPLOYEE = %i[employee_rating employee_private_notes actual_energy_percentage employee_personal_alignment].freeze
+    ASSIGNMENT_EMPLOYEE = %i[employee_rating employee_private_notes actual_energy_percentage].freeze
     ASSIGNMENT_MANAGER = %i[manager_rating manager_private_notes].freeze
     ASPIRATION_EMPLOYEE = %i[employee_rating employee_private_notes].freeze
     ASPIRATION_MANAGER = %i[manager_rating manager_private_notes].freeze

@@ -40,7 +40,6 @@ RSpec.describe "Organizations::CheckIns blank value persistence", type: :request
         ci.update!(
           actual_energy_percentage: 40,
           employee_rating: "exceeding",
-          employee_personal_alignment: "love",
           employee_private_notes: "Employee notes must survive manager blank-save",
           manager_rating: "meeting",
           manager_private_notes: "Manager notes to clear",
@@ -76,7 +75,6 @@ RSpec.describe "Organizations::CheckIns blank value persistence", type: :request
         expect(check_in.employee_rating).to eq("exceeding")
         expect(check_in.employee_private_notes).to eq("Employee notes must survive manager blank-save")
         expect(check_in.actual_energy_percentage).to eq(40)
-        expect(check_in.employee_personal_alignment).to eq("love")
       end
 
       it "as manager: blank manager_private_notes with status complete persist as nil and manager side completes" do
@@ -126,7 +124,6 @@ RSpec.describe "Organizations::CheckIns blank value persistence", type: :request
                   employee_rating: "",
                   employee_private_notes: "",
                   actual_energy_percentage: "",
-                  employee_personal_alignment: "",
                   status: "draft"
                 }
               }
@@ -139,7 +136,6 @@ RSpec.describe "Organizations::CheckIns blank value persistence", type: :request
         expect(check_in.employee_rating).to be_nil
         expect(check_in.employee_private_notes).to be_nil
         expect(check_in.actual_energy_percentage).to be_nil
-        expect(check_in.employee_personal_alignment).to be_nil
         expect(check_in.manager_rating).to eq("exceeding")
         expect(check_in.manager_private_notes).to eq("Manager notes must survive employee blank-save")
       end
@@ -391,7 +387,6 @@ RSpec.describe "Organizations::CheckIns blank value persistence", type: :request
                   employee_rating: "",
                   employee_private_notes: "",
                   actual_energy_percentage: "",
-                  employee_personal_alignment: "",
                   status: "draft"
                 }
               }
@@ -403,7 +398,6 @@ RSpec.describe "Organizations::CheckIns blank value persistence", type: :request
         expect(check_in.employee_rating).to be_nil
         expect(check_in.employee_private_notes).to be_nil
         expect(check_in.actual_energy_percentage).to be_nil
-        expect(check_in.employee_personal_alignment).to be_nil
         expect(check_in.manager_rating).to eq("meeting")
         expect(check_in.manager_private_notes).to eq("Manager survives save_and_redirect")
       end

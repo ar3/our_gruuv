@@ -66,10 +66,6 @@ RSpec.describe AssignmentCheckIn, type: :model do
       expect(AssignmentCheckIn.official_ratings.keys).to match_array(['working_to_meet', 'meeting', 'exceeding'])
     end
 
-    it 'has personal alignment enum' do
-      expect(AssignmentCheckIn.employee_personal_alignments.keys).to match_array(['love', 'like', 'neutral', 'prefer_not', 'only_if_necessary'])
-    end
-
     it 'validates actual_energy_percentage range' do
       check_in = AssignmentCheckIn.new(
         teammate: teammate,
@@ -498,10 +494,7 @@ RSpec.describe AssignmentCheckIn, type: :model do
       check_in.update!(actual_energy_percentage: 75)
       expect(check_in.employee_started?).to be true
       
-      check_in.update!(actual_energy_percentage: nil, employee_personal_alignment: 'like')
-      expect(check_in.employee_started?).to be true
-      
-      check_in.update!(employee_personal_alignment: nil, employee_rating: 'meeting')
+      check_in.update!(actual_energy_percentage: nil, employee_rating: 'meeting')
       expect(check_in.employee_started?).to be true
       
       check_in.update!(employee_rating: nil, employee_private_notes: 'Some notes')

@@ -20,8 +20,7 @@ RSpec.describe 'Company teammate complete_picture page', type: :request do
     context 'with an active assignment tenure and finalized check-in' do
       before do
         create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
-        create(:assignment_check_in, :finalized, teammate: employee_teammate, assignment: assignment,
-                                                 employee_personal_alignment: 'love')
+        create(:assignment_check_in, :finalized, teammate: employee_teammate, assignment: assignment)
       end
 
       it 'shows the employee casual name and assignment check-in link' do

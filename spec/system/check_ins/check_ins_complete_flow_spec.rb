@@ -208,7 +208,6 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         # Should see employee fields for assignments
         expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_rating]")
         expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][actual_energy_percentage]")
-        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_personal_alignment]")
         expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_private_notes]")
         
         # Should see employee fields for aspirations
@@ -293,7 +292,6 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         # Should NOT see employee fields for assignments
         expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_rating]")
         expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][actual_energy_percentage]")
-        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_personal_alignment]")
         expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_private_notes]")
         
         # Should NOT see employee fields for aspirations

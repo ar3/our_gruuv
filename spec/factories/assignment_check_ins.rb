@@ -6,7 +6,6 @@ FactoryBot.define do
     actual_energy_percentage { 50 }
     employee_rating { 'meeting' }
     manager_rating { 'meeting' }
-    employee_personal_alignment { 'like' }
     employee_private_notes { 'Test notes' }
     manager_private_notes { 'Manager test notes' }
     shared_notes { 'Shared test notes' }

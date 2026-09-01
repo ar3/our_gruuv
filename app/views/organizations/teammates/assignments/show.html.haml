@@ -174,11 +174,6 @@
 
                 .col-md-6
                   .mb-3
-                    %label.form-label When I think about taking on #{@assignment.title} in the future, the pharse that best describes how I feel is...
-                    = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
-
-                .col-md-6
-                  .mb-3
                     %label.form-label When I think about the outcomes of #{@assignment.title}, since the last check-in I would rate my performance against the expectations as...
                     = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
 

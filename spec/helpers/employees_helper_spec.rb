@@ -1130,8 +1130,7 @@ RSpec.describe EmployeesHelper, type: :helper do
         employee_rating: 'meeting',
         manager_rating: 'exceeding',
         manager_completed_by_teammate: manager_teammate,
-        actual_energy_percentage: 50,
-        employee_personal_alignment: 'like')
+        actual_energy_percentage: 50)
       assignment_check_in.update!(
         official_check_in_completed_at: 1.day.ago,
         official_rating: 'meeting',
@@ -1145,7 +1144,6 @@ RSpec.describe EmployeesHelper, type: :helper do
       expect(result[:assignment_sentences].first[:sentences]).to include(person.casual_name)
       expect(result[:assignment_sentences].first[:sentences]).to include('they agreed')
       expect(result[:assignment_sentences].first[:sentences]).to include('50%')
-      expect(result[:assignment_sentences].first[:sentences]).to include('liked')
     end
 
     it 'includes aspiration sentences when snapshot has linked aspiration check-ins' do

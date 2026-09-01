@@ -1,9 +1,9 @@
 %p.mb-1
   %strong Rating:
   = assignment_rating_display(check_in.employee_rating)
-- if assignment_energy_alignment_sentence(check_in).present?
+- if assignment_energy_sentence(check_in).present?
   %p.mb-1
-    = assignment_energy_alignment_sentence(check_in)
+    = assignment_energy_sentence(check_in)
 %p.mb-0
   %strong Notes:
   = simple_format(check_in.employee_private_notes)

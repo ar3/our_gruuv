@@ -260,17 +260,6 @@
                   %span.text-muted No ratings available
               - else
                 %span.text-muted These analytics will be available once 5 or more teammates have had a finalized check-in.
-          .col-md-6.mb-3
-            %h6.text-muted Most Popular Personal Alignment
-            %p.mb-0
-              - if @teammates_with_finalized_check_ins_count > 5
-                - if @personal_alignment_distribution.present?
-                  #assignment-personal-alignment-pie-chart{ style: "height: 300px;" }
-                - else
-                  %span.text-muted No alignments available
-              - else
-                %span.text-muted These analytics will be available once 5 or more teammates have had a finalized check-in.
-
     = render "organizations/assignments/survey_analytics", analytics: @survey_analytics
 
     - if @viewer_holds_assignment && policy(@organization).assignment_survey?
@@ -310,29 +299,6 @@
               });
             }
 
-            var personalAlignmentEl = document.getElementById('assignment-personal-alignment-pie-chart');
-            if (personalAlignmentEl && #{@personal_alignment_distribution.present?.to_json}) {
-              Highcharts.chart('assignment-personal-alignment-pie-chart', {
-                chart: { type: 'pie' },
-                title: { text: null },
-                accessibility: { enabled: false },
-                plotOptions: {
-                  pie: {
-                    allowPointSelect: true,
-                    cursor: 'pointer',
-                    dataLabels: {
-                      enabled: true,
-                      format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
-                    }
-                  }
-                },
-                series: [{
-                  name: 'Personal Alignment',
-                  colorByPoint: false,
-                  data: #{@personal_alignment_distribution.to_json.html_safe}
-                }]
-              });
-            }
           };
 
           document.addEventListener('turbo:load', initAssignmentAnalyticsCharts);

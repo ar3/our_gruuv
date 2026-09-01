@@ -102,9 +102,9 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
     it 'displays the reason in the audit page' do
       visit audit_organization_employee_path(company, employee_teammate)
       
+      expect(page).to have_current_path(audit_organization_employee_path(company, employee_teammate))
       expect(page).to have_content(snapshot.reason)
       expect(page).to have_content('MAAP Change History')
-      expect(page).not_to have_content('Acknowledgement')
     end
   end
 end

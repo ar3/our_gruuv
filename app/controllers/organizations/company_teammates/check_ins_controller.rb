@@ -1075,7 +1075,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     permitted_params = {}
     assignment_params.each do |check_in_id, attrs|
       if @view_mode == :employee
-        permitted_params[check_in_id] = attrs.permit(:assignment_id, :employee_rating, :actual_energy_percentage, :employee_personal_alignment, :employee_private_notes, :status)
+        permitted_params[check_in_id] = attrs.permit(:assignment_id, :employee_rating, :actual_energy_percentage, :employee_private_notes, :status)
       elsif @view_mode == :manager
         permitted_params[check_in_id] = attrs.permit(:assignment_id, :manager_rating, :manager_private_notes, :status)
       end

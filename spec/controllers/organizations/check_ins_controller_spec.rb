@@ -332,7 +332,6 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
               employee_rating: 'exceeding',
               employee_private_notes: 'Love this work',
               actual_energy_percentage: 85,
-              employee_personal_alignment: 'love',
               status: 'complete'
             }
           }
@@ -344,7 +343,6 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assignment_check_in.employee_rating).to eq('exceeding')
         expect(assignment_check_in.employee_private_notes).to eq('Love this work')
         expect(assignment_check_in.actual_energy_percentage).to eq(85)
-        expect(assignment_check_in.employee_personal_alignment).to eq('love')
         expect(assignment_check_in.employee_completed?).to be true
       end
 
@@ -368,7 +366,6 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
               employee_rating: 'meeting',
               employee_private_notes: 'Working on it',
               actual_energy_percentage: 75,
-              employee_personal_alignment: 'like',
               status: 'draft'
             }
           }
@@ -380,50 +377,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assignment_check_in.employee_rating).to eq('meeting')
         expect(assignment_check_in.employee_private_notes).to eq('Working on it')
         expect(assignment_check_in.actual_energy_percentage).to eq(75)
-        expect(assignment_check_in.employee_personal_alignment).to eq('like')
         expect(assignment_check_in.employee_completed?).to be false
-      end
-
-      it 'raises ArgumentError when employee_personal_alignment is set to invalid value "tolerate"' do
-        assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
-        
-        # The error should be raised when trying to update with invalid enum value
-        # ApplicationController re-raises errors in test mode, so RSpec should catch it
-        expect {
-          patch :update, params: {
-            organization_id: organization.id,
-            company_teammate_id: employee_teammate.id,
-            assignment_check_ins: {
-              assignment_check_in.id => {
-                assignment_id: assignment.id,
-                employee_personal_alignment: 'tolerate',
-                status: 'complete'
-              }
-            }
-          }
-        }.to raise_error(ArgumentError) do |error|
-          expect(error.message).to match(/'tolerate' is not a valid employee_personal_alignment/)
-        end
-      end
-
-      it 'raises ArgumentError when employee_personal_alignment is set to invalid value "tolerate" as draft' do
-        assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
-        
-        expect {
-          patch :update, params: {
-            organization_id: organization.id,
-            company_teammate_id: employee_teammate.id,
-            assignment_check_ins: {
-              assignment_check_in.id => {
-                assignment_id: assignment.id,
-                employee_personal_alignment: 'tolerate',
-                status: 'draft'
-              }
-            }
-          }
-        }.to raise_error(ArgumentError) do |error|
-          expect(error.message).to match(/'tolerate' is not a valid employee_personal_alignment/)
-        end
       end
 
       it 'updates aspiration check-ins with employee fields' do

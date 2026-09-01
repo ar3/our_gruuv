@@ -161,7 +161,10 @@ RSpec.describe SingleItemCheckInHelper do
           latest_finalized: nil,
           outcomes: [outcome]
         )
-        expected_since = 90.days.ago.strftime("%B %-d, %Y")
+        expected_since = helper.format_date_in_user_timezone(
+          SingleItemCheckInHelper::RESEARCH_AI_PROMPT_LOOKBACK_DAYS.days.ago,
+          format: "%B %-d, %Y"
+        )
 
         expect(prompt).to include("check-in about Jamie Rivera.")
         expect(prompt).not_to include("(@")

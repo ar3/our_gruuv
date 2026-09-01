@@ -253,8 +253,8 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         # Create some finalized check-ins
         manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
         finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
-        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'meeting', employee_personal_alignment: 'like', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
-        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding', employee_personal_alignment: 'love', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
+        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'meeting', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
+        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
 
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
@@ -264,7 +264,6 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Active Assignment Tenures')
         expect(response.body).to include('Average Anticipated Energy')
         expect(response.body).to include('Most Popular Official Rating')
-        expect(response.body).to include('Most Popular Personal Alignment')
       end
 
       it 'shows message for popular ratings when less than 5 teammates have finalized check-ins' do
@@ -297,25 +296,6 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('assignment-official-rating-pie-chart')
-        expect(response.body).not_to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
-      end
-
-      it 'shows most popular personal alignment when 6 or more teammates have finalized check-ins' do
-        teammates = 6.times.map { create(:teammate, person: create(:person), organization: organization) }
-        
-        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
-        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
-        # Create 4 check-ins with 'love' alignment and 2 with 'like'
-        teammates[0..3].each do |teammate|
-          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'love', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
-        end
-        teammates[4..5].each do |teammate|
-          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'like', manager_completed_by_teammate: manager_teammate_for_check_in, finalized_by_teammate: finalized_teammate)
-        end
-
-        get organization_assignment_path(organization, assignment)
-        expect(response).to have_http_status(:success)
-        expect(response.body).to include('assignment-personal-alignment-pie-chart')
         expect(response.body).not_to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
       end
 

@@ -152,7 +152,6 @@ RSpec.describe MaapChangeExecutionService do
                   'actual_energy_percentage' => 75,
                   'employee_rating' => 'meeting',
                   'employee_private_notes' => 'Feeling good',
-                  'employee_personal_alignment' => 'love',
                   'employee_completed_at' => Time.current.iso8601
                 }
               }
@@ -172,7 +171,6 @@ RSpec.describe MaapChangeExecutionService do
           expect(check_in.actual_energy_percentage).to eq(75)
           expect(check_in.employee_rating).to eq('meeting')
           expect(check_in.employee_private_notes).to eq('Feeling good')
-          expect(check_in.employee_personal_alignment).to eq('love')
           expect(check_in.employee_completed_at).to be_present
         end
       end
@@ -196,7 +194,6 @@ RSpec.describe MaapChangeExecutionService do
                   'actual_energy_percentage' => 75,
                   'employee_rating' => 'meeting',
                   'employee_private_notes' => 'Feeling good',
-                  'employee_personal_alignment' => 'love',
                   'employee_completed_at' => nil
                 }
               }

@@ -101,8 +101,7 @@ RSpec.describe Organizations::CheckInsHealthController, type: :controller do
         'Manager Rating',
         'Manager Notes',
         'Expected Energy Percentage',
-        'Actual Energy Percentage',
-        'Employee Personal Alignment'
+        'Actual Energy Percentage'
       )
     end
 

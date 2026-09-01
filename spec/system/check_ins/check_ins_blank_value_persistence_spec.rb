@@ -34,7 +34,6 @@ RSpec.describe "Check-ins blank value persistence (system)", type: :system do
         employee_rating: "exceeding",
         employee_private_notes: "Employee wrote this — must remain after manager clears",
         actual_energy_percentage: 25,
-        employee_personal_alignment: "like",
         manager_rating: "meeting",
         manager_private_notes: "Manager will clear this via UI",
         employee_completed_at: nil,
@@ -66,7 +65,6 @@ RSpec.describe "Check-ins blank value persistence (system)", type: :system do
       expect(@check_in.employee_rating).to eq("exceeding")
       expect(@check_in.employee_private_notes).to eq("Employee wrote this — must remain after manager clears")
       expect(@check_in.actual_energy_percentage).to eq(25)
-      expect(@check_in.employee_personal_alignment).to eq("like")
     end
   end
 

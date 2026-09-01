@@ -151,7 +151,7 @@
                       %span.badge.bg-info.me-1= "#{tenure.anticipated_energy_percentage}%"
                       %small.text-muted= "for #{distance_of_time_in_words(tenure.started_at, Date.current)}"
                   
-                  / Last finalized check-in: official rating + personal alignment (+ popover with three sentences)
+                  / Last finalized check-in: official rating (+ popover with three sentences)
                   = render 'organizations/company_teammates/assignment_latest_check_in_badges',
                     latest_finalized: @latest_finalized_assignment_check_ins_by_assignment_id[tenure.assignment_id],
                     tenure: tenure,
@@ -308,21 +308,11 @@
                                 = ", #{h(emp_name)} was ".html_safe
                                 %span.badge{class: off_badge_class}= assignment_rating_display(off_rating)
                                 = " expectations.".html_safe
-                                - if latest_check_in.employee_personal_alignment.present?
-                                  = " #{h(emp_name)} felt ".html_safe
-                                  %span.badge.bg-info.text-dark= latest_check_in.employee_personal_alignment.humanize
-                                  = " about taking on ".html_safe
-                                  %strong= h(tenure.assignment.title)
-                                  = " in the future.".html_safe
                           - else
                             - if latest_check_in.actual_energy_percentage.present?
                               %p.mb-1
                                 %strong Actual Energy:
                                 = "#{latest_check_in.actual_energy_percentage}%"
-                            - if latest_check_in.employee_personal_alignment.present?
-                              %p.mb-1
-                                %strong How they feel about this assignment:
-                                %span.badge.bg-info.text-dark= latest_check_in.employee_personal_alignment.humanize
                             - if latest_check_in.manager_rating.present?
                               %p.mb-1
                                 %strong Manager rating:

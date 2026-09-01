@@ -101,13 +101,12 @@ module EmployeesHelper
     mgr_rating = assignment_rating_display(check_in.manager_rating)
     final_rating = assignment_rating_display(check_in.official_rating)
     energy = check_in.actual_energy_percentage.present? ? check_in.actual_energy_percentage : '—'
-    alignment_phrase = assignment_alignment_phrase(check_in.employee_personal_alignment)
     emp_notes = check_in_notes_display(check_in.employee_private_notes)
     mgr_notes = check_in_notes_display(check_in.manager_private_notes)
     shared_notes = check_in_notes_display(check_in.shared_notes)
 
     [
-      "On #{emp_date} #{employee_name} said they were #{emp_rating} expectations for the Assignment #{assignment_name}. They also said they spent #{energy}% of their energy on this since their last check-in, and they #{alignment_phrase} taking on this assignment. Notes: #{emp_notes}",
+      "On #{emp_date} #{employee_name} said they were #{emp_rating} expectations for the Assignment #{assignment_name}. They also said they spent #{energy}% of their energy on this since their last check-in. Notes: #{emp_notes}",
       "On #{mgr_date} #{manager_name} reflected and said #{employee_name} was #{mgr_rating} expectations since the last check-in. Notes: #{mgr_notes}",
       "On #{final_date} they agreed #{employee_name} was actually #{final_rating} expectations. Shared Notes: #{shared_notes}"
     ]
@@ -381,12 +380,6 @@ module EmployeesHelper
         when 'employee_rating'
           assignment_formatted[:changes] << {
             label: 'Employee Rating',
-            current: change[:current].present? ? change[:current].humanize : 'Not set',
-            proposed: change[:proposed].present? ? change[:proposed].humanize : 'Not set'
-          }
-        when 'employee_personal_alignment'
-          assignment_formatted[:changes] << {
-            label: 'Employee Personal Alignment',
             current: change[:current].present? ? change[:current].humanize : 'Not set',
             proposed: change[:proposed].present? ? change[:proposed].humanize : 'Not set'
           }

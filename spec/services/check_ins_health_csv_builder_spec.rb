@@ -27,8 +27,7 @@ RSpec.describe CheckInsHealthCsvBuilder do
         'Check-in Finalized',
         'Check-ins Finalized Before this',
         'Expected Energy Percentage',
-        'Actual Energy Percentage',
-        'Employee Personal Alignment'
+        'Actual Energy Percentage'
       )
     end
 

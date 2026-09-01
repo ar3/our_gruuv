@@ -1567,7 +1567,6 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         current_check_in.actual_energy_percentage != proposed_data['employee_check_in']['actual_energy_percentage'] ||
         current_check_in.employee_rating != proposed_data['employee_check_in']['employee_rating'] ||
         current_check_in.employee_private_notes != proposed_data['employee_check_in']['employee_private_notes'] ||
-        current_check_in.employee_personal_alignment != proposed_data['employee_check_in']['employee_personal_alignment'] ||
         (current_check_in.employee_completed? || false) != proposed_data['employee_check_in']['employee_completed_at'].present?
       else
         proposed_data['employee_check_in'].values.any? { |v| v.present? }

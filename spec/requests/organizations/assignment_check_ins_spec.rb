@@ -104,7 +104,6 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         assignment_id: assignment.id,
                         employee_rating: "meeting",
                         actual_energy_percentage: 60,
-                        employee_personal_alignment: "love",
                         employee_private_notes: "My notes",
                         status: "complete"
                       }

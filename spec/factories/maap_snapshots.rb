@@ -58,8 +58,7 @@ FactoryBot.define do
                 actual_energy_percentage: 30,
                 employee_rating: 'exceeding',
                 employee_completed_at: Date.current,
-                employee_private_notes: 'Feeling confident',
-                employee_personal_alignment: 'high'
+                employee_private_notes: 'Feeling confident'
               },
               manager_check_in: {
                 manager_rating: 'meeting',

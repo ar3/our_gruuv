@@ -113,7 +113,6 @@ RSpec.shared_examples "manager check-in form fields" do |view_type|
     expect(page).not_to have_css('select[name*="assignment_check_ins"][name*="employee_rating"]')
     expect(page).not_to have_css('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]')
     expect(page).not_to have_css('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]')
-    expect(page).not_to have_css('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]')
     expect(page).not_to have_css('select[name*="aspiration_check_ins"][name*="employee_rating"]')
     expect(page).not_to have_css('textarea[name*="aspiration_check_ins"][name*="employee_private_notes"]')
     

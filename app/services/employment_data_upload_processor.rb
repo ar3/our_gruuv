@@ -365,10 +365,6 @@ class EmploymentDataUploadProcessor
         update_attrs[:employee_private_notes] = check_in_data['employee_private_notes']
       end
       
-      if check_in_data['employee_personal_alignment'].present? && check_in.employee_personal_alignment.blank?
-        update_attrs[:employee_personal_alignment] = check_in_data['employee_personal_alignment']
-      end
-      
       check_in.update!(update_attrs) if update_attrs.any?
       return check_in, false
     end
@@ -383,8 +379,7 @@ class EmploymentDataUploadProcessor
       employee_rating: check_in_data['employee_rating'],
       official_rating: check_in_data['official_rating'],
       manager_private_notes: check_in_data['manager_private_notes'],
-      employee_private_notes: check_in_data['employee_private_notes'],
-      employee_personal_alignment: check_in_data['employee_personal_alignment']
+      employee_private_notes: check_in_data['employee_private_notes']
     )
     return check_in, true
   end

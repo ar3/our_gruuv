@@ -98,7 +98,7 @@ RSpec.describe EmploymentDataUploadParser do
         let(:alias_headers) do
           [
             'Employee', 'Assignment Name', 'Date of Check-In', 'Most Recent Actual Calorie %',
-            'Personal Alignment', 'Anticipated Calories', 'Manager Rating', 'Manager Notes',
+            'Anticipated Calories', 'Manager Rating', 'Manager Notes',
             'Employee Rating', 'Employee Notes', 'Final Agreed Rating'
           ]
         end
@@ -106,7 +106,7 @@ RSpec.describe EmploymentDataUploadParser do
         let(:alias_data_row) do
           [
             'John Doe', 'Software Engineer [https://example.com/job]', '2024-01-15', '85',
-            'Aligned with company goals', '90', 'exceeding', 'Great leadership skills',
+            '90', 'exceeding', 'Great leadership skills',
             'meeting', 'Feeling good about progress', 'exceeding'
           ]
         end
@@ -141,7 +141,6 @@ RSpec.describe EmploymentDataUploadParser do
           expect(check_ins.first['official_rating']).to eq('exceeding')
           expect(check_ins.first['manager_private_notes']).to eq('Great leadership skills')
           expect(check_ins.first['employee_private_notes']).to eq('Feeling good about progress')
-          expect(check_ins.first['employee_personal_alignment']).to eq('Aligned with company goals')
           
           # Check that external references were extracted
           external_refs = parser.preview_actions[:external_references]
@@ -472,7 +471,6 @@ RSpec.describe EmploymentDataUploadParser do
         expect(parser.send(:map_header_alias, 'Assignment Name')).to eq('assignment_name')
         expect(parser.send(:map_header_alias, 'Date of Check-In')).to eq('check_in_date')
         expect(parser.send(:map_header_alias, 'Most Recent Actual Calorie %')).to eq('energy_percentage')
-        expect(parser.send(:map_header_alias, 'Personal Alignment')).to eq('employee_personal_alignment')
         expect(parser.send(:map_header_alias, 'Anticipated Calories')).to eq('anticipated_energy_percentage')
         expect(parser.send(:map_header_alias, 'Manager Rating')).to eq('manager_rating')
         expect(parser.send(:map_header_alias, 'Manager Notes')).to eq('manager_private_notes')

@@ -198,7 +198,6 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
           employee_rating: nil,
           manager_rating: nil,
           official_rating: nil,
-          employee_personal_alignment: nil,
           employee_private_notes: nil,
           manager_private_notes: nil,
           shared_notes: nil,
@@ -583,5 +582,6 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       expect(response.body).to include("No feedback submitted yet for this assignment")
       expect(response.body).to include("Give feedback")
     end
+
   end
 end

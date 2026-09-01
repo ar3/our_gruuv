@@ -53,8 +53,7 @@ class CheckInsHealthCsvBuilder
       'Manager Rating',
       'Manager Notes',
       'Expected Energy Percentage',
-      'Actual Energy Percentage',
-      'Employee Personal Alignment'
+      'Actual Energy Percentage'
     ]
   end
 
@@ -120,8 +119,7 @@ class CheckInsHealthCsvBuilder
       position_rating_format(ci.manager_rating),
       ci.manager_private_notes.to_s,
       '', # Expected Energy Percentage
-      '', # Actual Energy Percentage
-      ''  # Employee Personal Alignment
+      '' # Actual Energy Percentage
     ]
   end
 
@@ -151,8 +149,7 @@ class CheckInsHealthCsvBuilder
       assignment_rating_format(ci.manager_rating),
       ci.manager_private_notes.to_s,
       tenure&.anticipated_energy_percentage.to_s,
-      ci.actual_energy_percentage.to_s,
-      ci.employee_personal_alignment.to_s
+      ci.actual_energy_percentage.to_s
     ]
   end
 
@@ -180,7 +177,6 @@ class CheckInsHealthCsvBuilder
       ci.employee_private_notes.to_s,
       assignment_rating_format(ci.manager_rating),
       ci.manager_private_notes.to_s,
-      '',
       '',
       ''
     ]

@@ -32,15 +32,6 @@ class AssignmentCheckIn < ApplicationRecord
     exceeding: 'exceeding'
   }, prefix: true
 
-  # Enum for personal alignment
-  enum :employee_personal_alignment, {
-    love: 'love',
-    like: 'like',
-    neutral: 'neutral',
-    prefer_not: 'prefer_not',
-    only_if_necessary: 'only_if_necessary'
-  }, prefix: true
-
   # Validations
   validates :check_in_started_on, presence: true
   validates :actual_energy_percentage, 
@@ -49,7 +40,6 @@ class AssignmentCheckIn < ApplicationRecord
   validates :employee_rating, inclusion: { in: employee_ratings.keys }, allow_nil: true
   validates :manager_rating, inclusion: { in: manager_ratings.keys }, allow_nil: true
   validates :official_rating, inclusion: { in: official_ratings.keys }, allow_nil: true
-  validates :employee_personal_alignment, inclusion: { in: employee_personal_alignments.keys }, allow_nil: true
   validates :manager_completed_by_teammate, presence: true, if: :manager_completed?
   # Rated finalize requires a finalizer; non-rated system closes (e.g. assignment archive) do not.
   validates :finalized_by_teammate, presence: true, if: -> { officially_completed? && official_rating.present? }
@@ -175,7 +165,7 @@ class AssignmentCheckIn < ApplicationRecord
   # Completion tracking methods
 
   def employee_started?
-    actual_energy_percentage.present? || employee_personal_alignment.present? || employee_rating.present? || employee_private_notes.present?
+    actual_energy_percentage.present? || employee_rating.present? || employee_private_notes.present?
   end
 
   def manager_started?
@@ -200,7 +190,6 @@ class AssignmentCheckIn < ApplicationRecord
     when :employee
       employee_rating.present? ||
         employee_private_notes.to_s.strip.present? ||
-        employee_personal_alignment.present? ||
         (actual_energy_percentage.present? && actual_energy_percentage.to_i != 0)
     when :manager
       manager_rating.present? ||
