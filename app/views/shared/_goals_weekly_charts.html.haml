@@ -13,6 +13,8 @@
 - charts_after_second = local_assigns[:charts_after_second] || []
 - goals_for_network_graph = local_assigns[:goals_for_network_graph]
 - goal_links_for_network_graph = local_assigns[:goal_links_for_network_graph]
+- goals_summary = local_assigns[:goals_summary]
+- goals_summary_timespan_label = local_assigns[:goals_summary_timespan_label]
 - goals_org = local_assigns[:organization]
 -# Bootstrap Icons: pass suffix only (e.g. bi-people) so we output bi bi-people
 
@@ -60,7 +62,41 @@
                   No goals to display
                 %p.mb-0 There are no active goals or recently completed goals in this scope.
 
-  - if goals_for_network_graph.present? || goals_for_network_graph == []
+  - if goals_summary.present?
+    .row.mb-2
+      .col-12
+        %p.mb-0.text-muted= goals_summary_timespan_label
+    .row.mb-4.g-3
+      .col-md-3
+        .card.bg-light.border-0.h-100
+          .card-body.text-center
+            .display-6.fw-semibold= number_with_delimiter(goals_summary.created_goals_count)
+            .small.text-muted.mt-1 Goals created
+            .fw-semibold.mt-2= number_with_delimiter(goals_summary.created_teammates_count)
+            .small.text-muted Teammates
+      .col-md-3
+        .card.bg-light.border-0.h-100
+          .card-body.text-center
+            .display-6.fw-semibold= number_with_delimiter(goals_summary.confidence_checked_goals_count)
+            .small.text-muted.mt-1 Goals with a confidence check
+            .fw-semibold.mt-2= number_with_delimiter(goals_summary.confidence_checked_teammates_count)
+            .small.text-muted Teammates
+      .col-md-3
+        .card.bg-light.border-0.h-100
+          .card-body.text-center
+            .display-6.fw-semibold= number_with_delimiter(goals_summary.stale_goals_count)
+            .small.text-muted.mt-1{ title: "Created before this timespan with no confidence checks during this timespan" } Stale goals
+            .fw-semibold.mt-2= number_with_delimiter(goals_summary.stale_teammates_count)
+            .small.text-muted Teammates
+      .col-md-3
+        .card.bg-light.border-0.h-100
+          .card-body.text-center
+            .display-6.fw-semibold= number_with_delimiter(goals_summary.completed_goals_count)
+            .small.text-muted.mt-1 Goals completed
+            .fw-semibold.mt-2= number_with_delimiter(goals_summary.completed_teammates_count)
+            .small.text-muted Teammates
+
+  - if goals_for_network_graph.present? || goals_for_network_graph == [] || goals_summary.present?
     %hr.my-5
 
   .row.mb-4

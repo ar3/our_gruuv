@@ -223,6 +223,12 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @goals_lifecycle_chart_data = GoalsChartSeries.lifecycle_series(chart_range, goals_scope)
     @goals_employees_chart_data = GoalsChartSeries.employees_goal_weekly_status_series(chart_range, goals_scope)
     @goals_association_chart_data = GoalsChartSeries.association_structure_series(chart_range, goals_scope)
+    @goals_summary = Insights::GoalsSummaryStats.new(goals_scope: goals_scope, range: chart_range).call
+    @goals_summary_timespan_label = format(
+      "During the timespan between %s and %s…",
+      chart_range.begin.in_time_zone.strftime("%b %-d, %Y"),
+      chart_range.end.in_time_zone.strftime("%b %-d, %Y")
+    )
 
     # Goals network graph: active + completed in last 90 days, company-level visibility
     @goals_for_network_graph, @goal_links_for_network_graph = goals_network_graph_data

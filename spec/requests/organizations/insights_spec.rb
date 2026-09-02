@@ -626,6 +626,11 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
       expect(response.body).to include('Custom')
+      expect(response.body).to include('Goals created')
+      expect(response.body).to include('Goals with a confidence check')
+      expect(response.body).to include('Stale goals')
+      expect(response.body).to include('Goals completed')
+      expect(response.body).to match(/During the timespan between .+ and .+…/)
     end
 
     it 'returns success with timeframe=custom and from/to dates' do
