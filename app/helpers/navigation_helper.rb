@@ -650,6 +650,13 @@ module NavigationHelper
             path: organization_talent_density_path(current_organization),
             policy_check: -> { policy(current_organization).talent_density? },
             coming_soon: false
+          },
+          {
+            label: 'Coach Inbox',
+            icon: 'bi-inbox',
+            path: organization_coach_inbox_path(current_organization),
+            policy_check: -> { policy(current_organization).coach_inbox? },
+            coming_soon: false
           }
         ]
       },

@@ -102,6 +102,11 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || organization_in_hierarchy?
   end
 
+  # Validation Coach Inbox — same audience as health dashboards for now.
+  def coach_inbox?
+    check_ins_health?
+  end
+
   def goals_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

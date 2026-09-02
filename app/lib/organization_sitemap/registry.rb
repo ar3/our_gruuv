@@ -601,7 +601,11 @@ module OrganizationSitemap
           beta_page(:talent_density, "Talent Density", "bi-people", :organization_talent_density_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).talent_density_explainer? },
             goal: "HR-led keeper-test ritual: managers record a private seat-fit stance. Employees can read that it exists; nobody ever sees their own rating.",
-            synonyms: %w[talent density keeper test keeper-test swap seat fit hr ritual])
+            synonyms: %w[talent density keeper test keeper-test swap seat fit hr ritual]),
+          beta_page(:coach_inbox, "Coach Inbox", "bi-inbox", :organization_coach_inbox_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).coach_inbox? },
+            goal: "See outstanding coachables across check-ins, OGOs, goals, and expectation alignment — and prepare to nudge.",
+            synonyms: %w[coach inbox nudges encourage outstanding rollout coachables])
         ]
       }
     end

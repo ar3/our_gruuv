@@ -237,6 +237,9 @@ Rails.application.routes.draw do
     resource :goal_impact_scanner,
              only: [:show],
              controller: "organizations/goal_impact_scanner"
+    resource :coach_inbox,
+             only: [:show],
+             controller: "organizations/coach_inbox"
 
     resource :talent_density,
              only: [:show, :update],

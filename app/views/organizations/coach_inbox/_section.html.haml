@@ -1,0 +1,48 @@
+- total = section.subtypes.sum(&:count)
+- expanded_keys = coach_inbox_expanded_subtype_keys
+
+.card.border-0.shadow-sm.mb-3
+  .card-header.bg-white
+    .d-flex.align-items-center.gap-2
+      %h2.h5.mb-0= section.label
+      %span.badge.text-bg-secondary= total
+  .card-body.p-0
+    - section.subtypes.each_with_index do |subtype, index|
+      .border-top.px-3.py-2{class: (index.zero? ? "border-top-0" : nil)}
+        .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+          .d-flex.align-items-center.gap-2
+            %span= subtype.label
+            %span.badge.text-bg-light= subtype.count
+          = link_to coach_inbox_toggle_expand_path(organization: organization, manager_id: manager_id, subtype_key: subtype.key, expanded_keys: expanded_keys),
+                    class: "btn btn-sm btn-outline-primary" do
+            - if subtype.expanded
+              %i.bi.bi-arrows-collapse.me-1
+              Hide
+            - else
+              %i.bi.bi-arrows-expand.me-1
+              Show
+
+        - if subtype.expanded
+          .mt-2.mb-1
+            - if subtype.items.empty?
+              %p.text-muted.mb-0 No outstanding items in this sub-section for the current scope.
+            - else
+              .table-responsive
+                %table.table.table-hover.align-middle.mb-0
+                  %thead
+                    %tr
+                      %th Person
+                      %th Item
+                      %th.text-end Actions
+                  %tbody
+                    - subtype.items.each do |item|
+                      %tr
+                        %td= item.person_name
+                        %td
+                          %div= item.title
+                          %small.text-muted= item.subtitle
+                        %td.text-end.text-nowrap
+                          - if item.url.present?
+                            = link_to "Open", item.url, class: "btn btn-sm btn-outline-secondary me-1"
+                          %button.btn.btn-sm.btn-primary{type: "button", data: { "bs-toggle": "modal", "bs-target": "#coachInboxNudgeComingSoonModal" }}
+                            Nudge

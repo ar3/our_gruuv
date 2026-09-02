@@ -1,0 +1,59 @@
+- page_help_id = "coachInboxPageHelp"
+
+- content_for :title, "Coach Inbox"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Coach Inbox", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      %i.bi.bi-inbox.me-1
+      Coach Inbox
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "See who still needs encouragement across rollout habits. Click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/coach_inbox/page_help"
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = form_with url: organization_coach_inbox_path(@organization), method: :get, local: true, id: "coach-inbox-filter-form" do |f|
+          .row.align-items-end
+            .col-md-10
+              %label.form-label.fw-bold.fs-5.mb-2 Who to show
+              = select_tag :manager_id,
+                           options_for_select(@available_manager_filter_options, @current_manager_filter),
+                           class: "form-select form-select-lg",
+                           id: "coach-inbox-manager-select",
+                           required: true
+              %small.form-text.text-muted Same scopes as Check-ins Health.
+            .col-md-2
+              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+          - Array(params[:expand]).each do |key|
+            = hidden_field_tag "expand[]", key
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+      %p.text-muted.mb-0
+        %strong= @total_outstanding
+        outstanding item#{'s' unless @total_outstanding == 1} in this view
+      %small.text-muted
+        Nudge is coming soon — recipient choice (employee / manager / both) will ship with real sends.
+
+.row.justify-content-center
+  .col-lg-12
+    - @sections.each do |section|
+      = render "organizations/coach_inbox/section",
+               section: section,
+               organization: @organization,
+               manager_id: @current_manager_filter
+
+= render "organizations/coach_inbox/nudge_coming_soon_modal"
