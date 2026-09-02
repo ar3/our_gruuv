@@ -14,6 +14,10 @@
 - kudos_label = "Add Kudos about #{casual_name}"
 - feedback_label = "Add Constructive Feedback about #{casual_name}"
 - note_label = viewing_self ? "Add notes about me" : "Add Note about #{casual_name}"
+- feedback_request_record = FeedbackRequest.new(company: org.root_company || org, subject_of_feedback_teammate: teammate)
+- can_request_feedback = policy(feedback_request_record).create?
+- feedback_request_path = new_organization_feedback_request_path(org, subject_of_feedback_teammate_id: teammate.id)
+- feedback_request_label = viewing_self ? "Request feedback about me" : "Request feedback about #{casual_name}"
 - select_type_path = select_type_organization_observations_path(org, return_url: return_url, return_text: return_text)
 
 .row.mb-4
@@ -30,10 +34,16 @@
           = link_to "Add an OGO about any teammate", select_type_path
           instead.
 
-      .text-center
-        = link_to note_path, class: "btn btn-outline-secondary" do
-          %i.bi.bi-sticky.me-1
-          = note_label
+      .row.justify-content-center
+        .col-md-5.offset-md-1
+          = link_to note_path, class: "btn btn-outline-secondary w-100" do
+            %i.bi.bi-sticky.me-1
+            = note_label
+        - if can_request_feedback
+          .col-md-5
+            = link_to feedback_request_path, class: "btn btn-outline-secondary w-100" do
+              %i.bi.bi-chat-dots.me-1
+              = feedback_request_label
     - else
       .row.g-3
         .col-md-6
@@ -52,7 +62,13 @@
                 %h4.mb-1= feedback_label
                 %p.text-muted.small.mb-0 Share clear, actionable feedback
 
-      .text-center.mt-3
-        = link_to note_path, class: "btn btn-sm btn-outline-secondary text-muted" do
-          %i.bi.bi-sticky.me-1
-          = note_label
+      .row.g-2.mt-3
+        .col-md-5.offset-md-1
+          = link_to note_path, class: "btn btn-sm btn-outline-secondary text-muted w-100" do
+            %i.bi.bi-sticky.me-1
+            = note_label
+        - if can_request_feedback
+          .col-md-5
+            = link_to feedback_request_path, class: "btn btn-sm btn-outline-secondary text-muted w-100" do
+              %i.bi.bi-chat-dots.me-1
+              = feedback_request_label

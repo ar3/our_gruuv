@@ -28,6 +28,8 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("Add an OGO about any teammate")
       expect(response.body).to include(select_type_organization_observations_path(organization))
       expect(response.body).to include("Add notes about me")
+      expect(response.body).to include("Request feedback about me")
+      expect(response.body).to include(new_organization_feedback_request_path(organization, subject_of_feedback_teammate_id: teammate.id))
       expect(response.body).to include("Why keep notes about yourself?")
       expect(response.body).to include(new_quick_note_organization_observations_path(organization))
       expect(response.body).to include("observee_ids")
@@ -54,6 +56,8 @@ RSpec.describe "Teammate OGOs page", type: :request do
         expect(response.body).to include("Add Kudos about #{other_person.casual_name}")
         expect(response.body).to include("Add Constructive Feedback about #{other_person.casual_name}")
         expect(response.body).to include("Add Note about #{other_person.casual_name}")
+        expect(response.body).to include("Request feedback about #{other_person.casual_name}")
+        expect(response.body).to include(new_organization_feedback_request_path(organization, subject_of_feedback_teammate_id: other_teammate.id))
         expect(response.body).not_to include("Why keep notes about yourself?")
         expect(response.body).not_to include("Add notes about me")
       end
