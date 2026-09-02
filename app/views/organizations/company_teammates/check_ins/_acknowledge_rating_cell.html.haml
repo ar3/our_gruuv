@@ -1,14 +1,22 @@
 -# locals: (check_in:, side:, employee_name:)
 - label = check_in_side_rating_display(check_in, side)
+- energy_line = check_in_side_rating_energy_line(check_in, side: side)
 - caption = check_in_side_rating_caption(check_in, side: side, employee_name: employee_name)
-- popover = check_in_side_rating_popover_content(check_in, side: side, employee_name: employee_name)
+- notes_text = check_in_side_rating_notes_text(check_in, side: side, employee_name: employee_name)
+- notes_entered = check_in_side_rating_notes_entered?(check_in, side: side, employee_name: employee_name)
 %div
-  %span{"data-bs-toggle" => "popover",
-        "data-bs-trigger" => "hover focus",
-        "data-bs-placement" => "top",
-        "data-bs-html" => "true",
-        "data-bs-content" => popover,
-        style: "cursor: help;"}
-    = label
+  %div= label
+  - if energy_line.present?
+    .small.text-muted= energy_line
   - if caption.present?
     .small.text-muted= caption
+  .ack-notes-display-wrap.mt-2
+    = text_area_tag nil, notes_text,
+                    class: ["ack-notes-display", ("ack-notes-display--empty" unless notes_entered)].compact.join(" "),
+                    rows: 4,
+                    readonly: true,
+                    tabindex: -1,
+                    "aria-label" => "Notes",
+                    data: { ack_notes_display: true }
+    %p.ack-notes-display-hint.small.text-muted.mb-0.mt-1.d-none
+      To see the full message, drag this box down.

@@ -139,7 +139,7 @@ RSpec.describe CheckInHelper, type: :helper do
     end
   end
 
-  describe '#check_in_side_rating_popover_content' do
+  describe '#check_in_side_rating_energy_line' do
     let(:organization) { create(:organization) }
     let(:person) { create(:person, first_name: 'Sam', last_name: 'Test') }
     let(:teammate) { create(:company_teammate, person: person, organization: organization, first_employed_at: 1.year.ago) }
@@ -152,45 +152,65 @@ RSpec.describe CheckInHelper, type: :helper do
              started_at: 1.month.ago,
              ended_at: nil)
     end
+    let(:started_on) { Date.new(2026, 8, 20) }
+    let(:completed_at) { Time.zone.local(2026, 8, 28, 15, 0, 0) }
     let!(:check_in) do
       create(:assignment_check_in, :officially_completed,
              teammate: teammate,
              assignment: assignment,
+             actual_energy_percentage: 55,
+             check_in_started_on: started_on,
+             employee_completed_at: completed_at,
              shared_notes: "Looks good",
              official_check_in_completed_at: 1.day.ago)
     end
 
-    it 'puts agreed energy above notes on assignment Reviewed Together popover' do
-      html = helper.check_in_side_rating_popover_content(check_in, side: :official, employee_name: person.casual_name)
-      expect(html).to include("They agreed that #{person.casual_name} will be using 40% of their energy on Project Alpha going forward.")
-      expect(html).to include('<strong>Notes:</strong>')
-      expect(html).to include('Looks good')
-      expect(html.index('They agreed')).to be < html.index('Notes:')
+    it 'shows employee actual energy with check-in date range under the rating' do
+      expect(helper.check_in_side_rating_energy_line(check_in, side: :employee))
+        .to eq('@ 55% between 08-20 to 08-28')
     end
 
-    it 'does not include energy sentence on employee or manager popovers' do
-      employee_html = helper.check_in_side_rating_popover_content(check_in, side: :employee, employee_name: person.casual_name)
-      manager_html = helper.check_in_side_rating_popover_content(check_in, side: :manager, employee_name: person.casual_name)
-      expect(employee_html).not_to include('They agreed that')
-      expect(manager_html).not_to include('They agreed that')
+    it 'shows Reviewed Together going-forward energy with leading &' do
+      expect(helper.check_in_side_rating_energy_line(check_in, side: :official)).to eq('& 40% going forward')
     end
 
-    it 'does not include energy sentence for position check-ins' do
-      position_check_in = instance_double(
-        PositionCheckIn,
-        employee_private_notes: nil,
-        employee_completed_at: nil,
-        manager_private_notes: nil,
-        manager_completed_at: nil,
-        manager_completed_by_teammate: nil,
-        shared_notes: 'Position notes',
-        official_check_in_completed_at: 1.day.ago,
-        finalized_by_teammate: nil
-      )
+    it 'does not show energy on manager side' do
+      expect(helper.check_in_side_rating_energy_line(check_in, side: :manager)).to be_nil
+    end
+
+    it 'does not show energy for position check-ins' do
+      position_check_in = instance_double(PositionCheckIn)
       allow(position_check_in).to receive(:is_a?).with(AssignmentCheckIn).and_return(false)
-      html = helper.check_in_side_rating_popover_content(position_check_in, side: :official, employee_name: person.casual_name)
-      expect(html).not_to include('They agreed that')
-      expect(html).to include('Position notes')
+      expect(helper.check_in_side_rating_energy_line(position_check_in, side: :employee)).to be_nil
+      expect(helper.check_in_side_rating_energy_line(position_check_in, side: :official)).to be_nil
+    end
+  end
+
+  describe '#check_in_side_rating_notes_text' do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person, first_name: 'Sam', last_name: 'Test') }
+    let(:teammate) { create(:company_teammate, person: person, organization: organization, first_employed_at: 1.year.ago) }
+    let(:assignment) { create(:assignment, company: organization) }
+    let!(:check_in) do
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: assignment,
+             employee_private_notes: 'Employee said this',
+             manager_private_notes: nil,
+             shared_notes: "Looks good")
+    end
+
+    it 'returns entered notes when present' do
+      expect(helper.check_in_side_rating_notes_text(check_in, side: :employee, employee_name: person.casual_name))
+        .to eq('Employee said this')
+      expect(helper.check_in_side_rating_notes_text(check_in, side: :official, employee_name: person.casual_name))
+        .to eq('Looks good')
+    end
+
+    it 'returns placeholder with casual name when notes are blank' do
+      manager_name = check_in.manager_completed_by_teammate.person.casual_name
+      expect(helper.check_in_side_rating_notes_text(check_in, side: :manager, employee_name: person.casual_name))
+        .to eq("--No notes entered by #{manager_name}--")
     end
   end
 

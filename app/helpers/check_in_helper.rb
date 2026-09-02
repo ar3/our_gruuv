@@ -106,38 +106,40 @@ module CheckInHelper
     "By #{meta[:by_name]} on #{format_time_in_user_timezone(meta[:at]).to_s.strip}"
   end
 
-  # Hover popover: notes for a rating side (by/when shown as cell caption).
-  # Assignment Reviewed Together also includes agreed going-forward energy above notes.
-  def check_in_side_rating_popover_content(check_in, side:, employee_name:)
-    meta = check_in_side_rating_meta(check_in, side: side, employee_name: employee_name)
-    parts = []
+  # Acknowledge page: energy line under assignment ratings (employee actual / official going-forward).
+  def check_in_side_rating_energy_line(check_in, side:)
+    return nil unless check_in.is_a?(AssignmentCheckIn)
 
-    if side.to_sym == :official
-      energy_sentence = assignment_acknowledgement_energy_sentence(check_in, employee_name: employee_name)
-      parts << energy_sentence if energy_sentence.present?
+    case side.to_sym
+    when :employee
+      energy = check_in.actual_energy_percentage
+      return nil if energy.nil?
+      return nil if check_in.check_in_started_on.blank? || check_in.employee_completed_at.blank?
+
+      start_label = format_date_in_user_timezone(check_in.check_in_started_on, format: "%m-%d")
+      end_label = format_date_in_user_timezone(check_in.employee_completed_at, format: "%m-%d")
+      "@ #{energy}% between #{start_label} to #{end_label}"
+    when :official
+      return nil unless check_in.officially_completed?
+
+      energy = assignment_check_in_going_forward_energy_percentage(check_in)
+      return nil if energy.nil?
+
+      "& #{energy}% going forward"
     end
-
-    if meta[:notes].present?
-      parts << "<strong>Notes:</strong><br>#{ERB::Util.html_escape(meta[:notes]).gsub("\n", '<br>')}"
-    else
-      parts << "<em>No notes</em>"
-    end
-
-    parts.join("<br><br>")
   end
 
-  # Acknowledge page: going-forward energy from finalization (active tenure after close).
-  def assignment_acknowledgement_energy_sentence(check_in, employee_name:)
-    return nil unless check_in.is_a?(AssignmentCheckIn)
-    return nil unless check_in.officially_completed?
+  # Acknowledge page: notes body or empty placeholder for the display textarea.
+  def check_in_side_rating_notes_text(check_in, side:, employee_name:)
+    meta = check_in_side_rating_meta(check_in, side: side, employee_name: employee_name)
+    return meta[:notes] if meta[:notes].present?
 
-    energy = assignment_check_in_going_forward_energy_percentage(check_in)
-    return nil if energy.nil?
+    name = meta[:by_name].presence || "someone"
+    "--No notes entered by #{name}--"
+  end
 
-    assignment_name = check_in.assignment&.title.presence || "this assignment"
-    "They agreed that #{ERB::Util.html_escape(employee_name)} will be using " \
-      "#{ERB::Util.html_escape(energy.to_s)}% of their energy on " \
-      "#{ERB::Util.html_escape(assignment_name)} going forward."
+  def check_in_side_rating_notes_entered?(check_in, side:, employee_name:)
+    check_in_side_rating_meta(check_in, side: side, employee_name: employee_name)[:notes].present?
   end
 
   def assignment_check_in_going_forward_energy_percentage(check_in)

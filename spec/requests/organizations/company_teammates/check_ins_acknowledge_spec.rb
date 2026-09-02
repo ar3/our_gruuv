@@ -49,7 +49,11 @@ RSpec.describe "Check-in acknowledgement", type: :request do
       expect(response.body).not_to include("Acknowledge and Agree")
       expect(response.body).not_to include("Acknowledge and Disagree")
       expect(response.body).not_to include("Try the new acknowledgement experience")
-      expect(response.body).to include("data-bs-toggle=\"popover\"")
+      expect(response.body).to include("ack-notes-display")
+      expect(response.body).to include("@ 50% between")
+      expect(response.body).to include("&amp; 0% going forward")
+      expect(response.body).to include("Test notes")
+      expect(response.body).not_to include("data-bs-toggle=\"popover\"")
     end
 
     it "allows managers with audit access to view without submit controls" do

@@ -80,6 +80,34 @@
   - else
     = body
 
+- if pending_count.positive?
+  :javascript
+    (function() {
+      function syncAckNotesHints() {
+        document.querySelectorAll('[data-ack-notes-display]').forEach(function(ta) {
+          var wrap = ta.closest('.ack-notes-display-wrap');
+          if (!wrap) return;
+          var hint = wrap.querySelector('.ack-notes-display-hint');
+          if (!hint) return;
+          // Content taller than the default 4-row box → suggest expanding
+          var overflows = ta.scrollHeight > ta.clientHeight + 2;
+          hint.classList.toggle('d-none', !overflows);
+        });
+      }
+
+      if (!window.__ackNotesDisplayHintsBound) {
+        window.__ackNotesDisplayHintsBound = true;
+        document.addEventListener('turbo:load', syncAckNotesHints);
+        document.addEventListener('DOMContentLoaded', syncAckNotesHints);
+        document.addEventListener('mouseup', function(event) {
+          if (event.target && event.target.matches && event.target.matches('[data-ack-notes-display]')) {
+            syncAckNotesHints();
+          }
+        });
+      }
+      syncAckNotesHints();
+    })();
+
 - if @can_acknowledge && pending_count.positive?
   :javascript
     (function() {
