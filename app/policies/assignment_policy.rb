@@ -75,6 +75,19 @@ class AssignmentPolicy < ApplicationPolicy
     run_clarity?
   end
 
+  def refresh_expectation_alignment_score?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    return false unless record&.company_id
+    return false unless viewing_teammate.organization_id == record.company_id
+
+    AssignmentSurveys::ExpectationAlignmentScore.for_viewer(
+      assignment: record,
+      viewer: viewing_teammate,
+      organization: record.company
+    ).can_refresh?
+  end
+
   private
 
   def user_has_maap_permission?

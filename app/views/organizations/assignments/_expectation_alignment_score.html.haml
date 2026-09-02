@@ -1,0 +1,75 @@
+-# Locals: score (AssignmentSurveys::ExpectationAlignmentScore::Result), organization, assignment
+- score = local_assigns.fetch(:score)
+- organization = local_assigns.fetch(:organization)
+- assignment = local_assigns.fetch(:assignment)
+- show_card = score.show_card?
+- calculated = score.calculated?
+- can_see_score = score.can_see_score?
+- can_refresh = score.can_refresh?
+
+- if show_card
+  .card.mb-4{ role: "region", "aria-labelledby": "expectation-alignment-score" }
+    .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+      %h5.mb-0{ id: "expectation-alignment-score" }
+        %i.bi.bi-diagram-3.me-2
+        Expectation Alignment Score
+      - if can_refresh
+        = button_to refresh_expectation_alignment_score_organization_assignment_path(organization, assignment),
+          method: :post,
+          class: "btn btn-outline-secondary btn-sm",
+          form: { class: "d-inline" } do
+          %i.bi.bi-arrow-clockwise.me-1
+          Refresh
+    .card-body
+      %p.text-muted.small.mb-3
+        Lived signal of how clear expectations are for people on this assignment—from survey
+        understandable / possible / relevant ratings and whether employee and manager ratings
+        matched on finalized check-ins. Newer evidence and rating agreement weigh more.
+        This is not Gruuv Health required clarity, and not Consult OG design review.
+        Recalculated daily and when you queue a refresh.
+
+      - if !calculated
+        %p.mb-0.text-muted
+          Not calculated yet. Use Refresh to queue the first calculation.
+      - elsif can_see_score && score.score.present?
+        .d-flex.align-items-baseline.gap-2.mb-1
+          .display-6.fw-semibold.mb-0= score.score.round
+          %span.text-muted / 100
+        - if score.calculated_at.present?
+          %p.small.text-muted.mb-3
+            Calculated
+            = format_date_in_user_timezone(score.calculated_at, format: "%b %d, %Y %l:%M %p")
+        .table-responsive
+          %table.table.table-sm.mb-0
+            %thead
+              %tr
+                %th Cell
+                %th.text-end Score
+                %th.text-end Weight
+                %th.text-end n
+            %tbody
+              - score.cells.each do |cell|
+                %tr{ class: ("table-secondary text-muted" unless cell.included?) }
+                  %td= cell.label
+                  %td.text-end
+                    - if cell.included?
+                      = cell.score_0_100.to_f.round(1)
+                    - else
+                      —
+                  %td.text-end
+                    - if cell.included?
+                      = cell.effective_weight
+                    - else
+                      %span{ title: "Empty cell dropped; remaining weights renormalized" } 0
+                  %td.text-end= cell.sample_size
+      - elsif can_see_score
+        %p.mb-0.text-muted
+          Not enough survey Likert ratings or finalized emp/mgr check-ins yet to compute a score.
+          - if score.calculated_at.present?
+            Last calculated
+            = format_date_in_user_timezone(score.calculated_at, format: "%b %d, %Y %l:%M %p")
+            \.
+      - else
+        - threshold = AssignmentSurveys::ExpectationAlignmentScore::PUBLIC_EMPLOYEE_THRESHOLD
+        %p.mb-0.text-muted
+          = "Available once at least #{threshold} people have finalized check-ins with both ratings, or #{threshold} people have submitted survey ratings (currently #{score.check_in_teammate_count} check-in#{'s' unless score.check_in_teammate_count == 1}, #{score.survey_respondent_count} survey respondent#{'s' unless score.survey_respondent_count == 1}). MAAP managers and maintainers of this assignment can always see the score."

@@ -26,6 +26,9 @@ class Assignment < ApplicationRecord
   has_many :assignment_flow_memberships, dependent: :destroy
   has_many :assignment_flows, through: :assignment_flow_memberships
   has_many :assignment_survey_responses, dependent: :restrict_with_error
+  has_one :expectation_alignment_score_cache,
+          class_name: "AssignmentExpectationAlignmentScore",
+          dependent: :destroy
   has_many :team_assignment_needs, dependent: :destroy
   has_many :teams_needing_assignment, through: :team_assignment_needs, source: :team
 

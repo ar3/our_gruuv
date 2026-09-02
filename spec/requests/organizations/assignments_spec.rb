@@ -266,6 +266,64 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Most Popular Official Rating')
       end
 
+      it 'shows expectation alignment score when two people have finalized check-ins with both ratings' do
+        teammate1 = create(:teammate, person: create(:person), organization: organization)
+        teammate2 = create(:teammate, person: create(:person), organization: organization)
+        manager_teammate_for_check_in = create(:company_teammate, person: create(:person), organization: organization)
+        finalized_teammate = create(:company_teammate, person: create(:person), organization: organization)
+
+        create(
+          :assignment_check_in,
+          :officially_completed,
+          teammate: teammate1,
+          assignment: assignment,
+          employee_rating: "meeting",
+          manager_rating: "meeting",
+          official_check_in_completed_at: 1.week.ago,
+          manager_completed_by_teammate: manager_teammate_for_check_in,
+          finalized_by_teammate: finalized_teammate
+        )
+        create(
+          :assignment_check_in,
+          :officially_completed,
+          teammate: teammate2,
+          assignment: assignment,
+          employee_rating: "meeting",
+          manager_rating: "exceeding",
+          official_check_in_completed_at: 1.week.ago,
+          manager_completed_by_teammate: manager_teammate_for_check_in,
+          finalized_by_teammate: finalized_teammate
+        )
+        AssignmentSurveys::ExpectationAlignmentScore.recalculate!(assignment: assignment)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Expectation Alignment Score")
+        expect(response.body).to include("/ 100")
+        expect(response.body).to include("Fresh (&lt;90 days) · Emp/mgr agreement")
+        expect(response.body).to include("Refresh")
+      end
+
+      it 'hides expectation alignment score for regular teammates when not yet calculated' do
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include("Not calculated yet")
+      end
+
+      it 'queues expectation alignment score refresh for MAAP managers' do
+        manager_teammate
+        sign_in_as_teammate_for_request(manager, organization)
+
+        expect {
+          post refresh_expectation_alignment_score_organization_assignment_path(organization, assignment)
+        }.to have_enqueued_job(AssignmentExpectationAlignmentScoreRefreshJob).with(assignment.id)
+
+        expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+        follow_redirect!
+        expect(response.body).to include("Expectation Alignment Score")
+        expect(response.body).to include("Not calculated yet")
+      end
+
       it 'shows message for popular ratings when less than 5 teammates have finalized check-ins' do
         teammate1 = create(:teammate, person: create(:person), organization: organization)
         teammate2 = create(:teammate, person: create(:person), organization: organization)

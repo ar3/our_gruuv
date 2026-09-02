@@ -404,6 +404,7 @@ Rails.application.routes.draw do
         patch :bulk_remove_from_positions
         patch :bulk_close_assignment_tenures
         patch :restore
+        post :refresh_expectation_alignment_score
         get :choose_manage_goals
         get :manage_goals
         get :associate_existing_goals

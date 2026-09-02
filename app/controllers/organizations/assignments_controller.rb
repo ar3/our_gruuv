@@ -5,7 +5,7 @@ class Organizations::AssignmentsController < ApplicationController
 
   before_action :authenticate_person!
   before_action :set_organization
-  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :bulk_remove_from_positions, :bulk_close_assignment_tenures, :restore, :choose_manage_goals, :manage_goals, :associate_existing_goals]
+  before_action :set_assignment, only: [:show, :edit, :update, :destroy, :archive, :execute_archive, :bulk_remove_from_positions, :bulk_close_assignment_tenures, :restore, :refresh_expectation_alignment_score, :choose_manage_goals, :manage_goals, :associate_existing_goals]
 
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -184,6 +184,11 @@ class Organizations::AssignmentsController < ApplicationController
       viewer: current_company_teammate,
       organization: @organization
     ).call
+    @expectation_alignment_score = AssignmentSurveys::ExpectationAlignmentScore.for_viewer(
+      assignment: @assignment,
+      viewer: current_company_teammate,
+      organization: @organization
+    )
 
     viewer_holds = @assignment.assignment_tenures.active.exists?(teammate_id: current_company_teammate&.id)
     @survey_cta_due_status = if viewer_holds && current_company_teammate
@@ -393,6 +398,13 @@ class Organizations::AssignmentsController < ApplicationController
     authorize @assignment, :restore?
     @assignment.restore!
     redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully restored.'
+  end
+
+  def refresh_expectation_alignment_score
+    authorize @assignment, :refresh_expectation_alignment_score?
+    AssignmentExpectationAlignmentScoreRefreshJob.perform_later(@assignment.id)
+    redirect_to organization_assignment_path(@organization, @assignment),
+                notice: "Expectation Alignment Score refresh queued. Refresh this page in a moment."
   end
 
   def update_view

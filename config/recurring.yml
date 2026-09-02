@@ -19,6 +19,11 @@ production:
     queue: default
     schedule: at 5am every day
 
+  daily_refresh_assignment_expectation_alignment_scores:
+    class: DailyRefreshAssignmentExpectationAlignmentScoresJob
+    queue: default
+    schedule: at 5:15am every day
+
   snapshot_engagement_health_weekly_rollups:
     class: SnapshotEngagementHealthWeeklyRollupsJob
     queue: default

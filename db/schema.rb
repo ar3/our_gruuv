@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_01_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_02_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -241,6 +241,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_01_120000) do
     t.index ["og_consultation_id"], name: "index_assignment_clarity_results_on_og_consultation_id", unique: true
   end
 
+  create_table "assignment_expectation_alignment_scores", force: :cascade do |t|
+    t.bigint "assignment_id", null: false
+    t.bigint "organization_id", null: false
+    t.decimal "score", precision: 5, scale: 1
+    t.jsonb "cells", default: [], null: false
+    t.integer "check_in_teammate_count", default: 0, null: false
+    t.integer "survey_respondent_count", default: 0, null: false
+    t.datetime "calculated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_assignment_expectation_alignment_scores_on_assignment_id", unique: true
+    t.index ["calculated_at"], name: "index_assignment_expectation_alignment_scores_on_calculated_at"
+    t.index ["organization_id"], name: "idx_on_organization_id_3e38b346b5"
+  end
+
   create_table "assignment_flow_memberships", force: :cascade do |t|
     t.bigint "assignment_flow_id", null: false
     t.bigint "assignment_id", null: false
@@ -317,8 +332,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_01_120000) do
     t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
-    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying::text, 'like'::character varying::text, 'neutral'::character varying::text, 'prefer_not'::character varying::text, 'only_if_necessary'::character varying::text]))", name: "assignment_survey_responses_personal_alignment_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying, 'like'::character varying, 'neutral'::character varying, 'prefer_not'::character varying, 'only_if_necessary'::character varying]::text[]))", name: "assignment_survey_responses_personal_alignment_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -2145,6 +2160,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_01_120000) do
   add_foreign_key "assignment_check_ins", "teammates"
   add_foreign_key "assignment_clarity_recommendation_acceptances", "assignment_clarity_results"
   add_foreign_key "assignment_clarity_results", "og_consultations"
+  add_foreign_key "assignment_expectation_alignment_scores", "assignments"
+  add_foreign_key "assignment_expectation_alignment_scores", "organizations"
   add_foreign_key "assignment_flow_memberships", "assignment_flows"
   add_foreign_key "assignment_flow_memberships", "assignments"
   add_foreign_key "assignment_flow_memberships", "teammates", column: "added_by_id"

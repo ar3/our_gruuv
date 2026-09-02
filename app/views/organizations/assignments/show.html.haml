@@ -227,6 +227,11 @@
         - else
           %p.text-muted.mb-0 No current holders
 
+    = render "organizations/assignments/expectation_alignment_score",
+      score: @expectation_alignment_score,
+      organization: @organization,
+      assignment: @assignment
+
     .card.mb-4{ role: "region", "aria-labelledby": "analytics" }
       .card-header
         %h5.mb-0{ id: "analytics" }
