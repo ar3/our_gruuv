@@ -96,6 +96,20 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include(aspiration.name)
       end
+
+      it 'shows values expectation alignment score as not calculated yet' do
+        get organization_aspiration_path(organization, aspiration)
+        expect(response.body).to include("Values Expectation Alignment Score")
+        expect(response.body).to include("Not calculated yet")
+      end
+
+      it 'queues values expectation alignment score refresh' do
+        expect {
+          post refresh_expectation_alignment_score_organization_aspiration_path(organization, aspiration)
+        }.to have_enqueued_job(AspirationExpectationAlignmentScoreRefreshJob).with(aspiration.id)
+
+        expect(response).to redirect_to(organization_aspiration_path(organization, aspiration))
+      end
     end
 
     context 'when user is admin' do

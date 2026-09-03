@@ -1,0 +1,94 @@
+-# Locals: score (Aspirations::ExpectationAlignmentScore::Result), organization, aspiration
+- score = local_assigns.fetch(:score)
+- organization = local_assigns.fetch(:organization)
+- aspiration = local_assigns.fetch(:aspiration)
+- show_card = score.show_card?
+- calculated = score.calculated?
+- can_see_score = score.can_see_score?
+- can_refresh = score.can_refresh?
+- score_band = can_see_score && score.score.present? ? Aspirations::ExpectationAlignmentScore.band_for_score(score.score) : nil
+- callout_align = score_band ? Aspirations::ExpectationAlignmentScore.callout_text_align(score.score) : "start"
+- score_pct = score.score.present? ? score.score.to_f.clamp(0, 100) : nil
+- threshold = Aspirations::ExpectationAlignmentScore::PUBLIC_EMPLOYEE_THRESHOLD
+
+- if show_card
+  .card.mb-4{ role: "region", "aria-labelledby": "values-expectation-alignment-score" }
+    .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+      %h5.mb-0{ id: "values-expectation-alignment-score" }
+        %i.bi.bi-diagram-3.me-2
+        Values Expectation Alignment Score
+      - if can_refresh
+        = button_to refresh_expectation_alignment_score_organization_aspiration_path(organization, aspiration),
+          method: :post,
+          class: "btn btn-outline-secondary btn-sm",
+          form: { class: "d-inline" } do
+          %i.bi.bi-arrow-clockwise.me-1
+          Refresh
+    .card-body
+      %p.text-muted.small.mb-3
+        Lived signal of how clear expectations are for this Value—from whether employee and manager
+        ratings matched on finalized Values check-ins. Newer evidence weighs more.
+        This is not Gruuv Health required clarity. Recalculated daily and when you queue a refresh.
+
+      - if !calculated
+        %p.mb-0.text-muted
+          Not calculated yet. Use Refresh to queue the first calculation.
+      - elsif can_see_score && score.score.present? && score_band
+        .expectation-alignment-gauge.mb-4
+          .expectation-alignment-gauge-callout.mb-1{ class: "text-#{callout_align}" }
+            %i.bi{ class: [score_band[:icon], "assignment-survey-quality-icon", "assignment-survey-quality-#{score_band[:key]}"], "aria-hidden": "true" }
+            %span.fw-semibold.ms-1{ class: "assignment-survey-quality-#{score_band[:key]}" }= score_band[:label]
+            %span.ms-2
+              %span.fs-4.fw-semibold= score.score.round
+              %span.text-muted / 100
+          .expectation-alignment-gauge-marker-row{ "aria-hidden": "true" }
+            .expectation-alignment-gauge-marker{ style: "left: #{score_pct}%;" }
+              %i.bi.bi-caret-down-fill
+          .expectation-alignment-gauge-track{ role: "img", "aria-label": "Values Expectation Alignment Score #{score.score.round} out of 100, #{score_band[:label]}" }
+            - Aspirations::ExpectationAlignmentScore::SCORE_BANDS.each do |band|
+              - width = band[:max_exclusive] ? band[:max_exclusive] - band[:min] : 100 - band[:min]
+              %span.expectation-alignment-gauge-segment{ class: "expectation-alignment-gauge-segment-#{band[:key]}", style: "width: #{width}%;", title: "#{band[:label]} (#{band[:min]}#{band[:max_exclusive] ? "–#{band[:max_exclusive]}" : "+"})" }
+          .expectation-alignment-gauge-ticks.d-flex.justify-content-between.small.text-muted.mt-1
+            - [0, 25, 50, 75, 100].each do |tick|
+              %span= tick
+          %p.expectation-alignment-gauge-blurb.small.mb-2.mt-3
+            = expectation_alignment_score_blurb(score_band, aspiration)
+          - if score.calculated_at.present?
+            %p.small.text-muted.mb-0
+              Calculated
+              = format_date_in_user_timezone(score.calculated_at, format: "%b %d, %Y %l:%M %p")
+
+        %h6.fw-semibold.mb-2 Emp/mgr agreement
+        .table-responsive
+          %table.table.table-sm.mb-0
+            %thead
+              %tr
+                %th Age
+                %th.text-end Score
+                %th.text-end Weight
+                %th.text-end n
+            %tbody
+              - score.cells.each do |cell|
+                %tr{ class: ("table-secondary text-muted" unless cell.included?) }
+                  %td= expectation_alignment_age_band_label(cell.band)
+                  %td.text-end
+                    - if cell.included?
+                      = cell.score_0_100.to_f.round(1)
+                    - else
+                      —
+                  %td.text-end
+                    - if cell.included?
+                      = cell.effective_weight
+                    - else
+                      %span{ title: "Empty cell dropped; remaining weights renormalized" } 0
+                  %td.text-end= cell.sample_size
+      - elsif can_see_score
+        %p.mb-0.text-muted
+          Not enough finalized emp/mgr Values check-ins yet to compute a score.
+          - if score.calculated_at.present?
+            Last calculated
+            = format_date_in_user_timezone(score.calculated_at, format: "%b %d, %Y %l:%M %p")
+            \.
+      - else
+        %p.mb-0.text-muted
+          = "Available once at least #{threshold} people have finalized check-ins with both ratings (currently #{score.check_in_teammate_count} check-in#{'s' unless score.check_in_teammate_count == 1}). MAAP managers can always see the score."

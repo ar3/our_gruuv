@@ -16,6 +16,24 @@ class AspirationPolicy < ApplicationPolicy
     admin_bypass? || user_has_maap_permission_for_record?
   end
 
+  def refresh_expectation_alignment_score?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    return false unless record&.company_id
+
+    viewing_teammate_org = viewing_teammate.organization
+    return false unless viewing_teammate_org
+
+    company = viewing_teammate_org.company? ? viewing_teammate_org : viewing_teammate_org.root_company
+    return false unless company&.id == record.company_id
+
+    Aspirations::ExpectationAlignmentScore.for_viewer(
+      aspiration: record,
+      viewer: viewing_teammate,
+      organization: record.company
+    ).can_refresh?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate

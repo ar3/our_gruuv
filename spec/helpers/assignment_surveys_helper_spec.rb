@@ -56,6 +56,16 @@ RSpec.describe AssignmentSurveysHelper, type: :helper do
     expect(blurb).to be_html_safe
   end
 
+  it "builds a values expectation alignment blurb with the aspiration name bolded" do
+    band = Aspirations::ExpectationAlignmentScore.band_for_score(96)
+    aspiration = build(:aspiration, name: "Customer Obsession")
+    blurb = helper.expectation_alignment_score_blurb(band, aspiration)
+
+    expect(blurb).to include("Congrats!")
+    expect(blurb).to include("<strong>Customer Obsession</strong>")
+    expect(blurb).to be_html_safe
+  end
+
   it "escapes HTML in assignment titles inside expectation alignment blurbs" do
     band = AssignmentSurveys::ExpectationAlignmentScore.band_for_score(10)
     assignment = build(:assignment, title: "<script>x</script>")

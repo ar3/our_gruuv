@@ -9,6 +9,9 @@ class Aspiration < ApplicationRecord
 
   has_many :goal_associations, as: :associable, dependent: :destroy
   has_many :goals, through: :goal_associations
+  has_one :expectation_alignment_score_cache,
+          class_name: "AspirationExpectationAlignmentScore",
+          dependent: :destroy
 
   validates :name, presence: true, uniqueness: { scope: :company_id }
   validates :sort_order, presence: true, numericality: { greater_than_or_equal_to: 0 }

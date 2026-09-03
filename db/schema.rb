@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_02_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_03_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -147,6 +147,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_02_120000) do
     t.index ["teammate_id", "aspiration_id", "official_check_in_completed_at"], name: "index_aspiration_check_ins_on_teammate_aspiration_open"
     t.index ["teammate_id", "aspiration_id"], name: "index_aspiration_check_ins_on_teammate_and_aspiration"
     t.index ["teammate_id"], name: "index_aspiration_check_ins_on_teammate_id"
+  end
+
+  create_table "aspiration_expectation_alignment_scores", force: :cascade do |t|
+    t.bigint "aspiration_id", null: false
+    t.bigint "organization_id", null: false
+    t.decimal "score", precision: 5, scale: 1
+    t.jsonb "cells", default: [], null: false
+    t.integer "check_in_teammate_count", default: 0, null: false
+    t.datetime "calculated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aspiration_id"], name: "index_aspiration_expectation_alignment_scores_on_aspiration_id", unique: true
+    t.index ["calculated_at"], name: "index_aspiration_expectation_alignment_scores_on_calculated_at"
+    t.index ["organization_id"], name: "idx_on_organization_id_033aad7fc3"
   end
 
   create_table "aspirations", force: :cascade do |t|
@@ -2151,6 +2165,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_02_120000) do
   add_foreign_key "aspiration_check_ins", "aspirations"
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
   add_foreign_key "aspiration_check_ins", "teammates"
+  add_foreign_key "aspiration_expectation_alignment_scores", "aspirations"
+  add_foreign_key "aspiration_expectation_alignment_scores", "organizations"
   add_foreign_key "aspirations", "departments"
   add_foreign_key "aspirations", "organizations", column: "company_id"
   add_foreign_key "assignment_abilities", "abilities"

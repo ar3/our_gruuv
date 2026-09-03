@@ -3,7 +3,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   include Organizations::AssociableGoalManagement
 
   before_action :authenticate_person!
-  before_action :set_aspiration, only: [:show, :edit, :update, :destroy, :choose_manage_goals, :manage_goals, :associate_existing_goals]
+  before_action :set_aspiration, only: [:show, :edit, :update, :destroy, :refresh_expectation_alignment_score, :choose_manage_goals, :manage_goals, :associate_existing_goals]
 
   def index
     authorize company, :view_aspirations?
@@ -15,6 +15,12 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   def show
     authorize @aspiration
 
+    @expectation_alignment_score = Aspirations::ExpectationAlignmentScore.for_viewer(
+      aspiration: @aspiration,
+      viewer: current_company_teammate,
+      organization: @organization
+    )
+
     assign_public_kudos_for_rateable_card!(
       organization: @organization,
       rateable_type: "Aspiration",
@@ -23,6 +29,13 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     )
 
     render layout: determine_layout
+  end
+
+  def refresh_expectation_alignment_score
+    authorize @aspiration, :refresh_expectation_alignment_score?
+    AspirationExpectationAlignmentScoreRefreshJob.perform_later(@aspiration.id)
+    redirect_to organization_aspiration_path(@organization, @aspiration),
+                notice: "Values Expectation Alignment Score refresh queued. Refresh this page in a moment."
   end
 
   def new

@@ -36,6 +36,11 @@
             %small.text-muted
               Sort Order: #{@aspiration.sort_order}
 
+      = render "organizations/aspirations/expectation_alignment_score",
+        score: @expectation_alignment_score,
+        organization: @organization,
+        aspiration: @aspiration
+
       / Comments Section
       = render 'shared/comment_summary', commentable: @aspiration, organization: @organization
 

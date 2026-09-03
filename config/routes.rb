@@ -635,6 +635,7 @@ Rails.application.routes.draw do
         get :manage_goals
         get :associate_existing_goals
         post :associate_existing_goals
+        post :refresh_expectation_alignment_score
       end
       resources :goal_associations, module: :aspirations, only: [:create, :destroy]
     end

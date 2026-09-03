@@ -76,11 +76,19 @@ module AssignmentSurveysHelper
     AssignmentSurveys::ExpectationAlignmentScore::AGE_BANDS.dig(band.to_sym, :label) || band.to_s.humanize
   end
 
-  def expectation_alignment_score_blurb(band, assignment)
+  def expectation_alignment_score_blurb(band, subject)
     return "" if band.blank? || band[:blurb].blank?
 
-    before, after = band[:blurb].split("%{assignment}", 2)
-    safe_join([ before, tag.strong(assignment.title), after ].compact)
+    name =
+      if subject.respond_to?(:title)
+        subject.title
+      elsif subject.respond_to?(:name)
+        subject.name
+      else
+        subject.to_s
+      end
+    before, after = band[:blurb].split(/%\{(?:assignment|name)\}/, 2)
+    safe_join([ before, tag.strong(name), after ].compact)
   end
 
   private
