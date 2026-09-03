@@ -6,6 +6,11 @@
 - calculated = score.calculated?
 - can_see_score = score.can_see_score?
 - can_refresh = score.can_refresh?
+- score_band = can_see_score && score.score.present? ? expectation_alignment_score_band(score.score) : nil
+- callout_align = score_band ? expectation_alignment_score_callout_align(score.score) : "start"
+- alignment_cells = score.cells.select { |cell| cell.signal == :alignment }
+- upr_cells = score.cells.select { |cell| cell.signal == :upr }
+- score_pct = score.score.present? ? score.score.to_f.clamp(0, 100) : nil
 
 - if show_card
   .card.mb-4{ role: "region", "aria-labelledby": "expectation-alignment-score" }
@@ -31,37 +36,82 @@
       - if !calculated
         %p.mb-0.text-muted
           Not calculated yet. Use Refresh to queue the first calculation.
-      - elsif can_see_score && score.score.present?
-        .d-flex.align-items-baseline.gap-2.mb-1
-          .display-6.fw-semibold.mb-0= score.score.round
-          %span.text-muted / 100
-        - if score.calculated_at.present?
-          %p.small.text-muted.mb-3
-            Calculated
-            = format_date_in_user_timezone(score.calculated_at, format: "%b %d, %Y %l:%M %p")
-        .table-responsive
-          %table.table.table-sm.mb-0
-            %thead
-              %tr
-                %th Cell
-                %th.text-end Score
-                %th.text-end Weight
-                %th.text-end n
-            %tbody
-              - score.cells.each do |cell|
-                %tr{ class: ("table-secondary text-muted" unless cell.included?) }
-                  %td= cell.label
-                  %td.text-end
-                    - if cell.included?
-                      = cell.score_0_100.to_f.round(1)
-                    - else
-                      —
-                  %td.text-end
-                    - if cell.included?
-                      = cell.effective_weight
-                    - else
-                      %span{ title: "Empty cell dropped; remaining weights renormalized" } 0
-                  %td.text-end= cell.sample_size
+      - elsif can_see_score && score.score.present? && score_band
+        .expectation-alignment-gauge.mb-4
+          .expectation-alignment-gauge-callout.mb-1{ class: "text-#{callout_align}" }
+            %i.bi{ class: [score_band[:icon], "assignment-survey-quality-icon", "assignment-survey-quality-#{score_band[:key]}"], "aria-hidden": "true" }
+            %span.fw-semibold.ms-1{ class: "assignment-survey-quality-#{score_band[:key]}" }= score_band[:label]
+            %span.ms-2
+              %span.fs-4.fw-semibold= score.score.round
+              %span.text-muted / 100
+          .expectation-alignment-gauge-marker-row{ "aria-hidden": "true" }
+            .expectation-alignment-gauge-marker{ style: "left: #{score_pct}%;" }
+              %i.bi.bi-caret-down-fill
+          .expectation-alignment-gauge-track{ role: "img", "aria-label": "Expectation Alignment Score #{score.score.round} out of 100, #{score_band[:label]}" }
+            - AssignmentSurveys::ExpectationAlignmentScore::SCORE_BANDS.each do |band|
+              - width = band[:max_exclusive] ? band[:max_exclusive] - band[:min] : 100 - band[:min]
+              %span.expectation-alignment-gauge-segment{ class: "expectation-alignment-gauge-segment-#{band[:key]}", style: "width: #{width}%;", title: "#{band[:label]} (#{band[:min]}#{band[:max_exclusive] ? "–#{band[:max_exclusive]}" : "+"})" }
+          .expectation-alignment-gauge-ticks.d-flex.justify-content-between.small.text-muted.mt-1
+            - [0, 25, 50, 75, 100].each do |tick|
+              %span= tick
+          %p.expectation-alignment-gauge-blurb.small.mb-2.mt-3
+            = expectation_alignment_score_blurb(score_band, assignment)
+          - if score.calculated_at.present?
+            %p.small.text-muted.mb-0
+              Calculated
+              = format_date_in_user_timezone(score.calculated_at, format: "%b %d, %Y %l:%M %p")
+
+        .row.g-3
+          .col-md-6
+            %h6.fw-semibold.mb-2 Emp/mgr agreement
+            .table-responsive
+              %table.table.table-sm.mb-0
+                %thead
+                  %tr
+                    %th Age
+                    %th.text-end Score
+                    %th.text-end Weight
+                    %th.text-end n
+                %tbody
+                  - alignment_cells.each do |cell|
+                    %tr{ class: ("table-secondary text-muted" unless cell.included?) }
+                      %td= expectation_alignment_age_band_label(cell.band)
+                      %td.text-end
+                        - if cell.included?
+                          = cell.score_0_100.to_f.round(1)
+                        - else
+                          —
+                      %td.text-end
+                        - if cell.included?
+                          = cell.effective_weight
+                        - else
+                          %span{ title: "Empty cell dropped; remaining weights renormalized" } 0
+                      %td.text-end= cell.sample_size
+          .col-md-6
+            %h6.fw-semibold.mb-2 U/P/R feedback
+            .table-responsive
+              %table.table.table-sm.mb-0
+                %thead
+                  %tr
+                    %th Age
+                    %th.text-end Score
+                    %th.text-end Weight
+                    %th.text-end n
+                %tbody
+                  - upr_cells.each do |cell|
+                    %tr{ class: ("table-secondary text-muted" unless cell.included?) }
+                      %td= expectation_alignment_age_band_label(cell.band)
+                      %td.text-end
+                        - if cell.included?
+                          = cell.score_0_100.to_f.round(1)
+                        - else
+                          —
+                      %td.text-end
+                        - if cell.included?
+                          = cell.effective_weight
+                        - else
+                          %span{ title: "Empty cell dropped; remaining weights renormalized" } 0
+                      %td.text-end= cell.sample_size
       - elsif can_see_score
         %p.mb-0.text-muted
           Not enough survey Likert ratings or finalized emp/mgr check-ins yet to compute a score.

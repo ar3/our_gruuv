@@ -2275,6 +2275,62 @@ $assignment-survey-quality-colors: (
   }
 }
 
+.expectation-alignment-gauge-track {
+  display: flex;
+  width: 100%;
+  height: 0.85rem;
+  border-radius: 0.35rem;
+  overflow: hidden;
+  // Soft blend at band boundaries; mid-band colors match survey quality palette.
+  background: linear-gradient(
+    90deg,
+    map-get($assignment-survey-quality-colors, critical) 0%,
+    map-get($assignment-survey-quality-colors, critical) 28%,
+    map-get($assignment-survey-quality-colors, poor) 32%,
+    map-get($assignment-survey-quality-colors, poor) 48%,
+    map-get($assignment-survey-quality-colors, concerning) 52%,
+    map-get($assignment-survey-quality-colors, concerning) 63%,
+    map-get($assignment-survey-quality-colors, strained) 67%,
+    map-get($assignment-survey-quality-colors, strained) 78%,
+    map-get($assignment-survey-quality-colors, healthy) 82%,
+    map-get($assignment-survey-quality-colors, healthy) 93%,
+    map-get($assignment-survey-quality-colors, incredible) 97%,
+    map-get($assignment-survey-quality-colors, incredible) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.expectation-alignment-gauge-segment {
+  display: block;
+  height: 100%;
+  // Segments keep widths for layout/tooltips; fill comes from track gradient.
+  background: transparent;
+}
+
+.expectation-alignment-gauge-marker-row {
+  position: relative;
+  height: 1.1rem;
+  margin-bottom: 0.15rem;
+}
+
+.expectation-alignment-gauge-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  line-height: 1;
+  color: var(--bs-body-color);
+  font-size: 1.15rem;
+}
+
+.expectation-alignment-gauge-callout {
+  line-height: 1.2;
+}
+
+.expectation-alignment-gauge-ticks {
+  font-variant-numeric: tabular-nums;
+  padding: 0 0.1rem;
+}
+
 .assignment-survey-quality-legend {
   padding: 0.75rem 0;
   border-top: 1px solid var(--bs-border-color, #dee2e6);

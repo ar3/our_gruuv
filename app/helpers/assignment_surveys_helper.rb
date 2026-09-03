@@ -64,6 +64,25 @@ module AssignmentSurveysHelper
     parts.join(", ")
   end
 
+  def expectation_alignment_score_band(score)
+    AssignmentSurveys::ExpectationAlignmentScore.band_for_score(score)
+  end
+
+  def expectation_alignment_score_callout_align(score)
+    AssignmentSurveys::ExpectationAlignmentScore.callout_text_align(score)
+  end
+
+  def expectation_alignment_age_band_label(band)
+    AssignmentSurveys::ExpectationAlignmentScore::AGE_BANDS.dig(band.to_sym, :label) || band.to_s.humanize
+  end
+
+  def expectation_alignment_score_blurb(band, assignment)
+    return "" if band.blank? || band[:blurb].blank?
+
+    before, after = band[:blurb].split("%{assignment}", 2)
+    safe_join([ before, tag.strong(assignment.title), after ].compact)
+  end
+
   private
 
   def dissent_popover_paragraph(signal)

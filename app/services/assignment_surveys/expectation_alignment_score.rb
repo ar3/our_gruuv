@@ -25,6 +25,91 @@ module AssignmentSurveys
 
     LIKERT_ATTRIBUTES = %i[understandable_rating possible_rating relevant_rating].freeze
 
+    # 0–100 display bands. Keys/icons align with AssignmentSurveys::QualitySignal
+    # so we reuse the survey quality colors. `%{assignment}` is replaced with the title.
+    SCORE_BANDS = [
+      {
+        key: :critical,
+        label: "Worst",
+        icon: "bi-x-octagon-fill",
+        min: 0,
+        max_exclusive: 30,
+        blurb:
+          "We have work to do! Making expectations clear is the first step to creating an environment " \
+          "where flow state powered excellence can thrive! This score means that taking on %{assignment} " \
+          "is NOT understandable, an appropriate challenge, relevant, and/or when check-ins are done " \
+          "often the employee and manager arrive at DIFFERENT conclusions (which is the best indication " \
+          "of a MISALIGNMENT of expectations). Review the outcomes, and consider doing an OG Consultation " \
+          "to help make this Assignment more clear!"
+      },
+      {
+        key: :poor,
+        label: "Bad",
+        icon: "bi-emoji-frown-fill",
+        min: 30,
+        max_exclusive: 50,
+        blurb:
+          "This needs attention. Making expectations clear is the first step to creating an environment " \
+          "where flow state powered excellence can thrive! This score means that taking on %{assignment} " \
+          "is often hard to understand, poorly calibrated as a challenge, weakly relevant, and/or " \
+          "check-ins frequently end with the employee and manager in different places—a strong signal " \
+          "of expectation misalignment. Tighten the outcomes and required activities, and consider an " \
+          "OG Consultation before the gap gets worse."
+      },
+      {
+        key: :concerning,
+        label: "Slightly Bad",
+        icon: "bi-exclamation-triangle-fill",
+        min: 50,
+        max_exclusive: 65,
+        blurb:
+          "We're below the line. Making expectations clear is the first step to creating an environment " \
+          "where flow state powered excellence can thrive! This score suggests that taking on %{assignment} " \
+          "still leaves too much ambiguity—whether in understandability, challenge level, relevance, or " \
+          "how often employee and manager check-in ratings disagree. Address the weakest outcomes now so " \
+          "this Assignment doesn't keep generating confusion."
+      },
+      {
+        key: :strained,
+        label: "Slightly Good",
+        icon: "bi-exclamation-circle-fill",
+        min: 65,
+        max_exclusive: 80,
+        blurb:
+          "On the right side of the line—barely. Making expectations clear is the first step to creating " \
+          "an environment where flow state powered excellence can thrive! This score means taking on " \
+          "%{assignment} is starting to land as understandable, appropriately challenging, and relevant, " \
+          "with check-ins more often aligned than not—but there's still friction. Polish the outcomes and " \
+          "keep closing employee/manager rating gaps so “slightly good” becomes clearly good."
+      },
+      {
+        key: :healthy,
+        label: "Good",
+        icon: "bi-check-circle-fill",
+        min: 80,
+        max_exclusive: 95,
+        blurb:
+          "Solid progress. Making expectations clear is the first step to creating an environment where " \
+          "flow state powered excellence can thrive! This score means that taking on %{assignment} is " \
+          "generally understandable, an appropriate challenge, and relevant, and employee and manager " \
+          "check-ins usually arrive at the same conclusion. Keep nurturing that alignment—small " \
+          "refinements to outcomes can push this from good to great."
+      },
+      {
+        key: :incredible,
+        label: "Great",
+        icon: "bi-stars",
+        min: 95,
+        max_exclusive: nil,
+        blurb:
+          "Congrats! Making expectations clear is the first step to creating an environment where flow " \
+          "state powered excellence can thrive! This score means that taking on %{assignment} is " \
+          "understandable, an appropriate challenge, relevant, and when check-ins are done often the " \
+          "employee and manager arrive at the same conclusion (which is the best indication of " \
+          "expectation alignment). Well done!"
+      }
+    ].freeze
+
     Cell = Struct.new(
       :band,
       :signal,
@@ -64,6 +149,31 @@ module AssignmentSurveys
       return nil if average.nil?
 
       (((average - 1.0) / 5.0) * 100.0).round(1)
+    end
+
+    def self.band_for_score(score)
+      return nil if score.nil?
+
+      value = score.to_f
+      SCORE_BANDS.find do |band|
+        min = band[:min]
+        max = band[:max_exclusive]
+        next false if value < min
+        next true if max.nil?
+
+        value < max
+      end
+    end
+
+    # Full-width callout alignment tracks the marker: left near 0, center mid, right near 100.
+    def self.callout_text_align(score)
+      return "start" if score.nil?
+
+      pct = score.to_f.clamp(0, 100)
+      return "start" if pct < (100.0 / 3.0)
+      return "end" if pct > (200.0 / 3.0)
+
+      "center"
     end
 
     def self.privileged_viewer?(assignment:, viewer:)

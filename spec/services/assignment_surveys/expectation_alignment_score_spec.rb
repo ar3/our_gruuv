@@ -54,6 +54,29 @@ RSpec.describe AssignmentSurveys::ExpectationAlignmentScore do
     end
   end
 
+  describe ".band_for_score" do
+    it "maps the 0–100 bands using survey quality keys" do
+      expect(described_class.band_for_score(0)[:key]).to eq(:critical)
+      expect(described_class.band_for_score(29.9)[:label]).to eq("Worst")
+      expect(described_class.band_for_score(30)[:key]).to eq(:poor)
+      expect(described_class.band_for_score(50)[:key]).to eq(:concerning)
+      expect(described_class.band_for_score(65)[:key]).to eq(:strained)
+      expect(described_class.band_for_score(80)[:key]).to eq(:healthy)
+      expect(described_class.band_for_score(95)[:key]).to eq(:incredible)
+      expect(described_class.band_for_score(100)[:label]).to eq("Great")
+    end
+  end
+
+  describe ".callout_text_align" do
+    it "left-aligns low scores, centers mid scores, and right-aligns high scores" do
+      expect(described_class.callout_text_align(0)).to eq("start")
+      expect(described_class.callout_text_align(30)).to eq("start")
+      expect(described_class.callout_text_align(50)).to eq("center")
+      expect(described_class.callout_text_align(70)).to eq("end")
+      expect(described_class.callout_text_align(100)).to eq("end")
+    end
+  end
+
   describe ".recalculate!" do
     it "persists a weighted score and cell breakdown" do
       a = create_employee

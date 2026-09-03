@@ -300,8 +300,11 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Expectation Alignment Score")
         expect(response.body).to include("/ 100")
-        expect(response.body).to include("Fresh (&lt;90 days) · Emp/mgr agreement")
+        expect(response.body).to include("Emp/mgr agreement")
+        expect(response.body).to include("U/P/R feedback")
+        expect(response.body).to include("Fresh (&lt;90 days)")
         expect(response.body).to include("Refresh")
+        expect(response.body).to include("expectation-alignment-gauge")
       end
 
       it 'hides expectation alignment score for regular teammates when not yet calculated' do

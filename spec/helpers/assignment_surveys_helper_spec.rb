@@ -44,4 +44,24 @@ RSpec.describe AssignmentSurveysHelper, type: :helper do
       .and include("with dissenting responses")
       .and include("small sample")
   end
+
+  it "builds an expectation alignment blurb with the assignment title bolded" do
+    band = AssignmentSurveys::ExpectationAlignmentScore.band_for_score(96)
+    assignment = build(:assignment, title: "Growth Buddy")
+    blurb = helper.expectation_alignment_score_blurb(band, assignment)
+
+    expect(blurb).to include("Congrats!")
+    expect(blurb).to include("<strong>Growth Buddy</strong>")
+    expect(blurb).to include("expectation alignment")
+    expect(blurb).to be_html_safe
+  end
+
+  it "escapes HTML in assignment titles inside expectation alignment blurbs" do
+    band = AssignmentSurveys::ExpectationAlignmentScore.band_for_score(10)
+    assignment = build(:assignment, title: "<script>x</script>")
+    blurb = helper.expectation_alignment_score_blurb(band, assignment)
+
+    expect(blurb).not_to include("<script>")
+    expect(blurb).to include("We have work to do!")
+  end
 end
