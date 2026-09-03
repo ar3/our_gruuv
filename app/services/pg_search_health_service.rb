@@ -1,6 +1,6 @@
 class PgSearchHealthService
   # Models that use multisearchable
-  SEARCHABLE_MODELS = [Person, Organization, Observation, Assignment, Ability, Title].freeze
+  SEARCHABLE_MODELS = [Person, Organization, Observation, Assignment, Ability, Title, Aspiration].freeze
 
   def self.check
     new.check

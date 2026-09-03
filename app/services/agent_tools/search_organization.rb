@@ -42,6 +42,13 @@ module AgentTools
         titles: Array(results[:titles]).first(10).map { |t|
           { title: t.external_title, path: RecordPaths.title_path(context, t) }
         },
+        values: Array(results[:aspirations]).first(10).map { |aspiration|
+          {
+            name: aspiration.name,
+            description: aspiration.description.to_s.truncate(200).presence,
+            path: RecordPaths.aspiration_path(context, aspiration)
+          }
+        },
         observations: Array(results[:observations]).first(10).map { |o|
           { story_preview: o.story.to_s.truncate(120), path: RecordPaths.observation_path(context, o) }
         }

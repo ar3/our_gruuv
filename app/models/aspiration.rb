@@ -1,4 +1,5 @@
 class Aspiration < ApplicationRecord
+  include PgSearch::Model
   include ModelSemanticVersionable
 
   belongs_to :company, class_name: 'Organization'
@@ -20,6 +21,13 @@ class Aspiration < ApplicationRecord
   # Soft delete implementation following existing pattern
   default_scope { where(deleted_at: nil) }
   scope :with_deleted, -> { unscope(where: :deleted_at) }
+
+  # pg_search configuration (Values / aspirational values)
+  pg_search_scope :search_by_full_text,
+    against: { name: 'A', description: 'B' },
+    using: { tsearch: { prefix: true, any_word: true } }
+
+  multisearchable against: [:name, :description]
 
   def soft_delete!
     update!(deleted_at: Time.current)

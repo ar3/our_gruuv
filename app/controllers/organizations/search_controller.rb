@@ -31,6 +31,7 @@ class Organizations::SearchController < Organizations::OrganizationNamespaceBase
         assignments: [],
         abilities: [],
         titles: [],
+        aspirations: [],
         go_to: [],
         total_count: 0
       }

@@ -35,6 +35,7 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(body).to include('assignments')
           expect(body).to include('abilities')
           expect(body).to include('titles')
+          expect(body).to include('values')
         end
 
         it 'assigns empty query' do
@@ -52,6 +53,7 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(assigns(:results)[:assignments]).to be_empty
           expect(assigns(:results)[:abilities]).to be_empty
           expect(assigns(:results)[:titles]).to be_empty
+          expect(assigns(:results)[:aspirations]).to be_empty
         end
 
         it 'renders the show template' do
@@ -90,6 +92,7 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(assigns(:results)).to have_key(:assignments)
           expect(assigns(:results)).to have_key(:abilities)
           expect(assigns(:results)).to have_key(:titles)
+          expect(assigns(:results)).to have_key(:aspirations)
           expect(assigns(:results)).to have_key(:total_count)
         end
 
@@ -166,6 +169,7 @@ RSpec.describe 'Organizations::Search', type: :request do
             assignments: [],
             abilities: [searchable_ability],
             titles: [],
+            aspirations: [],
             go_to: [],
             total_count: 1
           }
@@ -188,6 +192,46 @@ RSpec.describe 'Organizations::Search', type: :request do
           get organization_search_path(organization, q: 'anything')
           expect(response).to have_http_status(:success)
           expect(response.body).to include('No department')
+        end
+      end
+
+      context 'with values (aspirations) in search results' do
+        let(:department) { create(:department, company: organization, name: 'Culture') }
+        let(:searchable_aspiration) do
+          create(
+            :aspiration,
+            company: organization,
+            department: department,
+            name: 'UniqueSearchableValue',
+            description: 'Description for value search'
+          )
+        end
+
+        before do
+          search_results = {
+            people: [],
+            organizations: [],
+            observations: [],
+            assignments: [],
+            abilities: [],
+            titles: [],
+            aspirations: [searchable_aspiration],
+            go_to: [],
+            total_count: 1
+          }
+          query_double = instance_double(GlobalSearchQuery, call: search_results)
+          allow(GlobalSearchQuery).to receive(:new).and_return(query_double)
+        end
+
+        it 'renders values results with department link' do
+          get organization_search_path(organization, q: 'anything')
+          expect(response).to have_http_status(:success)
+          expect(assigns(:results)[:aspirations]).to eq([searchable_aspiration])
+          expect(response.body).to include('Values')
+          expect(response.body).to include('UniqueSearchableValue')
+          expect(response.body).to include('Culture')
+          expect(response.body).to include(organization_department_path(organization, department))
+          expect(response.body).to include(organization_aspiration_path(organization, searchable_aspiration))
         end
       end
     end

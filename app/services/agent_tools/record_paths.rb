@@ -34,6 +34,10 @@ module AgentTools
       helpers.organization_title_path(context.organization, title)
     end
 
+    def aspiration_path(context, aspiration)
+      helpers.organization_aspiration_path(context.organization, aspiration)
+    end
+
     def resolve_teammate(context, path: nil, observee_path: nil, observee_teammate_id: nil)
       path = path.presence || observee_path.presence
       if path.present?

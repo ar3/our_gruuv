@@ -24,6 +24,7 @@ class GlobalSearchQuery
       assignments: [],
       abilities: [],
       titles: [],
+      aspirations: [],
       go_to: [],
       total_count: 0
     }
@@ -37,6 +38,7 @@ class GlobalSearchQuery
       assignments: [],
       abilities: [],
       titles: [],
+      aspirations: [],
       go_to: search_go_to_pages,
       total_count: 0
     }
@@ -73,6 +75,11 @@ class GlobalSearchQuery
         if can_view_title?(title)
           results[:titles] << title
         end
+      when 'Aspiration'
+        aspiration = search_result.searchable
+        if can_view_aspiration?(aspiration)
+          results[:aspirations] << aspiration
+        end
       end
     end
 
@@ -83,6 +90,7 @@ class GlobalSearchQuery
     results[:assignments] = scope_assignments_to_organization(results[:assignments])
     results[:abilities] = scope_abilities_to_organization(results[:abilities])
     results[:titles] = scope_titles_to_organization(results[:titles])
+    results[:aspirations] = scope_aspirations_to_organization(results[:aspirations])
 
     preload_display_associations!(results)
 
@@ -103,7 +111,7 @@ class GlobalSearchQuery
   end
 
   def preload_display_associations!(results)
-    %i[assignments abilities titles].each do |key|
+    %i[assignments abilities titles aspirations].each do |key|
       next if results[key].empty?
 
       ActiveRecord::Associations::Preloader.new(
@@ -167,6 +175,14 @@ class GlobalSearchQuery
     policy.show?
   end
 
+  def can_view_aspiration?(aspiration)
+    return false unless @current_teammate
+    return false if aspiration.nil? || aspiration.deleted?
+
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    AspirationPolicy.new(pundit_user, aspiration).show?
+  end
+
   def scope_people_to_organization(people)
     return [] unless @current_organization
 
@@ -220,6 +236,16 @@ class GlobalSearchQuery
     titles.select do |title|
       title.company == @current_organization ||
         @current_organization.descendants.include?(title.company)
+    end
+  end
+
+  def scope_aspirations_to_organization(aspirations)
+    return [] unless @current_organization
+
+    company = @current_organization.company? ? @current_organization : @current_organization.root_company
+
+    aspirations.select do |aspiration|
+      aspiration.company_id == company&.id
     end
   end
 end

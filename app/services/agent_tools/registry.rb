@@ -173,7 +173,7 @@ module AgentTools
       "list_abilities" => "List non-archived abilities. Default detail=expensive includes description and milestone_1–5_description (null when empty).",
       "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
       "list_observations" => "List published observations (OGOs) visible to you.",
-      "search_organization" => "Search people, assignments, abilities, titles, and observations in the org. Assignment/ability hits respect detail (default expensive full body fields).",
+      "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Assignment/ability hits respect detail (default expensive full body fields).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
     }.freeze

@@ -24,6 +24,7 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results[:assignments]).to be_empty
         expect(results[:abilities]).to be_empty
         expect(results[:titles]).to be_empty
+        expect(results[:aspirations]).to be_empty
         expect(results[:go_to]).to be_empty
         expect(results[:total_count]).to eq(0)
       end
@@ -31,6 +32,7 @@ RSpec.describe GlobalSearchQuery, type: :query do
       it 'includes titles key in results' do
         results = query.call
         expect(results).to have_key(:titles)
+        expect(results).to have_key(:aspirations)
         expect(results).to have_key(:go_to)
       end
     end
@@ -55,6 +57,7 @@ RSpec.describe GlobalSearchQuery, type: :query do
         expect(results).to have_key(:assignments)
         expect(results).to have_key(:abilities)
         expect(results).to have_key(:titles)
+        expect(results).to have_key(:aspirations)
         expect(results).to have_key(:go_to)
         expect(results).to have_key(:total_count)
       end
@@ -74,6 +77,23 @@ RSpec.describe GlobalSearchQuery, type: :query do
         results = query.call
         expect(results[:titles]).to include(searchable_title)
         expect(results[:titles]).not_to include(other_title)
+      end
+    end
+
+    context 'searching for values (aspirations) by name' do
+      let!(:searchable_aspiration) { create(:aspiration, name: 'UniqueIntegrityValue', company: organization, description: 'Do the right thing') }
+      let!(:other_company) { create(:organization, :company) }
+      let!(:other_aspiration) { create(:aspiration, name: 'OtherValue', company: other_company) }
+      let(:query) { GlobalSearchQuery.new(query: 'UniqueIntegrityValue', current_organization: organization, current_teammate: teammate) }
+
+      before do
+        PgSearch::Multisearch.rebuild(Aspiration)
+      end
+
+      it 'finds aspiration by name scoped to company' do
+        results = query.call
+        expect(results[:aspirations]).to include(searchable_aspiration)
+        expect(results[:aspirations]).not_to include(other_aspiration)
       end
     end
 
