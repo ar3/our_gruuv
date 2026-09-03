@@ -105,6 +105,7 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
   end
 
   describe "#position_suggestion_process_row_outcome" do
+    let(:organization) { create(:organization) }
     let(:comment) { instance_double(Comment, resolved?: true, resolved_at: 2.hours.ago) }
     let(:row) do
       PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
@@ -117,15 +118,15 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
     end
 
     it "shows when the suggestion was resolved" do
-      html = helper.position_suggestion_process_row_outcome(row)
+      html = helper.position_suggestion_process_row_outcome(organization, row)
 
       expect(html).to include("Resolved")
       expect(html).to include("ago")
     end
 
-    it "shows accepted milestone outcome" do
-      processor = instance_double(Person, casual_name: "Jordan")
-      processed_by = instance_double(CompanyTeammate, person: processor)
+    it "shows accepted milestone outcome with linked processor" do
+      processor = create(:person, first_name: "Jordan", last_name: "Lee")
+      processed_by = create(:company_teammate, organization: organization, person: processor)
       milestone = instance_double(
         PositionSuggestionMilestone,
         accepted?: true,
@@ -141,16 +142,17 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
         milestone: milestone,
         resolved: true
       )
+      html = helper.position_suggestion_process_row_outcome(organization, milestone_row)
 
-      html = helper.position_suggestion_process_row_outcome(milestone_row)
-
-      expect(html).to include("Accepted and applied by Jordan")
+      expect(html).to include("Accepted and applied by")
+      expect(html).to include("Jordan")
+      expect(html).to include(internal_organization_company_teammate_path(organization, processed_by))
       expect(html).to include("ago")
     end
 
-    it "shows rejected milestone outcome" do
-      processor = instance_double(Person, casual_name: "Sam")
-      processed_by = instance_double(CompanyTeammate, person: processor)
+    it "shows rejected milestone outcome with linked processor" do
+      processor = create(:person, first_name: "Sam", last_name: "Ng")
+      processed_by = create(:company_teammate, organization: organization, person: processor)
       milestone = instance_double(
         PositionSuggestionMilestone,
         accepted?: false,
@@ -167,10 +169,67 @@ RSpec.describe PositionSuggestionsHelper, type: :helper do
         resolved: true
       )
 
-      html = helper.position_suggestion_process_row_outcome(milestone_row)
+      html = helper.position_suggestion_process_row_outcome(organization, milestone_row)
 
-      expect(html).to include("Rejected by Sam")
+      expect(html).to include("Rejected by")
+      expect(html).to include("Sam")
+      expect(html).to include(internal_organization_company_teammate_path(organization, processed_by))
       expect(html).to include("ago")
+    end
+  end
+
+  describe "#position_suggestion_process_row_label" do
+    let(:organization) { create(:organization) }
+    let(:person) { create(:person, first_name: "Alex", last_name: "Kim") }
+    let(:teammate) { create(:company_teammate, organization: organization, person: person) }
+    let(:assignment) { create(:assignment, company: organization, title: "Client Discovery") }
+    let(:ability) { create(:ability, company: organization, name: "Communication") }
+
+    it "links teammate, ability, and assignment on milestone rows" do
+      assignment_ability = create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+      milestone = instance_double(
+        PositionSuggestionMilestone,
+        last_modified_by: teammate,
+        milestoneable: assignment_ability,
+        suggested_milestone_level: 3
+      )
+      row = PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :milestone,
+        label: "plain",
+        anchor: "x",
+        comment: nil,
+        milestone: milestone,
+        resolved: false
+      )
+
+      html = helper.position_suggestion_process_row_label(organization, row)
+
+      expect(html).to include(internal_organization_company_teammate_path(organization, teammate))
+      expect(html).to include(organization_ability_path(organization, ability))
+      expect(html).to include(organization_assignment_path(organization, assignment))
+      expect(html).to include("Milestone 3")
+    end
+
+    it "links teammate and assignment on free-text rows" do
+      teammate # ensure CompanyTeammate exists before person lookup
+      comment = instance_double(
+        Comment,
+        creator: person,
+        commentable: assignment
+      )
+      row = PositionSuggestions::RoundSummaryBuilder::ProcessRow.new(
+        kind: :free_text,
+        label: "plain",
+        anchor: "x",
+        comment: comment,
+        resolved: false
+      )
+
+      html = helper.position_suggestion_process_row_label(organization, row)
+
+      expect(html).to include("Comment by")
+      expect(html).to include(internal_organization_company_teammate_path(organization, teammate))
+      expect(html).to include(organization_assignment_path(organization, assignment))
     end
   end
 

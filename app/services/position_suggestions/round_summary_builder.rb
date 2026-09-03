@@ -247,7 +247,10 @@ class PositionSuggestions::RoundSummaryBuilder
       )
     end
 
-    @suggestion.milestones.includes(:last_modified_by, processed_by: :person, milestoneable: [:ability, :assignment]).find_each do |milestone|
+    @suggestion.milestones.includes(
+      { last_modified_by: :person, processed_by: :person },
+      { milestoneable: [:ability, :assignment] }
+    ).find_each do |milestone|
       root = milestone_thread_root(milestone)
       rows << ProcessRow.new(
         kind: :milestone,
@@ -261,7 +264,7 @@ class PositionSuggestions::RoundSummaryBuilder
       )
     end
 
-    @suggestion.assignment_drafts.includes(:last_modified_by, :source_assignment).find_each do |draft|
+    @suggestion.assignment_drafts.includes({ last_modified_by: :person }, :source_assignment).find_each do |draft|
       root = assignment_draft_thread_root(draft)
       rows << ProcessRow.new(
         kind: :assignment_draft,
@@ -275,7 +278,7 @@ class PositionSuggestions::RoundSummaryBuilder
       )
     end
 
-    @suggestion.assignment_links.includes(:last_modified_by, :assignment).find_each do |link|
+    @suggestion.assignment_links.includes({ last_modified_by: :person }, :assignment).find_each do |link|
       root = assignment_link_thread_root(link)
       rows << ProcessRow.new(
         kind: :assignment_link,

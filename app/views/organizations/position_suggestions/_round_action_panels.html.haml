@@ -119,7 +119,7 @@
                       %ul.list-unstyled.mb-0
                         - open_process_rows.each do |row|
                           %li.border.rounded.p-2.mb-2
-                            .small.mb-2= row.label
+                            .small.mb-2= position_suggestion_process_row_label(organization, row)
                             .btn-group.btn-group-sm{role: "group"}
                               - bag_decision_actions = row.kind == :milestone && can_manage_maap
                               - if can_manage_maap
@@ -156,8 +156,8 @@
                   %ul.list-unstyled.mb-0.mt-2
                     - processed_process_rows.each do |row|
                       %li.border.rounded.p-2.mb-2{class: position_suggestion_processed_row_classes(row)}
-                        .small.mb-1= row.label
-                        .small= position_suggestion_process_row_outcome(row)
+                        .small.mb-1= position_suggestion_process_row_label(organization, row)
+                        .small= position_suggestion_process_row_outcome(organization, row)
         %li.mb-0.d-flex.align-items-start
           = position_suggestion_round_step_icon(!open ? :done : (maap_step == 3 ? :current : :todo))
           %span

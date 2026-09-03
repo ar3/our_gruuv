@@ -135,17 +135,33 @@ module PositionSuggestionsHelper
     end
   end
 
-  def position_suggestion_process_row_outcome(row)
+  # Linked label for process accordion rows (open + processed).
+  def position_suggestion_process_row_label(organization, row)
+    case row.kind
+    when :free_text
+      position_suggestion_free_text_process_label(organization, row.comment)
+    when :milestone
+      position_suggestion_milestone_process_label(organization, row.milestone)
+    when :assignment_draft
+      position_suggestion_assignment_draft_process_label(organization, row.assignment_draft)
+    when :assignment_link
+      position_suggestion_assignment_link_process_label(organization, row.assignment_link)
+    else
+      row.label
+    end
+  end
+
+  def position_suggestion_process_row_outcome(organization, row)
     milestone = row.milestone
     if milestone&.accepted?
       relative = position_suggestion_relative_time(milestone.processed_at)
-      name = milestone.processed_by&.person&.casual_name || "Someone"
-      return safe_join(["Accepted and applied by #{name} ", relative])
+      who = position_suggestion_teammate_name_link(organization, milestone.processed_by)
+      return safe_join(["Accepted and applied by ", who, " ", relative])
     end
     if milestone&.rejected?
       relative = position_suggestion_relative_time(milestone.processed_at)
-      name = milestone.processed_by&.person&.casual_name || "Someone"
-      return safe_join(["Rejected by #{name} ", relative])
+      who = position_suggestion_teammate_name_link(organization, milestone.processed_by)
+      return safe_join(["Rejected by ", who, " ", relative])
     end
 
     comment = row.comment
@@ -153,5 +169,126 @@ module PositionSuggestionsHelper
 
     relative = position_suggestion_relative_time(comment.resolved_at)
     safe_join(["Resolved ", relative], " ")
+  end
+
+  private
+
+  def position_suggestion_free_text_process_label(organization, comment)
+    return "Comment" if comment.blank?
+
+    author = position_suggestion_person_name_link(organization, comment.creator)
+    target = position_suggestion_commentable_label_html(organization, comment.commentable)
+    safe_join(["Comment by ", author, " on ", target])
+  end
+
+  def position_suggestion_milestone_process_label(organization, milestone)
+    return "Milestone" if milestone.blank?
+
+    who = position_suggestion_teammate_name_link(organization, milestone.last_modified_by)
+    ability = position_suggestion_ability_name_link(organization, position_suggestion_ability_for_milestone(milestone))
+    assignment = position_suggestion_assignment_or_position_link(organization, milestone)
+    level = milestone.suggested_milestone_level
+    level_verb = position_suggestion_milestone_level_verb(level)
+
+    safe_join(
+      [
+        who, ": ", ability, " at least Milestone #{level} (#{level_verb}) for ", assignment
+      ]
+    )
+  end
+
+  def position_suggestion_assignment_draft_process_label(organization, draft)
+    return "Assignment field changes" if draft.blank?
+
+    who = position_suggestion_teammate_name_link(organization, draft.last_modified_by)
+    assignment = position_suggestion_assignment_name_link(organization, draft.source_assignment)
+    safe_join([who, ": field changes for Assignment ", assignment])
+  end
+
+  def position_suggestion_assignment_link_process_label(organization, link)
+    return "Assignment association" if link.blank?
+
+    who = position_suggestion_teammate_name_link(organization, link.last_modified_by)
+    assignment = position_suggestion_assignment_name_link(organization, link.assignment)
+    case link.action
+    when "add"
+      safe_join([who, ": add Assignment ", assignment, " (#{link.assignment_type})"])
+    when "remove"
+      safe_join([who, ": remove Assignment ", assignment])
+    else
+      safe_join([who, ": update association for Assignment ", assignment, " (#{link.assignment_type})"])
+    end
+  end
+
+  def position_suggestion_commentable_label_html(organization, commentable)
+    case commentable
+    when Position
+      "Position #{commentable.display_name}"
+    when Assignment
+      safe_join(["Assignment ", position_suggestion_assignment_name_link(organization, commentable)])
+    when Ability
+      safe_join(["Ability ", position_suggestion_ability_name_link(organization, commentable)])
+    else
+      commentable.class.name
+    end
+  end
+
+  def position_suggestion_assignment_or_position_link(organization, milestone)
+    case milestone.milestoneable
+    when AssignmentAbility
+      position_suggestion_assignment_name_link(organization, milestone.milestoneable.assignment)
+    else
+      milestone.position_suggestion&.position&.display_name || "Position"
+    end
+  end
+
+  def position_suggestion_ability_for_milestone(milestone)
+    case milestone.milestoneable
+    when AssignmentAbility, PositionAbility
+      milestone.milestoneable.ability
+    when Ability
+      milestone.milestoneable
+    end
+  end
+
+  def position_suggestion_milestone_level_verb(level)
+    {
+      1 => "Demonstrated",
+      2 => "Advanced",
+      3 => "Expert",
+      4 => "Coach",
+      5 => "Industry-Recognized"
+    }[level.to_i] || "Unknown"
+  end
+
+  def position_suggestion_teammate_name_link(organization, company_teammate)
+    name = company_teammate&.person&.casual_name || "Someone"
+    return name if company_teammate.blank? || organization.blank?
+
+    link_to name, internal_organization_company_teammate_path(organization, company_teammate), class: "text-decoration-none"
+  end
+
+  def position_suggestion_person_name_link(organization, person)
+    name = person&.casual_name || "Someone"
+    return name if person.blank? || organization.blank?
+
+    teammate = CompanyTeammate.find_by(person: person, organization: organization)
+    return name unless teammate
+
+    link_to name, internal_organization_company_teammate_path(organization, teammate), class: "text-decoration-none"
+  end
+
+  def position_suggestion_assignment_name_link(organization, assignment)
+    title = assignment&.title.presence || "Assignment"
+    return title if assignment.blank? || organization.blank?
+
+    link_to title, organization_assignment_path(organization, assignment), class: "text-decoration-none"
+  end
+
+  def position_suggestion_ability_name_link(organization, ability)
+    name = ability&.name.presence || "Ability"
+    return name if ability.blank? || organization.blank?
+
+    link_to name, organization_ability_path(organization, ability), class: "text-decoration-none"
   end
 end

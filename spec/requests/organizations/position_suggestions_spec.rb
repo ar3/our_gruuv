@@ -383,7 +383,11 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Show the 1 change that has been processed")
-      expect(response.body).to include("Comment by #{person.casual_name} on Assignment Client Discovery")
+      expect(response.body).to include("Comment by")
+      expect(response.body).to include(person.casual_name)
+      expect(response.body).to include("Client Discovery")
+      expect(response.body).to include(organization_assignment_path(organization, assignment))
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, teammate))
       expect(response.body).to include("Resolved")
       expect(response.body).not_to include(
         resolve_organization_comment_path(organization, comment, return_to: organization_position_suggestion_path(organization, suggestion))
@@ -412,7 +416,11 @@ RSpec.describe "Organizations::PositionSuggestions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Show the 1 change that has been processed")
-      expect(response.body).to include("Communication at least Milestone 3")
+      expect(response.body).to include("Communication")
+      expect(response.body).to include("Milestone 3")
+      expect(response.body).to include(organization_ability_path(organization, ability))
+      expect(response.body).to include(organization_assignment_path(organization, assignment))
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, teammate))
       expect(response.body).to include("Resolved")
     end
   end
