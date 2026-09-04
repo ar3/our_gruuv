@@ -1,0 +1,27 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Ensure assignment expectations are aligned. Aligned expectations are how people know how they are doing and where they stand — the foundation for flow and for MAAP to work in an organization.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %p.mb-3
+    The Expectation Alignment Score (0–100) summarizes whether taking on an assignment is understandable, an appropriate challenge, and relevant, and whether employee and manager check-ins tend to land in the same place. Bands run Worst → Great, same as on each assignment’s score card.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you see
+  %ul.mb-3
+    %li Spotlight counts non-archived assignments, how many have a score, how many are missing, and how many are stale (calculated more than a day ago).
+    %li The distribution chart shows how many assignments fall in each alignment band, plus “No score.”
+    %li The 10 best and 10 worst lists link to the assignment page. Use them to celebrate clarity and to find work that needs tightening.
+    %li Refresh missing &amp; stale queues background recalculations. Prefer that when many scores are empty or old; use per-row Refresh for a single assignment.
+
+  %h5.fw-semibold.mb-2 Band legend
+  %ul.list-unstyled.mb-0
+    - AssignmentSurveys::ExpectationAlignmentScore::SCORE_BANDS.each do |band|
+      %li.mb-1
+        %span.assignment-survey-quality-signal{class: "assignment-survey-quality-#{band[:key]}"}
+          %i.bi{class: "#{band[:icon]} me-1"}
+          = band[:label]
+        %span.text-muted.small
+          — #{band[:min]}#{band[:max_exclusive] ? "–#{band[:max_exclusive] - 1}" : "+"}

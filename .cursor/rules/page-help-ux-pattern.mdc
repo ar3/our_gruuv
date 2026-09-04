@@ -11,6 +11,7 @@ alwaysApply: false
 When editing page-level views, use this pattern by default:
 
 - Place an info icon directly to the right of the page header text via `shared/page_help/header_info_button` (do not inline a duplicate `fs-1` info button).
+- On **Object × Lens** List/Show pages: info icon immediately after the lens dropdown, then primary action (plus / edit). Plus tooltip: `Add new {Object}`; Edit tooltip: `Edit {Object}`. See `docs/UX/object-lens-header-actions.md` and `.cursor/rules/object-lens-header-actions.mdc`.
 - Icon supports both:
   - hover tooltip with a very brief sentence and "click for details" cue
   - click to expand/collapse a hidden full-width help alert below the header

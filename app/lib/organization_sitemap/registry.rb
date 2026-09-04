@@ -406,6 +406,10 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).observations_health? },
             goal: "Monitor observation cadence and gaps across employees.",
             synonyms: %w[observations health ogo health observation cadence]),
+          insights_page(:assignments_health, "Assignments Health", "bi-heart-pulse", :organization_assignments_health_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).assignments_health? },
+            goal: "See Expectation Alignment Scores across assignments and refresh missing or stale scores.",
+            synonyms: %w[assignments health assignment health expectation alignment]),
           insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
             policy: ->(ctx) {
               ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?

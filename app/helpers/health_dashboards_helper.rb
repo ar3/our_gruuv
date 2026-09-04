@@ -136,4 +136,17 @@ module HealthDashboardsHelper
       }
     ]
   end
+
+  def assignments_health_other_actions(organization, refreshable_count:)
+    [
+      {
+        label: refreshable_count.positive? ? "Refresh missing & stale (#{refreshable_count})" : "Refresh missing & stale",
+        path: organization_assignments_health_refresh_missing_and_stale_path(organization),
+        icon: "bi-arrow-clockwise",
+        method: :post,
+        disabled: refreshable_count.zero?,
+        title: (refreshable_count.zero? ? "Nothing missing or stale right now" : nil)
+      }
+    ]
+  end
 end

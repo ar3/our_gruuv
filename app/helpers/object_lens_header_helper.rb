@@ -8,7 +8,9 @@ module ObjectLensHeaderHelper
     { key: :goals, label: "Goals" },
     { key: :observations, label: "Observations" },
     { key: :check_ins, label: "Check-ins" },
-    { key: :abilities, label: "Abilities" }
+    { key: :abilities, label: "Abilities" },
+    # Org/MAAP catalog — not person-scoped like the objects above.
+    { key: :assignments, label: "Assignments", divider_before: true }
   ].freeze
 
   # Browse slot: Overall uses Directory; typed objects use List.
@@ -17,7 +19,8 @@ module ObjectLensHeaderHelper
     goals: :list,
     observations: :list,
     check_ins: :list,
-    abilities: :list
+    abilities: :list,
+    assignments: :list
   }.freeze
 
   LENS_LABELS = {
@@ -75,6 +78,12 @@ module ObjectLensHeaderHelper
       organization_milestones_health_path(organization)
     when %i[abilities insights]
       organization_insights_abilities_path(organization)
+    when %i[assignments list]
+      organization_assignments_path(organization)
+    when %i[assignments health]
+      organization_assignments_health_path(organization)
+    when %i[assignments insights]
+      organization_insights_assignments_path(organization)
     else
       nil
     end
@@ -108,6 +117,8 @@ module ObjectLensHeaderHelper
       policy(organization).view_abilities?
     when %i[abilities health]
       policy(organization).milestones_health?
+    when %i[assignments list], %i[assignments insights], %i[assignments health]
+      policy(organization).view_assignments?
     else
       false
     end
@@ -164,6 +175,7 @@ module ObjectLensHeaderHelper
         key: key,
         label: object[:label],
         current: key == current_object,
+        divider_before: object[:divider_before] == true,
         path: object_lens_path_for_object_change(
           organization,
           current_object: current_object,

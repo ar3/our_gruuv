@@ -347,6 +347,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Assignments Health',
+            icon: 'bi-heart-pulse',
+            path: organization_assignments_health_path(current_organization),
+            policy_check: -> { policy(current_organization).assignments_health? },
+            coming_soon: false
+          },
+          {
             label: 'Protect Flow',
             icon: 'bi-shield-check',
             path: organization_protect_flow_path(current_organization),

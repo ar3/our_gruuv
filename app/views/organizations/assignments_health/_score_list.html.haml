@@ -1,0 +1,40 @@
+-# locals: title, icon, rows, empty_message
+.card.border-0.shadow-sm.h-100
+  .card-header.bg-white
+    %h5.mb-0
+      %i.bi{class: "#{icon} me-2"}
+      = title
+  .card-body
+    - if rows.blank?
+      %p.text-muted.mb-0= empty_message
+    - else
+      .table-responsive
+        %table.table.table-sm.table-hover.mb-0
+          %thead
+            %tr
+              %th Assignment
+              %th.text-end Score
+              %th Band
+              %th
+          %tbody
+            - rows.each do |row|
+              %tr
+                %td
+                  = link_to row.assignment.title, organization_assignment_path(@organization, row.assignment)
+                %td.text-end.fw-semibold
+                  = row.score.present? ? row.score.round : "—"
+                %td
+                  - if row.band
+                    %span.assignment-survey-quality-signal{class: "assignment-survey-quality-#{row.band[:key]}"}
+                      %i.bi{class: row.band[:icon]}
+                      = row.band[:label]
+                  - else
+                    %span.text-muted —
+                %td.text-end
+                  - if row.refreshable?
+                    = button_to organization_assignments_health_refresh_path(@organization, assignment_id: row.assignment.id),
+                                method: :post,
+                                class: "btn btn-link btn-sm text-decoration-none p-0",
+                                form: { class: "d-inline" },
+                                title: "Refresh score" do
+                      %i.bi.bi-arrow-clockwise

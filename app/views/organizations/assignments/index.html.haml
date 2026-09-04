@@ -1,15 +1,28 @@
 - content_for :title, "Assignments"
+- page_help_id = "assignmentsListPageHelp"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: nil }])
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 
-      %i.bi.bi-briefcase.me-2
-      Assignments
-      = link_to new_organization_assignment_path(@organization), class: "btn btn-primary" do
-        %i.bi.bi-plus
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Browse and manage assignments. Click for a full breakdown."
+    = link_to new_organization_assignment_path(@organization),
+              class: "btn btn-primary",
+              title: "Add new Assignment",
+              "aria-label" => "Add new Assignment",
+              data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+      %i.bi.bi-plus
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :assignments,
+           current_lens: :list,
+           trailing: object_lens_trailing
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/assignments/page_help"
 
 - content_for :header_action do
   - customize_params = params.except(:controller, :action, :page).permit!.to_h
@@ -111,10 +124,6 @@
               %i.bi.bi-diagram-3.me-2
               View Assignment Flows
         .d-flex.gap-2.align-items-center
-          - if policy(assignment_index_company).view_assignments?
-            = link_to organization_insights_assignments_path(@organization), class: "btn btn-sm btn-outline-secondary" do
-              %i.bi.bi-graph-up.me-2
-              View Analytics
           - if policy(assignment_index_company).download_bulk_csv?
             = link_to download_organization_bulk_downloads_path(@organization, type: 'assignments'), class: "btn btn-sm btn-outline-secondary" do
               %i.bi.bi-download.me-2

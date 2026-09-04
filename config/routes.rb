@@ -266,6 +266,11 @@ Rails.application.routes.draw do
     get :observations_health_employee_summary_export, to: 'organizations/observations_health#export_employee_summary'
     post :observations_health_refresh, to: 'organizations/observations_health#refresh', as: :observations_health_refresh
     post :observations_health_refresh_all, to: 'organizations/observations_health#refresh_all', as: :observations_health_refresh_all
+    get :assignments_health, to: 'organizations/assignments_health#index'
+    post :assignments_health_refresh, to: 'organizations/assignments_health#refresh', as: :assignments_health_refresh
+    post :assignments_health_refresh_missing_and_stale,
+         to: 'organizations/assignments_health#refresh_missing_and_stale',
+         as: :assignments_health_refresh_missing_and_stale
 
     resource :assignment_survey,
              path: "assignment-experience-survey",

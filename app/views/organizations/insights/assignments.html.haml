@@ -4,10 +4,10 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: "Insights: Assignments", url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-bar-chart-line.me-2
-      Insights: Assignments
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :assignments,
+           current_lens: :insights
 
 / Outcomes distribution chart
 .row.mb-4

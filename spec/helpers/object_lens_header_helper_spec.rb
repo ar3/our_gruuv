@@ -22,7 +22,9 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
           observations_health?: true,
           check_ins_health?: true,
           view_abilities?: true,
-          milestones_health?: true
+          milestones_health?: true,
+          view_assignments?: true,
+          assignments_health?: true
         )
       )
       allow(helper).to receive(:policy).with(teammate).and_return(double(view_check_ins?: true))
@@ -37,6 +39,12 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
       expect(helper.object_lens_path(organization, :goals, :list)).to eq(organization_goals_path(organization))
       expect(helper.object_lens_path(organization, :goals, :health)).to eq(organization_goals_health_path(organization))
       expect(helper.object_lens_path(organization, :goals, :insights)).to eq(organization_insights_goals_path(organization))
+    end
+
+    it "maps Assignments lenses" do
+      expect(helper.object_lens_path(organization, :assignments, :list)).to eq(organization_assignments_path(organization))
+      expect(helper.object_lens_path(organization, :assignments, :health)).to eq(organization_assignments_health_path(organization))
+      expect(helper.object_lens_path(organization, :assignments, :insights)).to eq(organization_insights_assignments_path(organization))
     end
   end
 
@@ -61,7 +69,9 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
             observations_health?: false,
             check_ins_health?: false,
             view_abilities?: false,
-            milestones_health?: false
+            milestones_health?: false,
+            view_assignments?: false,
+            assignments_health?: false
           )
         )
       end
@@ -74,6 +84,13 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
     it "preserves Health when changing object" do
       goals = helper.object_lens_menu_objects(organization, current_object: :overall, current_lens: :health).find { |o| o[:key] == :goals }
       expect(goals[:path]).to eq(organization_goals_health_path(organization))
+    end
+
+    it "marks Assignments with a divider before (org catalog vs person-scoped objects)" do
+      menu = helper.object_lens_menu_objects(organization, current_object: :goals, current_lens: :list)
+      assignments = menu.find { |o| o[:key] == :assignments }
+      expect(assignments[:divider_before]).to eq(true)
+      expect(menu.find { |o| o[:key] == :abilities }[:divider_before]).to eq(false)
     end
   end
 

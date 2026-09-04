@@ -177,6 +177,11 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  # Assignments · Health — same audience as viewing Assignments (clarity is everyone's job).
+  def assignments_health?
+    view_assignments?
+  end
+
   def view_assignment_flows?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

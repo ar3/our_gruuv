@@ -1,5 +1,6 @@
 -# locals: organization, current_object, current_lens
--# Optional: trailing — HTML after the switchers (page help, badges). Prefer capture { }.
+-# Optional: trailing — HTML after the lens dropdown (page help, then primary action e.g. + / Edit).
+-# Prefer capture { }. Keep help immediately after the lens; primary action immediately after help.
 - current_object = local_assigns.fetch(:current_object).to_sym
 - current_lens = local_assigns.fetch(:current_lens).to_sym
 - objects = object_lens_menu_objects(organization, current_object: current_object, current_lens: current_lens)
@@ -15,6 +16,9 @@
     %ul.dropdown-menu.py-1
       - objects.each_with_index do |object, index|
         - if index == 1 && objects.first[:key] == :overall
+          %li
+            %hr.dropdown-divider.my-1
+        - elsif object[:divider_before]
           %li
             %hr.dropdown-divider.my-1
         %li
@@ -47,4 +51,5 @@
             .dropdown-item.text-muted.disabled= lens[:label]
 
   - if trailing.present?
-    = trailing
+    .d-inline-flex.align-items-center.gap-2.flex-wrap
+      = trailing

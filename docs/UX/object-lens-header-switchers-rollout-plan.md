@@ -11,6 +11,8 @@ Changing one axis preserves the other when a destination exists; otherwise fall 
 
 **Related:** Replaces ad-hoc “View Analytics” / Health “Other actions” / Health domain btn-group for pages in this matrix. Does **not** replace teammate `title_dropdown` or `people/view_switcher`.
 
+**Trailing actions (locked):** After the lens dropdown → page-help info icon → List plus (`Add new {Object}` tooltip) or Show edit (`Edit {Object}` tooltip). Spec: [object-lens-header-actions.md](object-lens-header-actions.md).
+
 ---
 
 ## Locked menus (v1)
@@ -25,6 +27,8 @@ Changing one axis preserves the other when a destination exists; otherwise fall 
 | 3 | **Observations** | |
 | 4 | **Check-ins** | |
 | 5 | **Abilities** | Health → Milestones Health |
+| — | *divider* | Person-scoped objects above; org catalog below |
+| 6 | **Assignments** | Health → Expectation Alignment; not person-specific |
 
 ### Lens dropdown
 
@@ -48,8 +52,9 @@ For typed objects the first lens stays **List**. For Overall it is labeled **Dir
 | **Observations** | All observations | Observations Health | Insights: Observations |
 | **Check-ins** | Own clarity check-in hub (`…/company_teammates/:me/check_ins`) | Check-ins Health | Check-ins Progress |
 | **Abilities** | Milestones & Abilities | Milestones Health | Insights: Abilities |
+| **Assignments** | Assignments index | Assignments Health | Insights: Assignments |
 
-Closed header reads like: `Overall · Directory`, `Overall · Health`, `Goals · List`, `Check-ins · List`, `Abilities · Insights`.
+Closed header reads like: `Overall · Directory`, `Overall · Health`, `Goals · List`, `Check-ins · List`, `Abilities · Insights`, `Assignments · Health`.
 
 ---
 
@@ -92,17 +97,18 @@ Ship the dual header on the smallest useful matrix, prove preserve-lens navigati
 
 ---
 
-## Phase 3 — Assignments (next recommended object)
+## Phase 3 — Assignments ✅
 
-List + Insights only (no Health).
+List + Health + Insights.
 
 | Object | List | Health | Insights |
 |--------|------|--------|----------|
-| **Assignments** | Assignments index | — | Insights: Assignments |
+| **Assignments** | Assignments index | Assignments Health (Expectation Alignment) | Insights: Assignments |
 
-- [ ] Add Assignments to Object menu (after Abilities)
-- [ ] Wire dual header on both pages
-- [ ] Remove “View Analytics” on Assignments index if redundant
+- [x] Add Assignments to Object menu (after Abilities)
+- [x] Wire dual header on List, Health, Insights
+- [x] Remove “View Analytics” on Assignments index (lens covers it)
+- [x] Assignments · Health v1: distribution, 10 best/worst, refresh missing & stale
 
 **Gate:** Approve before Phase 4.
 
@@ -166,4 +172,4 @@ These stay in main nav / Insights hub / teammate chrome only:
 
 Prefer **Insights → List → first available** for the newly selected object.
 
-Example: on Goals · Health, switch Object → Assignments (Phase 3+) → Assignments · Insights (no Health).
+Example: on Goals · Health, switch Object → Assignments → Assignments · Health (or Insights / List if Health were unavailable).

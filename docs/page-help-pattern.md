@@ -6,6 +6,8 @@ Use this pattern when a page has dense or stateful UI and users benefit from in-
 
 Cursor rule: `.cursor/rules/page-help-ux-pattern.mdc`. Section structure detail: [UX/page-help-structure.md](UX/page-help-structure.md).
 
+**Object × Lens list/show headers:** place the info icon immediately after the lens dropdown, then the primary action (plus on List / edit on Show). Tooltips: `Add new {Object}` / `Edit {Object}`. See [UX/object-lens-header-actions.md](UX/object-lens-header-actions.md) and `.cursor/rules/object-lens-header-actions.mdc`.
+
 ---
 
 ## Canonical implementation (do this)
