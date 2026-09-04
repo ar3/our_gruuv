@@ -30,6 +30,20 @@ RSpec.describe 'Organizations::CelebrateMilestones', type: :request do
       expect(response).to be_successful
     end
 
+    it 'renders object lens switchers for Milestones · List' do
+      allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
+      allow_any_instance_of(OrganizationPolicy).to receive(:milestones_health?).and_return(true)
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_abilities?).and_return(true)
+
+      get celebrate_milestones_organization_path(organization)
+      expect(response).to be_successful
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include('Switch page type')
+      expect(response.body).to include(organization_milestones_health_path(organization))
+      expect(response.body).to include(organization_insights_milestones_path(organization))
+      expect(response.body).to include('Add new Milestone')
+    end
+
     it 'sets up all required instance variables' do
       # Create at least one published milestone for the test
       create(:teammate_milestone,

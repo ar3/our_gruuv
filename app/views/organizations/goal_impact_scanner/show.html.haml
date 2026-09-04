@@ -1,21 +1,18 @@
 - page_help_id = "goalImpactScannerPageHelp"
 
-- content_for :title, "Goal Impact Scanner"
+- content_for :title, "Goals Hierarchy Map"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: organization_goals_path(@organization, owner_id: "everyone_in_company") }, { label: "Impact Scanner", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: organization_goals_path(@organization, owner_id: "everyone_in_company") }, { label: "Hierarchy Map", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
     %h1.mb-0.d-flex.align-items-center.gap-2
       %i.bi.bi-diagram-3.me-1
-      Goal Impact Scanner
+      Goals Hierarchy Map
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
                tooltip: "See how company-visible goals hang together and how confident descendants are. Click for details."
-    %span.badge.text-bg-warning
-      %i.bi.bi-flask.me-1
-      Beta
 
 .collapse.mb-4{id: page_help_id}
   = render "organizations/goal_impact_scanner/page_help"

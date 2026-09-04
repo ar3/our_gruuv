@@ -384,6 +384,58 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @owner_param = build_owner_param_for_bulk
   end
 
+  def select_create
+    authorize Goal.new, :select_create?
+    company = @organization.root_company || @organization
+    teammate = current_company_teammate
+
+    personal_owner = teammate ? "CompanyTeammate_#{teammate.id}" : nil
+    company_owner = company ? "Company_#{company.id}" : nil
+    team = default_team_for_goal_create(teammate, company)
+    department = default_department_for_goal_create(teammate)
+
+    @create_scopes = [
+      {
+        key: :personal,
+        label: 'Personal',
+        description: 'Goals you own as a teammate.',
+        icon: 'bi-person',
+        owner_id: personal_owner,
+        owner_label: teammate&.person&.casual_name.presence || 'You',
+        hint: nil
+      },
+      {
+        key: :team,
+        label: 'Team',
+        description: 'Goals owned by a team you belong to.',
+        icon: 'bi-people',
+        owner_id: team ? "Team_#{team.id}" : nil,
+        owner_label: team&.display_name,
+        hint: team ? nil : 'Join a team first, then come back — or pick a team owner on the create page.'
+      },
+      {
+        key: :department,
+        label: 'Department',
+        description: 'Goals owned by your department.',
+        icon: 'bi-building',
+        owner_id: department ? "Department_#{department.id}" : nil,
+        owner_label: department&.display_name,
+        hint: department ? nil : 'No department on your current position — pick a department owner on the create page.'
+      },
+      {
+        key: :company,
+        label: 'Company',
+        description: 'Goals owned by the company.',
+        icon: 'bi-building-fill',
+        owner_id: company_owner,
+        owner_label: company&.display_name,
+        hint: nil
+      }
+    ]
+
+    render layout: 'overlay'
+  end
+
   def bulk_create
     authorize Goal.new
     @owner = resolve_owner_for_bulk(current_company_teammate)
@@ -856,6 +908,23 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     else
       nil
     end
+  end
+
+  def default_team_for_goal_create(teammate, company)
+    return nil unless teammate && company
+
+    Team.active.for_company(company)
+        .joins(:team_members)
+        .where(team_members: { company_teammate_id: teammate.id })
+        .ordered
+        .distinct
+        .first
+  end
+
+  def default_department_for_goal_create(teammate)
+    return nil unless teammate
+
+    teammate.active_employment_tenure&.position&.title&.department
   end
 
   def build_owner_param_for_bulk

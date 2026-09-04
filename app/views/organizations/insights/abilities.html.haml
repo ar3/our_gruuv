@@ -52,17 +52,6 @@
       .card-body
         #abilities-updated-chart{style: "height: 320px;"}
 
-/ Milestones earned (by week)
-.row.mb-4
-  .col-lg-12
-    .card.border-0.shadow-sm
-      .card-header.bg-success.text-white
-        %h5.mb-0
-          %i.bi.bi-trophy.me-2
-          Milestones earned (by week) — #{@chart_title_period}
-      .card-body
-        #milestones-earned-chart{style: "height: 320px;"}
-
 / Ability ratings in published observations (by week)
 .row.mb-4
   .col-lg-12
@@ -79,11 +68,7 @@
     var milestonesData = #{@milestones_distribution_chart_data.to_json};
     var assignmentsPerAbilityData = #{@assignments_per_ability_chart_data.to_json};
     var updatedData = #{@abilities_updated_chart_data.to_json};
-    var milestonesEarnedData = #{@milestones_earned_chart_data.to_json};
     var obsRatingsData = #{@observation_ratings_chart_data.to_json};
-
-    // Milestone levels 1-5 (distinct colors for stacked chart)
-    var milestonesEarnedColors = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#6f42c1'];
 
     // Same as observation rating buttons: Exceptional (success), Strong (primary), Misaligned (warning), Concerning (danger)
     var observationRatingColors = ['#166534', '#1e40af', '#fd7e14', '#dc3545'];
@@ -129,7 +114,6 @@
       chart('milestones-distribution-chart', 'Defined milestones per ability', milestonesData.categories, milestonesData.series, false);
       chart('assignments-per-ability-chart', 'Abilities by number of assignments (by required milestone)', assignmentsPerAbilityData.categories, assignmentsPerAbilityData.series, true);
       chart('abilities-updated-chart', 'Abilities with updates', updatedData.categories, updatedData.series, false);
-      chart('milestones-earned-chart', 'Milestones earned by level', milestonesEarnedData.categories, milestonesEarnedData.series, true, milestonesEarnedColors);
       chart('observation-ratings-chart', 'Ability ratings in published observations', obsRatingsData.categories, obsRatingsData.series, true, observationRatingColors);
     }
 

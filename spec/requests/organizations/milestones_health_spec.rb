@@ -28,6 +28,8 @@ RSpec.describe "Milestones Health", type: :request do
       expect(response.body).to include("Gruuv Health")
       expect(response.body).to include("Switch object")
       expect(response.body).to include("Switch page type")
+      expect(response.body).to include(celebrate_milestones_organization_path(company))
+      expect(response.body).to include(organization_insights_milestones_path(company))
       expect(response.body).not_to include("Company Abilities Insights")
     end
 

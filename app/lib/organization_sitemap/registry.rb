@@ -10,6 +10,7 @@ module OrganizationSitemap
         home_and_tools_section,
         about_me_section,
         observations_section,
+        goals_section,
         teammate_directory_section,
         celebrate_milestones_section,
         huddles_section,
@@ -257,6 +258,44 @@ module OrganizationSitemap
       }
     end
 
+    def goals_section
+      {
+        label: "Goals",
+        icon: "bi-bullseye",
+        pages: [
+          page(
+            key: :add_new_goals,
+            label: "Add New Goals",
+            icon: "bi-plus-circle",
+            path: ->(ctx) { ctx.select_create_organization_goals_path(ctx.organization) },
+            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
+            goal: "Choose personal, team, department, or company ownership, then create a single goal or bulk goals.",
+            synonyms: %w[add goals new goals create goals bulk goals]
+          ),
+          page(
+            key: :my_personal_goals,
+            label: "My personal goals",
+            icon: "bi-bullseye",
+            path: ->(ctx) {
+              ctx.organization_goals_path(ctx.organization, owner_id: "CompanyTeammate_#{ctx.teammate.id}")
+            },
+            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
+            goal: "Track goals you own, including confidence check-ins and progress.",
+            synonyms: %w[my personal goals goals I own personal goals]
+          ),
+          page(
+            key: :goals_hierarchy_map,
+            label: "Goals Hierarchy Map",
+            icon: "bi-diagram-3",
+            path: ->(ctx) { ctx.organization_goal_impact_scanner_path(ctx.organization) },
+            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
+            goal: "Scan company-visible goals and descendant confidence to judge higher-level impact.",
+            synonyms: %w[goals hierarchy map goal impact scanner company goals hierarchy confidence rollup rocks]
+          )
+        ]
+      }
+    end
+
     def teammate_directory_section
       {
         label: "Teammate Directory",
@@ -414,6 +453,10 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).values_health? },
             goal: "See Expectation Alignment Scores across aspirational values and refresh missing or stale scores.",
             synonyms: %w[values health value health aspiration health expectation alignment]),
+          insights_page(:abilities_health, "Abilities Health", "bi-heart-pulse", :organization_abilities_health_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).abilities_health? },
+            goal: "See Expectation Alignment across abilities (scoring shell; calculation coming soon).",
+            synonyms: %w[abilities health ability health expectation alignment]),
           insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
             policy: ->(ctx) {
               ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?
@@ -441,8 +484,12 @@ module OrganizationSitemap
             synonyms: %w[assignment insights assignments analytics]),
           insights_page(:insights_abilities, "Abilities", "bi-award", :organization_insights_abilities_path,
             policy: ->(ctx) { ctx.policy(ctx.company).view_abilities? },
-            goal: "Analyze ability and milestone adoption across the organization.",
-            synonyms: %w[ability insights abilities analytics milestone insights]),
+            goal: "Analyze ability catalog coverage: defined milestones, assignments, updates, and OGO ratings.",
+            synonyms: %w[ability insights abilities analytics]),
+          insights_page(:insights_milestones, "Milestones", "bi-trophy", :organization_insights_milestones_path,
+            policy: ->(ctx) { ctx.policy(ctx.company).view_abilities? },
+            goal: "See milestones earned over time by level.",
+            synonyms: %w[milestone insights milestones earned analytics]),
           insights_page(:insights_values, "Values", "bi-heart", :organization_insights_values_path,
             policy: ->(ctx) { ctx.policy(ctx.company).view_aspirations? },
             goal: "See which aspirational values are lived in OGOs, champions leaderboards, and values check-in clarity.",
@@ -598,10 +645,6 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).assignment_survey? },
             goal: "Rate whether your assignments are understandable, possible, and relevant.",
             synonyms: %w[assignment experience survey clarity possible relevant]),
-          beta_page(:goal_impact_scanner, "Goal Impact Scanner", "bi-diagram-3", :organization_goal_impact_scanner_path,
-            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
-            goal: "Scan company-visible goals and descendant confidence to judge higher-level impact.",
-            synonyms: %w[goal impact scanner company goals hierarchy confidence rollup rocks]),
           beta_page(:position_suggestions, "Position Suggestions", "bi-chat-left-quote", :organization_position_suggestions_path,
             policy: ->(ctx) { ctx.policy(PositionSuggestion).index? },
             goal: "Suggest assignment and milestone changes on positions without editing MAAP directly.",

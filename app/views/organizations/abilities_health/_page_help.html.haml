@@ -1,0 +1,29 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Ensure ability expectations are aligned. Aligned abilities are how people know what “good” looks like at each milestone — the foundation for flow and for MAAP to work in an organization.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %p.mb-3
+    The Expectation Alignment Score (0–100) will summarize whether an ability’s milestones and descriptions are clear, challenging, and relevant — and whether people tend to see them the same way. Bands will run Strongly Mis-aligned → Strongly Aligned, same as Assignments and Values Health.
+    %strong Scoring is not calculated yet;
+    this page is the shell so the Abilities · Health lens is ready.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you see
+  %ul.mb-3
+    %li Spotlight counts non-archived abilities. Until scoring ships, every ability shows as missing a score.
+    %li The distribution chart uses the same alignment bands as Assignments Health, plus “No score.”
+    %li The 10 best and 10 worst lists will link to ability pages once scores exist.
+    %li Refresh actions acknowledge the request; recalculation ships with scoring.
+
+  %h5.fw-semibold.mb-2 Band legend
+  %ul.list-unstyled.mb-0
+    - AssignmentSurveys::ExpectationAlignmentScore::SCORE_BANDS.each do |band|
+      %li.mb-1
+        %span.assignment-survey-quality-signal{class: "assignment-survey-quality-#{band[:key]}"}
+          %i.bi{class: "#{band[:icon]} me-1"}
+          = band[:label]
+        %span.text-muted.small
+          — #{band[:min]}#{band[:max_exclusive] ? "–#{band[:max_exclusive] - 1}" : "+"}

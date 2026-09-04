@@ -1,0 +1,183 @@
+- content_for :title, "Abilities Health"
+- page_help_id = "abilitiesHealthPageHelp"
+
+- content_for :header do
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See Expectation Alignment across abilities. Click for a full breakdown."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :abilities,
+           current_lens: :health,
+           trailing: object_lens_trailing
+
+.mb-4
+  = content_for :go_back_link
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/abilities_health/page_help"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities Health", url: nil }])
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-9
+            .row.text-center
+              .col-3
+                .h3.text-primary= @overview.total_count
+                %small.text-muted Non-archived
+              .col-3
+                .h3.text-success= @overview.scored_count
+                %small.text-muted Scored
+              .col-3
+                .h3.text-warning= @overview.missing_count
+                %small.text-muted Missing score
+              .col-3
+                .h3{class: (@overview.stale_count.positive? ? "text-danger" : "text-muted")}= @overview.stale_count
+                %small.text-muted Stale (&gt;1 day)
+          .col-md-3
+            - unless @overview.scoring_available?
+              .alert.alert-info.small.mb-0
+                %i.bi.bi-hourglass-split.me-2
+                %strong Scoring coming soon
+                — layout matches Assignments Health.
+            - if @overview.average_score.present?
+              .text-center
+                .h3.mb-0= @overview.average_score.round
+                %small.text-muted Avg alignment
+            - if @overview.refreshable_count.positive?
+              .alert.alert-warning.small.mb-0.mt-2
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong= "#{@overview.refreshable_count} need refresh"
+      .card-footer.bg-light
+        %small.text-muted
+          Expectation Alignment Score bands match Assignments and Values (Strongly Mis-aligned → Strongly Aligned). Ability scoring is not calculated yet.
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :abilities_health,
+      show_switcher: false,
+      other_actions: abilities_health_other_actions(@organization, refreshable_count: @overview.refreshable_count)
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-white
+        %h5.mb-0
+          %i.bi.bi-bar-chart.me-2
+          Score distribution
+      .card-body
+        - if @overview.total_count.zero?
+          %p.text-muted.mb-0 No non-archived abilities yet.
+        - else
+          #abilities-health-distribution-chart{style: "height: 320px;"}
+
+.row.justify-content-center.mb-4
+  .col-lg-6.mb-4.mb-lg-0
+    = render "organizations/abilities_health/score_list",
+             title: "10 best",
+             icon: "bi-stars",
+             rows: @overview.best,
+             empty_message: "No scored abilities yet. Ability Expectation Alignment scoring is coming soon."
+  .col-lg-6
+    = render "organizations/abilities_health/score_list",
+             title: "10 worst",
+             icon: "bi-exclamation-octagon",
+             rows: @overview.worst,
+             empty_message: "No scored abilities yet. Ability Expectation Alignment scoring is coming soon."
+
+- if @overview.refreshable_rows.any?
+  - refreshable_preview = @overview.refreshable_rows.first(25)
+  .row.justify-content-center.mb-4
+    .col-lg-12
+      .card.border-0.shadow-sm
+        .card-header.bg-white.d-flex.justify-content-between.align-items-center
+          %h5.mb-0
+            %i.bi.bi-arrow-clockwise.me-2
+            Missing &amp; stale scores
+          %span.badge.text-bg-secondary= @overview.refreshable_count
+        .card-body
+          %p.small.text-muted.mb-3
+            Until scoring ships, every ability is listed as missing. Refresh acknowledges the request; recalculation comes later.
+            - if @overview.refreshable_count > refreshable_preview.size
+              Showing the first #{refreshable_preview.size} of #{@overview.refreshable_count}.
+          .table-responsive
+            %table.table.table-sm.table-hover.mb-0
+              %thead
+                %tr
+                  %th Ability
+                  %th Status
+                  %th Last calculated
+                  %th
+              %tbody
+                - refreshable_preview.each do |row|
+                  %tr
+                    %td
+                      = link_to row.ability.name, organization_ability_path(@organization, row.ability)
+                    %td
+                      - if row.missing?
+                        %span.badge.text-bg-warning Missing
+                      - else
+                        %span.badge.text-bg-danger Stale
+                    %td.small.text-muted
+                      - if row.calculated_at.present?
+                        = time_ago_in_words(row.calculated_at)
+                        ago
+                      - else
+                        Never
+                    %td.text-end
+                      = button_to organization_abilities_health_refresh_path(@organization, ability_id: row.ability.id),
+                                  method: :post,
+                                  class: "btn btn-outline-secondary btn-sm",
+                                  form: { class: "d-inline" } do
+                        %i.bi.bi-arrow-clockwise.me-1
+                        Refresh
+
+- if @overview.total_count.positive?
+  :javascript
+    (function() {
+      var chartData = #{@overview.chart_data.to_json};
+
+      function initChart() {
+        if (typeof Highcharts === 'undefined') return;
+        var el = document.getElementById('abilities-health-distribution-chart');
+        if (!el) return;
+        Highcharts.chart('abilities-health-distribution-chart', {
+          chart: { type: 'column' },
+          title: { text: null },
+          accessibility: { enabled: false },
+          xAxis: { categories: chartData.categories, title: { text: 'Alignment band' } },
+          yAxis: { min: 0, allowDecimals: false, title: { text: 'Abilities' } },
+          legend: { enabled: false },
+          plotOptions: {
+            column: {
+              dataLabels: { enabled: true },
+              colorByPoint: true
+            }
+          },
+          series: chartData.series
+        });
+      }
+
+      var attempts = 0;
+      function waitForHighcharts() {
+        if (typeof Highcharts !== 'undefined') {
+          initChart();
+        } else if (attempts < 100) {
+          attempts++;
+          setTimeout(waitForHighcharts, 100);
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', waitForHighcharts);
+      } else {
+        waitForHighcharts();
+      }
+    })();

@@ -26,10 +26,11 @@ Changing one axis preserves the other when a destination exists; otherwise fall 
 | 2 | **Goals** | |
 | 3 | **Observations** | |
 | 4 | **Check-ins** | |
-| 5 | **Abilities** | Health → Milestones Health |
+| 5 | **Milestones** | Person-scoped; sits above catalog divider. List → Recent Milestones |
 | — | *divider* | Person-scoped objects above; org catalog below |
-| 6 | **Assignments** | Health → Expectation Alignment; not person-specific |
-| 7 | **Values** | Health → Expectation Alignment; org catalog with Assignments |
+| 6 | **Abilities** | First under catalog divider. Health → Expectation Alignment shell |
+| 7 | **Assignments** | Health → Expectation Alignment |
+| 8 | **Values** | Health → Expectation Alignment |
 
 ### Lens dropdown
 
@@ -52,11 +53,12 @@ For typed objects the first lens stays **List**. For Overall it is labeled **Dir
 | **Goals** | All Goals (`/goals`) | Goals Health | Insights: Goals |
 | **Observations** | All observations | Observations Health | Insights: Observations |
 | **Check-ins** | Own clarity check-in hub (`…/company_teammates/:me/check_ins`) | Check-ins Health | Check-ins Progress |
-| **Abilities** | Milestones & Abilities | Milestones Health | Insights: Abilities |
+| **Milestones** | Recent Milestones (`celebrate_milestones`) | Milestones Health | Insights: Milestones (earned by week) |
+| **Abilities** | Abilities index | Abilities Health (Expectation Alignment shell) | Insights: Abilities |
 | **Assignments** | Assignments index | Assignments Health | Insights: Assignments |
 | **Values** | Aspirational Values | Values Health | Insights: Values |
 
-Closed header reads like: `Overall · Directory`, `Overall · Health`, `Goals · List`, `Check-ins · List`, `Abilities · Insights`, `Assignments · Health`, `Values · Health`.
+Closed header reads like: `Overall · Directory`, `Overall · Health`, `Goals · List`, `Check-ins · List`, `Milestones · Health`, `Abilities · Insights`, `Assignments · Health`, `Values · Health`.
 
 ---
 
@@ -92,7 +94,7 @@ Ship the dual header on the smallest useful matrix, prove preserve-lens navigati
 |---|--------|----------------|
 | 2.1 | Observations ✅ | Index, Observations Health, Observations Insights |
 | 2.2 | Check-ins ✅ | Own clarity check-in hub (List), Check-ins Health, Check-ins Progress |
-| 2.3 | Abilities ✅ | Abilities index, Milestones Health, Abilities Insights |
+| 2.3 | Abilities / Milestones ✅ | Abilities triad + Milestones triad (Recent / Health / Insights); chart split |
 | 2.4 | Cleanup (partial) ✅ | Removed Insights-duplicate Other actions / View Analytics / Milestones Health outline btn. **Health domain switchers kept.** |
 
 **Gate:** Full v1 matrix works; main Insights nav can stay as alternate entry.
@@ -138,6 +140,21 @@ List + Insights only.
 - [x] Add Values to Object menu (with Assignments under org-catalog divider)
 - [x] Wire dual header on List, Health, Insights
 - [x] Values · Health v1: distribution, 10 best/worst, refresh missing & stale
+
+**Gate:** Approve before Phase 6.
+
+---
+
+## Phase 5.5 — Abilities / Milestones split ✅
+
+| Object | List | Health | Insights |
+|--------|------|--------|----------|
+| **Milestones** | Recent Milestones | Milestones Health (rewired) | Insights: Milestones (earned) |
+| **Abilities** | Abilities index | Abilities Health (EA shell) | Insights: Abilities (catalog charts only) |
+
+- [x] Object menu: Milestones above catalog divider; Abilities first under divider
+- [x] Insights chart split: milestones earned → Milestones Insights
+- [x] Abilities Health stub (scoring later)
 
 **Gate:** Approve before Phase 6.
 

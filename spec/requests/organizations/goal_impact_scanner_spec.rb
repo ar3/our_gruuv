@@ -13,7 +13,7 @@ RSpec.describe "Goal Impact Scanner", type: :request do
   end
 
   describe "GET /organizations/:organization_id/goal_impact_scanner" do
-    it "renders the beta scanner with company-visible hierarchy and advisory rollup" do
+    it "renders the hierarchy map with company-visible hierarchy and advisory rollup" do
       parent = create(
         :goal,
         :everyone_in_company,
@@ -64,8 +64,9 @@ RSpec.describe "Goal Impact Scanner", type: :request do
       get organization_goal_impact_scanner_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Goal Impact Scanner")
-      expect(response.body).to include("Beta")
+      expect(response.body).to include("Goals Hierarchy Map")
+      expect(response.body).not_to include("Goal Impact Scanner")
+      expect(response.body).not_to include('badge text-bg-warning')
       expect(response.body).to include("Company Rock")
       expect(response.body).to include("Team Contributor")
       expect(response.body).not_to include("Private Goal")

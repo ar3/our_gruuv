@@ -171,6 +171,11 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  # Abilities · Health — Expectation Alignment shell (scoring ships later).
+  def abilities_health?
+    view_abilities?
+  end
+
   def view_assignments?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

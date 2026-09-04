@@ -8,9 +8,11 @@ module ObjectLensHeaderHelper
     { key: :goals, label: "Goals" },
     { key: :observations, label: "Observations" },
     { key: :check_ins, label: "Check-ins" },
-    { key: :abilities, label: "Abilities" },
-    # Org/MAAP catalog — not person-scoped like the objects above.
-    { key: :assignments, label: "Assignments", divider_before: true },
+    # Person-scoped last before catalog divider.
+    { key: :milestones, label: "Milestones" },
+    # Org/MAAP catalog — Abilities first under the divider.
+    { key: :abilities, label: "Abilities", divider_before: true },
+    { key: :assignments, label: "Assignments" },
     { key: :values, label: "Values" }
   ].freeze
 
@@ -20,6 +22,7 @@ module ObjectLensHeaderHelper
     goals: :list,
     observations: :list,
     check_ins: :list,
+    milestones: :list,
     abilities: :list,
     assignments: :list,
     values: :list
@@ -74,10 +77,16 @@ module ObjectLensHeaderHelper
       organization_check_ins_health_path(organization)
     when %i[check_ins insights]
       organization_insights_check_ins_progress_path(organization)
+    when %i[milestones list]
+      celebrate_milestones_organization_path(organization)
+    when %i[milestones health]
+      organization_milestones_health_path(organization)
+    when %i[milestones insights]
+      organization_insights_milestones_path(organization)
     when %i[abilities list]
       organization_abilities_path(organization)
     when %i[abilities health]
-      organization_milestones_health_path(organization)
+      organization_abilities_health_path(organization)
     when %i[abilities insights]
       organization_insights_abilities_path(organization)
     when %i[assignments list]
@@ -121,10 +130,14 @@ module ObjectLensHeaderHelper
       policy(organization).check_ins_health?
     when %i[check_ins insights]
       policy(organization).check_ins_health?
-    when %i[abilities list], %i[abilities insights]
-      policy(organization).view_abilities?
-    when %i[abilities health]
+    when %i[milestones list]
+      policy(organization).show?
+    when %i[milestones health]
       policy(organization).milestones_health?
+    when %i[milestones insights]
+      policy(organization).view_abilities?
+    when %i[abilities list], %i[abilities insights], %i[abilities health]
+      policy(organization).view_abilities?
     when %i[assignments list], %i[assignments insights], %i[assignments health]
       policy(organization).view_assignments?
     when %i[values list], %i[values insights], %i[values health]

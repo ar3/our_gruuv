@@ -276,6 +276,11 @@ Rails.application.routes.draw do
     post :values_health_refresh_missing_and_stale,
          to: 'organizations/values_health#refresh_missing_and_stale',
          as: :values_health_refresh_missing_and_stale
+    get :abilities_health, to: 'organizations/abilities_health#index'
+    post :abilities_health_refresh, to: 'organizations/abilities_health#refresh', as: :abilities_health_refresh
+    post :abilities_health_refresh_missing_and_stale,
+         to: 'organizations/abilities_health#refresh_missing_and_stale',
+         as: :abilities_health_refresh_missing_and_stale
 
     resource :assignment_survey,
              path: "assignment-experience-survey",
@@ -656,6 +661,7 @@ Rails.application.routes.draw do
         get :customize_view
         patch :update_view
         post :bulk_update_check_ins
+        get :select_create
         get :bulk_new
         post :bulk_create
       end
@@ -784,6 +790,7 @@ Rails.application.routes.draw do
       get 'seats_titles_positions', to: 'insights#seats_titles_positions'
       get 'assignments', to: 'insights#assignments'
       get 'abilities', to: 'insights#abilities'
+      get 'milestones', to: 'insights#milestones'
       get 'values', to: 'insights#values'
       get 'goals', to: 'insights#goals'
       get 'who_is_doing_what', to: 'insights#who_is_doing_what'

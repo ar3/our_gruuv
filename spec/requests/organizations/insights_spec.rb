@@ -715,14 +715,14 @@ RSpec.describe 'Organizations::Insights', type: :request do
     end
 
     it 'renders abilities insights page with chart containers and timeframe links' do
-      allow_any_instance_of(OrganizationPolicy).to receive(:milestones_health?).and_return(true)
+      allow_any_instance_of(OrganizationPolicy).to receive(:abilities_health?).and_return(true)
       get organization_insights_abilities_path(organization)
       expect(response.body).to include('Insights: Abilities')
       expect(response.body).to include('Switch object')
       expect(response.body).to include('Switch page type')
       expect(response.body).to include('page-context-nav')
       expect(response.body).to include(organization_abilities_path(organization))
-      expect(response.body).to include(organization_milestones_health_path(organization))
+      expect(response.body).to include(organization_abilities_health_path(organization))
       expect(response.body).to include('Distribution of defined Milestones per Ability')
       expect(response.body).to include('Abilities by number of Assignments (grouped by Required Milestone)')
       expect(response.body).to include('Below are time-based analytics')
@@ -731,14 +731,38 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('milestones-distribution-chart')
       expect(response.body).to include('assignments-per-ability-chart')
       expect(response.body).to include('abilities-updated-chart')
-      expect(response.body).to include('milestones-earned-chart')
-      expect(response.body).to include('Milestones earned (by week)')
       expect(response.body).to include('observation-ratings-chart')
+      expect(response.body).not_to include('milestones-earned-chart')
+      expect(response.body).not_to include('Milestones earned (by week)')
     end
 
     it 'returns success with timeframe=year' do
       get organization_insights_abilities_path(organization, timeframe: 'year')
       expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/insights/milestones' do
+    before do
+      allow_any_instance_of(OrganizationPolicy).to receive(:view_abilities?).and_return(true)
+    end
+
+    it 'returns http success' do
+      get organization_insights_milestones_path(organization)
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'renders milestones earned chart and object lens switchers' do
+      allow_any_instance_of(OrganizationPolicy).to receive(:milestones_health?).and_return(true)
+      allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
+      get organization_insights_milestones_path(organization)
+      expect(response.body).to include('Insights: Milestones')
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include('Switch page type')
+      expect(response.body).to include(celebrate_milestones_organization_path(organization))
+      expect(response.body).to include(organization_milestones_health_path(organization))
+      expect(response.body).to include('milestones-earned-chart')
+      expect(response.body).to include('Milestones earned (by week)')
     end
   end
 end

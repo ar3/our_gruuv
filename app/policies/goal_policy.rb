@@ -16,6 +16,10 @@ class GoalPolicy < ApplicationPolicy
     create?
   end
 
+  def select_create?
+    create?
+  end
+
   def bulk_create?
     create?
   end

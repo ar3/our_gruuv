@@ -4,14 +4,22 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Recent Milestones", url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-trophy.me-2
-      Recent Milestones
-    .d-flex.align-items-center
-      = link_to new_organization_teammate_milestone_path(@organization), class: "btn btn-primary ml-2" do
-        %i.bi.bi-plus.me-2
-        Award Milestone
+  - object_lens_trailing = capture do
+    - if policy(TeammateMilestone).create?
+      = link_to new_organization_teammate_milestone_path(@organization),
+                class: "btn btn-primary",
+                title: "Add new Milestone",
+                "aria-label" => "Add new Milestone",
+                data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+        %i.bi.bi-plus
+    - else
+      .btn.btn-primary.disabled{title: "Add new Milestone", "aria-label" => "Add new Milestone"}
+        %i.bi.bi-plus
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :milestones,
+           current_lens: :list,
+           trailing: object_lens_trailing
 
 - content_for :header_action do
   = link_to customize_view_organization_teammate_milestones_path(@organization, params.except(:controller, :action, :page).permit!.to_h),

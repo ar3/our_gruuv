@@ -143,5 +143,6 @@ These five switcher pages should all follow the canonical pattern:
 | Protect Flow | `organizations/protect_flow/_page_help.html.haml` |
 | Check-ins Health | `organizations/check_ins_health/_page_help.html.haml` |
 | Goals Health | `organizations/goals_health/_page_help.html.haml` |
+| Abilities Health | `organizations/abilities_health/_page_help.html.haml` |
 | Milestones Health | `organizations/milestones_health/_page_help.html.haml` |
 | Observations Health | `organizations/observations_health/_page_help.html.haml` |

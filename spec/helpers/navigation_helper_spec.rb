@@ -215,7 +215,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, milestones_health?: true, observations_health?: true, assignments_health?: true, values_health?: true, view_slack_settings?: true, view_company_preferences?: true, protect_flow?: true, talent_density?: true, talent_density_explainer?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, milestones_health?: true, observations_health?: true, assignments_health?: true, values_health?: true, abilities_health?: true, view_slack_settings?: true, view_company_preferences?: true, protect_flow?: true, talent_density?: true, talent_density_explainer?: true, coach_inbox?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)
@@ -447,11 +447,15 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels.index('Goals Health')).to eq(4)
         expect(labels.index('Milestones Health')).to eq(5)
         expect(labels.index('Observations Health')).to eq(6)
-        expect(labels.index('Protect Flow')).to eq(7)
-        expect(labels.index('Observations')).to eq(8)
+        expect(labels.index('Assignments Health')).to eq(7)
+        expect(labels.index('Values Health')).to eq(8)
+        expect(labels.index('Abilities Health')).to eq(9)
+        expect(labels.index('Protect Flow')).to eq(10)
+        expect(labels.index('Observations')).to eq(11)
         expect(labels).to include('Seats, Titles, Positions')
         expect(labels).to include('Assignments')
         expect(labels).to include('Abilities')
+        expect(labels).to include('Milestones')
         expect(labels).to include('Goals')
         expect(labels).to include('Goals Health')
         expect(labels).to include('Milestones Health')
@@ -517,7 +521,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Check-ins Health')
       end
 
-      it 'includes Beta section with Insights, Position Comparison, Eligibility Requirements, Goal Impact Scanner, Position Suggestions, and Coach Inbox' do
+      it 'includes Beta section with Insights, Position Comparison, Eligibility Requirements, Position Suggestions, and Coach Inbox' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
@@ -528,7 +532,8 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Meeting transcripts')
         expect(labels).to include('Position Comparison')
         expect(labels).to include('Eligibility Requirements')
-        expect(labels).to include('Goal Impact Scanner')
+        expect(labels).not_to include('Goal Impact Scanner')
+        expect(labels).not_to include('Goals Hierarchy Map')
         expect(labels).to include('Position Suggestions')
         expect(labels).to include('Talent Density')
         expect(labels).to include('Coach Inbox')
@@ -658,11 +663,29 @@ RSpec.describe NavigationHelper, type: :helper do
         dashboard_index = structure.find_index { |item| item[:label] == "#{person.casual_name}'s Dashboard" }
         about_me_index = structure.find_index { |item| item[:label] == 'About Me' }
         ogo_index = structure.find_index { |item| item[:label] == 'Observations (OGO)' }
+        goals_index = structure.find_index { |item| item[:label] == 'Goals' && item[:section] == 'goals' }
 
         expect(og_academy_index).to eq(0)
         expect(dashboard_index).to eq(1)
         expect(about_me_index).to eq(2)
         expect(ogo_index).to eq(3)
+        expect(goals_index).to eq(4)
+      end
+    end
+
+    describe 'Goals section' do
+      it 'includes Goals section with Add New, personal goals, and Hierarchy Map' do
+        structure = helper.navigation_structure
+        goals_section = structure.find { |item| item[:label] == 'Goals' && item[:section] == 'goals' }
+        expect(goals_section).to be_present
+        expect(goals_section[:icon]).to eq('bi-bullseye')
+        labels = goals_section[:items].map { |item| item[:label] }
+        expect(labels).to eq(['Add New Goals', 'My personal goals', 'Goals Hierarchy Map'])
+        expect(goals_section[:items][0][:path]).to eq(helper.select_create_organization_goals_path(company))
+        expect(goals_section[:items][1][:path]).to eq(
+          helper.organization_goals_path(company, owner_id: "CompanyTeammate_#{teammate.id}")
+        )
+        expect(goals_section[:items][2][:path]).to eq(helper.organization_goal_impact_scanner_path(company))
       end
     end
   end

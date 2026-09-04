@@ -175,8 +175,18 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     chart_range = range || (52.weeks.ago..Time.current)
     @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
     @abilities_updated_chart_data = abilities_updated_chart_data(company, chart_range)
-    @milestones_earned_chart_data = abilities_milestones_earned_chart_data(company, chart_range)
     @observation_ratings_chart_data = abilities_observation_ratings_chart_data(company, chart_range)
+  end
+
+  def milestones
+    authorize company, :view_abilities?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
+    @milestones_earned_chart_data = abilities_milestones_earned_chart_data(company, chart_range)
   end
 
   def values

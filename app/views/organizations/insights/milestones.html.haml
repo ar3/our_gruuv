@@ -1,0 +1,86 @@
+- content_for :title, "Insights: Milestones"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Recent Milestones", url: celebrate_milestones_organization_path(@organization) }, { label: "Insights: Milestones", url: nil }])
+
+- content_for :header do
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :milestones,
+           current_lens: :insights
+
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_milestones_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-4'
+
+/ Milestones earned (by week)
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-success.text-white
+        %h5.mb-0
+          %i.bi.bi-trophy.me-2
+          Milestones earned (by week) — #{@chart_title_period}
+      .card-body
+        #milestones-earned-chart{style: "height: 320px;"}
+
+:javascript
+  (function() {
+    var milestonesEarnedData = #{@milestones_earned_chart_data.to_json};
+    var milestonesEarnedColors = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#6f42c1'];
+
+    function chart(elId, title, categories, series, stacked, seriesColors) {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById(elId);
+      if (!el) return;
+      var s = series;
+      if (seriesColors && seriesColors.length) {
+        s = series.map(function(ser, i) {
+          var out = { name: ser.name, data: ser.data };
+          if (seriesColors[i]) out.color = seriesColors[i];
+          return out;
+        });
+      }
+      Highcharts.chart(elId, {
+        chart: { type: 'column' },
+        title: { text: title },
+        accessibility: { enabled: false },
+        xAxis: { categories: categories, title: { text: stacked ? 'Week of' : 'Count' } },
+        yAxis: { min: 0, title: { text: 'Count' }, stackLabels: { enabled: !!stacked } },
+        plotOptions: { column: { stacking: stacked ? 'normal' : null, dataLabels: { enabled: false } } },
+        series: s
+      });
+    }
+
+    function initCharts() {
+      if (typeof Highcharts === 'undefined') return;
+      chart('milestones-earned-chart', 'Milestones earned by level', milestonesEarnedData.categories, milestonesEarnedData.series, true, milestonesEarnedColors);
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initCharts;
+        document.head.appendChild(script);
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+    window.addEventListener('load', function() {
+      if (typeof Highcharts !== 'undefined') initCharts();
+    });
+  })();

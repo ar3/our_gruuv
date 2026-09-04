@@ -22,6 +22,40 @@ RSpec.describe 'Organizations::Goals', type: :request do
     # Re-enable PaperTrail after tests
     PaperTrail.enabled = true
   end
+
+  describe 'GET /organizations/:organization_id/goals/select_create' do
+    it 'renders the add-new-goals chooser with owner scopes and single/bulk actions' do
+      get select_create_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Add New Goals')
+      expect(response.body).to include('Personal')
+      expect(response.body).to include('Team')
+      expect(response.body).to include('Department')
+      expect(response.body).to include('Company')
+      expect(response.body).to include('Single goal')
+      expect(response.body).to include('Bulk goals')
+      expect(response.body).to include(new_organization_goal_path(organization, owner_id: "CompanyTeammate_#{teammate.id}"))
+      expect(response.body).to include(bulk_new_organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}"))
+      expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Company_#{organization.id}"))
+    end
+
+    it 'preselects the teammate team and department when present' do
+      department = create(:department, company: organization, name: 'Engineering')
+      team = create(:team, company: organization, name: 'Platform')
+      create(:team_member, team: team, company_teammate: teammate)
+      tenure = create(:employment_tenure, company_teammate: teammate, company: organization)
+      tenure.position.title.update!(department: department)
+
+      get select_create_organization_goals_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Team_#{team.id}"))
+      expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Department_#{department.id}"))
+      expect(response.body).to include('Platform')
+      expect(response.body).to include('Engineering')
+    end
+  end
   
   describe 'GET /organizations/:organization_id/goals/new' do
     it 'renders the new goal form' do

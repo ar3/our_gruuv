@@ -199,6 +199,37 @@ module NavigationHelper
         ]
       },
       {
+        label: 'Goals',
+        icon: 'bi-bullseye',
+        section: 'goals',
+        items: [
+          {
+            label: 'Add New Goals',
+            icon: 'bi-plus-circle',
+            path: select_create_organization_goals_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? },
+            active_check: -> { controller_path == 'organizations/goals' && action_name == 'select_create' },
+            coming_soon: false
+          },
+          {
+            label: 'My personal goals',
+            icon: 'bi-bullseye',
+            path: current_company_teammate ? organization_goals_path(current_organization, owner_id: "CompanyTeammate_#{current_company_teammate.id}") : organization_goals_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? },
+            active_check: -> { nav_goals_item_active? },
+            coming_soon: false
+          },
+          {
+            label: 'Goals Hierarchy Map',
+            icon: 'bi-diagram-3',
+            path: organization_goal_impact_scanner_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? },
+            active_check: -> { controller_path == 'organizations/goal_impact_scanner' },
+            coming_soon: false
+          }
+        ]
+      },
+      {
         label: 'Teammate Directory',
         icon: 'bi-people',
         section: 'directory',
@@ -361,6 +392,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Abilities Health',
+            icon: 'bi-heart-pulse',
+            path: organization_abilities_health_path(current_organization),
+            policy_check: -> { policy(current_organization).abilities_health? },
+            coming_soon: false
+          },
+          {
             label: 'Protect Flow',
             icon: 'bi-shield-check',
             path: organization_protect_flow_path(current_organization),
@@ -410,6 +448,13 @@ module NavigationHelper
             label: 'Abilities',
             icon: 'bi-award',
             path: organization_insights_abilities_path(current_organization),
+            policy_check: -> { policy(current_company).view_abilities? },
+            coming_soon: false
+          },
+          {
+            label: 'Milestones',
+            icon: 'bi-trophy',
+            path: organization_insights_milestones_path(current_organization),
             policy_check: -> { policy(current_company).view_abilities? },
             coming_soon: false
           },
@@ -642,13 +687,6 @@ module NavigationHelper
             icon: 'bi-clipboard2-check',
             path: organization_assignment_survey_path(current_organization),
             policy_check: -> { current_company_teammate&.employed? && policy(current_company).show? },
-            coming_soon: false
-          },
-          {
-            label: 'Goal Impact Scanner',
-            icon: 'bi-diagram-3',
-            path: organization_goal_impact_scanner_path(current_organization),
-            policy_check: -> { policy(current_company).view_goals? },
             coming_soon: false
           },
           {
