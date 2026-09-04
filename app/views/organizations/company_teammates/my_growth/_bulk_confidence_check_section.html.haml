@@ -6,12 +6,7 @@
 - my_growth_goals_casual = teammate.person.casual_name.presence || teammate.person.display_name
 - bulk_return_url = my_growth_goals_organization_company_teammate_path(organization, teammate, timeframe: params[:timeframe])
 - draft_goals_url = organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}", status: 'draft', view: 'hierarchical-collapsible', return_url: bulk_return_url, return_text: weekly_goal_confidence_check_in_bulk_label)
-- new_goal_url = select_create_organization_goals_path(
-    organization,
-    for_company_teammate_id: teammate.id,
-    return_url: bulk_return_url,
-    return_text: weekly_goal_confidence_check_in_bulk_label
-  )
+- new_goal_url = select_create_organization_goals_path(organization, for_company_teammate_id: teammate.id, return_url: bulk_return_url, return_text: weekly_goal_confidence_check_in_bulk_label)
 
 = render 'shared/section_header',
   title: weekly_goal_confidence_check_in_bulk_label,
