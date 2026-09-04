@@ -23,12 +23,13 @@ module OneOnOne
 
     RATEABLE_TYPE_RANK = { "Assignment" => 0, "Aspiration" => 1, "Ability" => 2 }.freeze
 
-    attr_reader :priority, :organization, :teammate, :hub_return_url, :route_teammate_param
+    attr_reader :priority, :organization, :teammate, :viewer, :hub_return_url, :route_teammate_param
 
-    def initialize(priority:, organization:, teammate:, hub_return_url: nil, route_teammate_param: nil)
+    def initialize(priority:, organization:, teammate:, viewer: nil, hub_return_url: nil, route_teammate_param: nil)
       @priority = priority
       @organization = organization
       @teammate = teammate
+      @viewer = viewer || teammate
       @hub_return_url = hub_return_url
       @route_teammate_param = route_teammate_param || teammate
     end
@@ -169,11 +170,21 @@ module OneOnOne
       label = priority[:cta_label].to_s.presence
       return nil if label.blank?
 
+      if priority[:cta_kind] == :bulk_goals && !viewer_can_create_personal_goals_for_subject?
+        return {
+          label: label,
+          path: nil,
+          slack_url: nil,
+          disabled: true,
+          disabled_reason: bulk_goals_disabled_reason
+        }
+      end
+
       path = resolved_primary_action_path
       return nil if path.blank?
 
       slack_url = resolved_primary_action_slack_url(path)
-      { label: label, path: path, slack_url: slack_url }
+      { label: label, path: path, slack_url: slack_url, disabled: false }
     end
 
     def action_item_slack_lines
@@ -777,6 +788,15 @@ module OneOnOne
       end
     end
 
+    def viewer_can_create_personal_goals_for_subject?
+      viewer.present? && viewer.can_create_personal_goals_for?(teammate)
+    end
+
+    def bulk_goals_disabled_reason
+      name = teammate.person&.casual_name.presence || teammate.person&.display_name || "this teammate"
+      "You can't create goals for #{name}. You can create personal goals for yourself, people in your managerial hierarchy, or anyone if you manage employment for this company."
+    end
+
     def resolved_primary_action_path
       path = priority[:cta_path].to_s.presence
       return path if path.present?
@@ -805,7 +825,12 @@ module OneOnOne
       when :goals_index
         organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}")
       when :bulk_goals
-        bulk_new_organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+        select_create_organization_goals_path(
+          organization,
+          for_company_teammate_id: teammate.id,
+          return_url: one_on_one_hub_return_path,
+          return_text: "Back to #{teammate.person.casual_name}'s One Thing"
+        )
       when :associable_goals
         associable = priority[:cta_associable]
         return nil if associable.blank?
@@ -853,7 +878,12 @@ module OneOnOne
       when :goals_index
         organization_goals_url(organization, owner_id: "CompanyTeammate_#{teammate.id}")
       when :bulk_goals
-        bulk_new_organization_goals_url(organization, owner_id: "CompanyTeammate_#{teammate.id}")
+        select_create_organization_goals_url(
+          organization,
+          for_company_teammate_id: teammate.id,
+          return_url: one_on_one_hub_return_slack_url,
+          return_text: "Back to #{teammate.person.casual_name}'s One Thing"
+        )
       when :associable_goals
         associable_goals_choose_manage_slack_url(priority[:cta_associable])
       when :open_top_prioritized_check_in

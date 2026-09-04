@@ -41,6 +41,35 @@ RSpec.describe CompanyTeammate, type: :model do
     end
   end
 
+  describe '#can_create_personal_goals_for?' do
+    let(:company) { create(:organization, :company) }
+    let(:manager) do
+      create(:teammate, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+    end
+    let(:report) do
+      create(:teammate, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+    end
+    let(:peer) do
+      create(:teammate, organization: company, first_employed_at: 1.month.ago, last_terminated_at: nil)
+    end
+
+    before do
+      create(:employment_tenure, company: company, company_teammate: report, manager_teammate: manager, started_at: 1.month.ago, ended_at: nil)
+    end
+
+    it 'allows creating for self' do
+      expect(report.can_create_personal_goals_for?(report)).to eq(true)
+    end
+
+    it 'allows a manager in the hierarchy' do
+      expect(manager.can_create_personal_goals_for?(report)).to eq(true)
+    end
+
+    it 'denies a peer outside the hierarchy' do
+      expect(peer.can_create_personal_goals_for?(report)).to eq(false)
+    end
+  end
+
   describe '.self_and_reporting_hierarchy' do
     let(:company) { create(:organization, :company) }
     let(:manager_person) { create(:person) }

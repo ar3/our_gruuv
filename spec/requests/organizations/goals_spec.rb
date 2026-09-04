@@ -34,7 +34,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Department')
       expect(response.body).to include('Company')
       expect(response.body).to include('Single goal')
-      expect(response.body).to include('Bulk goals')
+      expect(response.body).to include('Multiple goals at once')
+      expect(response.body).to include('Default owner')
+      expect(response.body).to include('You can change the owner of a goal when editing the goals.')
       expect(response.body).to include(new_organization_goal_path(organization, owner_id: "CompanyTeammate_#{teammate.id}"))
       expect(response.body).to include(bulk_new_organization_goals_path(organization, owner_id: "CompanyTeammate_#{teammate.id}"))
       expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Company_#{organization.id}"))
@@ -54,6 +56,53 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Department_#{department.id}"))
       expect(response.body).to include('Platform')
       expect(response.body).to include('Engineering')
+    end
+
+    it 'targets a managed teammate when for_company_teammate_id is provided' do
+      report_person = create(:person, first_name: 'Riley', last_name: 'Report')
+      report = report_person.company_teammates.find_or_create_by!(organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+      create(
+        :employment_tenure,
+        company: organization,
+        company_teammate: report,
+        manager_teammate: teammate,
+        ended_at: nil
+      )
+      return_url = my_growth_goals_organization_company_teammate_path(organization, report)
+
+      get select_create_organization_goals_path(
+        organization,
+        for_company_teammate_id: report.id,
+        return_url: return_url,
+        return_text: 'Back to growth'
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Riley')
+      expect(response.body).to include('Creating goals in context for')
+      expect(response.body).to include("CompanyTeammate_#{report.id}")
+      expect(response.body).to include(CGI.escape('Back to growth'))
+      expect(response.body).to include(CGI.escape(return_url))
+      expect(response.body).not_to include("owner_id=CompanyTeammate_#{teammate.id}")
+    end
+
+    it 'honors for_company_teammate_id when the viewer can manage employment' do
+      teammate.update!(can_manage_employment: true)
+      other_person = create(:person, first_name: 'Casey', last_name: 'Colleague')
+      other = other_person.company_teammates.find_or_create_by!(organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+
+      get select_create_organization_goals_path(organization, for_company_teammate_id: other.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Casey')
+      expect(response.body).to include("CompanyTeammate_#{other.id}")
+      expect(response.body).not_to include("owner_id=CompanyTeammate_#{teammate.id}")
     end
   end
   
@@ -1458,6 +1507,10 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('My Teammate Goal')
       expect(response.body).not_to include('Other Teammate Goal')
+      expect(response.body).to include(select_create_organization_goals_path(organization))
+      expect(response.body).not_to include("Add goals for")
+      expect(response.body).not_to include("Create single goal")
+      expect(response.body).not_to include("Bulk create goals")
     end
 
     it 'loads the index for a specific CompanyTeammate and shows only that teammate\'s goals' do
@@ -1471,7 +1524,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Other Teammate Goal')
       expect(response.body).not_to include('My Teammate Goal')
-      expect(response.body).to include("Add goals for #{other_person.max_two_initials}")
+      expect(response.body).to include(select_create_organization_goals_path(organization))
     end
 
     it 'loads the index for Organization (Company) owner and shows only company-owned goals' do
@@ -1610,7 +1663,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get organization_goals_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Goals for')
+      expect(response.body).to include('Switch goals primary filter')
+      expect(response.body).to include(select_create_organization_goals_path(organization))
       expect(response.body).to include('<optgroup label="Filter">')
       expect(response.body).to include('<optgroup label="Teammates">')
       expect(response.body).to include('<optgroup label="Company">')

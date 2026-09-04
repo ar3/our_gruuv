@@ -65,7 +65,7 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       get organization_og_academy_milestones_path(company), headers: { 'Turbo-Frame' => 'og_academy_milestones' }
       body = response.body
       expect(body).to include(select_type_organization_observations_path(company))
-      expect(body).to include(new_organization_goal_path(company, owner_id: "CompanyTeammate_#{teammate.id}"))
+      expect(body).to include(select_create_organization_goals_path(company, for_company_teammate_id: teammate.id))
       expect(body).to include(organization_company_teammate_notifications_path(company, teammate))
       expect(body).to include(new_organization_feedback_request_path(company))
       expect(body).to include(ogos_feedback_requests_organization_company_teammate_path(company, "me"))

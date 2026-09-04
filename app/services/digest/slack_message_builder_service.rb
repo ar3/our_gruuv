@@ -474,7 +474,9 @@ module Digest
       end
 
       action = renderer.primary_action
-      if action && action[:slack_url].present?
+      if action && action[:disabled]
+        lines << "*Primary action:* #{slack_escape(action[:label])} _(unavailable — #{slack_escape(action[:disabled_reason])})_"
+      elsif action && action[:slack_url].present?
         tracked = with_one_on_one_digest_utm(slack_absolute_url(action[:slack_url]), content: 'follow_on_primary_action')
         lines << "*Primary action:* <#{tracked}|#{slack_escape(action[:label])}>"
       elsif action
@@ -487,7 +489,8 @@ module Digest
       OneOnOne::PriorityRenderer.new(
         priority: priority,
         organization: @organization,
-        teammate: @teammate
+        teammate: @teammate,
+        viewer: @teammate
       )
     end
 

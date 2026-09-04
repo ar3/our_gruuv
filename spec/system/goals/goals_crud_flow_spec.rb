@@ -31,10 +31,12 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       
       # Should see the goals index page
       expect(page).to have_content('Goals')
-      expect(page).to have_link(href: new_organization_goal_path(organization))
+      expect(page).to have_link(href: select_create_organization_goals_path(organization))
       
-      # Step 2: Click to create a new goal
-      first(:link, href: new_organization_goal_path(organization)).click
+      # Step 2: Click to create a new goal — chooser, then single
+      first(:link, href: select_create_organization_goals_path(organization)).click
+      expect(page).to have_content('Add New Goals')
+      click_link 'Single goal'
       
       # Should be on the new goal form
       expect(page).to have_content('New Goal')
@@ -870,9 +872,10 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       # Navigate to goals index to create new goal
       visit organization_goals_path(organization)
       
-      # Goals index has a dropdown: click the plus button and choose "Create single goal"
-      page.find('.dropdown button.dropdown-toggle').click
-      click_link 'Create single goal'
+      # Goals index plus opens the Add New Goals chooser
+      find('a[aria-label="Add new Goal"]').click
+      expect(page).to have_content('Add New Goals')
+      click_link 'Single goal'
       expect(page).to have_content('New Goal')
       expect(page).to have_field('goal_title')
     end

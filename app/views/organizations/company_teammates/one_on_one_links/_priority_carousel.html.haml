@@ -50,7 +50,7 @@
 
   .carousel-inner
     - priorities.each_with_index do |priority, idx|
-      - renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: organization, teammate: @teammate, hub_return_url: request.fullpath, route_teammate_param: teammate_route_param(@teammate))
+      - renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: organization, teammate: @teammate, viewer: current_company_teammate, hub_return_url: request.fullpath, route_teammate_param: teammate_route_param(@teammate))
       .carousel-item{class: (idx == first_attention_index ? "active" : nil)}
         .card{class: (priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success"))}
           .card-body
@@ -118,7 +118,18 @@
 
             - primary_action = renderer.primary_action
             - if primary_action.present?
-              = link_to primary_action[:label], primary_action[:path], class: "btn btn-sm btn-primary"
+              - if primary_action[:disabled]
+                %span.d-inline-flex.align-items-center.gap-2
+                  %button.btn.btn-sm.btn-primary{type: "button", disabled: true, "aria-disabled" => "true"}= primary_action[:label]
+                  %i.bi.bi-exclamation-triangle.text-warning{
+                    "data-bs-toggle" => "tooltip",
+                    "data-bs-placement" => "top",
+                    "data-bs-title" => primary_action[:disabled_reason],
+                    "aria-label" => primary_action[:disabled_reason],
+                    role: "img"
+                  }
+              - else
+                = link_to primary_action[:label], primary_action[:path], class: "btn btn-sm btn-primary"
             - elsif !priority[:needs_attention]
               %p.small.mb-0.text-muted
                 %i.bi.bi-stars.me-1

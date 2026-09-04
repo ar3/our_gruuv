@@ -405,6 +405,16 @@ class CompanyTeammate < ApplicationRecord
     check_hierarchy.call(other_teammate, visited)
   end
 
+  # Can open Add New Goals with Personal defaulted to +subject+ (self, manage employment, or manager).
+  def can_create_personal_goals_for?(subject)
+    return false unless subject.is_a?(CompanyTeammate)
+    return true if id == subject.id
+    return true if can_manage_employment?
+    return true if in_managerial_hierarchy_of?(subject)
+
+    false
+  end
+
   def current_manager
     employment_tenures.active.first&.manager_teammate&.person
   end

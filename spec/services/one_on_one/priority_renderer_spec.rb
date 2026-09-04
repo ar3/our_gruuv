@@ -26,4 +26,47 @@ RSpec.describe OneOnOne::PriorityRenderer do
       expect(lines.join).not_to match(%r{<\s*/organizations})
     end
   end
+
+  describe "#primary_action for bulk_goals" do
+    let(:priority) do
+      {
+        needs_attention: true,
+        not_applicable: false,
+        cta_kind: :bulk_goals,
+        cta_label: "Create goals"
+      }
+    end
+
+    it "links to the chooser when the viewer can create goals for the hub teammate" do
+      renderer = described_class.new(
+        priority: priority,
+        organization: organization,
+        teammate: teammate,
+        viewer: teammate
+      )
+
+      action = renderer.primary_action
+      expect(action[:disabled]).to eq(false)
+      expect(action[:path]).to include("select_create")
+      expect(action[:path]).to include("for_company_teammate_id=#{teammate.id}")
+    end
+
+    it "disables Create goals when the viewer cannot create for the hub teammate" do
+      peer_person = create(:person, first_name: "Pat", last_name: "Peer")
+      peer = create(:company_teammate, person: peer_person, organization: organization)
+
+      renderer = described_class.new(
+        priority: priority,
+        organization: organization,
+        teammate: teammate,
+        viewer: peer
+      )
+
+      action = renderer.primary_action
+      expect(action[:disabled]).to eq(true)
+      expect(action[:path]).to be_nil
+      expect(action[:disabled_reason]).to include("can't create goals for Alex")
+      expect(action[:disabled_reason]).to include("managerial hierarchy")
+    end
+  end
 end

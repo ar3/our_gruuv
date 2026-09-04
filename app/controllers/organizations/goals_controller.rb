@@ -387,40 +387,54 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def select_create
     authorize Goal.new, :select_create?
     company = @organization.root_company || @organization
-    teammate = current_company_teammate
+    subject_teammate = resolve_select_create_subject_teammate(company)
+    unless subject_teammate
+      redirect_to organization_goals_path(@organization),
+                  alert: 'You must be a company teammate to create goals.'
+      return
+    end
 
-    personal_owner = teammate ? "CompanyTeammate_#{teammate.id}" : nil
+    @return_url = params[:return_url].presence
+    @return_text = params[:return_text].presence
+    @subject_teammate = subject_teammate
+    @subject_is_current_user = subject_teammate.id == current_company_teammate&.id
+
+    personal_owner = "CompanyTeammate_#{subject_teammate.id}"
     company_owner = company ? "Company_#{company.id}" : nil
-    team = default_team_for_goal_create(teammate, company)
-    department = default_department_for_goal_create(teammate)
+    team = default_team_for_goal_create(subject_teammate, company)
+    department = default_department_for_goal_create(subject_teammate)
+    subject_name = subject_teammate.person&.casual_name.presence || subject_teammate.person&.display_name || 'this teammate'
 
     @create_scopes = [
       {
         key: :personal,
         label: 'Personal',
-        description: 'Goals you own as a teammate.',
+        description: @subject_is_current_user ? 'Goals you own as a teammate.' : "Goals owned by #{subject_name} as a teammate.",
         icon: 'bi-person',
         owner_id: personal_owner,
-        owner_label: teammate&.person&.casual_name.presence || 'You',
+        owner_label: subject_name,
+        owner_record: subject_teammate,
         hint: nil
       },
       {
         key: :team,
         label: 'Team',
-        description: 'Goals owned by a team you belong to.',
+        description: @subject_is_current_user ? 'Goals owned by a team you belong to.' : "Goals owned by a team #{subject_name} belongs to.",
         icon: 'bi-people',
         owner_id: team ? "Team_#{team.id}" : nil,
         owner_label: team&.display_name,
-        hint: team ? nil : 'Join a team first, then come back — or pick a team owner on the create page.'
+        owner_record: team,
+        hint: team ? nil : (@subject_is_current_user ? 'Join a team first, then come back — or pick a team owner on the create page.' : "#{subject_name} is not on a team yet — pick a team owner on the create page.")
       },
       {
         key: :department,
         label: 'Department',
-        description: 'Goals owned by your department.',
+        description: @subject_is_current_user ? 'Goals owned by your department.' : "Goals owned by #{subject_name}'s department.",
         icon: 'bi-building',
         owner_id: department ? "Department_#{department.id}" : nil,
         owner_label: department&.display_name,
-        hint: department ? nil : 'No department on your current position — pick a department owner on the create page.'
+        owner_record: department,
+        hint: department ? nil : (@subject_is_current_user ? 'No department on your current position — pick a department owner on the create page.' : "No department on #{subject_name}'s current position — pick a department owner on the create page.")
       },
       {
         key: :company,
@@ -429,6 +443,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         icon: 'bi-building-fill',
         owner_id: company_owner,
         owner_label: company&.display_name,
+        owner_record: company,
         hint: nil
       }
     ]
@@ -925,6 +940,36 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     return nil unless teammate
 
     teammate.active_employment_tenure&.position&.title&.department
+  end
+
+  # Subject for Add New Goals chooser: explicit teammate when allowed, else current viewer.
+  # Allowlist mirrors OneOnOneLinkPolicy#show? so Create goals from someone's One Thing
+  # keeps that teammate as the Personal default.
+  def resolve_select_create_subject_teammate(company)
+    viewer = current_company_teammate
+    return nil unless viewer
+
+    requested_id = params[:for_company_teammate_id].presence
+    if requested_id.blank? && params[:owner_id].to_s.start_with?('CompanyTeammate_')
+      requested_id = params[:owner_id].to_s.split('_', 2).last
+    end
+
+    return viewer if requested_id.blank?
+
+    subject = CompanyTeammate.includes(:person).find_by(id: requested_id, organization_id: company.id)
+    if subject.blank?
+      flash.now[:alert] = 'That teammate was not found; showing create options for you instead.'
+      return viewer
+    end
+
+    return subject if allowed_select_create_subject?(viewer, subject)
+
+    flash.now[:alert] = "You can view #{subject.person&.casual_name.presence || 'that teammate'}'s context, but not create goals as them; showing create options for you instead."
+    viewer
+  end
+
+  def allowed_select_create_subject?(viewer, subject)
+    viewer.can_create_personal_goals_for?(subject)
   end
 
   def build_owner_param_for_bulk

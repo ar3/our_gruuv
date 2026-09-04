@@ -131,7 +131,7 @@ module Organizations::OgAcademyHelper
     when :published_ogo, :observe_three, :four_ratings
       select_type_organization_observations_path(organization)
     when :added_goal, :linked_goals
-      new_organization_goal_path(organization, owner_id: "CompanyTeammate_#{company_teammate.id}")
+      select_create_organization_goals_path(organization, for_company_teammate_id: company_teammate.id)
     when :confidence_checks
       my_growth_goals_organization_company_teammate_path(organization, company_teammate)
     when :notifications

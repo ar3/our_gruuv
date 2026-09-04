@@ -4,9 +4,16 @@
   Add New Goals
 
 .container-fluid.py-4
+  - unless @subject_is_current_user
+    - subject_name = @subject_teammate.person&.casual_name.presence || @subject_teammate.person&.display_name || 'this teammate'
+    .alert.alert-info.mb-4
+      Creating goals in context for
+      %strong= subject_name
+      — Personal defaults to them. Team and department defaults use their memberships.
+
   %p.text-muted.mb-4
     Choose who the goal(s) will belong to, then whether you are creating one goal or several at once.
-    Your choice pre-selects the owner on the next page — you can still change it there.
+    Your choice pre-selects the owner on the next page.
 
   .row.g-4
     - @create_scopes.each do |scope|
@@ -18,25 +25,39 @@
               %div
                 %h3.mb-1= scope[:label]
                 %p.text-muted.mb-0= scope[:description]
-                - if scope[:owner_label].present?
-                  %p.small.mb-0.mt-2
-                    %span.text-muted Default owner:
-                    %strong= scope[:owner_label]
-                - if scope[:hint].present?
-                  %p.small.text-muted.mb-0.mt-2
-                    %i.bi.bi-info-circle.me-1
-                    = scope[:hint]
+
+            - if scope[:owner_label].present?
+              .border.rounded.bg-light.px-3.py-2.mb-3
+                %div.small.text-muted.mb-1 Default owner
+                .d-flex.align-items-center.gap-2
+                  - record = scope[:owner_record]
+                  - if record.is_a?(CompanyTeammate)
+                    = teammate_profile_image(record, size: 40)
+                  - elsif record.present?
+                    = group_avatar(record, size: 40)
+                  %span.fw-semibold.fs-5= scope[:owner_label]
+
+            - if scope[:hint].present?
+              %p.small.text-muted.mb-3
+                %i.bi.bi-info-circle.me-1
+                = scope[:hint]
 
             .mt-auto.d-flex.flex-wrap.gap-2
-              - single_params = scope[:owner_id].present? ? { owner_id: scope[:owner_id] } : {}
-              - bulk_params = scope[:owner_id].present? ? { owner_id: scope[:owner_id] } : {}
-              = link_to new_organization_goal_path(@organization, single_params), class: "btn btn-primary" do
+              - link_params = {}
+              - link_params[:owner_id] = scope[:owner_id] if scope[:owner_id].present?
+              - link_params[:return_url] = @return_url if @return_url.present?
+              - link_params[:return_text] = @return_text if @return_text.present?
+              = link_to new_organization_goal_path(@organization, link_params), class: "btn btn-primary" do
                 %i.bi.bi-plus-lg.me-1
                 Single goal
-              = link_to bulk_new_organization_goals_path(@organization, bulk_params), class: "btn btn-outline-primary" do
-                %i.bi.bi-list-ul.me-1
-                Bulk goals
+              = link_to bulk_new_organization_goals_path(@organization, link_params), class: "btn btn-outline-primary" do
+                %i.bi.bi-plus-lg.me-1
+                Multiple goals at once
               - if scope[:key] == :team && scope[:owner_id].blank?
                 = link_to my_teams_organization_path(@organization), class: "btn btn-outline-secondary" do
                   %i.bi.bi-people.me-1
                   My Teams
+
+  %p.small.text-muted.mt-4.mb-0
+    %i.bi.bi-info-circle.me-1
+    You can change the owner of a goal when editing the goals.
