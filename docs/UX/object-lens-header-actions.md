@@ -1,6 +1,7 @@
 # Object × Lens header actions (List / Show)
 
-**Canonical list example:** Assignments index — `app/views/organizations/assignments/index.html.haml`.
+**Canonical list example:** Assignments index — `app/views/organizations/assignments/index.html.haml`.  
+**Also applied:** Values (aspirations) list / Values Health / Insights: Values.
 
 **Cursor rule:** `.cursor/rules/object-lens-header-actions.mdc`.
 

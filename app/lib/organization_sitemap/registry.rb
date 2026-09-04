@@ -410,6 +410,10 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).assignments_health? },
             goal: "See Expectation Alignment Scores across assignments and refresh missing or stale scores.",
             synonyms: %w[assignments health assignment health expectation alignment]),
+          insights_page(:values_health, "Values Health", "bi-heart-pulse", :organization_values_health_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).values_health? },
+            goal: "See Expectation Alignment Scores across aspirational values and refresh missing or stale scores.",
+            synonyms: %w[values health value health aspiration health expectation alignment]),
           insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
             policy: ->(ctx) {
               ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?

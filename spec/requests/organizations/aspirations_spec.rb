@@ -34,6 +34,17 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Aspirations')
       end
+
+      it 'shows Values object lens header with page help' do
+        get organization_aspirations_path(organization)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Switch object')
+        expect(response.body).to include('Switch page type')
+        expect(response.body).to include('valuesListPageHelp')
+        expect(response.body).to include('Goal of this page')
+        expect(response.body).to include(organization_values_health_path(organization))
+        expect(response.body).to include(organization_insights_values_path(organization))
+      end
     end
 
     context 'when user has MAAP permissions' do
@@ -46,6 +57,13 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
         get organization_aspirations_path(organization)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Aspirations')
+      end
+
+      it 'shows Add new Value control for MAAP managers' do
+        get organization_aspirations_path(organization)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('aria-label="Add new Value"')
+        expect(response.body).to include(new_organization_aspiration_path(organization))
       end
     end
 

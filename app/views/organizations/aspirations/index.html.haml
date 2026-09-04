@@ -1,19 +1,35 @@
 - content_for :title, "Aspirations"
+- page_help_id = "valuesListPageHelp"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Aspirations", url: nil }])
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 
-      Aspirations
-      - if policy(Aspiration).create?
-        = link_to new_organization_aspiration_path(@organization), class: "btn btn-primary" do
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Browse and manage aspirational values. Click for a full breakdown."
+    - if policy(Aspiration).create?
+      = link_to new_organization_aspiration_path(@organization),
+                class: "btn btn-primary",
+                title: "Add new Value",
+                "aria-label" => "Add new Value",
+                data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+        %i.bi.bi-plus
+    - else
+      %span.d-inline-flex.align-items-center.gap-2
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;", "aria-label" => "Add new Value"}
           %i.bi.bi-plus
-      - else
-        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-          %i.bi.bi-plus
-        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permission to create aspirations"}
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permission to create values"}
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :values,
+           current_lens: :list,
+           trailing: object_lens_trailing
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/aspirations/page_help"
+
 - content_for :header_action do
   %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#aspirationsFilterModal", type: "button"}
     %i.bi.bi-funnel.me-2

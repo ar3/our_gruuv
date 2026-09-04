@@ -1,5 +1,5 @@
 ---
-description: When changing views, find and run associated request specs
+description: When changing views, find/add and run associated request specs
 globs: app/views/**/*
 alwaysApply: false
 ---
@@ -11,17 +11,22 @@ When you make changes to a view (templates, partials, or view-related helpers):
 1. **Find relevant request specs**
    - Look in `spec/requests/` for specs that hit the same controller/action or URL as the view.
    - Match by path: e.g. `app/views/huddles/show.html.haml` → look for request specs that `get huddle_path(...)` or `get "/huddles/:id"`.
-   - Also check specs named after the resource (e.g. `spec/requests/organizations/teams_*`, `spec/requests/organizations/slack/channels_spec.rb` for Slack channel views).
+   - Also check specs named after the resource (e.g. `spec/requests/organizations/teams_*`, `spec/requests/organizations/slack/channels*` that might render the teams or Slack channel UI).
 
-2. **Run those specs**
-   - Run the specific request spec file(s) that exercise the changed view.
-   - If no request spec clearly targets that view, run any request specs that touch the same controller or feature area.
+2. **Add coverage if missing**
+   - Every page-level view should have **at least one** request spec.
+   - If none exists for this page, add a minimal request example in the same change (success + a few stable body assertions: header/object-lens, page-help, primary CTA, key section).
+   - Do not leave a new or materially changed page without request coverage.
 
-3. **Fix or note**
+3. **Run those specs**
+   - Run the specific request spec file(s) that exercise the changed view before finishing.
+   - Also run closely related request/unit specs when the change spans controller/service behavior.
+   - Broader rule: `.cursor/rules/run-relevant-specs-after-implementations.mdc` (always apply).
+
+4. **Fix failures**
    - If any fail, fix the view or spec as appropriate.
-   - If there are no request specs for that view, consider noting it; do not block the change.
 
-4. **Apply page-help UX pattern when relevant**
+5. **Apply page-help UX pattern when relevant**
    - For page-level views that need user guidance, follow `.cursor/rules/page-help-ux-pattern.mdc`.
    - Keep the pattern consistent (info icon + hover tooltip + click-expand help), but adapt examples/legends/content to the current page.
 

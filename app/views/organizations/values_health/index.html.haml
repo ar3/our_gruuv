@@ -1,14 +1,14 @@
-- content_for :title, "Assignments Health"
-- page_help_id = "assignmentsHealthPageHelp"
+- content_for :title, "Values Health"
+- page_help_id = "valuesHealthPageHelp"
 
 - content_for :header do
   - object_lens_trailing = capture do
     = render "shared/page_help/header_info_button",
              collapse_id: page_help_id,
-             tooltip: "See Expectation Alignment across assignments. Click for a full breakdown."
+             tooltip: "See Expectation Alignment across values. Click for a full breakdown."
   = render "shared/object_lens_header/switchers",
            organization: @organization,
-           current_object: :assignments,
+           current_object: :values,
            current_lens: :health,
            trailing: object_lens_trailing
 
@@ -16,10 +16,10 @@
   = content_for :go_back_link
 
 .collapse.mb-4{id: page_help_id}
-  = render "organizations/assignments_health/page_help"
+  = render "organizations/values_health/page_help"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments Health", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Values Health", url: nil }])
 
 .row.justify-content-center.mb-4
   .col-lg-12
@@ -30,7 +30,7 @@
             .row.text-center
               .col-3
                 .h3.text-primary= @overview.total_count
-                %small.text-muted Non-archived
+                %small.text-muted Active values
               .col-3
                 .h3.text-success= @overview.scored_count
                 %small.text-muted Scored
@@ -51,15 +51,15 @@
                 %strong= "#{@overview.refreshable_count} need refresh"
       .card-footer.bg-light
         %small.text-muted
-          Expectation Alignment Score bands match the per-assignment gauge (Strongly Mis-aligned → Strongly Aligned). Clarity of expectations is the first step to knowing where people stand.
+          Expectation Alignment Score bands match the per-value gauge (Strongly Mis-aligned → Strongly Aligned). Shared meaning of each value is how people know what “living it” looks like.
 
 .row.justify-content-center.mb-3
   .col-lg-12
     = render "organizations/health/dashboard_toolbar",
       organization: @organization,
-      current: :assignments_health,
+      current: :values_health,
       show_switcher: false,
-      other_actions: assignments_health_other_actions(@organization, refreshable_count: @overview.refreshable_count)
+      other_actions: values_health_other_actions(@organization, refreshable_count: @overview.refreshable_count)
 
 .row.justify-content-center.mb-4
   .col-lg-12
@@ -70,23 +70,23 @@
           Score distribution
       .card-body
         - if @overview.total_count.zero?
-          %p.text-muted.mb-0 No non-archived assignments yet.
+          %p.text-muted.mb-0 No active values yet.
         - else
-          #assignments-health-distribution-chart{style: "height: 320px;"}
+          #values-health-distribution-chart{style: "height: 320px;"}
 
 .row.justify-content-center.mb-4
   .col-lg-6.mb-4.mb-lg-0
-    = render "organizations/assignments_health/score_list",
+    = render "organizations/values_health/score_list",
              title: "10 best",
              icon: "bi-stars",
              rows: @overview.best,
-             empty_message: "No scored assignments yet. Refresh missing scores to populate this list."
+             empty_message: "No scored values yet. Refresh missing scores to populate this list."
   .col-lg-6
-    = render "organizations/assignments_health/score_list",
+    = render "organizations/values_health/score_list",
              title: "10 worst",
              icon: "bi-exclamation-octagon",
              rows: @overview.worst,
-             empty_message: "No scored assignments yet. Refresh missing scores to populate this list."
+             empty_message: "No scored values yet. Refresh missing scores to populate this list."
 
 - if @overview.refreshable_rows.any?
   - refreshable_preview = @overview.refreshable_rows.first(25)
@@ -100,7 +100,7 @@
           %span.badge.text-bg-secondary= @overview.refreshable_count
         .card-body
           %p.small.text-muted.mb-3
-            Scores older than one day, or assignments with no calculated score, can be queued for a background refresh.
+            Scores older than one day, or values with no calculated score, can be queued for a background refresh.
             - if @overview.refreshable_count > refreshable_preview.size
               Showing the first #{refreshable_preview.size} of #{@overview.refreshable_count}; use
               %strong Refresh missing &amp; stale
@@ -109,7 +109,7 @@
             %table.table.table-sm.table-hover.mb-0
               %thead
                 %tr
-                  %th Assignment
+                  %th Value
                   %th Status
                   %th Last calculated
                   %th
@@ -117,7 +117,7 @@
                 - refreshable_preview.each do |row|
                   %tr
                     %td
-                      = link_to row.assignment.title, organization_assignment_path(@organization, row.assignment)
+                      = link_to row.aspiration.name, organization_aspiration_path(@organization, row.aspiration)
                     %td
                       - if row.missing?
                         %span.badge.text-bg-warning Missing
@@ -130,12 +130,37 @@
                       - else
                         Never
                     %td.text-end
-                      = button_to organization_assignments_health_refresh_path(@organization, assignment_id: row.assignment.id),
+                      = button_to organization_values_health_refresh_path(@organization, aspiration_id: row.aspiration.id),
                                   method: :post,
                                   class: "btn btn-outline-secondary btn-sm",
                                   form: { class: "d-inline" } do
                         %i.bi.bi-arrow-clockwise.me-1
                         Refresh
+
+%h2.h4.mb-3.mt-5#values-clarity
+  %i.bi.bi-diagram-3.me-2
+  Values check-in clarity
+%p.text-muted.mb-3
+  How often employee, manager, and final ratings agree on the latest finalized values check-in.
+  Dots mode always redacts. Names mode shows identities you can see: everyone if you have manage employment,
+  otherwise yourself and people in your managerial hierarchy.
+
+.d-flex.flex-wrap.align-items-center.gap-2.mb-3
+  %span.text-muted Show
+  .btn-group{role: "group", "aria-label": "Marker style"}
+    = link_to "Dots",
+      organization_values_health_path(@organization),
+      class: "btn btn-sm #{@clarity_display == 'dots' ? 'btn-primary' : 'btn-outline-primary'}"
+    = link_to "Names",
+      organization_values_health_path(@organization, display: 'names'),
+      class: "btn btn-sm #{@clarity_display == 'names' ? 'btn-primary' : 'btn-outline-primary'}"
+
+= render "organizations/insights/values_clarity_grid",
+  query: @clarity_query,
+  display: @clarity_display,
+  organization: @organization,
+  viewer_teammate: current_company_teammate,
+  can_manage_employment: @can_manage_employment
 
 - if @overview.total_count.positive?
   :javascript
@@ -144,14 +169,14 @@
 
       function initChart() {
         if (typeof Highcharts === 'undefined') return;
-        var el = document.getElementById('assignments-health-distribution-chart');
+        var el = document.getElementById('values-health-distribution-chart');
         if (!el) return;
-        Highcharts.chart('assignments-health-distribution-chart', {
+        Highcharts.chart('values-health-distribution-chart', {
           chart: { type: 'column' },
           title: { text: null },
           accessibility: { enabled: false },
           xAxis: { categories: chartData.categories, title: { text: 'Alignment band' } },
-          yAxis: { min: 0, allowDecimals: false, title: { text: 'Assignments' } },
+          yAxis: { min: 0, allowDecimals: false, title: { text: 'Values' } },
           legend: { enabled: false },
           plotOptions: {
             column: {

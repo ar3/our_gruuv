@@ -55,15 +55,15 @@ RSpec.describe AssignmentSurveys::ExpectationAlignmentScore do
   end
 
   describe ".band_for_score" do
-    it "maps the 0–100 bands using survey quality keys" do
-      expect(described_class.band_for_score(0)[:key]).to eq(:critical)
-      expect(described_class.band_for_score(29.9)[:label]).to eq("Worst")
-      expect(described_class.band_for_score(30)[:key]).to eq(:poor)
-      expect(described_class.band_for_score(50)[:key]).to eq(:concerning)
-      expect(described_class.band_for_score(65)[:key]).to eq(:strained)
-      expect(described_class.band_for_score(80)[:key]).to eq(:healthy)
-      expect(described_class.band_for_score(95)[:key]).to eq(:incredible)
-      expect(described_class.band_for_score(100)[:label]).to eq("Great")
+    it "maps the 0–100 bands using alignment language keys" do
+      expect(described_class.band_for_score(0)[:key]).to eq(:strongly_misaligned)
+      expect(described_class.band_for_score(29.9)[:label]).to eq("Strongly Mis-aligned")
+      expect(described_class.band_for_score(30)[:key]).to eq(:misaligned)
+      expect(described_class.band_for_score(50)[:key]).to eq(:slightly_misaligned)
+      expect(described_class.band_for_score(65)[:key]).to eq(:slightly_aligned)
+      expect(described_class.band_for_score(80)[:key]).to eq(:aligned)
+      expect(described_class.band_for_score(95)[:key]).to eq(:strongly_aligned)
+      expect(described_class.band_for_score(100)[:label]).to eq("Strongly Aligned")
     end
   end
 

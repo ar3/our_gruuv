@@ -10,7 +10,8 @@ module ObjectLensHeaderHelper
     { key: :check_ins, label: "Check-ins" },
     { key: :abilities, label: "Abilities" },
     # Org/MAAP catalog — not person-scoped like the objects above.
-    { key: :assignments, label: "Assignments", divider_before: true }
+    { key: :assignments, label: "Assignments", divider_before: true },
+    { key: :values, label: "Values" }
   ].freeze
 
   # Browse slot: Overall uses Directory; typed objects use List.
@@ -20,7 +21,8 @@ module ObjectLensHeaderHelper
     observations: :list,
     check_ins: :list,
     abilities: :list,
-    assignments: :list
+    assignments: :list,
+    values: :list
   }.freeze
 
   LENS_LABELS = {
@@ -84,6 +86,12 @@ module ObjectLensHeaderHelper
       organization_assignments_health_path(organization)
     when %i[assignments insights]
       organization_insights_assignments_path(organization)
+    when %i[values list]
+      organization_aspirations_path(organization)
+    when %i[values health]
+      organization_values_health_path(organization)
+    when %i[values insights]
+      organization_insights_values_path(organization)
     else
       nil
     end
@@ -119,6 +127,8 @@ module ObjectLensHeaderHelper
       policy(organization).milestones_health?
     when %i[assignments list], %i[assignments insights], %i[assignments health]
       policy(organization).view_assignments?
+    when %i[values list], %i[values insights], %i[values health]
+      policy(organization).view_aspirations?
     else
       false
     end

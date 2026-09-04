@@ -2246,7 +2246,14 @@ $assignment-survey-quality-colors: (
   concerning: #d97706,
   strained: #c9a227,
   healthy: #2f9e69,
-  incredible: #14764a
+  incredible: #14764a,
+  // Expectation Alignment Score bands (same ramp; alignment language keys)
+  strongly_misaligned: #a02734,
+  misaligned: #ca3b49,
+  slightly_misaligned: #d97706,
+  slightly_aligned: #c9a227,
+  aligned: #2f9e69,
+  strongly_aligned: #14764a
 );
 
 .assignment-survey-quality-signal {

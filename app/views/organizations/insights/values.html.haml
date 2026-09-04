@@ -5,13 +5,15 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Aspirational Values", url: organization_aspirations_path(@organization) }, { label: "Insights: Values", url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center.flex-wrap.gap-2
-    %h1.mb-0.d-flex.align-items-center.gap-2
-      %i.bi.bi-heart.me-1
-      Insights: Values
-      = render "shared/page_help/header_info_button",
-               collapse_id: page_help_id,
-               tooltip: "Year-round view of which values are lived in OGOs. Click for details."
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Year-round view of which values are lived in OGOs. Click for details."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :values,
+           current_lens: :insights,
+           trailing: object_lens_trailing
 
 .collapse.mb-4{id: page_help_id}
   = render "organizations/insights/values_page_help"
@@ -22,13 +24,12 @@
   show_custom: true,
   custom_from: @insights_custom_from,
   custom_to: @insights_custom_to,
-  form_hidden_fields: (@clarity_display == 'names' ? { display: 'names' } : {}),
   wrapper_class: 'mb-4'
 
 %p.text-muted.mb-4
   Living values and champions use
   %strong= @chart_title_period
-  \. Clarity uses each person's latest finalized values check-in (not filtered by timeframe).
+  \.
 
 .row.mb-4
   .col-12
@@ -86,28 +87,3 @@
         .col-lg-6
           %h6.mb-3 Observers who wrote about this value
           = render 'organizations/insights/values_champions_table', rows: section.top_observers, empty_label: 'No public observers yet.'
-
-%h2.h4.mb-3.mt-5#values-clarity
-  %i.bi.bi-diagram-3.me-2
-  Values check-in clarity
-%p.text-muted.mb-3
-  How often employee, manager, and final ratings agree on the latest finalized values check-in.
-  Dots mode always redacts. Names mode shows identities you can see: everyone if you have manage employment,
-  otherwise yourself and people in your managerial hierarchy.
-
-.d-flex.flex-wrap.align-items-center.gap-2.mb-3
-  %span.text-muted Show
-  .btn-group{role: "group", "aria-label": "Marker style"}
-    = link_to "Dots",
-      organization_insights_values_path(@organization, values_insights_path_options(timeframe: @timeframe, custom_from: @insights_custom_from, custom_to: @insights_custom_to, display: 'dots')),
-      class: "btn btn-sm #{@clarity_display == 'dots' ? 'btn-primary' : 'btn-outline-primary'}"
-    = link_to "Names",
-      organization_insights_values_path(@organization, values_insights_path_options(timeframe: @timeframe, custom_from: @insights_custom_from, custom_to: @insights_custom_to, display: 'names')),
-      class: "btn btn-sm #{@clarity_display == 'names' ? 'btn-primary' : 'btn-outline-primary'}"
-
-= render "organizations/insights/values_clarity_grid",
-  query: @clarity_query,
-  display: @clarity_display,
-  organization: @organization,
-  viewer_teammate: current_company_teammate,
-  can_manage_employment: @can_manage_employment

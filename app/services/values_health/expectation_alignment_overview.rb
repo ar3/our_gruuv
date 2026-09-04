@@ -1,23 +1,15 @@
 # frozen_string_literal: true
 
-module AssignmentsHealth
-  # Org-wide Expectation Alignment Score rollup for Assignments · Health.
+module ValuesHealth
+  # Org-wide Expectation Alignment Score rollup for Values · Health.
   class ExpectationAlignmentOverview
     STALE_AFTER = 1.day
     LIST_LIMIT = 10
 
-    BAND_COLORS = {
-      strongly_misaligned: "#a02734",
-      misaligned: "#ca3b49",
-      slightly_misaligned: "#d97706",
-      slightly_aligned: "#c9a227",
-      aligned: "#2f9e69",
-      strongly_aligned: "#14764a",
-      unscored: "#6c757d"
-    }.freeze
+    BAND_COLORS = AssignmentsHealth::ExpectationAlignmentOverview::BAND_COLORS
 
     Row = Struct.new(
-      :assignment,
+      :aspiration,
       :score,
       :band,
       :calculated_at,
@@ -39,7 +31,7 @@ module AssignmentsHealth
       :best,
       :worst,
       :refreshable_rows,
-      :refreshable_assignment_ids,
+      :refreshable_aspiration_ids,
       keyword_init: true
     )
 
@@ -52,7 +44,7 @@ module AssignmentsHealth
       rows = build_rows
       scored = rows.reject(&:missing?).select { |row| row.score.present? }
       refreshable_rows = rows.select(&:refreshable?)
-      refreshable_ids = refreshable_rows.map { |row| row.assignment.id }
+      refreshable_ids = refreshable_rows.map { |row| row.aspiration.id }
 
       Result.new(
         total_count: rows.size,
@@ -63,10 +55,10 @@ module AssignmentsHealth
         average_score: average_for(scored),
         distribution: distribution_for(rows),
         chart_data: chart_data_for(rows),
-        best: scored.sort_by { |row| [-row.score.to_f, row.assignment.title.to_s.downcase] }.first(LIST_LIMIT),
-        worst: scored.sort_by { |row| [row.score.to_f, row.assignment.title.to_s.downcase] }.first(LIST_LIMIT),
+        best: scored.sort_by { |row| [-row.score.to_f, row.aspiration.name.to_s.downcase] }.first(LIST_LIMIT),
+        worst: scored.sort_by { |row| [row.score.to_f, row.aspiration.name.to_s.downcase] }.first(LIST_LIMIT),
         refreshable_rows: refreshable_rows,
-        refreshable_assignment_ids: refreshable_ids
+        refreshable_aspiration_ids: refreshable_ids
       )
     end
 
@@ -74,27 +66,27 @@ module AssignmentsHealth
 
     attr_reader :organization, :reference_time
 
-    def assignments
-      @assignments ||= Assignment.unarchived.for_company(organization).ordered.to_a
+    def aspirations
+      @aspirations ||= Aspiration.for_company(organization).ordered.to_a
     end
 
-    def scores_by_assignment_id
-      @scores_by_assignment_id ||= AssignmentExpectationAlignmentScore
-        .where(organization_id: organization.id, assignment_id: assignments.map(&:id))
-        .index_by(&:assignment_id)
+    def scores_by_aspiration_id
+      @scores_by_aspiration_id ||= AspirationExpectationAlignmentScore
+        .where(organization_id: organization.id, aspiration_id: aspirations.map(&:id))
+        .index_by(&:aspiration_id)
     end
 
     def build_rows
-      assignments.map do |assignment|
-        record = scores_by_assignment_id[assignment.id]
+      aspirations.map do |aspiration|
+        record = scores_by_aspiration_id[aspiration.id]
         missing = record.nil?
         calculated_at = record&.calculated_at
         stale = missing || calculated_at.blank? || calculated_at < (reference_time - STALE_AFTER)
         score = missing ? nil : record.score&.to_f
-        band = AssignmentSurveys::ExpectationAlignmentScore.band_for_score(score)
+        band = Aspirations::ExpectationAlignmentScore.band_for_score(score)
 
         Row.new(
-          assignment: assignment,
+          aspiration: aspiration,
           score: score,
           band: band,
           calculated_at: calculated_at,
@@ -118,7 +110,7 @@ module AssignmentsHealth
         counts[key] += 1
       end
 
-      bands = AssignmentSurveys::ExpectationAlignmentScore::SCORE_BANDS.map do |band|
+      bands = Aspirations::ExpectationAlignmentScore::SCORE_BANDS.map do |band|
         {
           key: band[:key],
           label: band[:label],
@@ -143,7 +135,7 @@ module AssignmentsHealth
         categories: dist.map { |bucket| bucket[:label] },
         series: [
           {
-            name: "Assignments",
+            name: "Values",
             data: dist.map { |bucket| { y: bucket[:count], color: bucket[:color] } }
           }
         ]

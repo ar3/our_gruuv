@@ -271,6 +271,11 @@ Rails.application.routes.draw do
     post :assignments_health_refresh_missing_and_stale,
          to: 'organizations/assignments_health#refresh_missing_and_stale',
          as: :assignments_health_refresh_missing_and_stale
+    get :values_health, to: 'organizations/values_health#index'
+    post :values_health_refresh, to: 'organizations/values_health#refresh', as: :values_health_refresh
+    post :values_health_refresh_missing_and_stale,
+         to: 'organizations/values_health#refresh_missing_and_stale',
+         as: :values_health_refresh_missing_and_stale
 
     resource :assignment_survey,
              path: "assignment-experience-survey",

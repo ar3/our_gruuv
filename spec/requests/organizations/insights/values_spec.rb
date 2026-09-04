@@ -109,7 +109,7 @@ RSpec.describe 'Organizations::Insights values', type: :request do
       expect(response.body).to include('Custom')
       expect(response.body).to include('Which values are we living?')
       expect(response.body).to include('Values champions')
-      expect(response.body).to include('Values check-in clarity')
+      expect(response.body).not_to include('aria-label="Marker style"')
       expect(response.body).to include(organization_aspirations_path(organization))
     end
 
@@ -178,95 +178,6 @@ RSpec.describe 'Organizations::Insights values', type: :request do
       expect(response.body).to include(observee_person.display_name)
       # Only the recent OGO counts in this timeframe
       expect(response.body).to match(/Integrity[\s\S]*?>1</)
-    end
-
-    context 'values check-in clarity redaction' do
-      let(:manager_person) { create(:person, first_name: 'Mgr', last_name: 'Boss') }
-      let!(:manager_teammate) do
-        create(
-          :company_teammate,
-          :assigned_employee,
-          person: manager_person,
-          organization: organization,
-          first_employed_at: 1.year.ago,
-          last_terminated_at: nil
-        )
-      end
-      let(:ic_person) { create(:person, first_name: 'Clarity', last_name: 'Subject') }
-      let!(:ic_teammate) do
-        create(
-          :company_teammate,
-          :assigned_employee,
-          person: ic_person,
-          organization: organization,
-          first_employed_at: 1.year.ago,
-          last_terminated_at: nil
-        )
-      end
-
-      before do
-        create(:employment_tenure, company_teammate: ic_teammate, company: organization, manager_teammate: manager_teammate)
-        create(
-          :aspiration_check_in,
-          :finalized,
-          teammate: ic_teammate,
-          aspiration: aspiration,
-          employee_rating: 'meeting',
-          manager_rating: 'meeting',
-          official_rating: 'exceeding'
-        )
-      end
-
-      it 'shows Dots/Names toggle and always uses dots by default' do
-        get organization_insights_values_path(organization)
-
-        expect(response).to have_http_status(:success)
-        expect(response.body).to include('Values check-in clarity')
-        expect(response.body).to include('aria-label="Marker style"')
-        expect(response.body).to include('talent-density-viz-dot')
-        expect(response.body).not_to include(ic_person.casual_name)
-      end
-
-      it 'keeps dots for managers and subjects when dots mode is selected' do
-        name_badge = /badge rounded-pill[^>]*>\s*#{Regexp.escape(ic_person.casual_name)}\s*</
-
-        sign_in_as_teammate_for_request(manager_person, organization)
-        get organization_insights_values_path(organization, display: 'dots')
-        expect(response.body).to include('talent-density-viz-dot')
-        expect(response.body).not_to match(name_badge)
-
-        sign_in_as_teammate_for_request(ic_person, organization)
-        get organization_insights_values_path(organization, display: 'dots')
-        expect(response.body).to include('talent-density-viz-dot')
-        expect(response.body).not_to match(name_badge)
-      end
-
-      it 'in names mode reveals the subject to their manager but not to unrelated viewers' do
-        get organization_insights_values_path(organization, display: 'names')
-        expect(response).to have_http_status(:success)
-        expect(response.body).not_to include(ic_person.casual_name)
-
-        sign_in_as_teammate_for_request(manager_person, organization)
-        get organization_insights_values_path(organization, display: 'names')
-        expect(response.body).to include(ic_person.casual_name)
-
-        sign_in_as_teammate_for_request(ic_person, organization)
-        get organization_insights_values_path(organization, display: 'names')
-        expect(response.body).to include(ic_person.casual_name)
-      end
-
-      context 'when viewer can manage employment' do
-        before do
-          allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
-        end
-
-        it 'unredacts all names when display=names' do
-          get organization_insights_values_path(organization, display: 'names')
-
-          expect(response).to have_http_status(:success)
-          expect(response.body).to include(ic_person.casual_name)
-        end
-      end
     end
   end
 end

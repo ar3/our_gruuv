@@ -354,6 +354,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Values Health',
+            icon: 'bi-heart-pulse',
+            path: organization_values_health_path(current_organization),
+            policy_check: -> { policy(current_organization).values_health? },
+            coming_soon: false
+          },
+          {
             label: 'Protect Flow',
             icon: 'bi-shield-check',
             path: organization_protect_flow_path(current_organization),

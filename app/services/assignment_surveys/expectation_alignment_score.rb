@@ -25,12 +25,12 @@ module AssignmentSurveys
 
     LIKERT_ATTRIBUTES = %i[understandable_rating possible_rating relevant_rating].freeze
 
-    # 0–100 display bands. Keys/icons align with AssignmentSurveys::QualitySignal
-    # so we reuse the survey quality colors. `%{assignment}` is replaced with the title.
+    # 0–100 display bands. Keys use alignment language (Strongly Mis-aligned → Strongly Aligned).
+    # Colors reuse the survey quality ramp via CSS aliases for these keys. `%{assignment}` → title.
     SCORE_BANDS = [
       {
-        key: :critical,
-        label: "Worst",
+        key: :strongly_misaligned,
+        label: "Strongly Mis-aligned",
         icon: "bi-x-octagon-fill",
         min: 0,
         max_exclusive: 30,
@@ -43,8 +43,8 @@ module AssignmentSurveys
           "to help make this Assignment more clear!"
       },
       {
-        key: :poor,
-        label: "Bad",
+        key: :misaligned,
+        label: "Mis-aligned",
         icon: "bi-emoji-frown-fill",
         min: 30,
         max_exclusive: 50,
@@ -57,8 +57,8 @@ module AssignmentSurveys
           "OG Consultation before the gap gets worse."
       },
       {
-        key: :concerning,
-        label: "Slightly Bad",
+        key: :slightly_misaligned,
+        label: "Slightly Mis-aligned",
         icon: "bi-exclamation-triangle-fill",
         min: 50,
         max_exclusive: 65,
@@ -70,8 +70,8 @@ module AssignmentSurveys
           "this Assignment doesn't keep generating confusion."
       },
       {
-        key: :strained,
-        label: "Slightly Good",
+        key: :slightly_aligned,
+        label: "Slightly Aligned",
         icon: "bi-exclamation-circle-fill",
         min: 65,
         max_exclusive: 80,
@@ -80,11 +80,11 @@ module AssignmentSurveys
           "an environment where flow state powered excellence can thrive! This score means taking on " \
           "%{assignment} is starting to land as understandable, appropriately challenging, and relevant, " \
           "with check-ins more often aligned than not—but there's still friction. Polish the outcomes and " \
-          "keep closing employee/manager rating gaps so “slightly good” becomes clearly good."
+          "keep closing employee/manager rating gaps so Slightly Aligned becomes clearly Aligned."
       },
       {
-        key: :healthy,
-        label: "Good",
+        key: :aligned,
+        label: "Aligned",
         icon: "bi-check-circle-fill",
         min: 80,
         max_exclusive: 95,
@@ -93,11 +93,11 @@ module AssignmentSurveys
           "flow state powered excellence can thrive! This score means that taking on %{assignment} is " \
           "generally understandable, an appropriate challenge, and relevant, and employee and manager " \
           "check-ins usually arrive at the same conclusion. Keep nurturing that alignment—small " \
-          "refinements to outcomes can push this from good to great."
+          "refinements to outcomes can push this from Aligned to Strongly Aligned."
       },
       {
-        key: :incredible,
-        label: "Great",
+        key: :strongly_aligned,
+        label: "Strongly Aligned",
         icon: "bi-stars",
         min: 95,
         max_exclusive: nil,

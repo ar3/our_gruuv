@@ -199,6 +199,11 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  # Values · Health — same audience as viewing Aspirational Values.
+  def values_health?
+    view_aspirations?
+  end
+
   def view_titles?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

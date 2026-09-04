@@ -193,21 +193,6 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       published_at_range: range
     )
     @living_ranked = @values_query.living_ranked
-
-    @can_manage_employment = policy(company).manage_employment?
-    @clarity_display = params[:display].to_s == 'names' ? 'names' : 'dots'
-
-    clarity_teammates = CompanyTeammate
-      .for_organization_hierarchy(company)
-      .where.not(first_employed_at: nil)
-      .where(last_terminated_at: nil)
-      .includes(:person)
-      .to_a
-    aspirations = Aspiration.for_company(company).includes(:department).ordered.to_a
-    @clarity_query = Insights::AspirationRatingAlignmentQuery.new(
-      teammates: clarity_teammates,
-      aspirations: aspirations
-    )
   end
 
   def goals

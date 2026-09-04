@@ -29,6 +29,7 @@ Changing one axis preserves the other when a destination exists; otherwise fall 
 | 5 | **Abilities** | Health → Milestones Health |
 | — | *divider* | Person-scoped objects above; org catalog below |
 | 6 | **Assignments** | Health → Expectation Alignment; not person-specific |
+| 7 | **Values** | Health → Expectation Alignment; org catalog with Assignments |
 
 ### Lens dropdown
 
@@ -53,8 +54,9 @@ For typed objects the first lens stays **List**. For Overall it is labeled **Dir
 | **Check-ins** | Own clarity check-in hub (`…/company_teammates/:me/check_ins`) | Check-ins Health | Check-ins Progress |
 | **Abilities** | Milestones & Abilities | Milestones Health | Insights: Abilities |
 | **Assignments** | Assignments index | Assignments Health | Insights: Assignments |
+| **Values** | Aspirational Values | Values Health | Insights: Values |
 
-Closed header reads like: `Overall · Directory`, `Overall · Health`, `Goals · List`, `Check-ins · List`, `Abilities · Insights`, `Assignments · Health`.
+Closed header reads like: `Overall · Directory`, `Overall · Health`, `Goals · List`, `Check-ins · List`, `Abilities · Insights`, `Assignments · Health`, `Values · Health`.
 
 ---
 
@@ -127,13 +129,15 @@ List + Insights only.
 
 ---
 
-## Phase 5 — Values
+## Phase 5 — Values ✅
 
 | Object | List | Health | Insights |
 |--------|------|--------|----------|
-| **Values** | Aspirational Values (admin list) | — | Insights: Values |
+| **Values** | Aspirational Values | Values Health (Expectation Alignment) | Insights: Values |
 
-**Note:** List is config-ish; confirm product comfort before shipping.
+- [x] Add Values to Object menu (with Assignments under org-catalog divider)
+- [x] Wire dual header on List, Health, Insights
+- [x] Values · Health v1: distribution, 10 best/worst, refresh missing & stale
 
 **Gate:** Approve before Phase 6.
 

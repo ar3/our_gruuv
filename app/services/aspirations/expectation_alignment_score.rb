@@ -14,82 +14,44 @@ module Aspirations
       old: 2
     }.freeze
 
-    # Same display bands as Assignments; Values-specific blurbs (`%{name}`).
-    SCORE_BANDS = [
-      {
-        key: :critical,
-        label: "Worst",
-        icon: "bi-x-octagon-fill",
-        min: 0,
-        max_exclusive: 30,
-        blurb:
-          "We have work to do! Making expectations clear is the first step to creating an environment " \
-          "where flow state powered excellence can thrive! This score means that when people check in on " \
-          "%{name}, employees and managers often arrive at DIFFERENT conclusions—a strong signal that " \
-          "what “living this value” looks like is MISALIGNED. Clarify what this Value means in practice " \
-          "and talk through recent check-ins until ratings start to converge."
-      },
-      {
-        key: :poor,
-        label: "Bad",
-        icon: "bi-emoji-frown-fill",
-        min: 30,
-        max_exclusive: 50,
-        blurb:
-          "This needs attention. Making expectations clear is the first step to creating an environment " \
-          "where flow state powered excellence can thrive! This score means check-ins on %{name} " \
-          "frequently end with the employee and manager in different places. Tighten how this Value is " \
-          "described and coached so “meeting expectations” means the same thing to both sides."
-      },
-      {
-        key: :concerning,
-        label: "Slightly Bad",
-        icon: "bi-exclamation-triangle-fill",
-        min: 50,
-        max_exclusive: 65,
-        blurb:
-          "We're below the line. Making expectations clear is the first step to creating an environment " \
-          "where flow state powered excellence can thrive! This score suggests check-ins on %{name} " \
-          "still disagree too often. Surface recent mismatches and align on concrete examples of what " \
-          "this Value looks like day to day."
-      },
-      {
-        key: :strained,
-        label: "Slightly Good",
-        icon: "bi-exclamation-circle-fill",
-        min: 65,
-        max_exclusive: 80,
-        blurb:
-          "On the right side of the line—barely. Making expectations clear is the first step to creating " \
-          "an environment where flow state powered excellence can thrive! Check-ins on %{name} agree more " \
-          "often than not, but friction remains. Keep closing employee/manager rating gaps so “slightly " \
-          "good” becomes clearly good."
-      },
-      {
-        key: :healthy,
-        label: "Good",
-        icon: "bi-check-circle-fill",
-        min: 80,
-        max_exclusive: 95,
-        blurb:
-          "Solid progress. Making expectations clear is the first step to creating an environment where " \
-          "flow state powered excellence can thrive! This score means employees and managers usually " \
-          "arrive at the same conclusion when checking in on %{name}. Keep nurturing that shared " \
-          "picture—small clarifications can push this from good to great."
-      },
-      {
-        key: :incredible,
-        label: "Great",
-        icon: "bi-stars",
-        min: 95,
-        max_exclusive: nil,
-        blurb:
-          "Congrats! Making expectations clear is the first step to creating an environment where flow " \
-          "state powered excellence can thrive! This score means that when check-ins are done on " \
-          "%{name}, the employee and manager often arrive at the same conclusion—the best indication " \
-          "of expectation alignment for this Value. Well done!"
-      }
-    ].freeze
+    # Same band keys/labels/ranges as Assignments; Values-specific blurbs (`%{name}`).
+    VALUE_BLURBS = {
+      strongly_misaligned:
+        "We have work to do! Making expectations clear is the first step to creating an environment " \
+        "where flow state powered excellence can thrive! This score means that when people check in on " \
+        "%{name}, employees and managers often arrive at DIFFERENT conclusions—a strong signal that " \
+        "what “living this value” looks like is MISALIGNED. Clarify what this Value means in practice " \
+        "and talk through recent check-ins until ratings start to converge.",
+      misaligned:
+        "This needs attention. Making expectations clear is the first step to creating an environment " \
+        "where flow state powered excellence can thrive! This score means check-ins on %{name} " \
+        "frequently end with the employee and manager in different places. Tighten how this Value is " \
+        "described and coached so “meeting expectations” means the same thing to both sides.",
+      slightly_misaligned:
+        "We're below the line. Making expectations clear is the first step to creating an environment " \
+        "where flow state powered excellence can thrive! This score suggests check-ins on %{name} " \
+        "still disagree too often. Surface recent mismatches and align on concrete examples of what " \
+        "this Value looks like day to day.",
+      slightly_aligned:
+        "On the right side of the line—barely. Making expectations clear is the first step to creating " \
+        "an environment where flow state powered excellence can thrive! Check-ins on %{name} agree more " \
+        "often than not, but friction remains. Keep closing employee/manager rating gaps so Slightly " \
+        "Aligned becomes clearly Aligned.",
+      aligned:
+        "Solid progress. Making expectations clear is the first step to creating an environment where " \
+        "flow state powered excellence can thrive! This score means employees and managers usually " \
+        "arrive at the same conclusion when checking in on %{name}. Keep nurturing that shared " \
+        "picture—small clarifications can push this from Aligned to Strongly Aligned.",
+      strongly_aligned:
+        "Congrats! Making expectations clear is the first step to creating an environment where flow " \
+        "state powered excellence can thrive! This score means that when check-ins are done on " \
+        "%{name}, the employee and manager often arrive at the same conclusion—the best indication " \
+        "of expectation alignment for this Value. Well done!"
+    }.freeze
+
+    SCORE_BANDS = AssignmentSurveys::ExpectationAlignmentScore::SCORE_BANDS.map do |band|
+      band.merge(blurb: VALUE_BLURBS.fetch(band[:key]))
+    end.freeze
 
     Cell = Struct.new(
       :band,

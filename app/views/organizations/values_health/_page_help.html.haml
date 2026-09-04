@@ -1,0 +1,32 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Ensure aspirational values have aligned expectations. When employee and manager check-ins land in the same place, people know what “living this value” means — and MAAP can work.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %p.mb-3
+    The Values Expectation Alignment Score (0–100) summarizes how often employee and manager check-ins on a value arrive at the same conclusion. Bands run Strongly Mis-aligned → Strongly Aligned, same as on each value’s score card.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you see
+  %ul.mb-3
+    %li Spotlight counts active values, how many have a score, how many are missing, and how many are stale (calculated more than a day ago).
+    %li The distribution chart shows how many values fall in each alignment band, plus “No score.”
+    %li The 10 best and 10 worst lists link to the value page.
+    %li Refresh missing &amp; stale queues background recalculations for empty or old scores.
+    %li
+      %strong Values check-in clarity
+      (below) plots the latest finalized values check-in per person × value. Use Dots / Names to switch marker style.
+      Dots always redact. Names shows people you can see: all teammates if you have manage employment,
+      otherwise only yourself and people in your managerial hierarchy.
+
+  %h5.fw-semibold.mb-2 Band legend
+  %ul.list-unstyled.mb-0
+    - Aspirations::ExpectationAlignmentScore::SCORE_BANDS.each do |band|
+      %li.mb-1
+        %span.assignment-survey-quality-signal{class: "assignment-survey-quality-#{band[:key]}"}
+          %i.bi{class: "#{band[:icon]} me-1"}
+          = band[:label]
+        %span.text-muted.small
+          — #{band[:min]}#{band[:max_exclusive] ? "–#{band[:max_exclusive] - 1}" : "+"}

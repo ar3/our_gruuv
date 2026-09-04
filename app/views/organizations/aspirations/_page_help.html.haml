@@ -1,0 +1,29 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Browse the organization’s aspirational values, keep them ordered and clear, and open a value to tighten what “living it” means.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %p.mb-3
+    Values are the cultural expectations the company holds. Clear, shared meaning — confirmed through aligned check-ins — is what makes values usable in MAAP.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Header
+  %ul.mb-3
+    %li
+      %strong Values · List
+      switches object and page type (Health, Insights).
+    %li The info icon expands this help.
+    %li
+      The
+      %i.bi.bi-plus
+      button creates a new value (requires MAAP management permission).
+
+  %h5.fw-semibold.mb-2 How to use the list
+  %ul.mb-3
+    %li Filter &amp; Sort controls which values appear and in what order.
+    %li
+      Each row links to the value. Switch to
+      %strong Health
+      to see Expectation Alignment scores across values.
