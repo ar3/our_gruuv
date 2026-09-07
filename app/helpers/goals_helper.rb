@@ -1137,12 +1137,17 @@ module GoalsHelper
     end
   end
 
-  # Options for the reusable on-track pill (shared/_on_track_pill). Returns nil when status is :na.
+  # Options for the reusable on-track / off-track pill. Returns nil when status is :na.
   # status: :good_green (dark green), :green (light green), :yellow, :red
   def on_track_pill_options(status)
     return nil if status.blank? || status == :na
 
-    label = status == :red ? 'Off Track' : 'On Track'
+    label =
+      case status
+      when :red then "Off Track"
+      when :yellow then "Barely On-Track"
+      else "On Track"
+      end
     case status
     when :good_green
       { label: label, style: 'background-color: #198754;', class: 'ms-1' }

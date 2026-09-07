@@ -10,24 +10,24 @@ module GoalsBulkEditHelper
 
   PROGRESS_STATUS_COPY = {
     good_green: {
-      title: "Ahead of schedule",
-      body: "Dark green means confidence is ahead of where it should be for the remaining time to the most-likely date."
+      title: "On Track",
+      body: "Dark green means this goal is On Track (strong confidence relative to the remaining time to the most-likely date)."
     },
     green: {
-      title: "On track",
-      body: "Light green means confidence is on schedule for the remaining time to the most-likely date."
+      title: "On Track",
+      body: "Light green means this goal is On Track (confidence matches the expected band for the remaining time to the most-likely date)."
     },
     yellow: {
-      title: "At risk",
-      body: "Yellow means confidence is behind where it should be for the remaining time to the most-likely date."
+      title: "Barely On-Track",
+      body: "Yellow means this goal is Barely On-Track (confidence is in the lower On Track band for the remaining time to the most-likely date)."
     },
     red: {
-      title: "Off track",
-      body: "Red means confidence is well behind schedule for the remaining time to the most-likely date."
+      title: "Off Track",
+      body: "Red means this goal is Off Track (confidence is below the expected band for the remaining time to the most-likely date)."
     },
     na: {
       title: "Started — track color not available",
-      body: "Blue means the goal is started, but on/off-track color is not available yet (needs a due date and a confidence check-in)."
+      body: "Blue means the goal is started, but On Track / Off Track color is not available yet (needs a due date and a confidence check-in)."
     }
   }.freeze
 
