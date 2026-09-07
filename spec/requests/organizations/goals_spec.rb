@@ -1043,6 +1043,154 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/goals with my_employees filters' do
+    def create_report!(first_name:, manager:)
+      report_person = create(:person, first_name: first_name, last_name: 'Report')
+      report = report_person.company_teammates.find_or_create_by!(organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+      create(
+        :employment_tenure,
+        company: organization,
+        company_teammate: report,
+        manager_teammate: manager,
+        started_at: 1.month.ago,
+        ended_at: nil
+      )
+      report
+    end
+
+    it 'lists direct-report active personal goals and filter options' do
+      direct = create_report!(first_name: 'Dana', manager: teammate)
+      skipper = create_report!(first_name: 'Skip', manager: direct)
+
+      visible_direct = create(
+        :goal,
+        creator: direct,
+        owner: direct,
+        title: 'Direct report rock',
+        started_at: 1.week.ago,
+        privacy_level: 'only_creator_owner_and_managers'
+      )
+      hidden_direct = create(
+        :goal,
+        creator: direct,
+        owner: direct,
+        title: 'Creator only rock',
+        started_at: 1.week.ago,
+        privacy_level: 'only_creator'
+      )
+      draft_direct = create(
+        :goal,
+        creator: direct,
+        owner: direct,
+        title: 'Draft report rock',
+        started_at: nil,
+        privacy_level: 'only_creator_owner_and_managers'
+      )
+      indirect_goal = create(
+        :goal,
+        creator: skipper,
+        owner: skipper,
+        title: 'Indirect report rock',
+        started_at: 1.week.ago,
+        privacy_level: 'only_creator_owner_and_managers'
+      )
+      own_goal = create(
+        :goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Manager own rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+
+      get organization_goals_path(organization, owner_id: 'my_employees')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My employees')
+      expect(response.body).to include('full hierarchy')
+      expect(response.body).to include('Direct report rock')
+      expect(response.body).to include(organization_goal_path(organization, visible_direct))
+      expect(response.body).not_to include('Creator only rock')
+      expect(response.body).not_to include(organization_goal_path(organization, hidden_direct))
+      expect(response.body).not_to include('Draft report rock')
+      expect(response.body).not_to include(organization_goal_path(organization, draft_direct))
+      expect(response.body).not_to include('Indirect report rock')
+      expect(response.body).not_to include(organization_goal_path(organization, indirect_goal))
+      expect(response.body).not_to include('Manager own rock')
+      expect(response.body).not_to include(organization_goal_path(organization, own_goal))
+    end
+
+    it 'lists full hierarchy when my_employees_hierarchy is selected' do
+      direct = create_report!(first_name: 'Dana', manager: teammate)
+      skipper = create_report!(first_name: 'Skip', manager: direct)
+
+      create(
+        :goal,
+        creator: direct,
+        owner: direct,
+        title: 'Direct hierarchy rock',
+        started_at: 1.week.ago,
+        privacy_level: 'only_creator_owner_and_managers'
+      )
+      create(
+        :goal,
+        creator: skipper,
+        owner: skipper,
+        title: 'Skip-level rock',
+        started_at: 1.week.ago,
+        privacy_level: 'only_creator_owner_and_managers'
+      )
+
+      get organization_goals_path(organization, owner_id: 'my_employees_hierarchy')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('full hierarchy')
+      expect(response.body).to include('Direct hierarchy rock')
+      expect(response.body).to include('Skip-level rock')
+    end
+
+    it 'shows privacy legend empty when the viewer has no direct reports' do
+      get organization_goals_path(organization, owner_id: 'my_employees')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Managers only see employees')
+      expect(response.body).to include('personal goals when privacy allows')
+      expect(response.body).to include('direct reports yet')
+      expect(response.body).to include('Only creator, owner, and managers')
+      expect(response.body).to include('Everyone in company')
+      expect(response.body).to include('Only creator')
+      expect(response.body).to include('Only creator and owner')
+      expect(response.body).to include('✓')
+      expect(response.body).to include('✗')
+    end
+
+    it 'links to Goals Health when reports exist but no matching visible goals' do
+      teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: nil)
+      direct = create_report!(first_name: 'Dana', manager: teammate)
+      create(
+        :goal,
+        creator: direct,
+        owner: direct,
+        title: 'Hidden from manager',
+        started_at: 1.week.ago,
+        privacy_level: 'only_creator'
+      )
+
+      get organization_goals_path(organization, owner_id: 'my_employees')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No active goals from your employees are visible')
+      expect(response.body).to include('Open Goals Health')
+      expect(response.body).to include(
+        organization_goals_health_path(organization, manager_id: "CompanyTeammate_#{teammate.id}")
+      )
+      expect(response.body).not_to include('disabled type="button">Open Goals Health')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals with default (hierarchical-collapsible) view' do
     let(:check_in_eligible_goal) do
       create(:goal,

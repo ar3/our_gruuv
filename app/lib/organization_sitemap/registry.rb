@@ -302,6 +302,15 @@ module OrganizationSitemap
             synonyms: %w[my department goals department related goals]
           ),
           page(
+            key: :my_employees_goals,
+            label: "My employees' goals",
+            icon: "bi-person-badge",
+            path: ->(ctx) { ctx.organization_goals_path(ctx.organization, owner_id: "my_employees") },
+            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
+            goal: "See active personal goals owned by your direct reports (or full reporting hierarchy via the filter).",
+            synonyms: %w[my employees goals employee goals reports goals manager goals]
+          ),
+          page(
             key: :goals_hierarchy_map,
             label: "Goals Hierarchy Map",
             icon: "bi-diagram-3",

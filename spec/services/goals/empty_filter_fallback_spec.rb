@@ -128,4 +128,52 @@ RSpec.describe Goals::EmptyFilterFallback do
       )
     end
   end
+
+  describe "my employees" do
+    it "shows a privacy legend when the viewer has no direct reports" do
+      result = described_class.call(
+        organization: organization,
+        viewer: viewer,
+        my_employees_filter: true,
+        can_view_goals_health: true
+      )
+
+      expect(result.kind).to eq(:employee_no_reports)
+      expect(result.message).to include("Managers only see employees' personal goals when privacy allows")
+      expect(result.privacy_legend.map { |e| e[:key] }).to include(
+        "only_creator_owner_and_managers",
+        "everyone_in_company",
+        "only_creator",
+        "only_creator_and_owner"
+      )
+      expect(result.privacy_legend.select { |e| e[:allowed] }.map { |e| e[:key] }).to eq(
+        %w[only_creator_owner_and_managers everyone_in_company]
+      )
+    end
+
+    it "links to Goals Health when the viewer has reports but no matching goals" do
+      report_person = create(:person, first_name: "Dana")
+      report = create(:company_teammate, person: report_person, organization: organization)
+      create(
+        :employment_tenure,
+        company: organization,
+        company_teammate: report,
+        manager_teammate: viewer,
+        ended_at: nil
+      )
+
+      result = described_class.call(
+        organization: organization,
+        viewer: viewer,
+        my_employees_filter: true,
+        can_view_goals_health: true
+      )
+
+      expect(result.kind).to eq(:employee_no_matching_goals)
+      expect(result.cta_label).to eq("Open Goals Health")
+      expect(result.cta_disabled).to eq(false)
+      expect(result.cta_path).to include("goals_health")
+      expect(result.cta_path).to include("CompanyTeammate_#{viewer.id}")
+    end
+  end
 end

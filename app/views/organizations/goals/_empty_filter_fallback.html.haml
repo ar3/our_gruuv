@@ -19,6 +19,15 @@
         - if index.positive?
           = index == fallback.reach_out_people.size - 1 ? ' and ' : ', '
         = link_to person[:name], person[:path]
+  - if fallback.privacy_legend.present?
+    %ul.list-unstyled.mb-3.small
+      - fallback.privacy_legend.each do |entry|
+        %li.mb-1
+          - if entry[:allowed]
+            %span.text-success.me-1 ✓
+          - else
+            %span.text-danger.me-1 ✗
+          = entry[:label]
   - if fallback.cta_label.present?
     - if fallback.cta_disabled
       %span.d-inline-flex.align-items-center.gap-2

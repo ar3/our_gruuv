@@ -13,8 +13,16 @@ module Goals
       :cta_path,
       :cta_disabled,
       :cta_disabled_reason,
+      :privacy_legend,
       keyword_init: true
     )
+
+    PRIVACY_LEGEND = [
+      { allowed: true, key: "only_creator_owner_and_managers", label: "Only creator, owner, and managers" },
+      { allowed: true, key: "everyone_in_company", label: "Everyone in company" },
+      { allowed: false, key: "only_creator", label: "Only creator" },
+      { allowed: false, key: "only_creator_and_owner", label: "Only creator and owner" }
+    ].freeze
 
     def self.call(**kwargs)
       new(**kwargs).call
@@ -27,10 +35,13 @@ module Goals
       everyone_in_company_filter: false,
       created_by_me_filter: false,
       my_relevant_goals_filter: false,
+      my_employees_filter: false,
+      my_employees_hierarchy_filter: false,
       owner_type: nil,
       owner_id: nil,
       viewer_teams: nil,
-      can_create_goals: false
+      can_create_goals: false,
+      can_view_goals_health: false
     )
       @organization = organization
       @viewer = viewer
@@ -38,13 +49,17 @@ module Goals
       @everyone_in_company_filter = everyone_in_company_filter
       @created_by_me_filter = created_by_me_filter
       @my_relevant_goals_filter = my_relevant_goals_filter
+      @my_employees_filter = my_employees_filter
+      @my_employees_hierarchy_filter = my_employees_hierarchy_filter
       @owner_type = owner_type
       @owner_id = owner_id
       @viewer_teams = viewer_teams
       @can_create_goals = can_create_goals
+      @can_view_goals_health = can_view_goals_health
     end
 
     def call
+      return employee_result if employee_filter?
       return person_result if person_owner?
       return all_my_teams_result if @all_my_teams_filter
       return teams_result(resolved_teams) if team_owner? || team_list_owner?
@@ -53,6 +68,10 @@ module Goals
     end
 
     private
+
+    def employee_filter?
+      @my_employees_filter || @my_employees_hierarchy_filter
+    end
 
     def person_owner?
       @owner_type == 'CompanyTeammate' && @owner_id.present? && !special_filter?
@@ -67,7 +86,55 @@ module Goals
     end
 
     def special_filter?
-      @all_my_teams_filter || @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter
+      @all_my_teams_filter || @everyone_in_company_filter || @created_by_me_filter ||
+        @my_relevant_goals_filter || employee_filter?
+    end
+
+    def employee_result
+      if @viewer.blank? || !@viewer.has_direct_reports?
+        employee_no_reports_result
+      else
+        employee_no_matching_goals_result
+      end
+    end
+
+    def employee_no_reports_result
+      segments = [
+        segment("Managers only see employees' personal goals when privacy allows. "),
+        segment("You don't have direct reports yet, so there's nothing to show here.")
+      ]
+
+      Result.new(
+        kind: :employee_no_reports,
+        message: plain_message(segments),
+        message_segments: segments,
+        reach_out_people: [],
+        cta_label: nil,
+        cta_path: nil,
+        cta_disabled: true,
+        cta_disabled_reason: nil,
+        privacy_legend: PRIVACY_LEGEND
+      )
+    end
+
+    def employee_no_matching_goals_result
+      path = goals_health_path
+      segments = [
+        segment("No active goals from your employees are visible with the current filters. "),
+        segment("Open Goals Health to review engagement for people you manage.")
+      ]
+
+      Result.new(
+        kind: :employee_no_matching_goals,
+        message: plain_message(segments),
+        message_segments: segments,
+        reach_out_people: [],
+        cta_label: "Open Goals Health",
+        cta_path: path,
+        cta_disabled: !@can_view_goals_health || path.blank?,
+        cta_disabled_reason: @can_view_goals_health ? nil : "You need access to Goals Health to open this view",
+        privacy_legend: nil
+      )
     end
 
     def person_result
@@ -90,7 +157,8 @@ module Goals
         cta_label: "Create a goal for #{name}",
         cta_path: path,
         cta_disabled: !can_create || path.blank?,
-        cta_disabled_reason: person_disabled_reason(name)
+        cta_disabled_reason: person_disabled_reason(name),
+        privacy_legend: nil
       )
     end
 
@@ -114,7 +182,8 @@ module Goals
           cta_label: nil,
           cta_path: nil,
           cta_disabled: true,
-          cta_disabled_reason: nil
+          cta_disabled_reason: nil,
+          privacy_legend: nil
         )
       else
         teams_result(teams)
@@ -148,7 +217,8 @@ module Goals
         cta_label: 'Create a team goal',
         cta_path: path,
         cta_disabled: !@can_create_goals || path.blank?,
-        cta_disabled_reason: @can_create_goals ? nil : 'You need to be a teammate to create goals'
+        cta_disabled_reason: @can_create_goals ? nil : 'You need to be a teammate to create goals',
+        privacy_legend: nil
       )
     end
 
@@ -170,7 +240,8 @@ module Goals
         cta_label: "Create a goal for #{label}",
         cta_path: path,
         cta_disabled: !@can_create_goals || path.blank?,
-        cta_disabled_reason: @can_create_goals ? nil : 'You need to be a teammate to create goals'
+        cta_disabled_reason: @can_create_goals ? nil : 'You need to be a teammate to create goals',
+        privacy_legend: nil
       )
     end
 
@@ -247,6 +318,15 @@ module Goals
       return nil unless @organization && owner_id.present?
 
       routes.new_organization_goal_path(@organization, owner_id: owner_id)
+    end
+
+    def goals_health_path
+      return nil unless @organization && @viewer
+
+      routes.organization_goals_health_path(
+        @organization,
+        manager_id: "CompanyTeammate_#{@viewer.id}"
+      )
     end
 
     def teammate_show_path(teammate)

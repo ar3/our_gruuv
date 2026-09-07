@@ -14,6 +14,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @my_relevant_goals_filter = params[:owner_id] == 'my_relevant_goals'
     @all_my_teams_filter = params[:owner_id] == 'all_my_teams'
     @my_department_filter = params[:owner_id] == 'my_department'
+    @my_employees_filter = params[:owner_id] == 'my_employees'
+    @my_employees_hierarchy_filter = params[:owner_id] == 'my_employees_hierarchy'
     special_owner_filter = special_goals_owner_filter?
 
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
@@ -93,6 +95,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                end
     elsif @my_department_filter
       apply_my_department_goals_filter!(current_teammate)
+    elsif @my_employees_filter || @my_employees_hierarchy_filter
+      apply_my_employees_goals_filter!(current_teammate)
     elsif params[:owner_type] == 'Department' && params[:owner_id].present?
       department = Department.find_by(id: params[:owner_id])
       @goals = Goals::RelatedToDepartmentQuery.call(relation: @goals, department: department)
@@ -145,6 +149,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         all_goals_for_filter = Goals::RelatedToDepartmentQuery.call(
           relation: policy_scope(Goal),
           department: @department_for_filter
+        )
+      elsif @my_employees_filter || @my_employees_hierarchy_filter
+        all_goals_for_filter = Goals::EmployeeOwnedGoalsQuery.call(
+          relation: policy_scope(Goal),
+          owner_ids: @employee_goal_owner_ids,
+          viewer_person: current_person
         )
       elsif params[:owner_type] == 'Department' && params[:owner_id].present?
         department = Department.find_by(id: params[:owner_id])
@@ -260,10 +270,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                                        everyone_in_company_filter: @everyone_in_company_filter || (@my_department_filter && @my_department_missing),
                                        created_by_me_filter: @created_by_me_filter,
                                        my_relevant_goals_filter: @my_relevant_goals_filter,
+                                       my_employees_filter: @my_employees_filter,
+                                       my_employees_hierarchy_filter: @my_employees_hierarchy_filter,
                                        owner_type: empty_owner_type,
                                        owner_id: empty_owner_id,
                                        viewer_teams: @viewer_teams_for_filter,
-                                       can_create_goals: policy(Goal).create?
+                                       can_create_goals: policy(Goal).create?,
+                                       can_view_goals_health: policy(@organization).goals_health?
                                      )
                                    end
   end
@@ -1135,7 +1148,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def special_goals_owner_filter?
-    @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter || @all_my_teams_filter || @my_department_filter
+    @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter ||
+      @all_my_teams_filter || @my_department_filter || @my_employees_filter || @my_employees_hierarchy_filter
   end
 
   def special_goals_owner_filter_param
@@ -1144,8 +1158,29 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     return 'my_relevant_goals' if @my_relevant_goals_filter
     return 'all_my_teams' if @all_my_teams_filter
     return 'my_department' if @my_department_filter
+    return 'my_employees' if @my_employees_filter
+    return 'my_employees_hierarchy' if @my_employees_hierarchy_filter
 
     nil
+  end
+
+  def apply_my_employees_goals_filter!(current_teammate)
+    @employee_goal_owner_ids = if @my_employees_hierarchy_filter
+                                 Goals::EmployeeOwnedGoalsQuery.hierarchy_report_ids(
+                                   manager: current_teammate,
+                                   organization: @organization
+                                 )
+                               else
+                                 Goals::EmployeeOwnedGoalsQuery.direct_report_ids(
+                                   manager: current_teammate,
+                                   organization: @organization
+                                 )
+                               end
+    @goals = Goals::EmployeeOwnedGoalsQuery.call(
+      relation: @goals,
+      owner_ids: @employee_goal_owner_ids,
+      viewer_person: current_person
+    )
   end
 
   def apply_my_department_goals_filter!(current_teammate)
@@ -1349,6 +1384,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     options << ["My relevant goals", "my_relevant_goals"]
     options << ["All my teams", "all_my_teams"]
     options << ["My department goals", "my_department"]
+    options << ["My employees' goals", "my_employees"]
+    options << ["My employees' goals (full hierarchy)", "my_employees_hierarchy"]
     if company.display_name.present?
       options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
     end
@@ -1440,6 +1477,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     filter_opts << ["My relevant goals", "my_relevant_goals"]
     filter_opts << ["All my teams", "all_my_teams"]
     filter_opts << ["My department goals", "my_department"]
+    filter_opts << ["My employees' goals", "my_employees"]
+    filter_opts << ["My employees' goals (full hierarchy)", "my_employees_hierarchy"]
     filter_opts << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"] if company.display_name.present?
     filter_opts << ["All goals created by me", "created_by_me"]
     groups << ["Filter", filter_opts] if filter_opts.any?
@@ -1479,7 +1518,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   # Returns goal owners for bulk create form (excludes filter options that aren't actual owners)
   def available_goal_owners_for_bulk
-    available_goal_owners.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams my_department]) }
+    available_goal_owners.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams my_department my_employees my_employees_hierarchy]) }
   end
   helper_method :available_goal_owners_for_bulk
 
