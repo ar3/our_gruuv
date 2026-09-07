@@ -19,6 +19,7 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
           view_observations?: true,
           view_goals?: true,
           goals_health?: true,
+          teams_health?: true,
           observations_health?: true,
           check_ins_health?: true,
           view_abilities?: true,
@@ -63,6 +64,9 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
       expect(helper.object_lens_path(organization, :abilities, :list)).to eq(organization_abilities_path(organization))
       expect(helper.object_lens_path(organization, :abilities, :health)).to eq(organization_abilities_health_path(organization))
       expect(helper.object_lens_path(organization, :abilities, :insights)).to eq(organization_insights_abilities_path(organization))
+      expect(helper.object_lens_path(organization, :teams, :list)).to eq(organization_teams_path(organization))
+      expect(helper.object_lens_path(organization, :teams, :health)).to eq(organization_teams_health_path(organization))
+      expect(helper.object_lens_path(organization, :teams, :insights)).to eq(organization_insights_teams_path(organization))
     end
   end
 

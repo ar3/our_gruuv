@@ -1,0 +1,89 @@
+- content_for :title, "Insights: Teams"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teams", url: organization_teams_path(@organization) }, { label: "Insights: Teams", url: nil }])
+
+- content_for :header do
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :teams,
+           current_lens: :insights
+
+= render 'timeframe_selector',
+  timeframe: @timeframe,
+  path_for: ->(**opts) { organization_insights_teams_path(@organization, **opts) },
+  show_custom: true,
+  custom_from: @insights_custom_from,
+  custom_to: @insights_custom_to,
+  wrapper_class: 'mb-4'
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.text-center.g-3
+          .col-md-6
+            .h3.text-primary.mb-0= @teams_overview.teams_count
+            %small.text-muted Active teams
+          .col-md-6
+            .h3.text-primary.mb-0= @teams_overview.average_members_per_team
+            %small.text-muted Average members per team
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-primary.text-white
+        %h5.mb-0
+          %i.bi.bi-bullseye.me-2
+          Team goals (week over week) — #{@chart_title_period}
+      .card-body
+        %p.small.text-muted.mb-3
+          Team-owned goals only. Stale counts Warning + Needs Attention Goal Confidence status at each week end (same rules as teammate Goal Confidence).
+        #teams-goals-activity-chart{style: "height: 360px;"}
+
+:javascript
+  (function() {
+    var chartData = #{@teams_overview.chart_data.to_json};
+    var colors = ['#0d6efd', '#198754', '#ffc107', '#6f42c1'];
+
+    function initChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('teams-goals-activity-chart');
+      if (!el) return;
+      var series = chartData.series.map(function(ser, i) {
+        var out = { name: ser.name, data: ser.data };
+        if (colors[i]) out.color = colors[i];
+        return out;
+      });
+      Highcharts.chart('teams-goals-activity-chart', {
+        chart: { type: 'column' },
+        title: { text: null },
+        accessibility: { enabled: false },
+        xAxis: { categories: chartData.categories, title: { text: 'Week of' } },
+        yAxis: { min: 0, allowDecimals: false, title: { text: 'Team goals' } },
+        legend: { enabled: true },
+        plotOptions: { column: { dataLabels: { enabled: false } } },
+        series: series
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initChart;
+        document.head.appendChild(script);
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+  })();

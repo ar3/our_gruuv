@@ -13,7 +13,8 @@ module ObjectLensHeaderHelper
     # Org/MAAP catalog — Abilities first under the divider.
     { key: :abilities, label: "Abilities", divider_before: true },
     { key: :assignments, label: "Assignments" },
-    { key: :values, label: "Values" }
+    { key: :values, label: "Values" },
+    { key: :teams, label: "Teams" }
   ].freeze
 
   # Browse slot: Overall uses Directory; typed objects use List.
@@ -25,7 +26,8 @@ module ObjectLensHeaderHelper
     milestones: :list,
     abilities: :list,
     assignments: :list,
-    values: :list
+    values: :list,
+    teams: :list
   }.freeze
 
   LENS_LABELS = {
@@ -101,6 +103,12 @@ module ObjectLensHeaderHelper
       organization_values_health_path(organization)
     when %i[values insights]
       organization_insights_values_path(organization)
+    when %i[teams list]
+      organization_teams_path(organization)
+    when %i[teams health]
+      organization_teams_health_path(organization)
+    when %i[teams insights]
+      organization_insights_teams_path(organization)
     else
       nil
     end
@@ -142,6 +150,12 @@ module ObjectLensHeaderHelper
       policy(organization).view_assignments?
     when %i[values list], %i[values insights], %i[values health]
       policy(organization).view_aspirations?
+    when %i[teams list]
+      policy(organization).show?
+    when %i[teams health]
+      policy(organization).teams_health?
+    when %i[teams insights]
+      policy(organization).view_goals?
     else
       false
     end

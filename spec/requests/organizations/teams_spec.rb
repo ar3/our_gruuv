@@ -230,6 +230,11 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       expect(response.body).to include(team_no_dept.name)
       expect(response.body).to include(team_in_dept.name)
       expect(response.body).to include(organization_department_path(organization, dept))
+      expect(response.body).to include("Switch object")
+      expect(response.body).to include("Switch page type")
+      expect(response.body).to include("teamsListPageHelp")
+      expect(response.body).to include(organization_teams_health_path(organization))
+      expect(response.body).to include(organization_insights_teams_path(organization))
     end
   end
 

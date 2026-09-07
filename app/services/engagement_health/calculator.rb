@@ -82,12 +82,7 @@ module EngagementHealth
           .select { |check_in| check_in.updated_at <= reference_time }
           .max_by(&:updated_at)
         last_check_in_at = last_check_in&.updated_at
-        status = Thresholds.status_for_last_event(
-          last_check_in_at,
-          healthy_within: Thresholds::GOAL_CONFIDENCE_HEALTHY_WITHIN_DAYS,
-          needs_attention_at: Thresholds::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS,
-          reference_time: reference_time
-        )
+        status = GoalConfidence.status_for_goal(goal, reference_time: reference_time)
         inputs = {
           "name" => goal.title,
           "goal_state" => goal_state_at_reference_time(goal),
@@ -120,18 +115,11 @@ module EngagementHealth
     # Items: active goals (started, not completed) plus goals completed within
     # the window; completed goals then drop out. Drafts are not items.
     def goal_confidence_goals
-      window_start = reference_time - Thresholds::COMPLETED_GOAL_WINDOW_DAYS.days
-      Goal.unscoped
-        .where(owner_type: "CompanyTeammate", owner_id: teammate.id)
-        .where("goals.created_at <= ?", reference_time)
-        .where("goals.deleted_at IS NULL OR goals.deleted_at > ?", reference_time)
-        .where(
-          "(started_at IS NOT NULL AND started_at <= ? AND (completed_at IS NULL OR completed_at > ?)) " \
-          "OR (completed_at >= ? AND completed_at <= ?)",
-          reference_time, reference_time, window_start, reference_time
-        )
-        .includes(:goal_check_ins)
-        .order(:created_at)
+      GoalConfidence.scorable_goals(
+        owner_type: "CompanyTeammate",
+        owner_id: teammate.id,
+        reference_time: reference_time
+      )
     end
 
     # --- Required clarity check-ins ---

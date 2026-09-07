@@ -229,6 +229,17 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @goals_for_network_graph, @goal_links_for_network_graph = goals_network_graph_data
   end
 
+  def teams
+    authorize company, :view_goals?
+
+    @organization = company
+    @timeframe = parse_timeframe(params[:timeframe])
+    range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    chart_range = range || (52.weeks.ago..Time.current)
+    @chart_title_period = insights_chart_title_period(@timeframe, range, chart_range)
+    @teams_overview = Insights::TeamsOverview.new(organization: company, chart_range: chart_range).call
+  end
+
   def prompts
     authorize company, :view_prompts?
 

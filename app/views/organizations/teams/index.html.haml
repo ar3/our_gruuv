@@ -1,21 +1,34 @@
 - content_for :title, @my_teams_filter ? "My Teams" : "Teams"
+- page_help_id = "teamsListPageHelp"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: (@my_teams_filter ? "My Teams" : "Teams"), url: nil }])
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2
-      %i.bi.bi-people.me-2
-      = @my_teams_filter ? "My Teams" : "Teams"
-    .d-flex.align-items-center
-      - if policy(@organization).manage_departments_and_teams?
-        = link_to new_organization_team_path(@organization), class: "btn btn-primary ml-2" do
-          %i.bi.bi-plus
-      - else
-        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Browse teams and membership. Click for details."
+    - if policy(@organization).manage_departments_and_teams?
+      = link_to new_organization_team_path(@organization),
+                class: "btn btn-primary",
+                title: "Add new Team",
+                "aria-label" => "Add new Team",
+                data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+        %i.bi.bi-plus
+    - else
+      %span.d-inline-flex.align-items-center
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;", "aria-label" => "Add new Team"}
           %i.bi.bi-plus
         %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need departments and teams management permission to create teams"}
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :teams,
+           current_lens: :list,
+           trailing: object_lens_trailing
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/teams/page_help"
 
 .row.justify-content-center
   .col-lg-12

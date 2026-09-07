@@ -114,6 +114,11 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || organization_in_hierarchy?
   end
 
+  # Team Goal Confidence health — same audience as Goals Health.
+  def teams_health?
+    goals_health?
+  end
+
   def milestones_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

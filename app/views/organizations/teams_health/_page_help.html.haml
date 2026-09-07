@@ -1,0 +1,27 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3 See whether teams are healthy on Team-owned Goal Confidence so the org can track progress toward more healthy teams.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Team Goal Confidence uses the same Gruuv Health rules as teammate Goal Confidence (Healthy / Warning / Needs Attention).
+    Only goals owned by the Team are scored. Drafts are not scored; completed goals stay in-scope for #{TeamsHealthHelper::COMPLETED_GOAL_WINDOW_DAYS} days.
+    Best status wins for the team. Teams with no scored Team-owned goals are Needs Attention.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you see
+  %ul.mb-3
+    %li Counts of active teams in each Goal Confidence status.
+    %li This v1 is a status summary only — open a team or Goals list for individual goals.
+
+  %h5.fw-semibold.mb-2 Status legend
+  %ul.list-unstyled.mb-0
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2.bg-success{style: "width:0.65rem;height:0.65rem;"}
+      Healthy — a scored Team-owned goal checked within #{TeamsHealthHelper::GOAL_CONFIDENCE_HEALTHY_DAYS} days
+    %li.mb-1
+      %span.d-inline-block.rounded-circle.me-2.bg-warning{style: "width:0.65rem;height:0.65rem;"}
+      Warning — best scored goal last checked #{TeamsHealthHelper::GOAL_CONFIDENCE_HEALTHY_DAYS + 1}–#{TeamsHealthHelper::GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS - 1} days ago
+    %li.mb-0
+      %span.d-inline-block.rounded-circle.me-2.bg-danger{style: "width:0.65rem;height:0.65rem;"}
+      Needs Attention — ≥ #{TeamsHealthHelper::GOAL_CONFIDENCE_NEEDS_ATTENTION_DAYS} days, never checked, or no scored Team-owned goals

@@ -1,0 +1,65 @@
+- content_for :title, "Teams Health"
+- page_help_id = "teamsHealthPageHelp"
+
+- content_for :header do
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See how many teams are healthy on Team-owned Goal Confidence. Click for details."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :teams,
+           current_lens: :health,
+           trailing: object_lens_trailing
+
+.mb-4
+  = content_for :go_back_link
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/teams_health/page_help"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Teams Health", url: nil }])
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.align-items-center
+          .col-md-9
+            .teams-health-spotlight
+              .row.text-center.align-items-end.g-3
+                .col-6.col-md-3
+                  .h3.text-primary.mb-0= @summary.total_teams
+                  %small.text-muted Total Active Teams
+                .col-6.col-md-3
+                  .h3.text-success.mb-0= @summary.healthy_count
+                  %small.text-muted Healthy
+                .col-6.col-md-3
+                  .h3.text-warning.mb-0= @summary.warning_count
+                  %small.text-muted Warning
+                .col-6.col-md-3
+                  .h3.text-danger.mb-0= @summary.needs_attention_count
+                  %small.text-muted Needs Attention
+          .col-md-3
+            - if @summary.needs_attention_count.positive?
+              .alert.alert-danger.small.mb-0
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong= "#{@summary.needs_attention_pct}% need attention"
+            - elsif @summary.total_teams.positive?
+              .alert.alert-success.small.mb-0
+                %i.bi.bi-check-circle.me-2
+                %strong= "#{@summary.healthy_pct}% healthy"
+      .card-footer.bg-light
+        .small.text-muted
+          - teams_health_definition_lines.each do |line|
+            %div.mb-1= line
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :teams_health,
+      manager_id: nil,
+      show_switcher: true,
+      other_actions: []
