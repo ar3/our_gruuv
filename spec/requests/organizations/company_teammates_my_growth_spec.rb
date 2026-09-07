@@ -305,7 +305,9 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           expect(response.body).to include('Miles earned')
           expect(response.body).to include('Miles needed')
           expect(response.body).to include(new_bulk_milestone_award_organization_company_teammate_path(organization, employee_teammate))
-          expect(response.body).to include("to award multiple milestones to #{casual} at once.")
+          expect(response.body).to include('Prefer the one-time milestone calibration')
+          expect(response.body).to include('One-time ability milestone calibration')
+          expect(response.body).to include('abilities need calibration')
         end
 
         it 'shows target-threshold pill when current is met but target is not' do

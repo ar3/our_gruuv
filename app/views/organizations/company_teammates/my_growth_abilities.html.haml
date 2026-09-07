@@ -62,9 +62,13 @@
   organization: organization,
   target_position: @teammate.next_goal_position
 
+= render 'organizations/company_teammates/ability_milestone_calibrations/entry_control',
+  teammate: @teammate,
+  organization: organization
+
 .row.mb-3
   .col-lg-4
     %p.small.text-muted.mb-0
-      Visit the
+      Prefer the one-time milestone calibration above. The
       = link_to 'bulk award page', new_bulk_milestone_award_organization_company_teammate_path(organization, @teammate), class: 'text-decoration-none'
-      to award multiple milestones to #{@teammate.person.casual_name} at once.
+      is a manager-only override and an anti-pattern for establishing a shared baseline.

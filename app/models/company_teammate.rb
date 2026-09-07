@@ -8,6 +8,7 @@ class CompanyTeammate < ApplicationRecord
   # Reverse associations
   has_many :mcp_access_tokens, foreign_key: :company_teammate_id, dependent: :destroy
   has_many :teammate_milestones, foreign_key: 'teammate_id', dependent: :nullify
+  has_one :ability_milestone_calibration, foreign_key: 'teammate_id', dependent: :destroy
   has_many :assignment_check_ins, foreign_key: 'teammate_id', dependent: :nullify
   has_many :aspiration_check_ins, foreign_key: 'teammate_id', dependent: :nullify
   has_many :assignment_tenures, foreign_key: 'teammate_id', dependent: :nullify

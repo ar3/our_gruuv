@@ -1,0 +1,177 @@
+- casual = @teammate.person.casual_name
+- other_role = view_role == :employee ? :manager : :employee
+- content_for :title, "#{casual} — Ability milestone calibration"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: 'Grow by Abilities', url: my_growth_abilities_organization_company_teammate_path(organization, @teammate) }, { label: 'Milestone calibration', url: nil }])
+
+.d-flex.align-items-center.flex-wrap.gap-2.mb-3
+  %h1.h3.mb-0 Ability milestone calibration
+  = render 'shared/page_help/header_info_button',
+    collapse_id: 'abilityMilestoneCalibrationPageInfo',
+    tooltip: 'Rate abilities one at a time. Click for details.'
+
+.collapse.mb-4#abilityMilestoneCalibrationPageInfo
+  = render 'organizations/company_teammates/ability_milestone_calibrations/page_help'
+
+.alert.alert-info.mb-4
+  %p.mb-1
+    %strong One-time calibration.
+    #{@entry_counts[:will_show]} of #{@entry_counts[:full_set]} abilities need calibration
+    (abilities in this set still at milestone 0).
+  %p.mb-0.small
+    Select a level (1–5) to save immediately — that choice cannot be undone (changes are kept in an audit trail). You are
+    %strong= view_role == :employee ? 'the employee' : 'the manager'
+    for #{casual}.
+
+- if @items.blank? && @history_items.blank?
+  .alert.alert-secondary
+    No abilities at milestone 0 need rating right now.
+    = link_to 'Back to Grow by Abilities', my_growth_abilities_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+- else
+  - milestones_by_key = ability_milestone_calibration_milestones_index(@teammate, @items)
+  - ready_count = @ready_items.size
+  - if ready_count.positive?
+    .alert.alert-success.mb-4
+      %p.mb-0
+        %strong #{ready_count} #{'ability'.pluralize(ready_count)} ready for review
+        — both of you have rated. Award below, or open the
+        = link_to 'review page', review_ability_milestone_calibration_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+        \.
+
+  - @items.each do |item|
+    - ability = item.ability
+    - my_rating = item.rating_for(view_role)
+    - my_rated = item.rated_for?(view_role)
+    - other_rated = item.other_rated_for?(view_role)
+    - ability_pop = ability_milestone_calibration_ability_description_popover_html(ability)
+    .card.mb-3{class: item.ready_for_review? ? 'border-success' : nil}
+      .card-body
+        .d-flex.flex-wrap.justify-content-between.align-items-start.gap-2.mb-2
+          %h2.h5.mb-0
+            = link_to ability.display_name,
+              organization_teammate_ability_path(organization, @teammate, ability),
+              class: 'text-decoration-none',
+              data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'right', bs_title: ability.display_name, bs_custom_class: 'complete-picture-milestone-popover', bs_content: ability_pop }
+          .d-flex.flex-wrap.gap-1
+            - if item.ready_for_review?
+              %span.badge.bg-success Ready for review
+            - elsif my_rated && !other_rated
+              %span.badge.bg-warning.text-dark Your rating saved
+              %span.badge.bg-secondary Waiting on other participant
+            - elsif !my_rated && other_rated
+              %span.badge.bg-info.text-dark Other participant has rated
+              %span.badge.bg-warning.text-dark Your rating still needed
+            - else
+              %span.badge.bg-light.text-dark.border Not rated yet
+
+        - if my_rated || other_rated
+          .small.text-muted.mb-3
+            - if my_rated
+              %div
+                %span.fw-semibold You:
+                = ability_milestone_calibration_rating_audit_lines(item, role: view_role).join(' · ')
+            - if other_rated
+              %div
+                %span.fw-semibold Other participant:
+                = ability_milestone_calibration_rating_audit_lines(item, role: other_role).join(' · ')
+
+        - if item.ready_for_review?
+          .row.g-3.mb-3
+            .col-md-4
+              .border.rounded.p-3.h-100
+                %div.small.text-muted.mb-1 Employee proposal
+                - emp_pop = ability_milestone_calibration_milestone_popover_html(ability, item.employee_rating)
+                %div.fs-5.fw-semibold{role: 'button', tabindex: 0, data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: ability_milestone_calibration_rating_label(item.employee_rating), bs_custom_class: 'complete-picture-milestone-popover', bs_content: emp_pop }}
+                  = ability_milestone_calibration_rating_label(item.employee_rating)
+            .col-md-4
+              .border.rounded.p-3.h-100
+                %div.small.text-muted.mb-1 Manager proposal
+                - mgr_pop = ability_milestone_calibration_milestone_popover_html(ability, item.manager_rating)
+                %div.fs-5.fw-semibold{role: 'button', tabindex: 0, data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: ability_milestone_calibration_rating_label(item.manager_rating), bs_custom_class: 'complete-picture-milestone-popover', bs_content: mgr_pop }}
+                  = ability_milestone_calibration_rating_label(item.manager_rating)
+            .col-md-4
+              .border.rounded.p-3.h-100{class: item.employee_rating == item.manager_rating ? 'border-success' : 'border-warning'}
+                %div.small.text-muted.mb-1 Alignment
+                - if item.employee_rating == item.manager_rating
+                  %div.fw-semibold.text-success Same level
+                - else
+                  %div.fw-semibold.text-warning Different — talk it through
+
+          - if @can_award
+            = form_with url: award_ability_milestone_calibration_item_organization_company_teammate_path(organization, @teammate, item), method: :post, local: true, data: { turbo: false } do
+              %label.form-label.small.mb-2 Official milestone level
+              .btn-group.btn-group-sm.flex-wrap.mb-3{role: 'group', 'aria-label': "Official milestone for #{ability.display_name}"}
+                - (0..5).each do |level|
+                  - input_id = "official_level_#{item.id}_#{level}"
+                  - milestone_rec = milestones_by_key[[ability.id, level]]
+                  - pop_html = ability_milestone_calibration_milestone_popover_html(ability, level, milestone_rec)
+                  - btn_outline = level.zero? ? 'btn-outline-secondary' : 'btn-outline-primary'
+                  - selected = !item.manager_rating.nil? && item.manager_rating == level
+                  = radio_button_tag :official_milestone_level, level, selected, class: 'btn-check', id: input_id, required: true
+                  = label_tag input_id, nil, class: "btn #{btn_outline}", role: 'button', data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: "Milestone #{level}", bs_custom_class: 'complete-picture-milestone-popover', bs_content: pop_html } do
+                    = level.zero? ? '0' : level.to_s
+              %div
+                = submit_tag 'Award this ability', class: 'btn btn-primary', data: { turbo_confirm: 'Award this official level? Levels 1–5 create milestone records.' }
+          - else
+            %p.small.text-muted.mb-0 Waiting for someone who can award milestones to set the official level.
+
+          %hr.my-3
+
+        = form_with url: ability_milestone_calibration_organization_company_teammate_path(organization, @teammate), method: :patch, local: true, data: { turbo: false }, class: 'ability-milestone-calibration-item-form', html: { id: "calibration-item-form-#{item.id}" } do
+          = hidden_field_tag :item_id, item.id
+          .btn-group.flex-wrap{role: 'group', "aria-label" => "Milestone rating for #{ability.display_name}"}
+            - (1..5).each do |level|
+              - input_id = "calibration_rating_#{item.id}_#{level}"
+              - milestone_rec = milestones_by_key[[ability.id, level]]
+              - pop_html = ability_milestone_calibration_milestone_popover_html(ability, level, milestone_rec)
+              - checked = !my_rating.nil? && my_rating == level
+              = radio_button_tag :rating, level, checked, class: 'btn-check', id: input_id, onchange: 'this.form.requestSubmit()'
+              = label_tag input_id, nil, class: 'btn btn-outline-primary', role: 'button', data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: "Milestone #{level}", bs_custom_class: 'complete-picture-milestone-popover', bs_content: pop_html } do
+                = level.to_s
+
+  - if @history_items.any?
+    .mt-5.pt-3.border-top
+      %h2.h5.mb-3
+        Awarded history
+        %span.text-muted.fw-normal.small
+          (#{@history_items.size} #{'ability'.pluralize(@history_items.size)} — collapsed by default)
+      - @history_items.each do |item|
+        - ability = item.ability
+        - collapse_id = "calibration-history-#{item.id}"
+        - ability_pop = ability_milestone_calibration_ability_description_popover_html(ability)
+        - official = item.official_milestone_level
+        .card.mb-2.border-secondary-subtle
+          .card-header.py-2.bg-body-tertiary
+            %button.btn.btn-link.text-decoration-none.text-body.w-100.text-start.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.p-0{type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{collapse_id}" }, aria: { expanded: 'false', controls: collapse_id }}
+              %span
+                %i.bi.bi-chevron-down.me-1.text-muted
+                = ability.display_name
+              %span.d-flex.flex-wrap.gap-2.align-items-center
+                %span.badge{class: official.to_i.positive? ? 'bg-success' : 'bg-secondary'}
+                  Official: #{ability_milestone_calibration_rating_label(official)}
+                - if item.awarded_at.present?
+                  %span.small.text-muted
+                    Awarded #{format_time_in_user_timezone(item.awarded_at)}
+          .collapse{id: collapse_id}
+            .card-body
+              .row.g-3.mb-3
+                .col-md-6
+                  .border.rounded.p-3.h-100
+                    %div.small.text-muted.mb-1 Employee proposal
+                    %div.fs-5.fw-semibold.mb-2= ability_milestone_calibration_rating_label(item.employee_rating)
+                    .small.text-muted
+                      - ability_milestone_calibration_rating_audit_lines(item, role: :employee).each do |line|
+                        %div= line
+                .col-md-6
+                  .border.rounded.p-3.h-100
+                    %div.small.text-muted.mb-1 Manager proposal
+                    %div.fs-5.fw-semibold.mb-2= ability_milestone_calibration_rating_label(item.manager_rating)
+                    .small.text-muted
+                      - ability_milestone_calibration_rating_audit_lines(item, role: :manager).each do |line|
+                        %div= line
+              - if item.awarded_by_teammate.present?
+                %p.small.text-muted.mb-0
+                  Certified by #{item.awarded_by_teammate.person.display_name}
+                  - if item.awarded_at.present?
+                    on #{format_time_in_user_timezone(item.awarded_at)}

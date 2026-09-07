@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_03_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_07_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,6 +45,44 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_03_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["og_consultation_id"], name: "index_ability_clarity_results_on_og_consultation_id", unique: true
+  end
+
+  create_table "ability_milestone_calibration_items", force: :cascade do |t|
+    t.bigint "ability_milestone_calibration_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "employee_rating"
+    t.integer "manager_rating"
+    t.integer "official_milestone_level"
+    t.datetime "awarded_at"
+    t.bigint "awarded_by_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "employee_first_rating"
+    t.datetime "employee_first_rated_at"
+    t.datetime "employee_rating_changed_at"
+    t.integer "manager_first_rating"
+    t.datetime "manager_first_rated_at"
+    t.datetime "manager_rating_changed_at"
+    t.index ["ability_id"], name: "index_ability_milestone_calibration_items_on_ability_id"
+    t.index ["ability_milestone_calibration_id", "ability_id"], name: "index_ability_ms_calibration_items_on_calibration_and_ability", unique: true
+    t.index ["ability_milestone_calibration_id"], name: "index_ability_ms_calibration_items_on_calibration_id"
+    t.index ["awarded_by_teammate_id"], name: "index_ability_ms_calibration_items_on_awarded_by"
+    t.check_constraint "employee_first_rating IS NULL OR employee_first_rating >= 1 AND employee_first_rating <= 5", name: "ability_ms_calibration_items_employee_first_rating_range"
+    t.check_constraint "employee_rating IS NULL OR employee_rating >= 0 AND employee_rating <= 5", name: "ability_ms_calibration_items_employee_rating_range"
+    t.check_constraint "manager_first_rating IS NULL OR manager_first_rating >= 1 AND manager_first_rating <= 5", name: "ability_ms_calibration_items_manager_first_rating_range"
+    t.check_constraint "manager_rating IS NULL OR manager_rating >= 0 AND manager_rating <= 5", name: "ability_ms_calibration_items_manager_rating_range"
+    t.check_constraint "official_milestone_level IS NULL OR official_milestone_level >= 0 AND official_milestone_level <= 5", name: "ability_ms_calibration_items_official_rating_range"
+  end
+
+  create_table "ability_milestone_calibrations", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.datetime "employee_completed_at"
+    t.datetime "manager_completed_at"
+    t.bigint "manager_completed_by_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["manager_completed_by_teammate_id"], name: "index_ability_ms_calibrations_on_manager_completed_by"
+    t.index ["teammate_id"], name: "index_ability_milestone_calibrations_on_teammate_id", unique: true
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -2157,6 +2195,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_03_120000) do
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "ability_clarity_results", "og_consultations"
+  add_foreign_key "ability_milestone_calibration_items", "abilities"
+  add_foreign_key "ability_milestone_calibration_items", "ability_milestone_calibrations"
+  add_foreign_key "ability_milestone_calibration_items", "teammates", column: "awarded_by_teammate_id"
+  add_foreign_key "ability_milestone_calibrations", "teammates"
+  add_foreign_key "ability_milestone_calibrations", "teammates", column: "manager_completed_by_teammate_id"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "addresses", "people"

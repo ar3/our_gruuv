@@ -1,0 +1,95 @@
+- casual = @teammate.person.casual_name
+- content_for :title, "#{casual} — Ability milestone calibration review"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: 'Grow by Abilities', url: my_growth_abilities_organization_company_teammate_path(organization, @teammate) }, { label: 'Milestone calibration', url: ability_milestone_calibration_organization_company_teammate_path(organization, @teammate) }, { label: 'Review', url: nil }])
+
+.d-flex.align-items-center.flex-wrap.gap-2.mb-3
+  %h1.h3.mb-0 Review & award
+  = render 'shared/page_help/header_info_button',
+    collapse_id: 'abilityMilestoneCalibrationReviewPageInfo',
+    tooltip: 'Compare ratings, talk, then award one ability at a time. Click for details.'
+
+.collapse.mb-4#abilityMilestoneCalibrationReviewPageInfo
+  = render 'organizations/company_teammates/ability_milestone_calibrations/review_page_help'
+
+.alert.alert-info.mb-4
+  %p.mb-1
+    %strong Talk through differences.
+    Employee and manager ratings are visible. When you disagree, use conversation—then the person who can award milestones sets the official level.
+  %p.mb-0.small
+    #{@entry_counts[:will_show]} of #{@entry_counts[:full_set]} abilities still need a 1–5 award to leave the calibration set.
+
+- if @pending_items.blank?
+  .alert.alert-success.mb-4
+    %p.mb-2 No abilities are ready for award right now. Rate abilities on the
+    = link_to 'calibration page', ability_milestone_calibration_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+    until both sides have saved a rating (1–5) for each one you want to decide.
+    - remaining_m0 = @entry_counts[:will_show].to_i
+    - if remaining_m0.positive? && @awarded_items.any? { |i| !i.official_milestone_level.nil? && i.official_milestone_level.zero? }
+      %p.mb-2.mt-3
+        Some abilities were left at official milestone 0 and can be rated again.
+      = button_to 'Continue calibrating remaining M0 abilities',
+        reopen_ability_milestone_calibration_organization_company_teammate_path(organization, @teammate),
+        method: :post,
+        class: 'btn btn-primary',
+        data: { turbo: false }
+- else
+  - milestones_by_key = ability_milestone_calibration_milestones_index(@teammate, @pending_items)
+  - @pending_items.each do |item|
+    - ability = item.ability
+    - ability_pop = ability_milestone_calibration_ability_description_popover_html(ability)
+    .card.mb-3
+      .card-body
+        %h5.card-title.mb-3
+          = link_to ability.display_name,
+            organization_teammate_ability_path(organization, @teammate, ability),
+            class: 'text-decoration-none',
+            data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'right', bs_title: ability.display_name, bs_custom_class: 'complete-picture-milestone-popover', bs_content: ability_pop }
+        .row.g-3.mb-3
+          .col-md-4
+            .border.rounded.p-3.h-100
+              %div.small.text-muted.mb-1 Employee proposal
+              - emp_pop = ability_milestone_calibration_milestone_popover_html(ability, item.employee_rating)
+              %div.fs-5.fw-semibold{role: 'button', tabindex: 0, data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: "Milestone #{item.employee_rating.to_i}", bs_custom_class: 'complete-picture-milestone-popover', bs_content: emp_pop }}
+                = ability_milestone_calibration_rating_label(item.employee_rating)
+          .col-md-4
+            .border.rounded.p-3.h-100
+              %div.small.text-muted.mb-1 Manager proposal
+              - mgr_pop = ability_milestone_calibration_milestone_popover_html(ability, item.manager_rating)
+              %div.fs-5.fw-semibold{role: 'button', tabindex: 0, data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: "Milestone #{item.manager_rating.to_i}", bs_custom_class: 'complete-picture-milestone-popover', bs_content: mgr_pop }}
+                = ability_milestone_calibration_rating_label(item.manager_rating)
+          .col-md-4
+            .border.rounded.p-3.h-100{class: item.employee_rating.to_i == item.manager_rating.to_i ? 'border-success' : 'border-warning'}
+              %div.small.text-muted.mb-1 Alignment
+              - if item.employee_rating.to_i == item.manager_rating.to_i
+                %div.fw-semibold.text-success Same level
+              - else
+                %div.fw-semibold.text-warning Different — talk it through
+
+        - if @can_award
+          = form_with url: award_ability_milestone_calibration_item_organization_company_teammate_path(organization, @teammate, item), method: :post, local: true, data: { turbo: false } do
+            %label.form-label.small.mb-2 Official milestone level
+            .btn-group.btn-group-sm.flex-wrap.mb-3{role: 'group', 'aria-label': "Official milestone for #{ability.display_name}"}
+              - (0..5).each do |level|
+                - input_id = "official_level_#{item.id}_#{level}"
+                - milestone_rec = milestones_by_key[[ability.id, level]]
+                - pop_html = ability_milestone_calibration_milestone_popover_html(ability, level, milestone_rec)
+                - btn_outline = level.zero? ? 'btn-outline-secondary' : 'btn-outline-primary'
+                - selected = item.manager_rating.to_i == level
+                = radio_button_tag :official_milestone_level, level, selected, class: 'btn-check', id: input_id, required: true
+                = label_tag input_id, nil, class: "btn #{btn_outline}", role: 'button', data: { bs_toggle: 'popover', bs_html: true, bs_trigger: 'hover focus', bs_placement: 'top', bs_title: "Milestone #{level}", bs_custom_class: 'complete-picture-milestone-popover', bs_content: pop_html } do
+                  = level.zero? ? '0' : level.to_s
+            %div
+              = submit_tag 'Award this ability', class: 'btn btn-primary', data: { turbo_confirm: 'Award this official level? Levels 1–5 create milestone records.' }
+        - else
+          %p.small.text-muted.mb-0 Waiting for someone who can award milestones to set the official level.
+
+- if @awarded_items.any?
+  %h2.h5.mt-4.mb-3 Already decided this pass
+  %ul.list-group.mb-3
+    - @awarded_items.each do |item|
+      %li.list-group-item.d-flex.justify-content-between.align-items-center
+        %span= item.ability.display_name
+        %span.badge{class: item.official_milestone_level.to_i.positive? ? 'bg-success' : 'bg-secondary'}
+          = ability_milestone_calibration_rating_label(item.official_milestone_level)

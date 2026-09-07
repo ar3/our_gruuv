@@ -449,6 +449,15 @@
         %p.text-muted.mb-0
           %em No ability milestone requirements apply yet for #{@current_organization.display_name}. They appear when this teammate has a position with milestone rules, required assignments, or active assignment tenures that include abilities.
 
+      = render 'organizations/company_teammates/ability_milestone_calibrations/entry_control',
+        teammate: @teammate,
+        organization: @current_organization
+
+- else
+  = render 'organizations/company_teammates/ability_milestone_calibrations/entry_control',
+    teammate: @teammate,
+    organization: @current_organization
+
 / No Data State
 - if @current_employment&.position&.position_assignments&.empty? && @complete_picture_ability_milestone_cards.empty? && @assignment_tenures.empty?
   .alert.alert-info

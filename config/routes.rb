@@ -492,6 +492,20 @@ Rails.application.routes.draw do
         get 'bulk_milestone_awards/new', to: 'company_teammates/bulk_milestone_awards#new', as: :new_bulk_milestone_award
         post 'bulk_milestone_awards/review', to: 'company_teammates/bulk_milestone_awards#review', as: :review_bulk_milestone_awards
         post 'bulk_milestone_awards', to: 'company_teammates/bulk_milestone_awards#create', as: :bulk_milestone_awards
+        get 'ability_milestone_calibration',
+            to: 'company_teammates/ability_milestone_calibrations#show',
+            as: :ability_milestone_calibration
+        patch 'ability_milestone_calibration',
+              to: 'company_teammates/ability_milestone_calibrations#update'
+        get 'ability_milestone_calibration/review',
+            to: 'company_teammates/ability_milestone_calibrations#review',
+            as: :review_ability_milestone_calibration
+        post 'ability_milestone_calibration/reopen',
+             to: 'company_teammates/ability_milestone_calibrations#reopen',
+             as: :reopen_ability_milestone_calibration
+        post 'ability_milestone_calibration/items/:item_id/award',
+             to: 'company_teammates/ability_milestone_calibrations#award',
+             as: :award_ability_milestone_calibration_item
       end
 
       resources :possible_observation_slack_searches,

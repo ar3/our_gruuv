@@ -11,6 +11,12 @@
 .collapse.mb-4#bulkMilestoneAwardPageInfo
   = render 'organizations/company_teammates/bulk_milestone_awards/new_page_help'
 
+.alert.alert-warning.mb-4
+  %p.mb-0
+    %strong Prefer one-time milestone calibration.
+    Bulk award is a manager-only override and not the OG way to set a shared baseline.
+    = link_to 'Start one-time ability milestone calibration instead', ability_milestone_calibration_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+
 .row.justify-content-center.mt-3
   .col-12.col-xl-11
     - if @catalog_rows.empty?

@@ -3,9 +3,19 @@
   %p.mb-3
     Set every ability milestone level for one teammate in a single pass—usually to catch them up after onboarding or when you are new to OG—then review and save once.
 
+  %h6.fw-semibold.mb-2 Prefer one-time milestone calibration
+  %p.mb-2
+    %strong Warning:
+    Bulk award puts power only in the manager’s hands. That is not the OG way to establish a shared baseline.
+    Use the
+    = link_to 'one-time ability milestone calibration', ability_milestone_calibration_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
+    instead: employee and manager each rate privately, talk with ratings revealed, then award.
+  %p.mb-3
+    Keep bulk award for rare overrides only—not as the default first pass.
+
   %h6.fw-semibold.mb-2 When to use this page
   %p.mb-2
-    %strong Use it once per person.
+    %strong Use it sparingly.
     Either you are new to OG and awarding milestones for someone who has already demonstrated confidence and competency in the Abilities below, or this is a new hire around their 90-day mark and you are catching them up from what you have observed.
   %p.mb-3
     %strong Warning:
@@ -44,4 +54,4 @@
           %strong Review changes before making them
           to confirm additions, removals, and which new levels will be company-visible.
         %li
-          Prefer awarding one milestone at a time from Celebrate milestones when you are not doing a deliberate catch-up pass.
+          Prefer the one-time milestone calibration (or awarding one milestone at a time from Celebrate milestones) when you are not doing a deliberate override pass.
