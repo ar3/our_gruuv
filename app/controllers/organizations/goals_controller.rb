@@ -12,9 +12,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
     @created_by_me_filter = params[:owner_id] == 'created_by_me'
     @my_relevant_goals_filter = params[:owner_id] == 'my_relevant_goals'
+    @all_my_teams_filter = params[:owner_id] == 'all_my_teams'
+    special_owner_filter = special_goals_owner_filter?
 
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
-    if !@everyone_in_company_filter && !@created_by_me_filter && !@my_relevant_goals_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+    if !special_owner_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
@@ -26,7 +28,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     current_teammate = current_company_teammate
 
     # Default to logged in user if no owner is selected (unless using special filters)
-    unless @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter || (params[:owner_type].present? && params[:owner_id].present?)
+    unless special_owner_filter || (params[:owner_type].present? && params[:owner_id].present?)
       if current_teammate
         params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
@@ -79,10 +81,20 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       # "My relevant goals": active goals that are either company-wide (everyone_in_company)
       # or owned by the current teammate.
       @goals = @goals.active.merge(my_relevant_goals_condition(current_teammate))
+    elsif @all_my_teams_filter
+      company_for_teams = @organization.root_company || @organization
+      @viewer_teams_for_filter = teams_for_teammate(current_teammate, company_for_teams)
+      team_ids = @viewer_teams_for_filter.map(&:id)
+      @goals = if team_ids.any?
+                 @goals.where(owner_type: 'Team', owner_id: team_ids)
+               else
+                 @goals.none
+               end
     else
       # Filter by owner
       @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
     end
+
 
     # Apply prompt filter: restrict to goals associated with this prompt + their descendant hierarchy
     if params[:prompt_id].present?
@@ -116,6 +128,13 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
       elsif @my_relevant_goals_filter
         all_goals_for_filter = policy_scope(Goal).active.merge(my_relevant_goals_condition(current_teammate))
+      elsif @all_my_teams_filter
+        team_ids = Array(@viewer_teams_for_filter).map(&:id)
+        all_goals_for_filter = if team_ids.any?
+                                 policy_scope(Goal).where(owner_type: 'Team', owner_id: team_ids)
+                               else
+                                 policy_scope(Goal.none)
+                               end
       else
         all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
       end
@@ -125,6 +144,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       )
       @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_filter)
     end
+
     
     # Apply filters
     @goals = apply_timeframe_filter(@goals, params[:timeframe])
@@ -197,8 +217,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       direction: params[:direction],
       view: @view_style,
       spotlight: spotlight_param,
-      owner_type: @everyone_in_company_filter ? nil : params[:owner_type],
-      owner_id: @everyone_in_company_filter ? 'everyone_in_company' : params[:owner_id],
+      owner_type: special_goals_owner_filter? ? nil : params[:owner_type],
+      owner_id: special_goals_owner_filter_param || params[:owner_id],
       show_deleted: show_deleted ? '1' : nil,
       show_completed: show_completed ? '1' : nil,
       prompt_id: params[:prompt_id].presence,
@@ -208,7 +228,23 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Set current spotlight for view
     @current_spotlight = spotlight_param
+
+    @goals_empty_filter_fallback = if @goals.empty?
+                                     Goals::EmptyFilterFallback.call(
+                                       organization: @organization,
+                                       viewer: current_teammate,
+                                       all_my_teams_filter: @all_my_teams_filter,
+                                       everyone_in_company_filter: @everyone_in_company_filter,
+                                       created_by_me_filter: @created_by_me_filter,
+                                       my_relevant_goals_filter: @my_relevant_goals_filter,
+                                       owner_type: params[:owner_type],
+                                       owner_id: params[:owner_id],
+                                       viewer_teams: @viewer_teams_for_filter,
+                                       can_create_goals: policy(Goal).create?
+                                     )
+                                   end
   end
+
   
   def show
     authorize @goal
@@ -1075,6 +1111,29 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     company_wide.or(Goal.where(owner_type: 'CompanyTeammate', owner_id: teammate.id))
   end
 
+  def special_goals_owner_filter?
+    @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter || @all_my_teams_filter
+  end
+
+  def special_goals_owner_filter_param
+    return 'everyone_in_company' if @everyone_in_company_filter
+    return 'created_by_me' if @created_by_me_filter
+    return 'my_relevant_goals' if @my_relevant_goals_filter
+    return 'all_my_teams' if @all_my_teams_filter
+
+    nil
+  end
+
+  def teams_for_teammate(teammate, company)
+    return Team.none unless teammate && company
+
+    Team.active.where(company: company)
+        .joins(:team_members)
+        .where(team_members: { company_teammate_id: teammate.id })
+        .ordered
+        .distinct
+  end
+
   def apply_timeframe_filter(goals, timeframe)
     return goals unless timeframe.present?
     return goals if timeframe == 'all'
@@ -1234,6 +1293,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
     # Filter-only options (index page: view all / view mine)
     options << ["My relevant goals", "my_relevant_goals"]
+    options << ["All my teams", "all_my_teams"]
     if company.display_name.present?
       options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
     end
@@ -1323,6 +1383,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
     filter_opts = []
     filter_opts << ["My relevant goals", "my_relevant_goals"]
+    filter_opts << ["All my teams", "all_my_teams"]
     filter_opts << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"] if company.display_name.present?
     filter_opts << ["All goals created by me", "created_by_me"]
     groups << ["Filter", filter_opts] if filter_opts.any?
@@ -1362,7 +1423,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   # Returns goal owners for bulk create form (excludes filter options that aren't actual owners)
   def available_goal_owners_for_bulk
-    available_goal_owners.reject { |_label, value| value.in?(['everyone_in_company', 'created_by_me', 'my_relevant_goals']) }
+    available_goal_owners.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams]) }
   end
   helper_method :available_goal_owners_for_bulk
 

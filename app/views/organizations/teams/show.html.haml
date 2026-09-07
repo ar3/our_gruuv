@@ -34,27 +34,32 @@
             = @team_members.count
       .card-body
         - if @team_members.any?
-          .d-flex.align-items-center.justify-content-center.flex-wrap.gap-0.mb-4{style: "margin-left: -0.5rem;"}
+          .d-flex.align-items-center.justify-content-center.flex-wrap.gap-0.mb-3{style: "margin-left: -0.5rem;"}
             - @team_members.each_with_index do |team_member, idx|
               - teammate = team_member.company_teammate
               = link_to organization_company_teammate_path(@organization, teammate), class: "d-inline-block text-decoration-none", style: "margin-left: #{idx.zero? ? 0 : -1.25}rem; z-index: #{@team_members.size - idx};", title: teammate.person.preferred_first_then_last_display_name, data: { bs_toggle: "tooltip", bs_placement: "top" } do
                 .rounded-circle.border.border-3.border-white.shadow-sm{style: "width: 80px; height: 80px; overflow: hidden; box-sizing: content-box;"}
                   = teammate_profile_image(teammate, size: 80)
-          .table-responsive
-            %table.table.table-hover.mb-0
-              %thead
-                %tr
-                  %th Name
-                  %th Email
-              %tbody
-                - @team_members.each do |team_member|
-                  - person = team_member.company_teammate.person
+          %p.mb-0
+            %a.d-inline-flex.align-items-center.gap-1.text-decoration-none{"data-bs-toggle" => "collapse", href: "#team-members-directory", role: "button", "aria-expanded" => "false", "aria-controls" => "team-members-directory"}
+              %i.bi.bi-chevron-down
+              Names and emails
+          .collapse#team-members-directory.mt-3
+            .table-responsive
+              %table.table.table-hover.mb-0
+                %thead
                   %tr
-                    %td
-                      = link_to organization_company_teammate_path(@organization, team_member.company_teammate), class: "text-decoration-none" do
-                        = person.preferred_first_then_last_display_name
-                    %td
-                      = person.email
+                    %th Name
+                    %th Email
+                %tbody
+                  - @team_members.each do |team_member|
+                    - person = team_member.company_teammate.person
+                    %tr
+                      %td
+                        = link_to organization_company_teammate_path(@organization, team_member.company_teammate), class: "text-decoration-none" do
+                          = person.preferred_first_then_last_display_name
+                      %td
+                        = person.email
         - else
           .alert.alert-light.mb-0
             %p.mb-0
@@ -63,6 +68,39 @@
               - if policy(@team).update?
                 = link_to "Add members", manage_members_organization_team_path(@organization, @team), class: "alert-link"
                 to get started.
+
+    - if policy(company).view_goals?
+      .card.mb-4
+        .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+          %h5.mb-0
+            %i.bi.bi-bullseye.me-2
+            Team Goals
+            %span.badge.bg-secondary.ms-2= @team_goals.size
+          .d-flex.align-items-center.gap-2
+            = link_to organization_goals_path(@organization, owner_id: "Team_#{@team.id}"), class: "btn btn-sm btn-outline-secondary" do
+              %i.bi.bi-list.me-1
+              View all
+            - if policy(Goal).create?
+              = link_to new_organization_goal_path(@organization, owner_id: "Team_#{@team.id}"), class: "btn btn-sm btn-primary" do
+                %i.bi.bi-plus.me-1
+                Create goal
+        .card-body
+          - if @team_goals.any?
+            .list-group.list-group-flush
+              - @team_goals.each do |goal|
+                = link_to organization_goal_path(@organization, goal), class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2" do
+                  %span
+                    = goal.title
+                    - if goal.started_at.blank?
+                      %span.badge.text-bg-light.border.ms-2 Draft
+                  %i.bi.bi-chevron-right.text-muted
+          - else
+            .alert.alert-light.mb-0
+              %p.mb-2
+                %i.bi.bi-info-circle.me-2
+                #{@team.name} has no goals attached yet.
+              - if policy(Goal).create?
+                = link_to "Create a team goal", new_organization_goal_path(@organization, owner_id: "Team_#{@team.id}"), class: "btn btn-sm btn-primary"
 
     = render "organizations/teams/assignment_roster", roster: @assignment_roster, team: @team, organization: @organization
 

@@ -47,6 +47,15 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     end
 
     @assignment_roster = ::Teams::AssignmentRoster.new(@team)
+
+    @team_goals = if policy(company).view_goals?
+                    policy_scope(Goal)
+                      .where(owner_type: 'Team', owner_id: @team.id)
+                      .incomplete_unarchived
+                      .order(:title)
+                  else
+                    Goal.none
+                  end
   end
 
   def new

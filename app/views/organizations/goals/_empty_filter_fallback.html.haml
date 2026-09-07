@@ -1,0 +1,35 @@
+-# locals: fallback (Goals::EmptyFilterFallback::Result)
+- fallback = local_assigns[:fallback]
+- return if fallback.blank?
+- segments = fallback.message_segments.presence
+
+.goals-empty-filter-fallback
+  %p.mb-2
+    - if segments.present?
+      - segments.each do |part|
+        - if part[:path].present?
+          = link_to part[:text], part[:path]
+        - else
+          = part[:text]
+    - else
+      = fallback.message
+  - if fallback.reach_out_people.present?
+    %p.mb-3
+      - fallback.reach_out_people.each_with_index do |person, index|
+        - if index.positive?
+          = index == fallback.reach_out_people.size - 1 ? ' and ' : ', '
+        = link_to person[:name], person[:path]
+  - if fallback.cta_label.present?
+    - if fallback.cta_disabled
+      %span.d-inline-flex.align-items-center.gap-2
+        %button.btn.btn-sm.btn-primary{type: "button", disabled: true, "aria-disabled" => "true"}= fallback.cta_label
+        - if fallback.cta_disabled_reason.present?
+          %i.bi.bi-exclamation-triangle.text-warning{
+            "data-bs-toggle" => "tooltip",
+            "data-bs-placement" => "top",
+            "data-bs-title" => fallback.cta_disabled_reason,
+            "aria-label" => fallback.cta_disabled_reason,
+            role: "img"
+          }
+    - elsif fallback.cta_path.present?
+      = link_to fallback.cta_label, fallback.cta_path, class: "btn btn-sm btn-primary"

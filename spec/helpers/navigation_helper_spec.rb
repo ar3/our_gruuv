@@ -674,18 +674,21 @@ RSpec.describe NavigationHelper, type: :helper do
     end
 
     describe 'Goals section' do
-      it 'includes Goals section with Add New, personal goals, and Hierarchy Map' do
+      it 'includes Goals section with Add New, personal, team goals, and Hierarchy Map' do
         structure = helper.navigation_structure
         goals_section = structure.find { |item| item[:label] == 'Goals' && item[:section] == 'goals' }
         expect(goals_section).to be_present
         expect(goals_section[:icon]).to eq('bi-bullseye')
         labels = goals_section[:items].map { |item| item[:label] }
-        expect(labels).to eq(['Add New Goals', 'My personal goals', 'Goals Hierarchy Map'])
+        expect(labels).to eq(['Add New Goals', 'My personal goals', 'My team goals', 'Goals Hierarchy Map'])
         expect(goals_section[:items][0][:path]).to eq(helper.select_create_organization_goals_path(company))
         expect(goals_section[:items][1][:path]).to eq(
           helper.organization_goals_path(company, owner_id: "CompanyTeammate_#{teammate.id}")
         )
-        expect(goals_section[:items][2][:path]).to eq(helper.organization_goal_impact_scanner_path(company))
+        expect(goals_section[:items][2][:path]).to eq(
+          helper.organization_goals_path(company, owner_id: 'all_my_teams')
+        )
+        expect(goals_section[:items][3][:path]).to eq(helper.organization_goal_impact_scanner_path(company))
       end
     end
   end

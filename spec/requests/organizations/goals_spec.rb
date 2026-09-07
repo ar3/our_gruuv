@@ -884,6 +884,70 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
+  describe 'GET /organizations/:organization_id/goals with all_my_teams filter' do
+    it 'lists the all my teams filter and shows team-owned goals for memberships' do
+      team = create(:team, company: organization, name: 'Platform Squad')
+      create(:team_member, team: team, company_teammate: teammate)
+      team_goal = create(
+        :goal,
+        creator: teammate,
+        owner: team,
+        title: 'Ship platform rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+      personal_goal = create(
+        :goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Personal only goal',
+        started_at: 1.week.ago
+      )
+
+      get organization_goals_path(organization, owner_id: 'all_my_teams')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('All my teams')
+      expect(response.body).to include('for All my teams')
+      expect(response.body).to include('fs-1')
+      expect(response.body).to include('Ship platform rock')
+      expect(response.body).not_to include('Personal only goal')
+      expect(response.body).to include(organization_goal_path(organization, team_goal))
+    end
+
+    it 'shows not-on-teams empty fallback with team-adder links' do
+      adder_person = create(:person, first_name: 'Riley', last_name: 'Admin')
+      adder = create(
+        :company_teammate,
+        person: adder_person,
+        organization: organization,
+        can_manage_departments_and_teams: true
+      )
+
+      get organization_goals_path(organization, owner_id: 'all_my_teams')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('What team(s) is')
+      expect(response.body).to include('Reach out to someone who can add people to teams')
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, adder))
+      expect(response.body).to include('Riley')
+    end
+
+    it 'shows teams-without-goals empty fallback when memberships have no team goals' do
+      team = create(:team, company: organization, name: 'Empty Team')
+      create(:team_member, team: team, company_teammate: teammate)
+
+      get organization_goals_path(organization, owner_id: 'all_my_teams')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Empty Team')
+      expect(response.body).to include('no goals attached')
+      expect(response.body).to include(organization_team_path(organization, team))
+      expect(response.body).to include('Create a team goal')
+      expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Team_#{team.id}"))
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals with default (hierarchical-collapsible) view' do
     let(:check_in_eligible_goal) do
       create(:goal,

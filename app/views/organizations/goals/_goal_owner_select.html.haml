@@ -8,7 +8,7 @@
 - grouped_options = local_assigns[:grouped_options]
 - options = local_assigns[:options] || []
 - include_filter_options = local_assigns.fetch(:include_filter_options, false)
-- options = options.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me]) } unless include_filter_options
+- options = options.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams]) } unless include_filter_options
 - selected_value = local_assigns[:selected_value]
 - name = local_assigns[:name] || 'owner_id'
 - id = local_assigns[:id]

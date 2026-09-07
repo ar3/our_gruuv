@@ -249,6 +249,38 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('No department')
     end
+
+    it 'collapses member names/emails by default and shows team goals under members' do
+      member_person = create(:person, first_name: 'Casey', last_name: 'Member', email: 'casey@example.com')
+      member = create(:teammate, person: member_person, organization: organization,
+                      first_employed_at: 1.year.ago, last_terminated_at: nil)
+      create(:team_member, team: team, company_teammate: member)
+      team_goal = create(
+        :goal,
+        creator: teammate,
+        owner: team,
+        title: 'Ship the platform rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+
+      get organization_team_path(organization, team)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Team Members')
+      expect(response.body).to include('Names and emails')
+      expect(response.body).to include('id="team-members-directory"')
+      expect(response.body).to include('aria-expanded="false"')
+      expect(response.body).to match(/class="[^"]*\bcollapse\b/)
+      expect(response.body).to include('casey@example.com')
+      expect(response.body).to include('Team Goals')
+      expect(response.body).to include('Ship the platform rock')
+      expect(response.body).to include(organization_goal_path(organization, team_goal))
+      expect(response.body).to include(organization_goals_path(organization, owner_id: "Team_#{team.id}"))
+      expect(response.body).to include(new_organization_goal_path(organization, owner_id: "Team_#{team.id}"))
+      # Team Goals card should appear after Team Members in the markup
+      expect(response.body.index('Team Members')).to be < response.body.index('Team Goals')
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/teams/:id' do

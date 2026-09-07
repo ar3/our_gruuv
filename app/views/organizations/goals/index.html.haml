@@ -11,7 +11,8 @@
     = nav_hierarchy_with_previous(organization: @organization, crumbs: breadcrumbs)
 
 - content_for :header do
-  - selected_value = @current_filters[:owner_id].to_s.in?(['everyone_in_company', 'created_by_me', 'my_relevant_goals']) ? @current_filters[:owner_id] : primary_filter_select_value
+  - special_owner_ids = %w[everyone_in_company created_by_me my_relevant_goals all_my_teams]
+  - selected_value = @current_filters[:owner_id].to_s.in?(special_owner_ids) ? @current_filters[:owner_id] : primary_filter_select_value
   - grouped_owner_options = available_goal_owners_grouped
   - current_filter_label = grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }&.first || 'Select owner'
   .d-flex.flex-column.gap-2
@@ -37,7 +38,7 @@
       = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "goals-header-owner-switcher-form", class: "mb-0" do |_f|
         %label.visually-hidden{for: "goals-header-owner-select"} Goals primary filter
         .dropdown.d-inline-flex.align-items-center
-          %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-4.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => "Switch goals primary filter"}
+          %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => "Switch goals primary filter"}
             %span
               for #{current_filter_label}
           %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
@@ -97,17 +98,20 @@
   .col-lg-12
     .card.border-0.shadow-sm
       .card-body
-        - case @current_spotlight
-        - when 'goals_overview'
-          = render partial: 'organizations/goals/customize_view/spotlights/goals_overview'
-        - when 'top_priority'
-          = render partial: 'organizations/goals/customize_view/spotlights/top_priority'
-        - when 'recently_added'
-          = render partial: 'organizations/goals/customize_view/spotlights/recently_added'
-        - when 'overdue'
-          = render partial: 'organizations/goals/customize_view/spotlights/overdue'
+        - if @goals_empty_filter_fallback.present?
+          = render 'organizations/goals/empty_filter_fallback', fallback: @goals_empty_filter_fallback
         - else
-          = render partial: 'organizations/goals/customize_view/spotlights/default'
+          - case @current_spotlight
+          - when 'goals_overview'
+            = render partial: 'organizations/goals/customize_view/spotlights/goals_overview'
+          - when 'top_priority'
+            = render partial: 'organizations/goals/customize_view/spotlights/top_priority'
+          - when 'recently_added'
+            = render partial: 'organizations/goals/customize_view/spotlights/recently_added'
+          - when 'overdue'
+            = render partial: 'organizations/goals/customize_view/spotlights/overdue'
+          - else
+            = render partial: 'organizations/goals/customize_view/spotlights/default'
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6
@@ -176,14 +180,14 @@
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
     - else
       .alert.alert-info
-        %h6.mb-2
-          %i.bi.bi-info-circle.me-2
-          - if @current_filters[:owner_type].blank? || @current_filters[:owner_id].blank?
-            Please select an owner to view goals
-          - elsif @current_filters.values.any?(&:present?)
-            No goals match your current filters. Try adjusting your filters.
-          - else
-            No goals found for the selected owner.
-            = link_to "Create First Goal", select_create_organization_goals_path(@organization), class: "btn btn-primary btn-sm"
+        - if @goals_empty_filter_fallback.present?
+          = render 'organizations/goals/empty_filter_fallback', fallback: @goals_empty_filter_fallback
+        - else
+          %h6.mb-2
+            %i.bi.bi-info-circle.me-2
+            - if @current_filters[:owner_type].blank? && @current_filters[:owner_id].blank?
+              Please select an owner to view goals
+            - else
+              No goals match your current filters. Try adjusting your filters.
 
 
