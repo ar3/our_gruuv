@@ -3,23 +3,18 @@
 
 - content_for :header do
   .d-flex.flex-column.gap-1
-    .d-flex.align-items-center.gap-2.flex-wrap
-      %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-        = render "shared/teammate_context/title_dropdown",
-                 organization: organization,
-                 selected_teammate: @selected_teammate,
-                 viewable_teammate_groups: @viewable_teammate_groups,
-                 path_for_teammate: ->(tm) { organization_company_teammate_check_ins_path(organization, tm) },
-                 switch_aria_label: switch_teammate_bulk_clarity_check_ins_label
-        %span= " - #{bulk_clarity_check_in_label}"
-        = render 'shared/page_help/header_info_button',
-                 collapse_id: bulk_check_in_page_help_id,
-                 tooltip: 'Bulk clarity check-in purpose and MAAP flow. Click for details.'
+    - trailing = capture do
+      = render 'shared/page_help/header_info_button',
+               collapse_id: bulk_check_in_page_help_id,
+               tooltip: 'Bulk clarity check-in purpose and MAAP flow. Click for details.'
+    = render "shared/teammate_modality_header/switchers",
+             organization: organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { organization_company_teammate_check_ins_path(organization, tm) },
+             switch_aria_label: switch_teammate_bulk_clarity_check_ins_label,
+             trailing: trailing
     %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"
-
-- content_for :header_action do
-  .d-flex.align-items-center.gap-2
-    = render 'people/view_switcher'
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: bulk_clarity_check_in_label, url: nil }])

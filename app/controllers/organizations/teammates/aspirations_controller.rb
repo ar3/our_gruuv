@@ -1,5 +1,6 @@
 class Organizations::Teammates::AspirationsController < Organizations::OrganizationNamespaceBaseController
   include Organizations::LoadAssociableGoalsDisplay
+  include Organizations::AssignsViewableTeammates
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -11,6 +12,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
 
     @organization = organization
     @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
 
     # Single-item layout
     @single_item_type = :aspiration

@@ -2,21 +2,17 @@
 - page_help_id = 'notificationsPageHelp'
 
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2{id: "person-title"}
-      = render "shared/teammate_context/title_dropdown",
-               organization: organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { organization_company_teammate_notifications_path(organization, tm) },
-               switch_aria_label: "Switch teammate for notifications"
-      %span= " - Notifications"
+  - trailing = capture do
     = render 'shared/page_help/header_info_button',
              collapse_id: page_help_id,
              tooltip: 'Configure which notifications you receive and how. Click for details.'
-
-- content_for :header_action do
-  = render 'people/view_switcher'
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { organization_company_teammate_notifications_path(organization, tm) },
+           switch_aria_label: "Switch teammate for notifications",
+           trailing: trailing
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: "Notifications", url: nil }])

@@ -2,18 +2,12 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, "#{hub_label} — Work to Meet")
 
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      = render "shared/teammate_context/title_dropdown",
-               organization: organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
-               switch_aria_label: "Switch teammate for Work to Meet"
-      %span= " - #{hub_label}"
-
-- content_for :header_action do
-  = render 'people/view_switcher'
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(tm)) },
+           switch_aria_label: "Switch teammate for Work to Meet"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: hub_label, url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)) }, { label: "Work to Meet", url: nil }])

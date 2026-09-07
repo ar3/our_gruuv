@@ -1,0 +1,60 @@
+-# locals: organization, selected_teammate, viewable_teammate_groups
+-# Optional: path_for_teammate — Proc (teammate) -> preferred URL for current modality (preserve page extras).
+-#   Wrapped with allow-check; falls back to /internal when modality unavailable for the target teammate.
+-# Optional: switch_aria_label — teammate dropdown aria-label
+-# Optional: trigger_fs_class — Bootstrap font-size for both triggers (default fs-1)
+-# Optional: trailing — HTML after the modality dropdown (page help, then primary action). Prefer capture { }.
+- selected_teammate = local_assigns.fetch(:selected_teammate)
+- viewable_teammate_groups = local_assigns.fetch(:viewable_teammate_groups)
+- organization = local_assigns.fetch(:organization)
+- switch_aria_label = local_assigns.fetch(:switch_aria_label) { "Switch teammate" }
+- trigger_fs_class = local_assigns.fetch(:trigger_fs_class) { "fs-1" }
+- trailing = local_assigns[:trailing]
+- preferred_path_for = local_assigns[:path_for_teammate]
+- modality_key = people_current_modality_key
+:ruby
+  path_for_teammate = lambda do |tm|
+    preferred = preferred_path_for&.call(tm)
+    teammate_modality_path_for_teammate_switch(organization, tm, preferred_path: preferred, modality_key: modality_key)
+  end
+- modalities = teammate_modality_menu_items(@teammate || selected_teammate)
+- modality_label = teammate_modality_closed_label(@teammate || selected_teammate)
+- modality_icon = people_current_modality_icon
+
+.d-flex.align-items-center.gap-2.flex-wrap
+  = render "shared/teammate_context/title_dropdown",
+           organization: organization,
+           selected_teammate: selected_teammate,
+           viewable_teammate_groups: viewable_teammate_groups,
+           path_for_teammate: path_for_teammate,
+           switch_aria_label: switch_aria_label,
+           trigger_fs_class: trigger_fs_class
+
+  %span.text-muted.fw-light.user-select-none{class: trigger_fs_class, aria: {hidden: true}} ·
+
+  .dropdown.d-inline-flex.align-items-center
+    %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fw-medium.text-decoration-none{type: "button", class: trigger_fs_class, "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Switch teammate view"}
+      %i.bi{class: modality_icon}
+      %span= modality_label
+    %ul.dropdown-menu.py-1
+      - modalities.each do |modality|
+        %li
+          - if modality[:active]
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %i.bi{class: modality[:icon]}
+              %span.flex-grow-1= "#{modality[:label]} (Active)"
+              %i.bi.bi-check-circle.text-success
+          - elsif modality[:allowed] && modality[:path].present?
+            = link_to modality[:path], class: "dropdown-item d-flex align-items-center gap-2" do
+              %i.bi{class: modality[:icon]}
+              = modality[:label]
+          - else
+            .dropdown-item.text-muted.disabled.d-flex.align-items-center.gap-2
+              %i.bi{class: modality[:icon]}
+              %span.flex-grow-1= modality[:label]
+              - if modality[:disabled_tooltip].present?
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => modality[:disabled_tooltip]}
+
+  - if trailing.present?
+    .d-inline-flex.align-items-center.gap-2.flex-wrap
+      = trailing

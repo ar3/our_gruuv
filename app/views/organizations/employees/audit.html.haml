@@ -2,18 +2,12 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, audit_page_label)
 
 - content_for :header do
-  .d-flex.align-items-center.flex-wrap.gap-2
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      = render "shared/teammate_context/title_dropdown",
-               organization: @organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { audit_organization_employee_path(@organization, tm) },
-               switch_aria_label: "Switch teammate for audit history"
-      %span= " - #{audit_page_label}"
-
-- content_for :header_action do
-  = render 'people/view_switcher'
+  = render "shared/teammate_modality_header/switchers",
+           organization: @organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { audit_organization_employee_path(@organization, tm) },
+           switch_aria_label: "Switch teammate for audit history"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Acknowledge Check-ins", url: acknowledge_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: audit_page_label, url: nil }])

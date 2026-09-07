@@ -1,15 +1,13 @@
 -# locals: path_for_teammate (Proc teammate -> URL), intent_text
 - path_for_teammate = local_assigns.fetch(:path_for_teammate)
 - intent_text = local_assigns.fetch(:intent_text)
-.d-flex.align-items-center.gap-3.flex-wrap
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      = render "shared/teammate_context/title_dropdown",
-               organization: organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: path_for_teammate,
-               switch_aria_label: "Switch teammate for My Growth"
-      %span= "'s Growth"
-    %span.text-muted{"data-bs-toggle" => "tooltip", "data-bs-title" => intent_text}
-      %i.bi.bi-info-circle
+- trailing = capture do
+  %span.text-muted{"data-bs-toggle" => "tooltip", "data-bs-title" => intent_text}
+    %i.bi.bi-info-circle
+= render "shared/teammate_modality_header/switchers",
+         organization: organization,
+         selected_teammate: @selected_teammate,
+         viewable_teammate_groups: @viewable_teammate_groups,
+         path_for_teammate: path_for_teammate,
+         switch_aria_label: "Switch teammate for My Growth",
+         trailing: trailing

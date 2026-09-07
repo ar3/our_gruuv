@@ -12,20 +12,17 @@
   ]
 
 - content_for :header do
-  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-    = render "shared/teammate_context/title_dropdown",
-             organization: @current_organization,
-             selected_teammate: @selected_teammate,
-             viewable_teammate_groups: @viewable_teammate_groups,
-             path_for_teammate: ->(tm) { internal_organization_company_teammate_path(@current_organization, tm) },
-             switch_aria_label: "Switch teammate for #{true_jd_teammate_view_suffix}"
-    %span= "'s #{true_jd_teammate_view_suffix}"
+  - trailing = capture do
     = render 'shared/page_help/header_info_button',
              collapse_id: internal_page_help_id,
              tooltip: 'True Job Description (JD) (teammate view): role, assignments, teams, OGOs, and public goals. Click for details.'
-
-- content_for :header_action do
-  = render 'people/view_switcher'
+  = render "shared/teammate_modality_header/switchers",
+           organization: @current_organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { internal_organization_company_teammate_path(@current_organization, tm) },
+           switch_aria_label: "Switch teammate for #{true_jd_teammate_view_suffix}",
+           trailing: trailing
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: true_jd_teammate_view_suffix, url: nil }])

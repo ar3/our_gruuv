@@ -6,23 +6,19 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, page_label)
 
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      = render "shared/teammate_context/title_dropdown",
-               organization: organization,
-               selected_teammate: @selected_teammate,
-               viewable_teammate_groups: @viewable_teammate_groups,
-               path_for_teammate: ->(tm) { acknowledge_organization_company_teammate_check_ins_path(organization, tm) },
-               switch_aria_label: "Switch teammate for acknowledgement"
-      %span= " - #{page_label}"
-      = render "shared/page_help/header_info_button",
-               collapse_id: page_help_id,
-               tooltip: "Acknowledge finalized ratings. Click for details."
+  - trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Acknowledge finalized ratings. Click for details."
     - if pending_count.positive?
-      %span.badge.bg-warning.align-self-center #{pending_count} Pending
-
-- content_for :header_action do
-  = render "people/view_switcher"
+      %span.badge.bg-warning #{pending_count} Pending
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { acknowledge_organization_company_teammate_check_ins_path(organization, tm) },
+           switch_aria_label: "Switch teammate for acknowledgement",
+           trailing: trailing
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: page_label, url: nil }])

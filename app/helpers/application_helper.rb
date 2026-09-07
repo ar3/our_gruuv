@@ -3,6 +3,7 @@ module ApplicationHelper
   include Pagy::Frontend
   include TerminologyHelper
   include TeammateSwitcherHelper
+  include TeammateModalityHeaderHelper
   include CheckInHelper
   include CompanyLabelHelper
   include PositionsHelper

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Organizations::Teammates::PositionCheckInsController < Organizations::OrganizationNamespaceBaseController
+  include Organizations::AssignsViewableTeammates
+
   helper MyGrowthExperiencesHelper
   helper OgTipsHelper
 
@@ -13,6 +15,7 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
 
     @organization = organization
     @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
     @current_employment = @teammate.employment_tenures.active.includes(position: :title).first
     @position = @current_employment&.position
 

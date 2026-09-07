@@ -4,22 +4,18 @@
 
 - content_for :header do
   .d-flex.flex-column.gap-1
-    .d-flex.align-items-center.gap-2.flex-wrap
-      %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-        = render "shared/teammate_context/title_dropdown",
-                 organization: @current_organization,
-                 selected_teammate: @selected_teammate,
-                 viewable_teammate_groups: @viewable_teammate_groups,
-                 path_for_teammate: ->(tm) { assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, tm) },
-                 switch_aria_label: "Switch teammate for set day-to-day assignments"
-        %span= " - #{day_to_day_title}"
-        = render 'shared/page_help/header_info_button',
-                 collapse_id: set_day_to_day_page_help_id,
-                 tooltip: 'Set day-to-day assignment energy and MAAP flow. Click for details.'
+    - trailing = capture do
+      = render 'shared/page_help/header_info_button',
+               collapse_id: set_day_to_day_page_help_id,
+               tooltip: 'Set day-to-day assignment energy and MAAP flow. Click for details.'
+    = render "shared/teammate_modality_header/switchers",
+             organization: @current_organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, tm) },
+             switch_aria_label: "Switch teammate for set day-to-day assignments",
+             trailing: trailing
     %p.text-muted.mb-0= set_day_to_day_assignments_subtitle
-
-- content_for :header_action do
-  = render 'people/view_switcher'
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: true_jd_teammate_view_suffix, url: internal_organization_company_teammate_path(@current_organization, @teammate) }, { label: day_to_day_title, url: nil }])

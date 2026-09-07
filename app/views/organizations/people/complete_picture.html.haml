@@ -3,9 +3,7 @@
 - content_for :header do
   %h1.mb-0= @person.display_name
   %small.text-muted Complete Picture View
-
-- content_for :header_action do
-  = render 'people/view_switcher'
+  -# Dead/unrouted: lacks @selected_teammate/@viewable_teammate_groups for teammate_modality_header/switchers
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: "#{@person.display_name} — complete picture", url: nil }])

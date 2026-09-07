@@ -5,9 +5,6 @@
     path_for_teammate: ->(tm) { my_growth_experiences_organization_company_teammate_path(organization, tm) },
     intent_text: "Compare day-to-day assignments against the position blueprint so growth by experiences is clear."
 
-- content_for :header_action do
-  = render 'people/view_switcher'
-
 = render 'organizations/company_teammates/my_growth/nav'
 
 .alert.alert-info

@@ -6,9 +6,7 @@
     My Profile
   - else
     = @person.display_name
-        
-- content_for :header_action do
-  = render 'people/view_switcher'
+  -# Dead/unrouted: lacks @selected_teammate/@viewable_teammate_groups for teammate_modality_header/switchers
 
 - content_for :go_back_link do
   - profile_crumb = @person == @current_person ? "My profile" : @person.display_name

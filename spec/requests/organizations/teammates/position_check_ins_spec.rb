@@ -71,7 +71,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include(organization_company_teammate_check_ins_path(organization, teammate))
     end
 
-    it "shows the object queue and people view switcher instead of the item dropdown" do
+    it "shows the object queue and teammate modality switchers instead of the item dropdown" do
       get position_check_in_organization_teammate_path(organization, teammate)
 
       expect(response).to have_http_status(:success)
@@ -82,7 +82,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include("Currently viewing")
       expect(response.body).not_to include("Checking-in on")
       expect(response.body).to include("1-by-1 clarity check-in")
-      expect(response.body).to include('bi-eye')
+      expect(response.body).to include("Switch teammate view")
     end
 
     it "renders the show template" do

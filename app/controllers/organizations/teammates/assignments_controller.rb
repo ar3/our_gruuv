@@ -1,5 +1,6 @@
 class Organizations::Teammates::AssignmentsController < Organizations::OrganizationNamespaceBaseController
   include Organizations::LoadAssociableGoalsDisplay
+  include Organizations::AssignsViewableTeammates
 
   helper AssignmentEnergyAllocationHelper
 
@@ -13,6 +14,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
 
     @organization = organization
     @person = @teammate.person
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
 
     # Single-item layout
     @single_item_type = :assignment

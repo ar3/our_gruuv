@@ -8,9 +8,6 @@
     path_for_teammate: ->(tm) { my_growth_goals_organization_company_teammate_path(organization, tm, timeframe: params[:timeframe]) },
     intent_text: "Visualize goal relationships and weekly momentum for goals this teammate owns."
 
-- content_for :header_action do
-  = render 'people/view_switcher'
-
 = render 'organizations/company_teammates/my_growth/nav'
 
 .alert.alert-info

@@ -2,17 +2,12 @@
 - content_for :title, "#{casual}'s #{true_jd_manager_view_suffix}"
 
 - content_for :header do
-  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-    = render "shared/teammate_context/title_dropdown",
-             organization: organization,
-             selected_teammate: @selected_teammate,
-             viewable_teammate_groups: @viewable_teammate_groups,
-             path_for_teammate: ->(tm) { complete_picture_organization_company_teammate_path(organization, tm) },
-             switch_aria_label: "Switch teammate for #{true_jd_manager_view_suffix}"
-    %span= "'s #{true_jd_manager_view_suffix}"
-
-- content_for :header_action do
-  = render 'people/view_switcher'
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { complete_picture_organization_company_teammate_path(organization, tm) },
+           switch_aria_label: "Switch teammate for #{true_jd_manager_view_suffix}"
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: true_jd_manager_view_suffix, url: nil }])

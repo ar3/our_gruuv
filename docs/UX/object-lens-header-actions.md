@@ -61,3 +61,5 @@ If you edit a list or show view that still has:
 …update it to this standard in the same change when practical.
 
 Related: [page-help-pattern.md](../page-help-pattern.md), [object-lens-header-switchers-rollout-plan.md](object-lens-header-switchers-rollout-plan.md).
+
+**Teammate parallel:** Person-scoped pages use the same dual-dropdown language as **Teammate · Modality** (`shared/teammate_modality_header/switchers`) — teammate dropdown, `·`, modality dropdown (former view switcher), then trailing help / primary CTA.

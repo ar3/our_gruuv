@@ -3,19 +3,20 @@
 - page_help_id = "slackSearchPageHelp"
 
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      %i.bi.bi-slack.me-2
-      Slack search about #{@casual_name}
-      %span.badge.text-bg-warning
-        %i.bi.bi-flask.me-1
-        Beta
-      = render "shared/page_help/header_info_button",
-               collapse_id: page_help_id,
-               tooltip: "How Slack search consultations work on this page. Click for details."
-
-- content_for :header_action do
-  = render "people/view_switcher"
+  - trailing = capture do
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "How Slack search consultations work on this page. Click for details."
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(tm)) },
+           switch_aria_label: "Switch teammate for Slack search",
+           trailing: trailing
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Consult OG to find pOGOs", url: organization_possible_observation_consults_path(organization) }, { label: "Teammates", url: organization_employees_path(organization) }, { label: "#{@casual_name}'s OGOs", url: ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)) }, { label: "Slack search", url: nil }])

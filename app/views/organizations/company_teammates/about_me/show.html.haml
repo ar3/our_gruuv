@@ -2,9 +2,7 @@
 
 - content_for :header do
   %h1.mb-0 About #{@teammate.person.casual_name}
-        
-- content_for :header_action do
-  = render 'people/view_switcher'
+  -# Dead/unrouted: lacks @selected_teammate/@viewable_teammate_groups for teammate_modality_header/switchers
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Profile", url: organization_company_teammate_path(organization, @teammate) }, { label: "About Me", url: nil }])

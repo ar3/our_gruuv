@@ -1,10 +1,13 @@
 - content_for :title, "1-by-1 Check-in – Position – #{@teammate.person.display_name}"
 
 - content_for :header do
-  %h1.mb-0= "#{@single_item_name} — clarity check-in"
-
-- content_for :header_action do
-  = render "people/view_switcher"
+  = render "shared/teammate_modality_header/switchers",
+           organization: @organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { hub_organization_company_teammate_check_ins_path(@organization, tm) },
+           switch_aria_label: "Switch teammate for clarity check-ins"
+  %p.text-muted.mb-0.mt-1= @single_item_name
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Position Check-In", url: nil }])

@@ -9,7 +9,7 @@
 
 Changing one axis preserves the other when a destination exists; otherwise fall back Insights → List → first available.
 
-**Related:** Replaces ad-hoc “View Analytics” / Health “Other actions” / Health domain btn-group for pages in this matrix. Does **not** replace teammate `title_dropdown` or `people/view_switcher`.
+**Related:** Replaces ad-hoc “View Analytics” / Health “Other actions” / Health domain btn-group for pages in this matrix. Teammate chrome uses the parallel **Teammate · Modality** pattern (`shared/teammate_modality_header/switchers`); see Phase 7.
 
 **Trailing actions (locked):** After the lens dropdown → page-help info icon → List plus (`Add new {Object}` tooltip) or Show edit (`Edit {Object}` tooltip). Spec: [object-lens-header-actions.md](object-lens-header-actions.md).
 
@@ -176,16 +176,33 @@ Default recommendation: **A** or **C**. Do not start until A/B/C chosen.
 
 ## Explicitly out of scope (no phase)
 
-These stay in main nav / Insights hub / teammate chrome only:
+These stay in main nav / Insights hub only:
 
 - Who is doing what
 - OG Consultations Insights
 - Acknowledgements / Acknowledgement nudges
 - Insights hub (meta)
 - Start Here, GSD, Search, OG Academy
-- Teammate pages / `people/view_switcher`
-- Kudos Points Center
+- Kudos Points Center (org-level; teammate Kudos modality is in Phase 7)
 - Huddles (unless later given a real triad)
+
+---
+
+## Phase 7 — Teammate · Modality header ✅
+
+Same dual H1 interaction as Object × Lens, on person-scoped pages:
+
+1. **Teammate** — `shared/teammate_context/title_dropdown` (avatar + casual name)
+2. **·**
+3. **Modality** — former `people/view_switcher` rows (icons + labels + policies/disabled tooltips), H1-sized
+
+Closed header reads `{Teammate} · {Modality}` (no `" - Profile"` / `"'s Growth"` suffixes). Page help + primary CTA sit in `trailing:` after modality.
+
+Preserve modality when switching teammate; if unavailable, fall back to **teammate view** (`/internal`).
+
+Shared: `TeammateModalityHeaderHelper` + `shared/teammate_modality_header/_switchers`. `people/_view_switcher` is a deprecated empty shim.
+
+**Gate:** Manual spot-check Profile, Internal, OGOs, Clarity hub (under Object×Lens), single-item check-in.
 
 ---
 

@@ -15,7 +15,8 @@ RSpec.describe 'Kudos Points Mode', type: :request do
     it 'returns success' do
       get kudos_points_organization_company_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(' - Kudos Points')
+      expect(response.body).to include('Switch teammate view')
+      expect(response.body).to include('Kudos Points')
     end
 
     it 'renders the kudos_points template' do

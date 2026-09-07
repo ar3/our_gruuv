@@ -1,8 +1,6 @@
 - content_for :header do
   %h1.mb-0= finalize_clarity_check_ins_for_person_label(name: @person.display_name)
-        
-- content_for :header_action do
-  = render 'people/view_switcher'
+  -# Dead/unrouted: lacks @selected_teammate/@viewable_teammate_groups for teammate_modality_header/switchers
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: finalize_clarity_check_ins_breadcrumb_label, url: nil }])
