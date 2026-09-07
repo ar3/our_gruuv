@@ -24,6 +24,10 @@ class GoalPolicy < ApplicationPolicy
     create?
   end
 
+  def bulk_edit?
+    create?
+  end
+
   def update?
     return true if admin_bypass?
     return show? if record.edit_check_in_permission_anyone_who_can_view?

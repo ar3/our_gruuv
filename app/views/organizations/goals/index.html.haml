@@ -89,9 +89,16 @@
 
 - content_for :header_action do
   - customize_params = params.except(:controller, :action, :page).permit!.to_h
-  = link_to customize_view_organization_goals_path(@organization, customize_params), class: "btn btn-outline-secondary" do
-    %i.bi.bi-sliders.me-2
-    Customize View
+  - bulk_edit_owner = primary_filter_select_value
+  - bulk_edit_owner = nil unless bulk_edit_owner.to_s.match?(/\A(CompanyTeammate|Team|Department|Company|Organization)_\d+\z/)
+  .d-flex.flex-column.align-items-end.gap-1
+    = link_to customize_view_organization_goals_path(@organization, customize_params), class: "btn btn-outline-secondary" do
+      %i.bi.bi-sliders.me-2
+      Customize View
+    - if policy(Goal).bulk_edit?
+      = link_to organization_goals_bulk_edit_path(@organization, owner_id: bulk_edit_owner), class: "small text-muted text-decoration-none" do
+        %i.bi.bi-table.me-1
+        Bulk Edit Goals
 
 - if @my_department_missing
   .row.justify-content-center.mb-3

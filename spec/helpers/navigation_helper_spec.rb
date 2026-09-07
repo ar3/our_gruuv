@@ -674,7 +674,7 @@ RSpec.describe NavigationHelper, type: :helper do
     end
 
     describe 'Goals section' do
-      it 'includes Goals section with Add New, personal, team, department, employees goals, and Hierarchy Map' do
+      it 'includes Goals section with Add New, Bulk Edit, personal, team, department, employees goals, and Hierarchy Map' do
         structure = helper.navigation_structure
         goals_section = structure.find { |item| item[:label] == 'Goals' && item[:section] == 'goals' }
         expect(goals_section).to be_present
@@ -682,6 +682,7 @@ RSpec.describe NavigationHelper, type: :helper do
         labels = goals_section[:items].map { |item| item[:label] }
         expect(labels).to eq([
           'Add New Goals',
+          'Bulk Edit Goals',
           'My personal goals',
           'My team goals',
           'My department goals',
@@ -689,19 +690,20 @@ RSpec.describe NavigationHelper, type: :helper do
           'Goals Hierarchy Map'
         ])
         expect(goals_section[:items][0][:path]).to eq(helper.select_create_organization_goals_path(company))
-        expect(goals_section[:items][1][:path]).to eq(
+        expect(goals_section[:items][1][:path]).to eq(helper.organization_goals_bulk_edit_path(company))
+        expect(goals_section[:items][2][:path]).to eq(
           helper.organization_goals_path(company, owner_id: "CompanyTeammate_#{teammate.id}")
         )
-        expect(goals_section[:items][2][:path]).to eq(
+        expect(goals_section[:items][3][:path]).to eq(
           helper.organization_goals_path(company, owner_id: 'all_my_teams')
         )
-        expect(goals_section[:items][3][:path]).to eq(
+        expect(goals_section[:items][4][:path]).to eq(
           helper.organization_goals_path(company, owner_id: 'my_department')
         )
-        expect(goals_section[:items][4][:path]).to eq(
+        expect(goals_section[:items][5][:path]).to eq(
           helper.organization_goals_path(company, owner_id: 'my_employees')
         )
-        expect(goals_section[:items][5][:path]).to eq(helper.organization_goal_impact_scanner_path(company))
+        expect(goals_section[:items][6][:path]).to eq(helper.organization_goal_impact_scanner_path(company))
       end
     end
   end

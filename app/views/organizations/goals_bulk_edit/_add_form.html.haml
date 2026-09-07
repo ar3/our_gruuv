@@ -1,0 +1,34 @@
+-# locals: parent_goal (nil for top-level), owner_value, owner_options
+- form_id = parent_goal ? "bulk-edit-add-child-#{parent_goal.id}" : "bulk-edit-add-top"
+= form_with url: organization_goals_bulk_edit_create_path(@organization),
+            method: :post,
+            local: true,
+            html: { id: form_id, class: "goals-sheet-add-form" } do |f|
+  = hidden_field_tag :owner_id, owner_value
+  - if parent_goal
+    = hidden_field_tag :parent_id, parent_goal.id
+  .row.g-2.align-items-end
+    .col-md-3
+      %label.form-label.small.mb-0{for: "#{form_id}-title"} Title
+      = text_field_tag "goal[title]", nil, class: "form-control form-control-sm", id: "#{form_id}-title", required: true, placeholder: "Goal title"
+    .col-md-2
+      %label.form-label.small.mb-0{for: "#{form_id}-owner"} Owner
+      = select_tag "goal[owner_id]",
+                   options_for_select(owner_options, owner_value),
+                   class: "form-select form-select-sm",
+                   id: "#{form_id}-owner",
+                   required: true
+    .col-md-2
+      %label.form-label.small.mb-0{for: "#{form_id}-type"} Type
+      = select_tag "goal[goal_type]",
+                   options_for_select(goals_bulk_edit_goal_type_options, "inspirational_objective"),
+                   class: "form-select form-select-sm",
+                   id: "#{form_id}-type",
+                   required: true
+    .col-md-2
+      %label.form-label.small.mb-0{for: "#{form_id}-date"} Most likely date
+      = date_field_tag "goal[most_likely_target_date]", nil, class: "form-control form-control-sm", id: "#{form_id}-date"
+    .col-md-3
+      = button_tag type: "submit", class: "btn btn-primary btn-sm w-100" do
+        %i.bi.bi-plus.me-1
+        = parent_goal ? "Add child" : "Add goal"

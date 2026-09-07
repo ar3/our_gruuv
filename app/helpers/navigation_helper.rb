@@ -212,6 +212,14 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Bulk Edit Goals',
+            icon: 'bi-table',
+            path: organization_goals_bulk_edit_path(current_organization),
+            policy_check: -> { policy(current_company).view_goals? && current_company_teammate.present? },
+            active_check: -> { controller_path == 'organizations/goals_bulk_edit' },
+            coming_soon: false
+          },
+          {
             label: 'My personal goals',
             icon: 'bi-bullseye',
             path: current_company_teammate ? organization_goals_path(current_organization, owner_id: "CompanyTeammate_#{current_company_teammate.id}") : organization_goals_path(current_organization),

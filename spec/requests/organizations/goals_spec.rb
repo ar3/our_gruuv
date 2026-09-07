@@ -1815,6 +1815,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('My Teammate Goal')
       expect(response.body).not_to include('Other Teammate Goal')
       expect(response.body).to include(select_create_organization_goals_path(organization))
+      expect(response.body).to include(organization_goals_bulk_edit_path(organization))
+      expect(response.body).to include("Bulk Edit Goals")
       expect(response.body).not_to include("Add goals for")
       expect(response.body).not_to include("Create single goal")
       expect(response.body).not_to include("Bulk create goals")

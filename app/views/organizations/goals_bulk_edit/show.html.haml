@@ -1,0 +1,93 @@
+- content_for :title, "Bulk Edit Goals"
+- page_help_id = "goalsBulkEditPageHelp"
+- grouped_owner_options = sheet_owner_options_grouped
+- current_filter_label = sheet_owner_filter_label
+- selected_owner_value = sheet_owner_value
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Goals", url: organization_goals_path(@organization, owner_id: sheet_owner_value) }, { label: "Bulk Edit Goals", url: nil }])
+
+- content_for :header do
+  .d-flex.flex-column.gap-2
+    .d-flex.flex-column.flex-md-row.align-items-start.align-items-md-center.justify-content-between.gap-2
+      - object_lens_trailing = capture do
+        = render "shared/page_help/header_info_button",
+                 collapse_id: page_help_id,
+                 tooltip: "Edit goals like a sheet. Click for details."
+        %span.badge.text-bg-warning
+          %i.bi.bi-flask.me-1
+          Beta
+      = render "shared/object_lens_header/switchers",
+               organization: @organization,
+               current_object: :goals,
+               current_lens: :list,
+               trailing: object_lens_trailing
+    .d-flex.align-items-center.gap-2
+      %label.visually-hidden{for: "bulk-edit-owner-select"} Goals owner filter
+      .dropdown.d-inline-flex.align-items-center
+        %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => "Switch goals owner filter"}
+          %span
+            for #{current_filter_label}
+        %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+          - grouped_owner_options.each do |group_label, group_options|
+            %li
+              %h6.dropdown-header.mb-0.mt-1= group_label
+            - group_options.each do |label, value|
+              %li
+                - if value == selected_owner_value
+                  .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+                    %span.flex-grow-1.text-truncate{title: label}= label
+                    %i.bi.bi-check-circle.text-success.flex-shrink-0
+                - else
+                  = link_to organization_goals_bulk_edit_path(@organization, owner_id: value), class: "dropdown-item d-flex align-items-center gap-2" do
+                    %span.text-truncate{title: label}= label
+      / Fallback control for non-JS clients and accessibility tooling.
+      = form_with url: organization_goals_bulk_edit_path(@organization), method: :get, local: true, class: "mb-0" do |_f|
+        = render "organizations/goals/goal_owner_select",
+          grouped_options: grouped_owner_options,
+          selected_value: selected_owner_value,
+          name: "owner_id",
+          id: "bulk-edit-owner-select",
+          select_class: "visually-hidden",
+          required: true,
+          html_options: { onchange: "this.form.submit();" }
+
+- content_for :header_action do
+  = link_to organization_goals_path(@organization, owner_id: sheet_owner_value), class: "btn btn-outline-secondary" do
+    %i.bi.bi-list.me-1
+    Back to Goals list
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/goals_bulk_edit/page_help"
+
+.alert.alert-light.border.mb-3
+  %p.mb-2
+    %strong Draft until confidence is set.
+    Goals stay easy to change here. Setting confidence creates a check-in and starts the goal.
+  %p.mb-0.small.text-muted
+    To delete or archive a goal, open it via the goal link. Changes are saved as you edit (no full page reload).
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-white
+        %h5.mb-0 Add top-level goal
+      .card-body
+        = render "organizations/goals_bulk_edit/add_form",
+                 parent_goal: nil,
+                 owner_value: sheet_owner_value,
+                 owner_options: @owner_options
+
+.row.justify-content-center
+  .col-lg-12
+    - if @hierarchy[:root_goals].blank?
+      .alert.alert-secondary
+        No incomplete goals for this owner yet. Add a top-level goal above.
+    - else
+      #goals-bulk-edit-tree
+        - @hierarchy[:root_goals].each do |node|
+          = render "organizations/goals_bulk_edit/node",
+                   node: node,
+                   depth: 0,
+                   owner_options: @owner_options,
+                   can_check_in_ids: @hierarchy[:can_check_in_goals]

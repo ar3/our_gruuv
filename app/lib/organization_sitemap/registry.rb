@@ -273,6 +273,15 @@ module OrganizationSitemap
             synonyms: %w[add goals new goals create goals bulk goals]
           ),
           page(
+            key: :bulk_edit_goals,
+            label: "Bulk Edit Goals",
+            icon: "bi-table",
+            path: ->(ctx) { ctx.organization_goals_bulk_edit_path(ctx.organization) },
+            policy: ->(ctx) { ctx.teammate.present? && ctx.policy(ctx.company).view_goals? },
+            goal: "Add and edit goals in a draft-friendly sheet with live saves.",
+            synonyms: %w[bulk edit goals spreadsheet goals draft goals sheet]
+          ),
+          page(
             key: :my_personal_goals,
             label: "My personal goals",
             icon: "bi-bullseye",

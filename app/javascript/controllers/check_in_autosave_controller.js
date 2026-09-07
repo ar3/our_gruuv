@@ -58,6 +58,9 @@ export default class extends Controller {
   async save(retryAttempt = 0) {
     if (!this.dirty || this.saving) return
 
+    const form = this.formElement()
+    if (!form) return
+
     this.clearRetry()
     this.saving = true
     this.updateStatus("Saving…")
@@ -74,14 +77,14 @@ export default class extends Controller {
     let succeeded = false
 
     try {
-      const formData = new FormData(this.element)
+      const formData = new FormData(form)
       formData.append("autosave", "1")
       formData.append("save_and_continue_editing", "1")
 
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
 
-      const response = await fetch(this.element.action, {
-        method: (this.element.method || "patch").toUpperCase(),
+      const response = await fetch(form.action, {
+        method: (form.method || "patch").toUpperCase(),
         headers: {
           Accept: "application/json",
           ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
@@ -122,6 +125,11 @@ export default class extends Controller {
     if (succeeded && this.dirty) {
       this.scheduleSave()
     }
+  }
+
+  formElement() {
+    if (this.element.tagName === "FORM") return this.element
+    return this.element.querySelector("form")
   }
 
   showSaveError(retryAttempt) {

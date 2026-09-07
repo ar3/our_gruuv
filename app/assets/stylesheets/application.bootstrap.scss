@@ -2700,6 +2700,99 @@ $likert-colors: (
   }
 }
 
+// Bulk Edit Goals sheet — interactive left status strip
+.goals-sheet-row {
+  position: relative;
+  background-color: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  border-right: 1px solid var(--bs-border-color);
+  border-bottom: 1px solid var(--bs-border-color);
+  border-left: none;
+  padding-left: 0;
+
+  &__status {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 14px;
+    margin: 0;
+    padding: 0.4rem 0 0;
+    border: 0;
+    border-radius: 0;
+    background-color: #adb5bd;
+    color: rgba(255, 255, 255, 0.95);
+    cursor: help;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 1;
+
+    i {
+      font-size: 0.7rem;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    &:hover,
+    &:focus-visible {
+      width: 16px;
+      filter: brightness(0.92);
+      outline: none;
+    }
+  }
+
+  &__body {
+    margin-left: 14px;
+  }
+
+  &--draft .goals-sheet-row__status {
+    background-color: #adb5bd;
+  }
+
+  &--active.goals-sheet-row--good_green .goals-sheet-row__status {
+    background-color: #198754;
+  }
+
+  &--active.goals-sheet-row--green .goals-sheet-row__status {
+    background-color: #a3cfbb;
+    color: rgba(15, 81, 50, 0.9);
+  }
+
+  &--active.goals-sheet-row--yellow .goals-sheet-row__status {
+    background-color: #ffc107;
+    color: rgba(0, 0, 0, 0.75);
+  }
+
+  &--active.goals-sheet-row--red .goals-sheet-row__status {
+    background-color: #dc3545;
+  }
+
+  &--active.goals-sheet-row--na .goals-sheet-row__status {
+    background-color: #0d6efd;
+  }
+
+  &--stale .goals-sheet-row__status {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 4px,
+      rgba(0, 0, 0, 0.18) 4px,
+      rgba(0, 0, 0, 0.18) 8px
+    );
+  }
+
+  &--stale .goals-sheet-row__body {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 6px,
+      rgba(0, 0, 0, 0.04) 6px,
+      rgba(0, 0, 0, 0.04) 12px
+    );
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .og-academy-certificate__confetti-piece {
     animation: none;

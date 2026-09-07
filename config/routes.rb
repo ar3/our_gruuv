@@ -657,6 +657,9 @@ Rails.application.routes.draw do
     end
     
     # Goals management
+    get "goals/bulk_edit", to: "organizations/goals_bulk_edit#show", as: :goals_bulk_edit
+    post "goals/bulk_edit", to: "organizations/goals_bulk_edit#create", as: :goals_bulk_edit_create
+    patch "goals/bulk_edit/:id", to: "organizations/goals_bulk_edit#update", as: :goals_bulk_edit_goal
     resources :goals, module: :organizations do
       collection do
         get :customize_view

@@ -1,0 +1,98 @@
+-# locals: node, depth, owner_options, can_check_in_ids
+- goal = node[:goal]
+- can_edit = policy(goal).update?
+- can_check_in = can_check_in_ids.include?(goal.id)
+- check_in = node[:current_week_check_in] || node[:most_recent_check_in]
+- pad = depth * 1.25
+
+%div{class: goals_bulk_edit_row_classes(goal), style: "margin-left: #{pad}rem;", id: "goals-sheet-row-#{goal.id}"}
+  %button.goals-sheet-row__status{type: "button",
+    tabindex: "0",
+    "aria-label": goals_bulk_edit_border_popover_title(goal),
+    title: goals_bulk_edit_border_popover_title(goal),
+    "data-bs-toggle": "popover",
+    "data-bs-trigger": "hover focus",
+    "data-bs-placement": "right",
+    "data-bs-html": "true",
+    "data-bs-title": goals_bulk_edit_border_popover_title(goal),
+    "data-bs-content": goals_bulk_edit_border_popover_content(goal)}
+    %i.bi.bi-info-circle{"aria-hidden": "true"}
+  .goals-sheet-row__body.p-2
+    - if can_edit
+      %div{data: { controller: "check-in-autosave",
+                   check_in_autosave_debounce_ms_value: 1200,
+                   check_in_autosave_message_value: "Your latest goal edits may still be saving. Leave this page?",
+                   action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty" }}
+        = form_with url: organization_goals_bulk_edit_goal_path(@organization, goal),
+                    method: :patch,
+                    html: { class: "goals-sheet-row-form",
+                            data: { action: "submit->check-in-autosave#handleSubmit" } } do |f|
+          .row.g-2.align-items-stretch
+            .col-md-5
+              .d-flex.align-items-center.justify-content-between.gap-2.mb-1
+                %label.form-label.small.mb-0 Title
+                = link_to organization_goal_path(@organization, goal), class: "small text-nowrap" do
+                  %i.bi.bi-box-arrow-up-right.me-1
+                  Open goal
+              = text_area_tag "goal[title]", goal.title, class: "form-control form-control-sm", rows: 4, required: true
+            .col-md-7
+              .row.g-2
+                .col-md-4
+                  %label.form-label.small.mb-0 Owner
+                  = select_tag "goal[owner_id]",
+                               options_for_select(owner_options, goals_bulk_edit_owner_value(goal)),
+                               class: "form-select form-select-sm",
+                               required: true
+                .col-md-4
+                  %label.form-label.small.mb-0 Type
+                  = select_tag "goal[goal_type]",
+                               options_for_select(goals_bulk_edit_goal_type_options, goal.goal_type),
+                               class: "form-select form-select-sm",
+                               required: true
+                .col-md-4
+                  %label.form-label.small.mb-0 Privacy
+                  = select_tag "goal[privacy_level]",
+                               options_for_select(goals_bulk_edit_privacy_level_options, goal.privacy_level),
+                               class: "form-select form-select-sm",
+                               required: true
+              .row.g-2.mt-1
+                .col-md-3
+                  %label.form-label.small.mb-0 Confidence
+                  - if can_check_in
+                    = select_tag "goal[confidence_percentage]",
+                                 options_for_select([["—", ""]] + confidence_percentage_options, check_in&.confidence_percentage),
+                                 class: "form-select form-select-sm"
+                  - else
+                    %span.form-control.form-control-sm.bg-light= check_in&.confidence_percentage.present? ? "#{check_in.confidence_percentage}%" : "—"
+                .col-md-5
+                  %label.form-label.small.mb-0 Reason
+                  - if can_check_in
+                    = text_field_tag "goal[confidence_reason]", check_in&.confidence_reason, class: "form-control form-control-sm", placeholder: "Why?"
+                  - else
+                    %span.form-control.form-control-sm.bg-light.text-truncate{title: check_in&.confidence_reason}= check_in&.confidence_reason.presence || "—"
+                .col-md-4
+                  %label.form-label.small.mb-0 Completed on (most likely)
+                  = date_field_tag "goal[most_likely_target_date]", goal.most_likely_target_date, class: "form-control form-control-sm"
+
+        .d-flex.align-items-center.justify-content-between.gap-2.mt-2.ps-1
+          %details.flex-grow-1
+            %summary.small.text-muted
+              %i.bi.bi-plus.me-1
+              Add child goal
+            .mt-2
+              = render "organizations/goals_bulk_edit/add_form",
+                       parent_goal: goal,
+                       owner_value: goals_bulk_edit_owner_value(goal),
+                       owner_options: owner_options
+          %span.small.text-muted.text-nowrap.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}
+    - else
+      .small.text-muted
+        = link_to goal.title, organization_goal_path(@organization, goal)
+        (view only)
+
+- node[:children].each do |child_node|
+  = render "organizations/goals_bulk_edit/node",
+           node: child_node,
+           depth: depth + 1,
+           owner_options: owner_options,
+           can_check_in_ids: can_check_in_ids
