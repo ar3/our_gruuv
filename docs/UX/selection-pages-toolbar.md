@@ -167,6 +167,7 @@ For MAAP-style pages, users without permission are **redirected** — do not bui
 
 - **Manage Consumer Assignments** — `organizations/assignments/:id/consumer_assignments`
 - **Manage Observees** — `organizations/observations/:id/manage_observees`
+- **Manage Team Members** — `organizations/teams/:id/manage_members`
 - **Add Abilities to Observation** — `organizations/observations/:id/add_abilities`
 - **Add Assignments to Observation** — `organizations/observations/:id/add_assignments`
 - **Add Aspirations to Observation** — `organizations/observations/:id/add_aspirations`

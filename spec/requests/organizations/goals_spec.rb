@@ -948,6 +948,101 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/goals with my_department filter' do
+    it 'shows goals related to the viewer department hierarchy' do
+      root_dept = create(:department, company: organization, name: 'Engineering')
+      child_dept = create(:department, company: organization, name: 'Platform', parent_department: root_dept)
+      tenure = create(:employment_tenure, company_teammate: teammate, company: organization)
+      tenure.position.title.update!(department: root_dept)
+
+      dept_goal = create(
+        :goal,
+        creator: teammate,
+        owner: root_dept,
+        title: 'Engineering rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+      team = create(:team, company: organization, department: child_dept, name: 'Platform Squad')
+      team_goal = create(
+        :goal,
+        creator: teammate,
+        owner: team,
+        title: 'Platform team rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+      other_dept = create(:department, company: organization, name: 'Sales')
+      other_goal = create(
+        :goal,
+        creator: teammate,
+        owner: other_dept,
+        title: 'Sales rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+
+      get organization_goals_path(organization, owner_id: 'my_department')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('My department goals')
+      expect(response.body).to include('Engineering rock')
+      expect(response.body).to include('Platform team rock')
+      expect(response.body).not_to include('Sales rock')
+      expect(response.body).to include(organization_goal_path(organization, dept_goal))
+      expect(response.body).to include(organization_goal_path(organization, team_goal))
+      expect(response.body).not_to include(organization_goal_path(organization, other_goal))
+    end
+
+    it 'defaults to company-visible goals with a warning when the viewer has no department' do
+      hr_person = create(:person, first_name: 'Morgan', last_name: 'HR')
+      hr = create(
+        :company_teammate,
+        person: hr_person,
+        organization: organization,
+        can_manage_employment: true
+      )
+      company_goal = create(
+        :goal,
+        creator: teammate,
+        owner: organization,
+        title: 'Company visible rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+
+      get organization_goals_path(organization, owner_id: 'my_department')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Those without a department')
+      expect(response.body).to include('defaults to all company goals')
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, hr))
+      expect(response.body).to include('Morgan')
+      expect(response.body).to include('Company visible rock')
+      expect(response.body).to include(organization_goal_path(organization, company_goal))
+    end
+
+    it 'uses related-to semantics for Department_X owner filter' do
+      root_dept = create(:department, company: organization, name: 'Engineering')
+      child_dept = create(:department, company: organization, name: 'Platform', parent_department: root_dept)
+      team = create(:team, company: organization, department: child_dept, name: 'Platform Squad')
+      team_goal = create(
+        :goal,
+        creator: teammate,
+        owner: team,
+        title: 'Related team rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+
+      get organization_goals_path(organization, owner_id: "Department_#{root_dept.id}")
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Related team rock')
+      expect(response.body).to include(organization_goal_path(organization, team_goal))
+    end
+  end
+
   describe 'GET /organizations/:organization_id/goals with default (hierarchical-collapsible) view' do
     let(:check_in_eligible_goal) do
       create(:goal,

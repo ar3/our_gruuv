@@ -47,6 +47,15 @@ class Organizations::DepartmentsController < Organizations::OrganizationNamespac
     
     # Load teams for the company (teams are company-wide, not department-specific)
     @teams = Team.for_company(company).active.ordered
+
+    @department_goals = if policy(company).view_goals?
+                          Goals::RelatedToDepartmentQuery.call(
+                            relation: policy_scope(Goal).incomplete_unarchived,
+                            department: @department
+                          ).order(:title)
+                        else
+                          Goal.none
+                        end
   end
 
   def new

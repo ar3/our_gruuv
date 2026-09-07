@@ -283,6 +283,69 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/teams/:id/manage_members' do
+    let(:manage_members_path) { manage_members_organization_team_path(organization, team) }
+
+    let(:member_person) { create(:person, first_name: 'Alex', last_name: 'Member') }
+    let!(:member_teammate) do
+      create(:teammate, person: member_person, organization: organization,
+             first_employed_at: 1.year.ago, last_terminated_at: nil)
+    end
+    let!(:member_tenure) do
+      create(:employment_tenure, company_teammate: member_teammate, company: organization)
+    end
+    let!(:engineering_department) { create(:department, company: organization, name: 'Engineering') }
+
+    let(:terminated_person) { create(:person, first_name: 'Gone', last_name: 'Former') }
+    let!(:terminated_teammate) do
+      create(:teammate, person: terminated_person, organization: organization,
+             first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago)
+    end
+
+    it 'renders the manage members page with selection toolbar UX' do
+      get manage_members_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Manage Members')
+      expect(response.body).to include('Select Team Members')
+      expect(response.body).to include('Search teammates...')
+      expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+      expect(response.body).to include('None selected')
+      expect(response.body).to include('teammate_ids[]')
+      assert_select 'input[type="submit"][value="Save Changes"]', count: 2
+    end
+
+    it 'shows active teammates with department metadata and excludes terminated' do
+      member_tenure.position.title.update!(department: engineering_department)
+
+      get manage_members_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(member_person.preferred_first_then_last_display_name)
+      expect(response.body).to include('Department: Engineering')
+      expect(response.body).not_to include(terminated_person.preferred_first_then_last_display_name)
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/teams/:id/update_members' do
+    let!(:teammate1) do
+      create(:teammate, organization: organization, first_employed_at: 1.year.ago, last_terminated_at: nil)
+    end
+    let!(:teammate2) do
+      create(:teammate, organization: organization, first_employed_at: 1.year.ago, last_terminated_at: nil)
+    end
+
+    it 'updates team members and redirects to team show' do
+      expect {
+        patch update_members_organization_team_path(organization, team), params: {
+          teammate_ids: [teammate1.id, teammate2.id]
+        }
+      }.to change { team.team_members.count }.by(2)
+
+      expect(response).to redirect_to(organization_team_path(organization, team))
+    end
+  end
+
   describe 'PATCH /organizations/:organization_id/teams/:id' do
     it 'attaches a profile picture' do
       image = fixture_file_upload('logo.png', 'image/png')

@@ -293,6 +293,15 @@ module OrganizationSitemap
             synonyms: %w[my team goals all my teams team owned goals]
           ),
           page(
+            key: :my_department_goals,
+            label: "My department goals",
+            icon: "bi-building",
+            path: ->(ctx) { ctx.organization_goals_path(ctx.organization, owner_id: "my_department") },
+            policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
+            goal: "See goals related to your department hierarchy, including team and company-visible personal goals.",
+            synonyms: %w[my department goals department related goals]
+          ),
+          page(
             key: :goals_hierarchy_map,
             label: "Goals Hierarchy Map",
             icon: "bi-diagram-3",

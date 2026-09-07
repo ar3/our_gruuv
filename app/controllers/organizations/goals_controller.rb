@@ -13,6 +13,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @created_by_me_filter = params[:owner_id] == 'created_by_me'
     @my_relevant_goals_filter = params[:owner_id] == 'my_relevant_goals'
     @all_my_teams_filter = params[:owner_id] == 'all_my_teams'
+    @my_department_filter = params[:owner_id] == 'my_department'
     special_owner_filter = special_goals_owner_filter?
 
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
@@ -90,6 +91,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                else
                  @goals.none
                end
+    elsif @my_department_filter
+      apply_my_department_goals_filter!(current_teammate)
+    elsif params[:owner_type] == 'Department' && params[:owner_id].present?
+      department = Department.find_by(id: params[:owner_id])
+      @goals = Goals::RelatedToDepartmentQuery.call(relation: @goals, department: department)
     else
       # Filter by owner
       @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
@@ -122,7 +128,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
-      if @everyone_in_company_filter
+      if @everyone_in_company_filter || (@my_department_filter && @my_department_missing)
         all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company')
       elsif @created_by_me_filter
         all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
@@ -135,6 +141,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                                else
                                  policy_scope(Goal.none)
                                end
+      elsif @my_department_filter && @department_for_filter.present?
+        all_goals_for_filter = Goals::RelatedToDepartmentQuery.call(
+          relation: policy_scope(Goal),
+          department: @department_for_filter
+        )
+      elsif params[:owner_type] == 'Department' && params[:owner_id].present?
+        department = Department.find_by(id: params[:owner_id])
+        all_goals_for_filter = Goals::RelatedToDepartmentQuery.call(
+          relation: policy_scope(Goal),
+          department: department
+        )
       else
         all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
       end
@@ -230,15 +247,21 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @current_spotlight = spotlight_param
 
     @goals_empty_filter_fallback = if @goals.empty?
+                                     empty_owner_type = params[:owner_type]
+                                     empty_owner_id = params[:owner_id]
+                                     if @my_department_filter && @department_for_filter.present?
+                                       empty_owner_type = 'Department'
+                                       empty_owner_id = @department_for_filter.id
+                                     end
                                      Goals::EmptyFilterFallback.call(
                                        organization: @organization,
                                        viewer: current_teammate,
                                        all_my_teams_filter: @all_my_teams_filter,
-                                       everyone_in_company_filter: @everyone_in_company_filter,
+                                       everyone_in_company_filter: @everyone_in_company_filter || (@my_department_filter && @my_department_missing),
                                        created_by_me_filter: @created_by_me_filter,
                                        my_relevant_goals_filter: @my_relevant_goals_filter,
-                                       owner_type: params[:owner_type],
-                                       owner_id: params[:owner_id],
+                                       owner_type: empty_owner_type,
+                                       owner_id: empty_owner_id,
                                        viewer_teams: @viewer_teams_for_filter,
                                        can_create_goals: policy(Goal).create?
                                      )
@@ -1112,7 +1135,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
 
   def special_goals_owner_filter?
-    @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter || @all_my_teams_filter
+    @everyone_in_company_filter || @created_by_me_filter || @my_relevant_goals_filter || @all_my_teams_filter || @my_department_filter
   end
 
   def special_goals_owner_filter_param
@@ -1120,8 +1143,39 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     return 'created_by_me' if @created_by_me_filter
     return 'my_relevant_goals' if @my_relevant_goals_filter
     return 'all_my_teams' if @all_my_teams_filter
+    return 'my_department' if @my_department_filter
 
     nil
+  end
+
+  def apply_my_department_goals_filter!(current_teammate)
+    @department_for_filter = default_department_for_goal_create(current_teammate)
+    if @department_for_filter
+      @my_department_missing = false
+      @goals = Goals::RelatedToDepartmentQuery.call(relation: @goals, department: @department_for_filter)
+    else
+      @my_department_missing = true
+      @goals = @goals.where(privacy_level: 'everyone_in_company')
+      @employment_managers_for_department_warning = employment_managers_for_warning
+    end
+  end
+
+  def employment_managers_for_warning
+    company = @organization.root_company || @organization
+    CompanyTeammate
+      .where(organization: company)
+      .with_employment_management
+      .includes(:person)
+      .sort_by { |t| (t.person&.casual_name.presence || t.person&.display_name).to_s.downcase }
+      .filter_map do |teammate|
+        name = teammate.person&.casual_name.presence || teammate.person&.display_name
+        next if name.blank?
+
+        {
+          name: name,
+          path: internal_organization_company_teammate_path(@organization, teammate)
+        }
+      end
   end
 
   def teams_for_teammate(teammate, company)
@@ -1294,6 +1348,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Filter-only options (index page: view all / view mine)
     options << ["My relevant goals", "my_relevant_goals"]
     options << ["All my teams", "all_my_teams"]
+    options << ["My department goals", "my_department"]
     if company.display_name.present?
       options << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"]
     end
@@ -1384,6 +1439,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     filter_opts = []
     filter_opts << ["My relevant goals", "my_relevant_goals"]
     filter_opts << ["All my teams", "all_my_teams"]
+    filter_opts << ["My department goals", "my_department"]
     filter_opts << ["All goals visible to everyone at #{company.display_name}", "everyone_in_company"] if company.display_name.present?
     filter_opts << ["All goals created by me", "created_by_me"]
     groups << ["Filter", filter_opts] if filter_opts.any?
@@ -1423,7 +1479,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   # Returns goal owners for bulk create form (excludes filter options that aren't actual owners)
   def available_goal_owners_for_bulk
-    available_goal_owners.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams]) }
+    available_goal_owners.reject { |_label, value| value.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams my_department]) }
   end
   helper_method :available_goal_owners_for_bulk
 

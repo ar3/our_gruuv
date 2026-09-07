@@ -228,6 +228,14 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'My department goals',
+            icon: 'bi-building',
+            path: organization_goals_path(current_organization, owner_id: 'my_department'),
+            policy_check: -> { policy(current_company).view_goals? },
+            active_check: -> { nav_my_department_goals_item_active? },
+            coming_soon: false
+          },
+          {
             label: 'Goals Hierarchy Map',
             icon: 'bi-diagram-3',
             path: organization_goal_impact_scanner_path(current_organization),
@@ -801,6 +809,14 @@ module NavigationHelper
     return false unless request.path == goals_path_only
 
     request.query_parameters['owner_id'] == 'all_my_teams'
+  end
+
+  def nav_my_department_goals_item_active?
+    return false unless current_organization
+    goals_path_only = organization_goals_path(current_organization).split('?').first
+    return false unless request.path == goals_path_only
+
+    request.query_parameters['owner_id'] == 'my_department'
   end
   
   # Check if a section has any active items

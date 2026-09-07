@@ -94,6 +94,31 @@ RSpec.describe 'Organizations::Departments', type: :request do
       expect(response.body).to include(department.name)
     end
 
+    it 'shows related department goals under a Team-style section' do
+      team = create(:team, company: organization, department: department, name: 'Dept Team')
+      teammate = CompanyTeammate.find_or_create_by!(person: current_person, organization: organization) do |t|
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+      goal = create(
+        :goal,
+        creator: teammate,
+        owner: team,
+        title: 'Department related rock',
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+
+      get organization_department_path(organization, department)
+
+      expect(response).to be_successful
+      expect(response.body).to include('Department Goals')
+      expect(response.body).to include('Department related rock')
+      expect(response.body).to include(organization_goal_path(organization, goal))
+      expect(response.body).to include(organization_goals_path(organization, owner_id: "Department_#{department.id}"))
+      expect(response.body.index('Details')).to be < response.body.index('Department Goals')
+    end
+
     it 'displays department details' do
       title = create(:title, company: organization, department: department)
       seat = create(:seat, title: title)

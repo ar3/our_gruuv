@@ -11,7 +11,7 @@
     = nav_hierarchy_with_previous(organization: @organization, crumbs: breadcrumbs)
 
 - content_for :header do
-  - special_owner_ids = %w[everyone_in_company created_by_me my_relevant_goals all_my_teams]
+  - special_owner_ids = %w[everyone_in_company created_by_me my_relevant_goals all_my_teams my_department]
   - selected_value = @current_filters[:owner_id].to_s.in?(special_owner_ids) ? @current_filters[:owner_id] : primary_filter_select_value
   - grouped_owner_options = available_goal_owners_grouped
   - current_filter_label = grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }&.first || 'Select owner'
@@ -92,6 +92,25 @@
   = link_to customize_view_organization_goals_path(@organization, customize_params), class: "btn btn-outline-secondary" do
     %i.bi.bi-sliders.me-2
     Customize View
+
+- if @my_department_missing
+  .row.justify-content-center.mb-3
+    .col-lg-12
+      .alert.alert-warning.mb-0
+        %p.mb-2
+          %i.bi.bi-exclamation-triangle.me-2
+          Those without a department, this view defaults to all company goals. If you believe you are seeing this in error, reach out to
+          - managers = Array(@employment_managers_for_department_warning)
+          - if managers.any?
+            - managers.each_with_index do |person, index|
+              - if index.positive?
+                = index == managers.size - 1 ? ' or ' : ', '
+              = link_to person[:name], person[:path], class: "alert-link"
+            = '.'
+          - else
+            someone who can manage employment.
+        %p.mb-0.small
+          Showing goals visible to everyone at the company.
 
 / Spotlight Section (always shown)
 .row.justify-content-center.mb-4
