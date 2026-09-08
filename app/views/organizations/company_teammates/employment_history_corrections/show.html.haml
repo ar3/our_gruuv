@@ -75,7 +75,7 @@
                 %span.badge.bg-success.ms-2 Active
               - else
                 %span.badge.bg-secondary.ms-2 Ended
-              %div.small.text-muted Tenure ##{tenure.id} · ##{index + 1} of #{@employment_tenures.size}
+              %div.small.text-muted ##{index + 1} of #{@employment_tenures.size}
             %div.small.text-muted
               = employment_history_duration_label(((tenure.ended_at || Time.current) - tenure.started_at).to_i)
 
