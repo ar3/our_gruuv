@@ -46,7 +46,7 @@
           = form_with url: update_next_goal_position_organization_company_teammate_path(organization, @teammate), method: :patch, local: true, data: { turbo: false } do
             = label_tag :next_goal_position_id, 'Select the position you are working toward', class: 'form-label'
             = select_tag :next_goal_position_id,
-              options_for_select([['— None —', '']]) + positions_grouped_options_for_select(@positions_by_department, @teammate.next_goal_position_id),
+              positions_grouped_options_for_select(@positions_by_department, @teammate.next_goal_position_id),
               class: 'form-select',
               onchange: 'this.form.requestSubmit()'
         - else
@@ -63,3 +63,9 @@
           = link_to 'Explore full eligibility details', organization_eligibility_requirement_path(organization, @next_goal_position, teammate_id: @teammate.id), class: 'small'
         - else
           %p.small.text-muted.mb-0 Choose a target position to see eligibility.
+
+- if @keystone_eligibility_conversation
+  = render 'organizations/company_teammates/my_growth/keystone_eligibility_conversation',
+    conversation: @keystone_eligibility_conversation,
+    organization: organization,
+    teammate: @teammate

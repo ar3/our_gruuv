@@ -1,0 +1,78 @@
+-# locals: conversation, organization, teammate
+- kc = conversation
+- employee = kc.employee_casual_name
+- manager = kc.manager_casual_name
+- return_url = my_growth_position_change_organization_company_teammate_path(organization, teammate)
+- return_text = 'Back to Position / Title Change'
+
+.card.mb-4#keystone-eligibility-conversation
+  .card-header
+    %h5.mb-0 Path to an eligibility conversation
+  .card-body
+    - case kc.prompt_kind
+    - when PositionChange::KeystoneEligibilityConversation::PROMPT_SUGGEST_DIFFERENT_TARGET
+      %p.mb-3
+        If there is a different position
+        %span.fw-semibold= employee
+        would like to pursue, change the target position to that.
+    - when PositionChange::KeystoneEligibilityConversation::PROMPT_READY_NOW
+      %p.mb-3
+        If the goals are met,
+        %span.fw-semibold= employee
+        and
+        %span.fw-semibold= manager
+        should talk about eligibility now. This does not mean a guaranteed promotion — it means this is a good time to have a discussion.
+    - when PositionChange::KeystoneEligibilityConversation::PROMPT_SCHEDULED
+      %p.mb-3
+        If the goals are met,
+        %span.fw-semibold= employee
+        and
+        %span.fw-semibold= manager
+        should talk about eligibility on
+        %span.fw-semibold= l(kc.conversation_date, format: :long)
+        \. This does not mean a guaranteed promotion — it means this is a good date to have a discussion.
+    - when PositionChange::KeystoneEligibilityConversation::PROMPT_NEEDS_EXCEED_GOALS
+      %p.mb-3
+        No eligibility conversation date yet. Set goals to exceed expectations on enough assignments or values — meeting expectations is not enough for this target position.
+    - else
+      %p.mb-3.text-muted
+        No eligibility conversation date yet. Keystone goals (with target dates) need to cover every required gap for the target position.
+
+    - if kc.prompt_kind != PositionChange::KeystoneEligibilityConversation::PROMPT_SUGGEST_DIFFERENT_TARGET
+      %h6.fw-semibold.mb-2 Keystone path
+      - if kc.path_rows.any?
+        .table-responsive
+          %table.table.table-hover.align-middle.mb-0
+            %thead
+              %tr
+                %th Object
+                %th Reason a goal is needed
+                %th Action
+            %tbody
+              - kc.path_rows.each do |row|
+                %tr
+                  %td
+                    %span.badge.text-bg-light.me-1= row.object_type_label
+                    = link_to row.object_label,
+                      organization_teammate_lens_show_path(organization, teammate, row.record),
+                      class: 'fw-semibold text-decoration-none'
+                  %td
+                    %span.small= row.reason
+                  %td
+                    - if row.goal.present?
+                      - status_label = { draft: 'Draft goal', completed: 'Completed goal', active: 'Active goal' }.fetch(row.goal_status, 'Active goal')
+                      - badge_class = { draft: 'text-bg-secondary', completed: 'text-bg-success', active: 'text-bg-primary' }.fetch(row.goal_status, 'text-bg-primary')
+                      = link_to organization_goal_path(organization, row.goal), class: 'text-decoration-none' do
+                        %span.badge{class: badge_class}= status_label
+                        %span.ms-1= row.goal.title
+                    - elsif my_growth_goal_flow_allowed_for_associable?(row.record, teammate)
+                      = link_to 'Add goal',
+                        associable_goals_choose_manage_path(organization, row.record, return_url: return_url, return_text: return_text, for_company_teammate_id: teammate.id),
+                        class: 'btn btn-sm btn-outline-primary',
+                        data: { turbo: false }
+                    - else
+                      %span.small.text-muted{tabindex: 0, role: 'note', data: { bs_toggle: 'tooltip' }, title: my_growth_goal_flow_denied_tooltip}
+                        Add goal unavailable
+      - else
+        %p.small.text-muted.mb-0
+          No keystone path items yet. Required assignment/ability gaps and working-to-meet goals will show here.

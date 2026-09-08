@@ -231,18 +231,26 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @current_organization = organization
     load_my_growth_employment_context
     load_my_growth_positions_by_department
+    ensure_default_next_goal_position!
     @next_goal_position = @teammate.next_goal_position
     if (pos = @current_employment&.position)
       @current_position_eligibility = PositionEligibilityService.new.check_eligibility(@teammate, pos)
     end
     if @next_goal_position
       @next_goal_position_eligibility = PositionEligibilityService.new.check_eligibility(@teammate, @next_goal_position)
+      @keystone_eligibility_conversation = PositionChange::KeystoneEligibilityConversation.call(
+        teammate: @teammate,
+        target_position: @next_goal_position,
+        eligibility_report: @next_goal_position_eligibility
+      )
     end
   end
 
   def update_next_goal_position
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
-    @teammate.next_goal_position_id = params[:next_goal_position_id].presence
+    load_my_growth_employment_context
+    requested_id = params[:next_goal_position_id].presence
+    @teammate.next_goal_position_id = requested_id || @current_employment&.position_id
     if @teammate.save
       redirect_back fallback_location: my_growth_position_change_organization_company_teammate_path(organization, @teammate),
                     notice: 'Next goal position updated.'
@@ -1377,6 +1385,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       .includes(:title, :position_level)
       .ordered
     @positions_by_department = positions.group_by { |pos| pos.title.department || co }
+  end
+
+  def ensure_default_next_goal_position!
+    return if @teammate.next_goal_position_id.present?
+
+    current_position = @current_employment&.position
+    return unless current_position
+
+    @teammate.update!(next_goal_position: current_position)
   end
 
   def load_bulk_confidence_check_goals

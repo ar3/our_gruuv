@@ -475,6 +475,64 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include('Current Position')
         expect(response.body).not_to include('Current role')
       end
+
+      it 'defaults target position to current and shows keystone conversation section' do
+        current_position = employee_teammate.employment_tenures.active.first.position
+        employee_teammate.update!(next_goal_position: nil)
+        required_assignment = create(:assignment, company: organization, title: 'Keystone Required Assignment')
+        create(
+          :position_assignment,
+          position: current_position,
+          assignment: required_assignment,
+          assignment_type: 'required'
+        )
+
+        get my_growth_position_change_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(employee_teammate.reload.next_goal_position_id).to eq(current_position.id)
+        expect(response.body).to include('Path to an eligibility conversation')
+        expect(response.body).to include('Keystone path')
+        expect(response.body).to include('Keystone Required Assignment')
+        expect(response.body).to include('Reason a goal is needed')
+        expect(response.body).to include('Add goal')
+        expect(response.body).to include('No eligibility conversation date yet')
+        expect(response.body).to include(choose_manage_goals_organization_assignment_path(organization, required_assignment))
+        expect(response.body).to include(organization_teammate_assignment_path(organization, employee_teammate, required_assignment))
+      end
+
+      it 'shows derived conversation date when keystone goals cover required gaps' do
+        employee_teammate.employment_tenures.active.first&.update!(manager_teammate: manager_teammate)
+        current_position = employee_teammate.employment_tenures.active.first.position
+        employee_teammate.update!(next_goal_position: current_position)
+        required_assignment = create(:assignment, company: organization, title: 'Dated Required Assignment')
+        create(
+          :position_assignment,
+          position: current_position,
+          assignment: required_assignment,
+          assignment_type: 'required'
+        )
+        goal = create(
+          :goal,
+          :active,
+          creator: employee_teammate,
+          owner: employee_teammate,
+          company_id: organization.id,
+          title: 'Ship required assignment readiness',
+          most_likely_target_date: Date.new(2026, 12, 15)
+        )
+        create(:goal_association, goal: goal, associable: required_assignment)
+
+        get my_growth_position_change_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Ship required assignment readiness')
+        expect(response.body).to include('Active goal')
+        expect(response.body).to include(organization_goal_path(organization, goal))
+        expect(response.body).to include('should talk about eligibility on')
+        expect(response.body).to include('December 15, 2026')
+        expect(response.body).to include('does not mean a guaranteed promotion')
+      end
     end
 
     context 'when employee views own growth experiences' do
@@ -540,11 +598,12 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       expect(employee_teammate.reload.next_goal_position_id).to eq(position.id)
     end
 
-    it 'clears next_goal_position_id when blank' do
+    it 'resets next_goal_position_id to current position when blank' do
+      current_position = employee_teammate.employment_tenures.active.first.position
       employee_teammate.update!(next_goal_position: position)
       patch update_next_goal_position_organization_company_teammate_path(organization, employee_teammate),
             params: { next_goal_position_id: '' }
-      expect(employee_teammate.reload.next_goal_position_id).to be_nil
+      expect(employee_teammate.reload.next_goal_position_id).to eq(current_position.id)
     end
 
     context 'when position is for another company' do
@@ -553,9 +612,10 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       let(:other_position) { create(:position, title: other_title, position_level: other_level) }
 
       it 'rejects the update' do
+        employee_teammate.update!(next_goal_position: position)
         patch update_next_goal_position_organization_company_teammate_path(organization, employee_teammate),
               params: { next_goal_position_id: other_position.id }
-        expect(employee_teammate.reload.next_goal_position_id).to be_nil
+        expect(employee_teammate.reload.next_goal_position_id).to eq(position.id)
         expect(flash[:alert]).to be_present
       end
     end
