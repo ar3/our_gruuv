@@ -7,7 +7,7 @@ class CheckInsHealthSpotlightService
     healthy_count: 0,
     warning_count: 0,
     needs_attention_count: 0,
-    ok_percentage: 0,
+    ok_percentage: 0.0,
     total_action_slots: 0,
     healthy_action_slots: 0,
     warning_action_slots: 0,
@@ -153,9 +153,11 @@ class CheckInsHealthSpotlightService
     end
 
     ok_percentage = if total_employees.positive?
-                        ((healthy_count + warning_count).to_f / total_employees * 100).round(1)
+                        EngagementHealth::ClarityActionMetrics.round_clear_percentage(
+                          (healthy_count + warning_count).to_f / total_employees * 100
+                        )
                       else
-                        0
+                        0.0
                       end
 
     {

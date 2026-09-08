@@ -55,7 +55,7 @@
               %br
               %small.text-muted
                 #{row[:employee_count]} employee#{'s' if row[:employee_count] != 1}
-                · #{row[:completion_rate]}% clear
+                · #{format_percent_clear(row[:completion_rate])}% clear
             %td
               - if segments_asp.any?
                 - total = segments_asp.sum { |s| s[:count] }

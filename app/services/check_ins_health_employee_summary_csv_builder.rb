@@ -98,6 +98,6 @@ class CheckInsHealthEmployeeSummaryCsvBuilder
   end
 
   def format_pct(value)
-    "#{value.to_f.round(1)}%"
+    "#{EngagementHealth::ClarityActionMetrics.format_clear_percentage(value)}%"
   end
 end

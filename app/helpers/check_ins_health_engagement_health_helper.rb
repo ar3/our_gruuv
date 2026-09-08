@@ -4,6 +4,11 @@ module CheckInsHealthEngagementHealthHelper
   ACTION_SLOTS_SUMMARY_MAX_WIDTH_PX = 200
   ACTION_SLOTS_SUMMARY_BAR_HEIGHT_PX = 10
 
+  # Always one decimal place for % clear (e.g. "66.7", "100.0").
+  def format_percent_clear(value)
+    EngagementHealth::ClarityActionMetrics.format_clear_percentage(value)
+  end
+
   ENGAGEMENT_HEALTH_BAR_ORDER = [
     EngagementHealth::NEEDS_ATTENTION,
     EngagementHealth::WARNING,

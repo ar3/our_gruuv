@@ -18,7 +18,9 @@ module EngagementHealth
       keyword_init: true
     ) do
       def ok_percentage
-        healthy_percentage.to_f + warning_percentage.to_f
+        EngagementHealth::ClarityActionMetrics.round_clear_percentage(
+          healthy_percentage.to_f + warning_percentage.to_f
+        )
       end
     end
 
@@ -41,6 +43,15 @@ module EngagementHealth
     )
 
     module_function
+
+    # Always one decimal place for % clear display (e.g. "66.7", "100.0").
+    def format_clear_percentage(value)
+      format("%.1f", round_clear_percentage(value))
+    end
+
+    def round_clear_percentage(value)
+      value.to_f.round(1)
+    end
 
     def for_records(records)
       items = ClarityMetrics.clarity_items(records)

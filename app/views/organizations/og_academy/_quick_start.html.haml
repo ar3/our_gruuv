@@ -14,7 +14,7 @@
     - action_popover_html = check_ins_health_action_popover_html(records: clarity_records, employee_name: names[:employee], manager_name: names[:manager])
     - ogos_received_count = row_data&.ogos_received_30d_count.to_i
     - healthy_goals_count = og_academy_healthy_goals_count(goals_eh_records)
-    - clarity_caption = action_breakdown.present? && action_breakdown.total_slots.to_i.positive? ? "#{action_breakdown.ok_percentage.round(1)}% clear" : "No clarity data yet"
+    - clarity_caption = action_breakdown.present? && action_breakdown.total_slots.to_i.positive? ? "#{format_percent_clear(action_breakdown.ok_percentage)}% clear" : "No clarity data yet"
     .card.border-0.shadow-sm
       .card-body
         .row.g-3.align-items-center

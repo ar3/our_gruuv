@@ -10,5 +10,5 @@
     %p.small.text-muted.mb-0
       Serve your #{x} #{x == 1 ? 'direct report' : 'direct reports'}. #{y} of them #{y == 1 ? 'is' : 'are'} crystal clear on where they stand. Overall those you serve are
       %span.badge.rounded-pill{class: pill}
-        #{z}% clear
+        #{format_percent_clear(z)}% clear
       on where they stand.

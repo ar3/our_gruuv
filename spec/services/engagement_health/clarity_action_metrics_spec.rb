@@ -66,7 +66,38 @@ RSpec.describe EngagementHealth::ClarityActionMetrics do
       expect(breakdown.healthy_slots).to eq(4)
       expect(breakdown.needs_attention_slots).to eq(2)
       expect(breakdown.healthy_percentage + breakdown.warning_percentage + breakdown.needs_attention_percentage).to eq(100.0)
-      expect(breakdown.ok_percentage).to eq(breakdown.healthy_percentage + breakdown.warning_percentage)
+      expect(breakdown.ok_percentage).to eq(
+        (breakdown.healthy_percentage + breakdown.warning_percentage).round(1)
+      )
+    end
+
+    it "rounds ok_percentage to one decimal place" do
+      items = [
+        item(status: EngagementHealth::HEALTHY),
+        item(
+          status: EngagementHealth::NEEDS_ATTENTION,
+          inputs: {
+            "open_check_in_present" => true,
+            "open_employee_completed" => true,
+            "open_manager_completed" => false
+          }
+        )
+      ]
+
+      breakdown = described_class.breakdown_for_items(items)
+
+      # 4 of 6 slots ok => 66.7%
+      expect(breakdown.ok_percentage).to eq(66.7)
+      expect(described_class.format_clear_percentage(breakdown.ok_percentage)).to eq("66.7")
+      expect(described_class.format_clear_percentage(100)).to eq("100.0")
+      expect(described_class.format_clear_percentage(0)).to eq("0.0")
+    end
+  end
+
+  describe ".format_clear_percentage" do
+    it "always formats to one decimal place" do
+      expect(described_class.format_clear_percentage(50)).to eq("50.0")
+      expect(described_class.format_clear_percentage(66.66)).to eq("66.7")
     end
   end
 

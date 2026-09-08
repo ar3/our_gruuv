@@ -49,7 +49,7 @@
                   %br
                   %small.text-muted
                     #{row[:direct_report_count]} direct report#{'s' if row[:direct_report_count] != 1}
-                    · #{row[:completion_rate]}% clear
+                    · #{format_percent_clear(row[:completion_rate])}% clear
                 %td
                   - if segments_asp.any?
                     - total = segments_asp.sum { |s| s[:count] }

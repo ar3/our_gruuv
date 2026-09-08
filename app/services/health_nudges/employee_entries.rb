@@ -77,7 +77,7 @@ module HealthNudges
         if breakdown
           "Clarity actions ... Healthy: #{breakdown.healthy_slots}, Warning: #{breakdown.warning_slots}, " \
             "Needs Attention: #{breakdown.needs_attention_slots} " \
-            "(#{breakdown.ok_percentage.round}% clear)."
+            "(#{EngagementHealth::ClarityActionMetrics.format_clear_percentage(breakdown.ok_percentage)}% clear)."
         else
           "Required Clarity is #{EngagementHealth::STATUS_LABELS.fetch(eh_status)}."
         end

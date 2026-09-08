@@ -25,7 +25,7 @@ RSpec.describe CheckInsHealthSpotlightService do
       expect(stats[:healthy_count]).to eq(0)
       expect(stats[:warning_count]).to eq(0)
       expect(stats[:needs_attention_count]).to eq(1)
-      expect(stats[:ok_percentage]).to eq(0)
+      expect(stats[:ok_percentage]).to eq(0.0)
     end
 
     it "counts employees by required clarity rollup status" do

@@ -45,7 +45,7 @@ class MyEmployeesDashboardService
     all_items = direct_report_ids.flat_map do |teammate_id|
       EngagementHealth::ClarityMetrics.clarity_items(records_by_teammate_id[teammate_id] || [])
     end
-    overall = EngagementHealth::ClarityActionMetrics.breakdown_for_items(all_items).ok_percentage.round(1)
+    overall = EngagementHealth::ClarityActionMetrics.breakdown_for_items(all_items).ok_percentage
 
     {
       direct_report_count: direct_report_ids.size,
