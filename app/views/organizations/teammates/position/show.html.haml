@@ -258,9 +258,14 @@
 
     / Employment Tenures Table
     .card.mb-4
-      .card-header
-        %h5.mb-0 Employment Tenures
-        %small.text-muted Complete history of employment tenures
+      .card-header.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+        %div
+          %h5.mb-0 Employment Tenures
+          %small.text-muted Complete history of employment tenures
+        - if policy(@teammate).correct_employment_history?
+          = link_to "Correct employment history",
+                    organization_company_teammate_employment_history_correction_path(@organization, @teammate),
+                    class: "btn btn-sm btn-outline-warning"
       .card-body
         - if @employment_tenures.any?
           .table-responsive

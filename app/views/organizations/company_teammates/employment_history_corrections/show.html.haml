@@ -1,0 +1,106 @@
+- content_for :title, "Correct Employment History — #{@person.display_name}"
+- page_help_id = "employmentHistoryCorrectionPageHelp"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.h2.mb-0 Correct Employment History
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Silent tenure corrections for employment managers. Click for details."
+  %p.text-muted.mb-0
+    #{@person.display_name} · silent corrections (no moments / notifications)
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/company_teammates/employment_history_corrections/page_help"
+
+.d-flex.justify-content-between.align-items-center.mb-3
+  = link_to "Back to profile", organization_company_teammate_path(organization, @teammate), class: "btn btn-outline-secondary btn-sm"
+  - if @employment_tenures.any?
+    = link_to "Employment summary",
+              employment_summary_organization_company_teammate_employment_tenure_path(organization, @teammate, @employment_tenures.last),
+              class: "btn btn-outline-secondary btn-sm"
+
+= render "organizations/company_teammates/employment_history_corrections/metrics", metrics: @metrics
+
+- if @metrics[:gaps].any?
+  = render "organizations/company_teammates/employment_history_corrections/gaps",
+           gaps: @metrics[:gaps],
+           tenures_by_id: @employment_tenures.index_by(&:id),
+           casual_name: @person.casual_name
+
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0 Prepend earliest tenure
+  .card-body
+    %p.small.text-muted
+      Use this when hire history is missing before the current earliest record. End date should usually meet the next tenure’s start (or leave a gap if they left and returned).
+    = form_with model: @prepend_tenure,
+                url: prepend_organization_company_teammate_employment_history_correction_path(organization, @teammate),
+                method: :post,
+                local: true,
+                scope: :employment_tenure do |f|
+      .row.g-3
+        .col-md-4
+          = f.label :position_id, "Position", class: "form-label"
+          = f.collection_select :position_id, @positions, :id, :display_name,
+            { prompt: "Select position" }, { class: "form-select", required: true }
+        .col-md-4
+          = f.label :manager_teammate_id, "Manager", class: "form-label"
+          = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
+            { prompt: "No manager", include_blank: "No manager" }, { class: "form-select" }
+        .col-md-2
+          = f.label :started_at, "Start", class: "form-label"
+          = f.date_field :started_at, class: "form-control", required: true,
+            value: @prepend_tenure.started_at&.to_date
+        .col-md-2
+          = f.label :ended_at, "End", class: "form-label"
+          = f.date_field :ended_at, class: "form-control",
+            value: @prepend_tenure.ended_at&.to_date
+      .mt-3
+        = f.submit "Add earliest tenure", class: "btn btn-primary"
+
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0 Existing tenures
+  .card-body
+    - if @employment_tenures.empty?
+      %p.text-muted.mb-0 No employment tenures yet. Prepend above to create the first one.
+    - else
+      - @employment_tenures.each_with_index do |tenure, index|
+        .border.rounded.p-3.mb-3{class: (tenure.active? ? "border-success" : "border-secondary")}
+          .d-flex.justify-content-between.align-items-start.mb-2
+            %div
+              %strong= tenure.position&.display_name || "Untitled position"
+              - if tenure.active?
+                %span.badge.bg-success.ms-2 Active
+              - else
+                %span.badge.bg-secondary.ms-2 Ended
+              %div.small.text-muted Tenure ##{tenure.id} · ##{index + 1} of #{@employment_tenures.size}
+            %div.small.text-muted
+              = employment_history_duration_label(((tenure.ended_at || Time.current) - tenure.started_at).to_i)
+
+          = form_with model: tenure,
+                      url: tenure_organization_company_teammate_employment_history_correction_path(organization, @teammate, tenure),
+                      method: :patch,
+                      local: true,
+                      scope: :employment_tenure do |f|
+            .row.g-3
+              .col-md-4
+                = f.label :position_id, "Position", class: "form-label"
+                = f.collection_select :position_id, @positions, :id, :display_name,
+                  {}, { class: "form-select", required: true }
+              .col-md-4
+                = f.label :manager_teammate_id, "Manager", class: "form-label"
+                = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
+                  { selected: tenure.manager_teammate_id, include_blank: "No manager" }, { class: "form-select" }
+              .col-md-2
+                = f.label :started_at, "Start", class: "form-label"
+                = f.date_field :started_at, class: "form-control", required: true,
+                  value: tenure.started_at&.to_date
+              .col-md-2
+                = f.label :ended_at, "End", class: "form-label"
+                = f.date_field :ended_at, class: "form-control",
+                  value: tenure.ended_at&.to_date
+                %small.form-text.text-muted Leave blank if current
+            .mt-3
+              = f.submit "Save tenure", class: "btn btn-sm btn-primary"

@@ -577,6 +577,13 @@ Rails.application.routes.draw do
           get :employment_summary
         end
       end
+
+      # Silent employment history corrections (manage_employment only)
+      resource :employment_history_correction, only: [:show], controller: 'company_teammates/employment_history_corrections' do
+        patch 'tenures/:tenure_id', action: :update_tenure, as: :tenure
+        post :prepend
+        post :connect_gap
+      end
       
       # Asana OAuth (nested under company_teammates)
       get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize

@@ -29,6 +29,15 @@ class CompanyTeammatePolicy < ApplicationPolicy
     false
   end
 
+  # Silent employment tenure history corrections (dates, manager, position, prepend earliest).
+  def correct_employment_history?
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    return false unless viewing_teammate.organization_id == record.organization_id
+    viewing_teammate.can_manage_employment?
+  end
+
   def complete_picture?
     # Can view complete picture if they can view teammate
     return true if admin_bypass?

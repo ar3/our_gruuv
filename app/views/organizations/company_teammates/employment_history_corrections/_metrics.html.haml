@@ -1,0 +1,43 @@
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0 Derived from current tenures
+  .card-body
+    .row.text-center.g-3.mb-3
+      .col-6.col-md-4.col-lg-2
+        .fw-semibold= employment_history_duration_label(metrics[:total_employed_seconds])
+        %small.text-muted Total employed
+      .col-6.col-md-4.col-lg-2
+        .fw-semibold
+          - if metrics[:last_promotion_at]
+            = metrics[:last_promotion_at].to_date
+          - else
+            —
+        %small.text-muted Last promotion
+        - if metrics[:last_promotion_position_name]
+          %div.small.text-muted= metrics[:last_promotion_position_name]
+      .col-6.col-md-4.col-lg-2
+        .fw-semibold= metrics[:boomerang_count]
+        %small.text-muted Boomerangs
+      .col-6.col-md-4.col-lg-2
+        .fw-semibold= metrics[:position_change_count]
+        %small.text-muted Position changes
+      .col-6.col-md-4.col-lg-2
+        .fw-semibold= metrics[:managerial_change_count]
+        %small.text-muted Manager changes
+      .col-6.col-md-4.col-lg-2
+        .fw-semibold= metrics[:consecutive_stretches].size
+        %small.text-muted Employment stretches
+
+    - if metrics[:consecutive_stretches].any?
+      %h3.h6.fw-semibold Consecutive employment stretches
+      %ul.mb-0
+        - metrics[:consecutive_stretches].each_with_index do |stretch, idx|
+          %li
+            Stretch #{idx + 1}:
+            = stretch.started_at.to_date
+            →
+            - if stretch.open?
+              present
+            - else
+              = stretch.ended_at.to_date
+            %span.text-muted (#{employment_history_duration_label(stretch.duration_seconds)})

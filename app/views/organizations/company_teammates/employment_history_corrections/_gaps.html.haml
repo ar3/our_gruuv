@@ -1,0 +1,30 @@
+.card.mb-4.border-warning
+  .card-header.bg-warning-subtle
+    %h2.h5.mb-0 Gaps in employment
+  .card-body
+    %p.small.text-muted
+      A gap can mean continuous employment with missing connection, or that #{casual_name} left and came back.
+    - gaps.each do |gap|
+      - earlier = tenures_by_id[gap.earlier_tenure_id]
+      - later = tenures_by_id[gap.later_tenure_id]
+      .border.rounded.p-3.mb-3
+        %p.mb-2
+          Gap from
+          %strong= gap.gap_started_at.to_date
+          to
+          %strong= gap.gap_ended_at.to_date
+          between
+          %strong= earlier&.position&.display_name || "tenure ##{gap.earlier_tenure_id}"
+          and
+          %strong= later&.position&.display_name || "tenure ##{gap.later_tenure_id}"
+        %p.mb-3
+          Should we connect these tenures, or did #{casual_name} leave and then come back to being employed?
+        .d-flex.flex-wrap.gap-2
+          = button_to "Connect these tenures",
+                      connect_gap_organization_company_teammate_employment_history_correction_path(organization, @teammate),
+                      method: :post,
+                      params: { earlier_tenure_id: gap.earlier_tenure_id, later_tenure_id: gap.later_tenure_id },
+                      class: "btn btn-sm btn-warning",
+                      form: { data: { turbo: false } }
+          %span.btn.btn-sm.btn-outline-secondary.disabled{aria: { disabled: true }}
+            Leave as boomerang (no change)

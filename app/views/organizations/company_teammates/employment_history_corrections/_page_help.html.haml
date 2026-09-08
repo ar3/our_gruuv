@@ -1,0 +1,19 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p
+    Fix employment tenure history so OG is a trustworthy source of truth for how long someone has been employed, time since last promotion, boomerangs, and manager/position changes — without firing hire or seat-change events.
+
+  %h3.fw-semibold.mb-2 Context
+  %p
+    Employment tenures are the timeline of position + manager + dates for a teammate at this company. Job-change flows create new tenures going forward; this page silently corrects history when those flows cannot express the fix.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-2
+    %li Only teammates with employment management can use this page.
+    %li Edits are silent: no observable moments, notifications, or job-change ceremony.
+    %li You can prepend a missing earliest tenure and edit dates, manager, and position on existing rows.
+    %li If a saved tenure overlaps another, the saved tenure wins and neighbor dates are auto-adjusted — check the flash for what changed.
+    %li Gaps are not auto-closed. When a gap exists, choose whether to connect the tenures or leave it as a leave-and-return (boomerang).
+  %h5.fw-semibold.mb-2 Readouts
+  %p.mb-0
+    The metrics panel shows total time employed, last promotion, boomerang count, each consecutive employment stretch, and counts of position and managerial changes so you can see the effect of your edits.

@@ -26,7 +26,10 @@
   .col-lg-12
     .card.mb-4
       .card-header
-        %h5.mb-0 Milestones attained
+        %h5.mb-0
+          Milestones
+          = link_to casual, internal_organization_company_teammate_path(organization, @teammate), class: "text-decoration-none"
+          has attained
       .card-body
         - if @teammate_milestones.any?
           %ul.list-unstyled.mb-0

@@ -33,7 +33,10 @@ RSpec.describe "Organizations::Teammates::Abilities", type: :request do
       get ability_show_path
       expect(response).to have_http_status(:success)
       expect(response.body).to include(ability.name)
-      expect(response.body).to include("Milestones attained")
+      expect(response.body).to include("Milestones")
+      expect(response.body).to include("has attained")
+      expect(response.body).to include(employee_person.casual_name)
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, employee_teammate))
       expect(response.body).to include("Expand to see milestone details")
       expect(response.body).to include("Research: Current Period Observations")
       expect(response.body).to include("Associated Goals")
