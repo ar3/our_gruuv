@@ -594,6 +594,17 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       path.join(' > ')
     end
 
+    position = @teammate.active_employment_tenure&.position
+    @required_assignment_ids = if position
+      position.required_assignments.map(&:assignment_id)
+    else
+      []
+    end
+    active_assignment_ids = @teammate.assignment_tenures.active.pluck(:assignment_id)
+    current_id_set = (active_assignment_ids + @required_assignment_ids).uniq.to_set
+    @current_assignments = @assignments.select { |assignment| current_id_set.include?(assignment.id) }
+    @available_assignments = @assignments.reject { |assignment| current_id_set.include?(assignment.id) }
+
     @assignment_energy_allocation = CheckIns::TenureBypassAssignmentEnergyAllocationSummary.for_tenure_bypass(
       teammate: @teammate,
       assignments: @assignments,

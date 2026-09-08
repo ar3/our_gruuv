@@ -75,10 +75,56 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         expect(assigns(:assignments)).to include(assignment1, assignment2, assignment3)
       end
 
-      it 'loads all assignments in a single list' do
+      it 'puts assignments without active tenure in the Add section' do
         get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
-        assignments = assigns(:assignments)
-        expect(assignments).to include(assignment1, assignment2, assignment3)
+
+        expect(assigns(:current_assignments)).to be_empty
+        expect(assigns(:available_assignments)).to include(assignment1, assignment2, assignment3)
+        expect(response.body).to include('id="add-day-to-day-assignments"')
+        expect(response.body).to include('id="addDayToDayAssignments"')
+        expect(response.body).to include('Search assignments by name or department')
+        expect(response.body).to include('No current day-to-day assignments yet')
+      end
+
+      it 'puts active tenures in Current and leaves others in Add' do
+        create(:assignment_tenure,
+          teammate: employee_teammate,
+          assignment: assignment1,
+          started_at: 1.month.ago,
+          ended_at: nil,
+          anticipated_energy_percentage: 50)
+
+        get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(assigns(:current_assignments).map(&:id)).to contain_exactly(assignment1.id)
+        expect(assigns(:available_assignments).map(&:id)).to contain_exactly(assignment2.id, assignment3.id)
+        expect(response.body).to include('Current Assignments')
+        expect(response.body).to include('Need more of the 2 available Assignments')
+        expect(response.body).to include('data-controller="options-filter"')
+      end
+
+      it 'keeps required assignments in Current even with only an ended tenure' do
+        position = employment_tenure.position
+        create(:position_assignment, position: position, assignment: assignment1, assignment_type: 'required')
+        create(:assignment_tenure,
+          teammate: employee_teammate,
+          assignment: assignment1,
+          started_at: 2.months.ago,
+          ended_at: 1.month.ago,
+          anticipated_energy_percentage: 30)
+        create(:assignment_tenure,
+          teammate: employee_teammate,
+          assignment: assignment2,
+          started_at: 2.months.ago,
+          ended_at: 1.month.ago,
+          anticipated_energy_percentage: 20)
+
+        get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(assigns(:required_assignment_ids)).to contain_exactly(assignment1.id)
+        expect(assigns(:current_assignments).map(&:id)).to contain_exactly(assignment1.id)
+        expect(assigns(:available_assignments).map(&:id)).to include(assignment2.id, assignment3.id)
+        expect(response.body).to include('Required')
       end
 
       it 'sorts assignments by full name including company and department hierarchy' do

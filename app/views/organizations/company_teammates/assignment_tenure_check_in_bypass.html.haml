@@ -1,6 +1,8 @@
 - day_to_day_title = set_day_to_day_assignments_title
 - content_for :title, teammate_context_page_title(@teammate, day_to_day_title)
 - set_day_to_day_page_help_id = 'setDayToDayAssignmentsPageHelp'
+- expand_add = @current_assignments.empty?
+- available_count = @available_assignments.size
 
 - content_for :header do
   .d-flex.flex-column.gap-1
@@ -67,11 +69,18 @@
                  summary: energy_allocation,
                  employee_name: employee_name,
                  manager_name: manager_name
-    .row
-      .col-12
-        .card
-          .card-body
-            %table.table.table-hover
+
+    .card.mb-4#current-day-to-day-assignments
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-sliders.me-2
+          Current Assignments
+        %p.mb-0.text-muted.small
+          Active tenures and position-required assignments. Adjust anticipated energy here.
+      .card-body
+        - if @current_assignments.any?
+          .table-responsive
+            %table.table.table-hover.mb-0
               %thead
                 %tr
                   %th Assignment Name
@@ -79,55 +88,61 @@
                   %th Anticipated Energy %
                   %th Status
               %tbody
-                - @assignments.each do |assignment|
-                  - data = @assignment_data[assignment.id]
-                  - latest_tenure = data[:latest_tenure]
-                  - row_class = assignment_row_class(latest_tenure)
-                  - active_tenure = latest_tenure&.ended_at.nil? ? latest_tenure : nil
-                  - initial_forecast = active_tenure&.anticipated_energy_percentage
+                - @current_assignments.each do |assignment|
+                  = render 'organizations/company_teammates/assignment_tenure_bypass_row',
+                    assignment: assignment,
+                    form: form,
+                    assignment_data: @assignment_data,
+                    teammate: @teammate,
+                    energy_select_data: energy_select_data,
+                    required_assignment_ids: @required_assignment_ids
+        - else
+          .alert.alert-info.mb-0
+            %i.bi.bi-info-circle.me-2
+            No current day-to-day assignments yet. Add assignments below to set anticipated energy.
 
-                  %tr{
-                    class: row_class,
-                    data: {
-                      assignment_id: assignment.id,
-                      assignment_title: assignment.title,
-                      initial_updated_forecast: initial_forecast
-                    }
-                  }
-                    %td
-                      - if latest_tenure
-                        - assignment_org = assignment.company
-                        - teammate_for_assignment = @teammate.person.teammates.find_by(organization: assignment_org)
-                        - if teammate_for_assignment
-                          = link_to assignment_full_name(assignment), organization_teammate_assignment_path(assignment_org, teammate_for_assignment, assignment), class: "text-decoration-none"
-                        - else
-                          = assignment_full_name(assignment)
-                      - else
-                        = assignment_full_name(assignment)
-                    %td
-                      - if latest_tenure
-                        %small
-                          = latest_tenure.started_at.strftime("%B %d, %Y")
-                          to
-                          - if latest_tenure.ended_at.present?
-                            = latest_tenure.ended_at.strftime("%B %d, %Y")
-                          - else
-                            Now
-                          - if latest_tenure.anticipated_energy_percentage.present?
-                            |  (#{latest_tenure.anticipated_energy_percentage}%)
-                      - else
-                        %span.text-muted -
-                    %td
-                      - options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
-                      = form.select "assignment_tenures[#{assignment.id}]",
-                                    options_for_select(options, active_tenure&.anticipated_energy_percentage),
-                                    {},
-                                    { class: "form-select form-select-sm", data: energy_select_data }
-                    %td
-                      - if active_tenure
-                        %span.badge.bg-success Active Tenure
-                      - elsif latest_tenure
-                        %span.badge.bg-info Previous Tenure
+    .card.mb-4#add-day-to-day-assignments
+      - unless expand_add
+        .card-body.py-3.border-bottom
+          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addDayToDayAssignments", "aria-expanded" => "false", "aria-controls" => "addDayToDayAssignments", href: "#addDayToDayAssignments"}
+            Need more of the #{available_count} available Assignments… add an assignment
+      .collapse{id: "addDayToDayAssignments", class: ("show" if expand_add)}
+        - if expand_add
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-plus-circle.me-2
+              Add Assignments
+            %p.mb-0.text-muted.small
+              Set anticipated energy above 0% and save to start a tenure.
+        .card-body
+          - if @available_assignments.any?
+            .mb-0{data: {controller: "options-filter"}}
+              %input.form-control.form-control-lg.mb-3{type: "search", placeholder: "Search assignments by name or department...", "data-options-filter-target": "input", "aria-label": "Filter available assignments"}
+              .table-responsive
+                %table.table.table-hover.mb-0
+                  %thead
+                    %tr
+                      %th Assignment Name
+                      %th Latest Tenure
+                      %th Anticipated Energy %
+                      %th Status
+                  %tbody{data: {"options-filter-target": "list"}}
+                    - @available_assignments.each do |assignment|
+                      = render 'organizations/company_teammates/assignment_tenure_bypass_row',
+                        assignment: assignment,
+                        form: form,
+                        assignment_data: @assignment_data,
+                        teammate: @teammate,
+                        energy_select_data: energy_select_data,
+                        required_assignment_ids: @required_assignment_ids,
+                        filterable: true
+          - else
+            .alert.alert-info.mb-0
+              %i.bi.bi-info-circle.me-2
+              - if @current_assignments.any?
+                All available assignments are already current.
+              - else
+                No assignments found in this organization hierarchy.
 
   .row.mt-4
     .col-12

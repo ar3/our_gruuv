@@ -82,6 +82,7 @@ For **multi-select checkbox** pages that also need selected pills and duplicate 
 - **Select Teammate:** `/organizations/:org/teammate_milestones/select_teammate` — filters teammate cards by name, manager, position.
 - **Manage Observees:** `/organizations/:org/observations/:id/manage_observees` — filters observee cards; full [selection toolbar](../UX/selection-pages-toolbar.md).
 - **Manage Consumer Assignments:** `/organizations/:org/assignments/:id/consumer_assignments` — full selection toolbar + options filter.
+- **Set Day-to-Day Assignments (Add section):** `/organizations/:org/company_teammates/:id/assignment_tenure_check_in_bypass` — filters available assignments when adding.
 
 When you add the filter to another page, add that page to this “Where it’s used” section so we can keep the list current.
 
