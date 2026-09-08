@@ -7,26 +7,27 @@ class AbilityMilestoneCalibrationAwardService
 
   def self.call(...) = new(...).call
 
-  def initialize(item:, official_level:, certifying_teammate:, created_by_person:, organization:)
+  def initialize(item:, official_level:, certifying_teammate:, created_by_person:, organization:, certification_note: nil)
     @item = item
     @official_level = official_level.to_i
     @certifying_teammate = certifying_teammate
     @created_by_person = created_by_person
     @organization = organization
     @teammate = item.ability_milestone_calibration.teammate
+    @certification_note = certification_note.to_s.strip.presence || CERTIFICATION_NOTE
   end
 
   def call
     unless (0..5).cover?(@official_level)
-      return Result.err('Official milestone level must be between 0 and 5.')
+      return Result.err('Official Milestone must be between 0 and 5.')
     end
 
     if @item.awarded?
-      return Result.err('This ability has already been awarded in this calibration pass.')
+      return Result.err('This ability already has a milestone earned in this calibration pass.')
     end
 
     unless @item.ready_for_review?
-      return Result.err('Both employee and manager must rate this ability before awarding.')
+      return Result.err('Both employee and manager must rate this ability before recognizing and certifying.')
     end
 
     ApplicationRecord.transaction do
@@ -46,7 +47,7 @@ class AbilityMilestoneCalibrationAwardService
   rescue ActiveRecord::RecordInvalid => e
     Result.err(e.record.errors.full_messages.join(', '))
   rescue StandardError => e
-    Result.err("Calibration award failed: #{e.message}")
+    Result.err("Could not recognize and certify: #{e.message}")
   end
 
   private
@@ -77,7 +78,7 @@ class AbilityMilestoneCalibrationAwardService
       milestone_level: level,
       certifying_teammate: @certifying_teammate,
       attained_at: Date.current,
-      certification_note: CERTIFICATION_NOTE,
+      certification_note: @certification_note,
       published_at: published_at,
       published_by_teammate_id: published_by_teammate_id
     )

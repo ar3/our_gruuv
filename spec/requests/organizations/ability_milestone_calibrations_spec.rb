@@ -51,9 +51,14 @@ RSpec.describe 'Ability milestone calibration', type: :request do
 
       get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('Ability milestone calibration')
       expect(response.body).to include('this.form.requestSubmit()')
       expect(response.body).not_to include('Save rating')
-      expect(response.body).not_to include('Your proposed level')
+      expect(response.body).to include('(you)')
+      expect(response.body).to include('will rate what Milestone has been demonstrated')
+      expect(response.body).to include('Select a Milestone (1-5) to save immediately')
+      expect(response.body).not_to include('You are')
+      expect(response.body).not_to include('Select a level')
 
       calibration = employee_teammate.reload.ability_milestone_calibration
       item = calibration.items.find_by!(ability: ability)
@@ -86,24 +91,36 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
             params: { item_id: item.id, rating: '3' }
       follow_redirect!
-      expect(response.body).to include('Ready for review')
+      expect(response.body).to include('Ready to recognize and certify')
       expect(response.body).to include('Employee proposal')
-      expect(response.body).to include('Award this ability')
+      expect(response.body).to include('Recognize and certify')
+      expect(response.body).to include('hereby certify that')
+      expect(response.body).to include('Why are you recognizing this Milestone?')
+      expect(response.body).to include('name="certification_note"')
       expect(response.body).to include('Other participant:')
       expect(response.body).to include('First: M2')
 
       expect do
         post award_ability_milestone_calibration_item_organization_company_teammate_path(organization, employee_teammate, item),
-             params: { official_milestone_level: '2' }
+             params: { official_milestone_level: '2', certification_note: 'Baseline from calibration talk' }
       end.to change { employee_teammate.teammate_milestones.where(ability: ability).count }.by(2)
 
+      expect(employee_teammate.teammate_milestones.where(ability: ability, milestone_level: 2).pick(:certification_note))
+        .to eq('Baseline from calibration talk')
+
       get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
-      expect(response.body).to include('Awarded history')
-      expect(response.body).to include('collapsed by default')
+      expect(response.body).to include('Milestones earned')
+      expect(response.body).to include('Collapsed by default')
       expect(response.body).to include("calibration-history-#{item.id}")
       expect(response.body).to include('Official: Milestone 2')
-      expect(response.body).to include('collapse')
-      expect(response.body).not_to include('class="collapse show"')
+      earned = employee_teammate.teammate_milestones.find_by!(ability: ability, milestone_level: 2)
+      expect(response.body).to include(organization_teammate_milestone_path(organization, earned))
+      expect(response.body).to include('View Milestone 2')
+      expect(response.body).to include('Reason')
+      expect(response.body).to include('Baseline from calibration talk')
+      expect(response.body).to match(/class="collapse"[^>]*id="calibration-history-#{item.id}"|id="calibration-history-#{item.id}"[^>]*class="collapse"/)
+      expect(response.body).not_to match(/id="calibration-history-#{item.id}"[^>]*class="[^"]*\bshow\b/)
+      expect(response.body).not_to match(/class="[^"]*\bshow\b[^"]*"[^>]*id="calibration-history-#{item.id}"/)
     end
 
     it 'shows the other participant audit under status pills once they have rated' do

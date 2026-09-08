@@ -27,11 +27,11 @@ module AbilityMilestoneCalibrationHelper
     end
   end
 
-  # Proposal levels are 1–5. Official award may still use 0 (= leave unawarded / not answered).
+  # Proposal milestones are 1-5. Official award may still use 0 (= leave unawarded / not answered).
   def ability_milestone_calibration_milestone_popover_html(ability, level, milestone_rec = nil)
     if level.nil? || level.to_i < 1
       return tag.div(class: 'small text-muted text-start') do
-        'Not answered (M0). No milestone proposal or award for this ability yet.'
+        'Not answered (M0). No milestone proposal yet, and no Milestone earned yet for this ability.'
       end
     end
 

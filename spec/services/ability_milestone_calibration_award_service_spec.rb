@@ -21,12 +21,30 @@ RSpec.describe AbilityMilestoneCalibrationAwardService do
       official_level: 2,
       certifying_teammate: manager_teammate,
       created_by_person: manager_teammate.person,
-      organization: organization
+      organization: organization,
+      certification_note: 'Calibration note'
     )
 
     expect(result.ok?).to eq(true)
     expect(item.reload.official_milestone_level).to eq(2)
     expect(employee_teammate.teammate_milestones.where(ability: ability).pluck(:milestone_level)).to contain_exactly(1, 2)
+    expect(employee_teammate.teammate_milestones.where(ability: ability).pluck(:certification_note).uniq)
+      .to eq(['Calibration note'])
+  end
+
+  it 'falls back to the default certification note when blank' do
+    result = described_class.call(
+      item: item,
+      official_level: 1,
+      certifying_teammate: manager_teammate,
+      created_by_person: manager_teammate.person,
+      organization: organization,
+      certification_note: '   '
+    )
+
+    expect(result.ok?).to eq(true)
+    expect(employee_teammate.teammate_milestones.find_by!(ability: ability, milestone_level: 1).certification_note)
+      .to eq(described_class::CERTIFICATION_NOTE)
   end
 
   it 'records official 0 without creating teammate milestones' do

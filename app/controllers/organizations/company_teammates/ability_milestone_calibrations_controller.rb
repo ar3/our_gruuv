@@ -36,22 +36,22 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
     item = @calibration.items.find(params.require(:item_id))
     if item.awarded_positive?
       redirect_to ability_milestone_calibration_organization_company_teammate_path(organization, @teammate),
-                  alert: 'That ability already has an awarded milestone.'
+                  alert: 'That ability already has a milestone earned.'
       return
     end
 
     attr = view_role == :employee ? :employee_rating : :manager_rating
     raw = params[:rating]
-    raise ArgumentError, 'Choose a milestone level (1–5).' if raw.nil? || raw.to_s.strip == ''
+    raise ArgumentError, 'Choose a Milestone (1-5).' if raw.nil? || raw.to_s.strip == ''
 
     value = Integer(raw)
-    raise ArgumentError, 'Each rating must be between 1 and 5.' unless (1..5).cover?(value)
+    raise ArgumentError, 'Each rating must be Milestone 1 through 5.' unless (1..5).cover?(value)
 
     item.assign_side_rating!(role: view_role, value: value)
 
     notice =
       if item.ready_for_review?
-        "#{item.ability.display_name}: both ratings are in — ready for review."
+        "#{item.ability.display_name}: both ratings are in. Ready to recognize and certify."
       elsif item.other_rated_for?(view_role)
         "#{item.ability.display_name}: your rating is saved. Waiting on the other participant."
       else
@@ -66,15 +66,7 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
   end
 
   def review
-    assign_viewable_teammates_context!(selected_teammate: @teammate)
-
-    @pending_items = @calibration.pending_award_items.includes(:ability)
-    @awarded_items = @calibration.items.where.not(awarded_at: nil).includes(:ability).ordered_by_ability_name
-    @entry_counts = AbilityMilestoneCalibrationAbilitiesCatalog.entry_counts(
-      teammate: @teammate,
-      organization: organization
-    )
-    @can_award = can_award?
+    redirect_to ability_milestone_calibration_organization_company_teammate_path(organization, @teammate)
   end
 
   def award
@@ -88,7 +80,8 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
       official_level: level,
       certifying_teammate: current_company_teammate,
       created_by_person: current_person,
-      organization: organization
+      organization: organization,
+      certification_note: params[:certification_note]
     )
 
     if result.ok?
@@ -164,9 +157,9 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
 
   def award_notice(ability, level)
     if level.positive?
-      "Awarded #{ability.display_name} through milestone #{level}."
+      "#{ability.display_name}: Milestone #{level} earned."
     else
-      "#{ability.display_name} left at milestone 0 (still needs calibration until a 1–5 award)."
+      "#{ability.display_name} left at Milestone 0 (still needs calibration until Milestone 1-5 is recognized and certified)."
     end
   end
 end
