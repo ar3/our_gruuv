@@ -229,6 +229,38 @@ RSpec.describe CompanyTeammatePolicy, type: :policy do
     end
   end
 
+  describe 'view_employment_history_correction?' do
+    permissions :view_employment_history_correction? do
+      before do
+        person_teammate.update!(first_employed_at: 1.month.ago)
+        other_person_teammate.update!(first_employed_at: 1.month.ago)
+        create(:employment_tenure, teammate: person_teammate, company: organization)
+        create(:employment_tenure, teammate: other_person_teammate, company: organization)
+      end
+
+      it 'allows via admin bypass' do
+        expect(subject).to permit(admin_pundit_user, other_person_teammate)
+      end
+
+      it 'allows when viewer has can_manage_employment' do
+        person_teammate.update!(can_manage_employment: true)
+        expect(subject).to permit(pundit_user, other_person_teammate)
+      end
+
+      it 'allows managers in hierarchy without can_manage_employment' do
+        person_teammate.update!(can_manage_employment: false)
+        tenure = other_person_teammate.employment_tenures.first
+        tenure.update!(manager_teammate: person_teammate)
+        expect(subject).to permit(pundit_user, other_person_teammate)
+      end
+
+      it 'denies peers outside hierarchy without employment management' do
+        person_teammate.update!(can_manage_employment: false)
+        expect(subject).not_to permit(pundit_user, other_person_teammate)
+      end
+    end
+  end
+
   describe 'correct_employment_history?' do
     permissions :correct_employment_history? do
       before do

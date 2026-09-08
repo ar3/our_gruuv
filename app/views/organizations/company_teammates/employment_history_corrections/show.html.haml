@@ -1,12 +1,14 @@
 - content_for :title, "Correct Employment History — #{@person.display_name}"
 - page_help_id = "employmentHistoryCorrectionPageHelp"
+- can_correct = @can_correct_employment_history
+- disabled_tooltip = @correct_history_disabled_tooltip
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
     %h1.h2.mb-0 Correct Employment History
     = render "shared/page_help/header_info_button",
              collapse_id: page_help_id,
-             tooltip: "Silent tenure corrections for employment managers. Click for details."
+             tooltip: "Employment history corrections. Click for details."
   %p.text-muted.mb-0
     #{@person.display_name} · silent corrections (no moments / notifications)
 
@@ -14,11 +16,7 @@
   = render "organizations/company_teammates/employment_history_corrections/page_help"
 
 .d-flex.justify-content-between.align-items-center.mb-3
-  = link_to "Back to profile", organization_company_teammate_path(organization, @teammate), class: "btn btn-outline-secondary btn-sm"
-  - if @employment_tenures.any?
-    = link_to "Employment summary",
-              employment_summary_organization_company_teammate_employment_tenure_path(organization, @teammate, @employment_tenures.last),
-              class: "btn btn-outline-secondary btn-sm"
+  = link_to "Back to Seat Management", organization_teammate_position_path(organization, @teammate), class: "btn btn-outline-secondary btn-sm"
 
 = render "organizations/company_teammates/employment_history_corrections/metrics", metrics: @metrics
 
@@ -26,7 +24,9 @@
   = render "organizations/company_teammates/employment_history_corrections/gaps",
            gaps: @metrics[:gaps],
            tenures_by_id: @employment_tenures.index_by(&:id),
-           casual_name: @person.casual_name
+           casual_name: @person.casual_name,
+           can_correct: can_correct,
+           disabled_tooltip: disabled_tooltip
 
 .card.mb-4
   .card-header
@@ -43,21 +43,25 @@
         .col-md-4
           = f.label :position_id, "Position", class: "form-label"
           = f.collection_select :position_id, @positions, :id, :display_name,
-            { prompt: "Select position" }, { class: "form-select", required: true }
+            { prompt: "Select position" }, { class: "form-select", required: true, disabled: !can_correct }
         .col-md-4
           = f.label :manager_teammate_id, "Manager", class: "form-label"
           = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
-            { prompt: "No manager", include_blank: "No manager" }, { class: "form-select" }
+            { prompt: "No manager", include_blank: "No manager" }, { class: "form-select", disabled: !can_correct }
         .col-md-2
           = f.label :started_at, "Start", class: "form-label"
           = f.date_field :started_at, class: "form-control", required: true,
-            value: @prepend_tenure.started_at&.to_date
+            value: @prepend_tenure.started_at&.to_date, disabled: !can_correct
         .col-md-2
           = f.label :ended_at, "End", class: "form-label"
           = f.date_field :ended_at, class: "form-control",
-            value: @prepend_tenure.ended_at&.to_date
-      .mt-3
-        = f.submit "Add earliest tenure", class: "btn btn-primary"
+            value: @prepend_tenure.ended_at&.to_date, disabled: !can_correct
+      .mt-3.d-flex.align-items-center.gap-2
+        - if can_correct
+          = f.submit "Add earliest tenure", class: "btn btn-primary"
+        - else
+          = f.submit "Add earliest tenure", class: "btn btn-outline-secondary", disabled: true
+          %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: disabled_tooltip}, title: disabled_tooltip, "aria-label": disabled_tooltip}
 
 .card.mb-4
   .card-header
@@ -88,19 +92,23 @@
               .col-md-4
                 = f.label :position_id, "Position", class: "form-label"
                 = f.collection_select :position_id, @positions, :id, :display_name,
-                  {}, { class: "form-select", required: true }
+                  {}, { class: "form-select", required: true, disabled: !can_correct }
               .col-md-4
                 = f.label :manager_teammate_id, "Manager", class: "form-label"
                 = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
-                  { selected: tenure.manager_teammate_id, include_blank: "No manager" }, { class: "form-select" }
+                  { selected: tenure.manager_teammate_id, include_blank: "No manager" }, { class: "form-select", disabled: !can_correct }
               .col-md-2
                 = f.label :started_at, "Start", class: "form-label"
                 = f.date_field :started_at, class: "form-control", required: true,
-                  value: tenure.started_at&.to_date
+                  value: tenure.started_at&.to_date, disabled: !can_correct
               .col-md-2
                 = f.label :ended_at, "End", class: "form-label"
                 = f.date_field :ended_at, class: "form-control",
-                  value: tenure.ended_at&.to_date
+                  value: tenure.ended_at&.to_date, disabled: !can_correct
                 %small.form-text.text-muted Leave blank if current
-            .mt-3
-              = f.submit "Save tenure", class: "btn btn-sm btn-primary"
+            .mt-3.d-flex.align-items-center.gap-2
+              - if can_correct
+                = f.submit "Save tenure", class: "btn btn-sm btn-primary"
+              - else
+                = f.submit "Save tenure", class: "btn btn-sm btn-outline-secondary", disabled: true
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: disabled_tooltip}, title: disabled_tooltip, "aria-label": disabled_tooltip}

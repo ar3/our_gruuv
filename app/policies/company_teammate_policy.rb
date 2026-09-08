@@ -30,6 +30,12 @@ class CompanyTeammatePolicy < ApplicationPolicy
   end
 
   # Silent employment tenure history corrections (dates, manager, position, prepend earliest).
+  # View: same audience as Seat Management (view_check_ins? / audit?).
+  # Mutate: employment management only.
+  def view_employment_history_correction?
+    view_check_ins?
+  end
+
   def correct_employment_history?
     return true if admin_bypass?
     return false unless viewing_teammate && record

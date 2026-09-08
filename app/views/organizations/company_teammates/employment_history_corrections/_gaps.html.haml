@@ -14,17 +14,22 @@
           to
           %strong= gap.gap_ended_at.to_date
           between
-          %strong= earlier&.position&.display_name || "tenure ##{gap.earlier_tenure_id}"
+          %strong= earlier&.position&.display_name || "earlier tenure"
           and
-          %strong= later&.position&.display_name || "tenure ##{gap.later_tenure_id}"
+          %strong= later&.position&.display_name || "later tenure"
         %p.mb-3
           Should we connect these tenures, or did #{casual_name} leave and then come back to being employed?
-        .d-flex.flex-wrap.gap-2
-          = button_to "Connect these tenures",
-                      connect_gap_organization_company_teammate_employment_history_correction_path(organization, @teammate),
-                      method: :post,
-                      params: { earlier_tenure_id: gap.earlier_tenure_id, later_tenure_id: gap.later_tenure_id },
-                      class: "btn btn-sm btn-warning",
-                      form: { data: { turbo: false } }
+        .d-flex.flex-wrap.gap-2.align-items-center
+          - if can_correct
+            = button_to "Connect these tenures",
+                        connect_gap_organization_company_teammate_employment_history_correction_path(organization, @teammate),
+                        method: :post,
+                        params: { earlier_tenure_id: gap.earlier_tenure_id, later_tenure_id: gap.later_tenure_id },
+                        class: "btn btn-sm btn-warning",
+                        form: { data: { turbo: false } }
+          - else
+            %span.btn.btn-sm.btn-outline-secondary.disabled{aria: { disabled: true }}
+              Connect these tenures
+            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: disabled_tooltip}, title: disabled_tooltip, "aria-label": disabled_tooltip}
           %span.btn.btn-sm.btn-outline-secondary.disabled{aria: { disabled: true }}
             Leave as boomerang (no change)

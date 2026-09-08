@@ -262,7 +262,7 @@
         %div
           %h5.mb-0 Employment Tenures
           %small.text-muted Complete history of employment tenures
-        - if policy(@teammate).correct_employment_history?
+        - if policy(@teammate).view_employment_history_correction?
           = link_to "Correct employment history",
                     organization_company_teammate_employment_history_correction_path(@organization, @teammate),
                     class: "btn btn-sm btn-outline-warning"

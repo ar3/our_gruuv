@@ -6,7 +6,7 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
   after_action :verify_authorized
 
   def show
-    authorize @teammate, :correct_employment_history?
+    authorize @teammate, :view_employment_history_correction?
     load_page_data
   end
 
@@ -94,6 +94,8 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
       ended_at: @employment_tenures.first&.started_at
     )
     @person = @teammate.person
+    @can_correct_employment_history = policy(@teammate).correct_employment_history?
+    @correct_history_disabled_tooltip = "You need employment management permission to correct employment history."
   end
 
   def suggested_prepend_start
