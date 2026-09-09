@@ -4,18 +4,20 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: nil }])
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 
-      %i.bi.bi-briefcase.me-2
-      Positions
-    .d-flex.align-items-center
-      - if policy(@organization).manage_maap?
-        = link_to new_organization_title_path(@organization), class: "btn btn-primary ml-2" do
+  - object_lens_trailing = capture do
+    - if policy(@organization).manage_maap?
+      = link_to new_organization_title_path(@organization), class: "btn btn-primary", title: "Add new Title", "aria-label": "Add new Title", data: { bs_toggle: "tooltip" } do
+        %i.bi.bi-plus
+    - else
+      %span.d-inline-flex.align-items-center.gap-2
+        %button.btn.btn-primary{type: "button", disabled: true, "aria-label": "Add new Title"}
           %i.bi.bi-plus
-      - else
-        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-          %i.bi.bi-plus
-        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create titles"}
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create titles"}
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :position,
+           current_lens: :list,
+           trailing: object_lens_trailing
 
 - content_for :header_action do
   .d-flex.gap-2

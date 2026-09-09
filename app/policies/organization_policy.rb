@@ -214,6 +214,10 @@ class OrganizationPolicy < ApplicationPolicy
     view_aspirations?
   end
 
+  def positions_health?
+    view_titles?
+  end
+
   def view_titles?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

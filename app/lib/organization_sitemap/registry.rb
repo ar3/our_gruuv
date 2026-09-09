@@ -497,6 +497,10 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).abilities_health? },
             goal: "See Expectation Alignment across abilities (scoring shell; calculation coming soon).",
             synonyms: %w[abilities health ability health expectation alignment]),
+          insights_page(:positions_health, "Position Health", "bi-heart-pulse", :organization_positions_health_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).positions_health? },
+            goal: "See Title Expectation Alignment across departments and refresh all title scores.",
+            synonyms: %w[position health positions health title health title eas maap]),
           insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
             policy: ->(ctx) {
               ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?

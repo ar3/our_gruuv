@@ -11,9 +11,9 @@
 - score_pct = score.score.present? ? score.score.to_f.clamp(0, 100) : nil
 
 - if show_card
-  .card.mt-4.mb-4{ role: "region", "aria-labelledby": "title-expectation-alignment-score" }
+  .card.mt-4.mb-4{ id: "title-expectation-alignment-score", role: "region", "aria-labelledby": "title-expectation-alignment-score-heading" }
     .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
-      %h5.mb-0{ id: "title-expectation-alignment-score" }
+      %h5.mb-0{ id: "title-expectation-alignment-score-heading" }
         %i.bi.bi-diagram-3.me-2
         Title Expectation Alignment Score
       - if can_refresh

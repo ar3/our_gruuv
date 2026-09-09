@@ -175,4 +175,17 @@ module HealthDashboardsHelper
       }
     ]
   end
+
+  def positions_health_other_actions(organization, title_count:)
+    [
+      {
+        label: title_count.positive? ? "Refresh all (#{title_count})" : "Refresh all",
+        path: organization_positions_health_refresh_all_path(organization),
+        icon: "bi-arrow-clockwise",
+        method: :post,
+        disabled: title_count.zero?,
+        title: (title_count.zero? ? "No titles to refresh" : "Recalculate Title EAS for every unarchived title")
+      }
+    ]
+  end
 end

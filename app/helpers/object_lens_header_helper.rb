@@ -14,6 +14,7 @@ module ObjectLensHeaderHelper
     { key: :abilities, label: "Abilities", divider_before: true },
     { key: :assignments, label: "Assignments" },
     { key: :values, label: "Values" },
+    { key: :position, label: "Position" },
     { key: :teams, label: "Teams" }
   ].freeze
 
@@ -27,6 +28,7 @@ module ObjectLensHeaderHelper
     abilities: :list,
     assignments: :list,
     values: :list,
+    position: :list,
     teams: :list
   }.freeze
 
@@ -103,6 +105,12 @@ module ObjectLensHeaderHelper
       organization_values_health_path(organization)
     when %i[values insights]
       organization_insights_values_path(organization)
+    when %i[position list]
+      organization_positions_path(organization)
+    when %i[position health]
+      organization_positions_health_path(organization)
+    when %i[position insights]
+      organization_insights_seats_titles_positions_path(organization)
     when %i[teams list]
       organization_teams_path(organization)
     when %i[teams health]
@@ -150,6 +158,8 @@ module ObjectLensHeaderHelper
       policy(organization).view_assignments?
     when %i[values list], %i[values insights], %i[values health]
       policy(organization).view_aspirations?
+    when %i[position list], %i[position insights], %i[position health]
+      policy(organization).view_titles?
     when %i[teams list]
       policy(organization).show?
     when %i[teams health]

@@ -1252,6 +1252,19 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
+// Position Health — thicker department title bars
+.position-health-title-bar {
+  min-height: 2.75rem;
+
+  .check-in-health-bar__segment--labeled {
+    min-height: 2.75rem;
+  }
+
+  .check-in-health-bar__initials {
+    font-size: 0.6875rem;
+  }
+}
+
 .check-in-health-bar__initials {
   font-size: 0.5625rem;
   font-weight: 700;

@@ -1,0 +1,23 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    See how clear Position / Title expectation blueprints are across the organization—so MAAP managers
+    can find weak titles quickly and open them to fix path clarity and L1–L3 Position EAS.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-3
+    %li
+      The spotlight shows total titles and counts in each Expectation Alignment band (including Unscored).
+    %li
+      Each department (and Company-wide) has a bar of
+      %strong titles
+      ordered best → worst by Title Expectation Alignment Score.
+    %li
+      Click a segment to open that title and scroll to its Expectation Alignment Score.
+    %li
+      Use
+      %strong Other actions → Refresh all
+      to queue a Title EAS recalculation for every unarchived title (each refresh recalculates that title’s positions first). Prefer Refresh when many titles are unscored or after large MAAP edits—not on every page view.

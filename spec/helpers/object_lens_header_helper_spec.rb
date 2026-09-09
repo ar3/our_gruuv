@@ -28,7 +28,9 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
           view_assignments?: true,
           assignments_health?: true,
           view_aspirations?: true,
-          values_health?: true
+          values_health?: true,
+          view_titles?: true,
+          positions_health?: true
         )
       )
       allow(helper).to receive(:policy).with(teammate).and_return(double(view_check_ins?: true))
@@ -55,6 +57,12 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
       expect(helper.object_lens_path(organization, :values, :list)).to eq(organization_aspirations_path(organization))
       expect(helper.object_lens_path(organization, :values, :health)).to eq(organization_values_health_path(organization))
       expect(helper.object_lens_path(organization, :values, :insights)).to eq(organization_insights_values_path(organization))
+    end
+
+    it "maps Position lenses" do
+      expect(helper.object_lens_path(organization, :position, :list)).to eq(organization_positions_path(organization))
+      expect(helper.object_lens_path(organization, :position, :health)).to eq(organization_positions_health_path(organization))
+      expect(helper.object_lens_path(organization, :position, :insights)).to eq(organization_insights_seats_titles_positions_path(organization))
     end
 
     it "maps Milestones and Abilities lenses" do
@@ -96,7 +104,9 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
             view_assignments?: false,
             assignments_health?: false,
             view_aspirations?: false,
-            values_health?: false
+            values_health?: false,
+            view_titles?: false,
+            positions_health?: false
           )
         )
       end

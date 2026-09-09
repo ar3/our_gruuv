@@ -1,0 +1,85 @@
+- content_for :title, "Position Health"
+- page_help_id = "positionsHealthPageHelp"
+
+- content_for :header do
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See Title Expectation Alignment across positions. Click for a full breakdown."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :position,
+           current_lens: :health,
+           trailing: object_lens_trailing
+
+.mb-4
+  = content_for :go_back_link
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/positions_health/page_help"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Position Health", url: nil }])
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.align-items-center
+          .col-md-2.text-center.mb-3.mb-md-0
+            .h3.text-primary.mb-0= @overview.total_count
+            %small.text-muted Titles
+          .col-md-10
+            .row.text-center.g-2
+              - PositionsHealth::TitleExpectationAlignmentOverview::BAND_ORDER.each do |key|
+                - color = PositionsHealth::TitleExpectationAlignmentOverview::BAND_COLORS.fetch(key)
+                - label = key == :unscored ? "Unscored" : Titles::ExpectationAlignmentScore::SCORE_BANDS.find { |b| b[:key] == key }&.fetch(:label)
+                .col
+                  .h4.mb-0{style: "color: #{color};"}= @overview.band_counts.fetch(key, 0)
+                  %small.text-muted= label
+      .card-footer.bg-light
+        %small.text-muted
+          Title Expectation Alignment bands match Title Show (Strongly Mis-aligned → Strongly Aligned). Unscored titles have not been calculated yet—use Refresh all.
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :positions_health,
+      show_switcher: false,
+      other_actions: positions_health_other_actions(@organization, title_count: @overview.total_count)
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    - if @overview.total_count.zero?
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No titles yet. Create titles from the Position list.
+    - else
+      - @overview.department_groups.each do |group|
+        .card.border-0.shadow-sm.mb-3
+          .card-header.bg-white
+            %h5.mb-0
+              - if group.department
+                %i.bi.bi-building.me-2
+                = group.label
+              - else
+                %i.bi.bi-briefcase.me-2
+                = group.label
+              %span.text-muted.fw-normal.small.ms-2
+                = pluralize(group.titles.size, "title")
+          .card-body
+            .position-health-title-bar.check-in-health-bar.check-in-health-bar--per-item.d-flex.rounded.overflow-hidden{role: "img", "aria-label": "Title Expectation Alignment for #{group.label}"}
+              - group.titles.each do |row|
+                - color = PositionsHealth::TitleExpectationAlignmentOverview::BAND_COLORS.fetch(row.band_key)
+                - score_label = row.missing? ? "Unscored" : "#{row.score.round}/100"
+                - band_label = row.missing? ? "Unscored" : (Titles::ExpectationAlignmentScore::SCORE_BANDS.find { |b| b[:key] == row.band_key }&.fetch(:label) || row.band_key.to_s.humanize)
+                - tooltip = "#{row.title.title_including_level} — #{band_label} (#{score_label})"
+                = link_to organization_title_path(@organization, row.title, anchor: "title-expectation-alignment-score"),
+                  class: "check-in-health-bar__segment check-in-health-bar__segment--labeled flex-fill",
+                  style: "background:#{color}; min-width: 0.5rem;",
+                  title: tooltip,
+                  data: { bs_toggle: "tooltip", bs_title: tooltip },
+                  "aria-label": tooltip do
+                  %span.check-in-health-bar__initials.d-none.d-md-inline
+                    = row.title.external_title.to_s.truncate(12)
