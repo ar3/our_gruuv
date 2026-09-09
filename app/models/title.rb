@@ -23,6 +23,9 @@ class Title < ApplicationRecord
            inverse_of: :to_title
   has_many :outbound_titles, through: :outbound_title_paths, source: :to_title
   has_many :inbound_titles, through: :inbound_title_paths, source: :from_title
+  has_one :expectation_alignment_score_cache,
+          class_name: "TitleExpectationAlignmentScore",
+          dependent: :destroy
   has_one :published_external_reference, -> { where(reference_type: 'published') },
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') },

@@ -31,6 +31,14 @@ class TitlePolicy < ApplicationPolicy
     update?
   end
 
+  def refresh_expectation_alignment_score?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    return false unless show?
+
+    Titles::ExpectationAlignmentScore.privileged_viewer?(viewer: viewing_teammate)
+  end
+
 
   class Scope < ApplicationPolicy::Scope
     def resolve

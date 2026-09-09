@@ -659,6 +659,7 @@ Rails.application.routes.draw do
         post :clone_positions
         get :manage_paths
         patch :update_paths
+        post :refresh_expectation_alignment_score
         get :archive
         patch :execute_archive
         patch :restore

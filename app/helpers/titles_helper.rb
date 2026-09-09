@@ -1,4 +1,11 @@
 module TitlesHelper
+  def title_expectation_alignment_score_blurb(band, title)
+    return "" if band.blank? || band[:blurb].blank?
+
+    before, after = band[:blurb].split(/%\{title\}/, 2)
+    safe_join([ before, tag.strong(title.title_including_level), after ].compact)
+  end
+
   # PaperTrail actor + timestamps for title Actions card footer (same pattern as assignments / abilities).
   def title_audit_created_meta(title)
     first_version = title.versions.reorder(created_at: :asc, id: :asc).first

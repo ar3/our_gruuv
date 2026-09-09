@@ -134,6 +134,41 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("Neighborhood")
       expect(response.body).to include("title-paths-graph-#{title.id}")
     end
+
+    it "renders the Title Expectation Alignment Score card" do
+      get organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Title Expectation Alignment Score")
+      expect(response.body).to include("Not calculated yet")
+    end
+
+    context "when the viewer can manage MAAP and a title score is cached" do
+      before do
+        CompanyTeammate.find_by!(person: person, organization: organization).update!(can_manage_maap: true)
+        title.update!(end_cap: true)
+        Titles::ExpectationAlignmentScore.recalculate!(title: title, refresh_positions: false)
+      end
+
+      it "shows the score, component breakdown, and refresh control" do
+        get organization_title_path(organization, title)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Title Expectation Alignment Score")
+        expect(response.body).to include("/ 100")
+        expect(response.body).to include("Path clarity")
+        expect(response.body).to include("L1 position")
+        expect(response.body).to include("Refresh")
+      end
+
+      it "queues a refresh when posting refresh_expectation_alignment_score" do
+        expect {
+          post refresh_expectation_alignment_score_organization_title_path(organization, title)
+        }.to have_enqueued_job(TitleExpectationAlignmentScoreRefreshJob).with(title.id)
+
+        expect(response).to redirect_to(organization_title_path(organization, title))
+      end
+    end
   end
 
   describe "GET /manage_paths" do

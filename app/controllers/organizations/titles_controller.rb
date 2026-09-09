@@ -1,5 +1,5 @@
 class Organizations::TitlesController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions, :archive, :execute_archive, :restore, :manage_paths, :update_paths]
+  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions, :archive, :execute_archive, :restore, :manage_paths, :update_paths, :refresh_expectation_alignment_score]
   before_action :load_titles_for_header_switcher, only: [:show, :edit, :update]
   after_action :verify_authorized
 
@@ -31,6 +31,11 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     @inbound_title_paths = @title.inbound_title_paths.includes(from_title: :position_major_level).sort_by { |p| p.from_title.external_title.to_s.downcase }
     @outbound_title_paths = @title.outbound_title_paths.includes(to_title: :position_major_level).sort_by { |p| p.to_title.external_title.to_s.downcase }
     @title_path_neighborhood = Titles::PathNeighborhoodGraph.new(title: @title, organization: @organization)
+    @expectation_alignment_score = Titles::ExpectationAlignmentScore.for_viewer(
+      title: @title,
+      viewer: current_company_teammate,
+      organization: @organization
+    )
   end
 
   def new
@@ -131,6 +136,13 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
       @return_text = "Back to Title"
       render :manage_paths, layout: "overlay", status: :unprocessable_entity
     end
+  end
+
+  def refresh_expectation_alignment_score
+    authorize @title, :refresh_expectation_alignment_score?
+    TitleExpectationAlignmentScoreRefreshJob.perform_later(@title.id)
+    redirect_to organization_title_path(@organization, @title),
+                notice: "Expectation Alignment Score refresh queued. Positions under this title are recalculated first, then the title score. Refresh this page in a moment."
   end
 
   def clone_positions

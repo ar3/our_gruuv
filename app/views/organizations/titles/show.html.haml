@@ -194,6 +194,12 @@
                 %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
                 = link_to "Create First Position", new_organization_position_path(@title.company, title_id: @title.id), class: "btn btn-primary"
 
+- if @expectation_alignment_score
+  = render "organizations/titles/expectation_alignment_score",
+    score: @expectation_alignment_score,
+    organization: @organization,
+    title: @title
+
 = render "organizations/shared/teammate_lens_catalog_cta",
     organization: @organization,
     associable: @title,
