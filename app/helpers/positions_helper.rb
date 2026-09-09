@@ -1,4 +1,11 @@
 module PositionsHelper
+  def position_expectation_alignment_score_blurb(band, position)
+    return "" if band.blank? || band[:blurb].blank?
+
+    before, after = band[:blurb].split(/%\{position\}/, 2)
+    safe_join([ before, tag.strong(position.display_name), after ].compact)
+  end
+
   # PaperTrail actor + timestamps for position Spotlight card (same pattern as titles / abilities).
   def position_audit_created_meta(position)
     first_version = position.versions.reorder(created_at: :asc, id: :asc).first

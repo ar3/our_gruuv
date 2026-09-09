@@ -80,6 +80,14 @@ class PositionPolicy < ApplicationPolicy
     update?
   end
 
+  def refresh_expectation_alignment_score?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    return false unless show?
+
+    Positions::ExpectationAlignmentScore.privileged_viewer?(viewer: viewing_teammate)
+  end
+
   private
 
   def can_manage_maap_for_position_company?

@@ -280,3 +280,9 @@
           %p.text-muted.mb-3
             How this position's required and suggested assignments connect to other assignments through supply and consumption—one step beyond the position in each direction.
           = render "organizations/positions/reliance_network", position_reliance_network: @position_reliance_network, position: @position, organization: @organization
+
+- if @expectation_alignment_score
+  = render "organizations/positions/expectation_alignment_score",
+    score: @expectation_alignment_score,
+    organization: @organization,
+    position: @position

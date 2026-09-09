@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_07_140000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1504,6 +1504,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_07_140000) do
     t.index ["requirements_fingerprint"], name: "idx_position_eligibility_req_fingerprint", unique: true
   end
 
+  create_table "position_expectation_alignment_scores", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.bigint "organization_id", null: false
+    t.decimal "score", precision: 5, scale: 1
+    t.jsonb "cells", default: [], null: false
+    t.integer "required_assignments_count", default: 0, null: false
+    t.datetime "calculated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["calculated_at"], name: "index_position_expectation_alignment_scores_on_calculated_at"
+    t.index ["organization_id"], name: "index_position_expectation_alignment_scores_on_organization_id"
+    t.index ["position_id"], name: "index_position_expectation_alignment_scores_on_position_id", unique: true
+  end
+
   create_table "position_levels", force: :cascade do |t|
     t.bigint "position_major_level_id", null: false
     t.string "level", null: false
@@ -2354,6 +2368,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_07_140000) do
   add_foreign_key "position_check_ins", "maap_snapshots"
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_clarity_results", "og_consultations"
+  add_foreign_key "position_expectation_alignment_scores", "organizations"
+  add_foreign_key "position_expectation_alignment_scores", "positions"
   add_foreign_key "position_levels", "position_major_levels"
   add_foreign_key "position_suggestion_assignment_links", "assignments"
   add_foreign_key "position_suggestion_assignment_links", "position_suggestions"

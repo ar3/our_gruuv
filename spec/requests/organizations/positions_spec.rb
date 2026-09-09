@@ -227,6 +227,50 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('assignment-accountability-flow#exportPng')
       expect(response.body).to include('assignment-accountability-flow#exportSvg')
     end
+
+    it 'renders the Position Expectation Alignment Score card' do
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Position Expectation Alignment Score')
+      expect(response.body).to include('Not calculated yet')
+      expect(response.body).not_to include('bi-arrow-clockwise')
+    end
+
+    context 'when the viewer can manage MAAP and a score is cached' do
+      before do
+        CompanyTeammate.find_by!(person: person, organization: organization).update!(can_manage_maap: true)
+        assignment = create(:assignment, company: organization, title: 'Aligned Assignment')
+        create(:position_assignment, :required, position: position, assignment: assignment)
+        create(:assignment_outcome, assignment: assignment)
+        2.times do
+          create(:assignment_ability,
+                 assignment: assignment,
+                 ability: create(:ability, company: organization, created_by: person, updated_by: person),
+                 milestone_level: 2)
+        end
+        Positions::ExpectationAlignmentScore.recalculate!(position: position)
+      end
+
+      it 'shows the score, per-assignment breakdown, and refresh control' do
+        get organization_position_path(organization, position)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Position Expectation Alignment Score')
+        expect(response.body).to include('/ 100')
+        expect(response.body).to include('Aligned Assignment')
+        expect(response.body).to include('Required assignments')
+        expect(response.body).to include('Refresh')
+      end
+
+      it 'queues a refresh when posting refresh_expectation_alignment_score' do
+        expect {
+          post refresh_expectation_alignment_score_organization_position_path(organization, position)
+        }.to have_enqueued_job(PositionExpectationAlignmentScoreRefreshJob).with(position.id)
+
+        expect(response).to redirect_to(organization_position_path(organization, position))
+      end
+    end
   end
 
   describe 'GET /organizations/:organization_id/positions/:id/job_description' do

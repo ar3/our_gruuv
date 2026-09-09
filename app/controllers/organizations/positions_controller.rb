@@ -1,6 +1,6 @@
 class Organizations::PositionsController < ApplicationController
   before_action :set_organization
-  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :archive, :execute_archive, :restore, :manage_assignments, :update_assignments, :manage_eligibility, :update_eligibility]
+  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :archive, :execute_archive, :restore, :manage_assignments, :update_assignments, :manage_eligibility, :update_eligibility, :refresh_expectation_alignment_score]
   before_action :load_positions_for_header_switcher, only: [:show]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
@@ -140,7 +140,19 @@ class Organizations::PositionsController < ApplicationController
       position: @position,
       organization: @organization
     )
+    @expectation_alignment_score = Positions::ExpectationAlignmentScore.for_viewer(
+      position: @position,
+      viewer: current_company_teammate,
+      organization: @organization
+    )
     render layout: determine_layout
+  end
+
+  def refresh_expectation_alignment_score
+    authorize @position, :refresh_expectation_alignment_score?
+    PositionExpectationAlignmentScoreRefreshJob.perform_later(@position.id)
+    redirect_to organization_position_path(@organization, @position),
+                notice: "Expectation Alignment Score refresh queued. Refresh this page in a moment."
   end
 
   def job_description

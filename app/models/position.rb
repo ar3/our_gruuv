@@ -14,6 +14,9 @@ class Position < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :position_suggestions, dependent: :destroy
   has_many :og_consultations, as: :subject, dependent: :destroy
+  has_one :expectation_alignment_score_cache,
+          class_name: "PositionExpectationAlignmentScore",
+          dependent: :destroy
 
   def latest_position_clarity_consultation
     og_consultations.for_kind(OgConsultation::KIND_POSITION_CLARITY).latest_first.first
