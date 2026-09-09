@@ -22,6 +22,18 @@
               Edit title
           %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions for this organization to edit titles"}
 
+      - if policy(t).manage_paths?
+        = link_to manage_paths_organization_title_path(org, t), class: "btn btn-outline-primary btn-sm w-100" do
+          %i.bi.bi-signpost-split.me-2
+          Manage title paths
+      - else
+        .d-flex.align-items-center.gap-2
+          .flex-grow-1
+            %button.btn.btn-outline-secondary.btn-sm.w-100{type: "button", disabled: true}
+              %i.bi.bi-signpost-split.me-2
+              Manage title paths
+          %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle": "tooltip", "data-bs-title": "You need MAAP management permissions to manage title paths"}
+
       - unless t.archived?
         = link_to new_organization_position_path(t.company, title_id: t.id), class: "btn btn-outline-primary btn-sm w-100" do
           %i.bi.bi-plus-circle.me-2

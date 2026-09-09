@@ -1,0 +1,67 @@
+-# Locals optional; falls back to instance vars from titles#show
+- inbound_paths = local_assigns.fetch(:inbound_title_paths, @inbound_title_paths)
+- outbound_paths = local_assigns.fetch(:outbound_title_paths, @outbound_title_paths)
+- neighborhood = local_assigns.fetch(:title_path_neighborhood, @title_path_neighborhood)
+- title = local_assigns.fetch(:title, @title)
+- organization = local_assigns.fetch(:organization, @organization)
+
+.card.mb-4{role: "region", "aria-labelledby": "title-paths-heading"}
+  .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+    %h5.mb-0{id: "title-paths-heading"}
+      %i.bi.bi-signpost-split.me-2
+      Title paths
+      - if title.end_cap?
+        %span.badge.text-bg-secondary.ms-2 End-cap
+    - if policy(title).manage_paths?
+      = link_to manage_paths_organization_title_path(organization, title), class: "btn btn-outline-primary btn-sm" do
+        %i.bi.bi-pencil.me-1
+        Manage paths
+  .card-body
+    %p.text-muted.small.mb-3
+      Likely title moves into and out of
+      %strong= title.external_title
+      \. Within-title level steps are automatic; these paths cover leaving this title’s exit level for another title’s landing level.
+
+    .row.g-4.mb-3
+      .col-md-6
+        %h6.fw-semibold.mb-2 Inbound
+        - if inbound_paths.blank?
+          %p.text-muted.small.mb-0 No inbound paths.
+        - else
+          %ul.list-unstyled.mb-0
+            - inbound_paths.each do |path|
+              %li.mb-2
+                = link_to path.from_title.title_including_level, organization_title_path(organization, path.from_title), class: "text-decoration-none fw-semibold"
+                %span.badge.text-bg-light.border.ms-1= path.path_type_label
+      .col-md-6
+        %h6.fw-semibold.mb-2 Outbound
+        - if title.end_cap?
+          %p.text-muted.small.mb-0 End-cap — no outbound paths.
+        - elsif outbound_paths.blank?
+          %p.text-muted.small.mb-0 No outbound paths yet.
+        - else
+          %ul.list-unstyled.mb-0
+            - outbound_paths.each do |path|
+              %li.mb-2
+                = link_to path.to_title.title_including_level, organization_title_path(organization, path.to_title), class: "text-decoration-none fw-semibold"
+                %span.badge.text-bg-light.border.ms-1= path.path_type_label
+
+    - if neighborhood&.show_graph?
+      %hr
+      %h6.fw-semibold.mb-2 Neighborhood
+      %p.text-muted.small.mb-2
+        This title (emphasized) with direct inbound and outbound neighbors.
+      - elements = neighborhood.elements
+      - fingerprint = Assignments::SupplyGraphElements.cytoscape_node_fingerprint(elements)
+      = render "shared/cytoscape/supply_flow_graph",
+        elements: elements,
+        root_node_ids: neighborhood.root_node_ids,
+        highlight_tiers: true,
+        export_filename: "title-paths-#{title.id}",
+        graph_id: "title-paths-graph-#{title.id}",
+        aria_label: "Title path neighborhood for #{title.external_title}",
+        saved_positions: {},
+        node_fingerprint: fingerprint,
+        stored_node_fingerprint: "",
+        layout_url: "",
+        can_edit_layout: false

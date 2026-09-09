@@ -1,7 +1,5 @@
 class Organizations::TitlesController < Organizations::OrganizationNamespaceBaseController
-  include AssignsPublicKudosRateableCard
-
-  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions, :archive, :execute_archive, :restore]
+  before_action :set_title, only: [:show, :edit, :update, :destroy, :clone_positions, :archive, :execute_archive, :restore, :manage_paths, :update_paths]
   before_action :load_titles_for_header_switcher, only: [:show, :edit, :update]
   after_action :verify_authorized
 
@@ -30,12 +28,9 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     grouped = all_tenures.to_a.group_by(&:teammate_id)
     @teammates_with_title = all_tenures.to_a.uniq(&:teammate_id)
 
-    assign_public_kudos_for_rateable_card!(
-      organization: @organization,
-      rateable_type: 'Title',
-      rateable_id: @title.id,
-      rateable_display_name: @title.display_name_with_major_level
-    )
+    @inbound_title_paths = @title.inbound_title_paths.includes(from_title: :position_major_level).sort_by { |p| p.from_title.external_title.to_s.downcase }
+    @outbound_title_paths = @title.outbound_title_paths.includes(to_title: :position_major_level).sort_by { |p| p.to_title.external_title.to_s.downcase }
+    @title_path_neighborhood = Titles::PathNeighborhoodGraph.new(title: @title, organization: @organization)
   end
 
   def new
@@ -108,6 +103,34 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     authorize @title, :restore?
     @title.restore!
     redirect_to organization_title_path(@organization, @title), notice: 'Title was successfully restored.'
+  end
+
+  def manage_paths
+    authorize @title, :manage_paths?
+    load_path_manager_collections
+    @return_url = organization_title_path(@organization, @title)
+    @return_text = "Back to Title"
+    render layout: "overlay"
+  end
+
+  def update_paths
+    authorize @title, :manage_paths?
+
+    result = Titles::PathManager.call(
+      title: @title,
+      end_cap: params[:end_cap],
+      associations: title_paths_params
+    )
+
+    if result.ok?
+      redirect_to organization_title_path(@organization, @title), notice: "Title paths were successfully updated."
+    else
+      flash.now[:alert] = result.error
+      load_path_manager_collections
+      @return_url = organization_title_path(@organization, @title)
+      @return_text = "Back to Title"
+      render :manage_paths, layout: "overlay", status: :unprocessable_entity
+    end
   end
 
   def clone_positions
@@ -269,5 +292,41 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
       :physical_requirements,
       :travel
     )
+  end
+
+  def load_path_manager_collections
+    @inbound_title_paths = @title.inbound_title_paths.includes(from_title: :position_major_level).sort_by { |p| p.from_title.external_title.to_s.downcase }
+    @outbound_title_paths = @title.outbound_title_paths.includes(to_title: :position_major_level).sort_by { |p| p.to_title.external_title.to_s.downcase }
+
+    @existing_paths_by_title_id = {}
+    @inbound_title_paths.each { |path| @existing_paths_by_title_id[path.from_title_id] = path }
+    @outbound_title_paths.each { |path| @existing_paths_by_title_id[path.to_title_id] = path }
+
+    associated_ids = @existing_paths_by_title_id.keys
+    @associated_titles = Title.unarchived.where(id: associated_ids).includes(:department, :position_major_level).ordered.to_a
+    @associated_titles.sort_by! { |t| t.external_title.to_s.downcase }
+
+    @available_titles = @organization.titles
+      .unarchived
+      .where.not(id: associated_ids + [@title.id])
+      .includes(:department, :position_major_level)
+      .ordered
+  end
+
+  def title_paths_params
+    raw = params[:title_paths]
+    return {} if raw.blank?
+
+    permitted = raw.permit!
+    result = {}
+    permitted.each do |other_title_id, attrs|
+      next if other_title_id.blank?
+
+      result[other_title_id.to_i] = {
+        direction: attrs[:direction],
+        path_type: attrs[:path_type]
+      }
+    end
+    result
   end
 end

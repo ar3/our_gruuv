@@ -27,6 +27,10 @@ class TitlePolicy < ApplicationPolicy
     admin_bypass? || user_has_maap_permission_for_record?
   end
 
+  def manage_paths?
+    update?
+  end
+
 
   class Scope < ApplicationPolicy::Scope
     def resolve

@@ -1,0 +1,42 @@
+-# Locals:
+-#   other_title, form, existing_path (optional TitlePath), mode: :configure | :add, end_cap
+- mode = local_assigns.fetch(:mode, :configure)
+- existing_path = local_assigns[:existing_path]
+- end_cap = local_assigns.fetch(:end_cap, false)
+- add_mode = mode == :add
+- current_direction = add_mode ? "none" : (existing_path&.from_title_id == @title.id ? "outbound" : "inbound")
+- current_path_type = existing_path&.path_type || Titles::PathManager::DEFAULT_PATH_TYPE
+- department_label = other_title.department.present? ? other_title.department.display_name : "Company-wide"
+- row_class = add_mode ? "filterable-option" : nil
+- prefix = "title_paths[#{other_title.id}]"
+- outbound_disabled = end_cap
+
+%tr{class: row_class, data: { controller: "title-path-association", title_path_association_add_mode_value: add_mode, title_path_association_end_cap_value: end_cap }}
+  %td
+    %small.text-muted.d-block= department_label
+    %strong= other_title.external_title
+    - if other_title.position_major_level.present?
+      %span.text-muted.small.ms-1 [L#{other_title.position_major_level.major_level}]
+    = link_to organization_title_path(@organization, other_title), target: "_blank", class: "ms-2", title: "View title" do
+      %i.bi.bi-box-arrow-up-right
+    - if add_mode
+      = hidden_field_tag "#{prefix}[path_type]", current_path_type, data: { title_path_association_target: "pathType" }
+  - unless add_mode
+    %td
+      = select_tag "#{prefix}[path_type]",
+        options_for_select(TitlePath::PATH_TYPES.map { |value, label| [label, value] }, current_path_type),
+        class: "form-select form-select-sm",
+        data: { title_path_association_target: "pathType" }
+  %td
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Association for #{other_title.external_title}"}
+      - [["inbound", "Inbound"], ["outbound", "Outbound"], ["none", "No Association"]].each do |value, label|
+        - radio_id = "title_path_#{other_title.id}_direction_#{value}"
+        - disabled = value == "outbound" && outbound_disabled
+        = radio_button_tag "#{prefix}[direction]", value, current_direction == value && !disabled,
+          class: "btn-check",
+          id: radio_id,
+          disabled: disabled,
+          data: { title_path_association_target: "direction", action: "change->title-path-association#changeDirection" }
+        - btn_class = value == "none" ? "btn btn-outline-secondary" : "btn btn-outline-primary"
+        - btn_class = "#{btn_class} disabled" if disabled
+        = label_tag radio_id, label, class: btn_class

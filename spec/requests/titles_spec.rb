@@ -70,14 +70,7 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("item_id=#{title.id}")
       expect(response.body).to include("Archive title")
       expect(response.body).not_to include("Delete title")
-    end
-
-    it "renders public kudos card with Title rateable query params" do
-      get organization_title_path(organization, title)
-
-      expect(response.body).to include("Public Kudos")
-      expect(response.body).to include("rateable_type=Title")
-      expect(response.body).to include("rateable_id=#{title.id}")
+      expect(response.body).not_to include("Public Kudos")
     end
 
     it "lists other company-wide titles in the header switcher" do
@@ -118,6 +111,85 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include(organization_position_path(organization, position_two))
       expect(response.body).to include(position_one.display_name)
       expect(response.body).to include(position_two.display_name)
+    end
+
+    it "renders title paths card with manage link for MAAP managers" do
+      get organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Title paths")
+      expect(response.body).to include("Manage paths")
+      expect(response.body).to include(manage_paths_organization_title_path(organization, title))
+      expect(response.body).to include("No outbound paths yet")
+    end
+
+    it "shows inbound and outbound paths and the neighborhood graph" do
+      other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Lead Engineer")
+      create(:title_path, from_title: title, to_title: other, path_type: "natural_progression")
+
+      get organization_title_path(organization, title)
+
+      expect(response.body).to include(other.title_including_level)
+      expect(response.body).to include("Natural progression")
+      expect(response.body).to include("Neighborhood")
+      expect(response.body).to include("title-paths-graph-#{title.id}")
+    end
+  end
+
+  describe "GET /manage_paths" do
+    let(:position_major_level) { create(:position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: "Engineer") }
+
+    it "renders the manage title paths page with configure and add sections" do
+      other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Manager")
+
+      get manage_paths_organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Manage title paths for Engineer")
+      expect(response.body).to include("End-cap title")
+      expect(response.body).to include("Configure Title Paths")
+      expect(response.body).to include("Add Title Paths")
+      expect(response.body).to include("Inbound")
+      expect(response.body).to include("Outbound")
+      expect(response.body).to include("No Association")
+      expect(response.body).to include("Manager")
+      expect(response.body).to include("Search titles by name or department")
+    end
+  end
+
+  describe "PATCH /update_paths" do
+    let(:position_major_level) { create(:position_major_level) }
+    let(:title) { create(:title, company: organization, position_major_level: position_major_level, external_title: "Engineer") }
+    let(:next_title) { create(:title, company: organization, position_major_level: position_major_level, external_title: "Manager") }
+
+    it "creates an outbound path" do
+      expect {
+        patch update_paths_organization_title_path(organization, title), params: {
+          end_cap: "0",
+          title_paths: {
+            next_title.id.to_s => { direction: "outbound", path_type: "switch_to_people_management" }
+          }
+        }
+      }.to change(TitlePath, :count).by(1)
+
+      expect(response).to redirect_to(organization_title_path(organization, title))
+      expect(title.reload.outbound_titles).to contain_exactly(next_title)
+    end
+
+    it "marks a title as end-cap and clears outbound paths" do
+      create(:title_path, from_title: title, to_title: next_title, path_type: "natural_progression")
+
+      patch update_paths_organization_title_path(organization, title), params: {
+        end_cap: "1",
+        title_paths: {
+          next_title.id.to_s => { direction: "outbound", path_type: "natural_progression" }
+        }
+      }
+
+      expect(response).to redirect_to(organization_title_path(organization, title))
+      expect(title.reload.end_cap?).to be(true)
+      expect(title.outbound_title_paths).to be_empty
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_09_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_09_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -2163,6 +2163,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_09_120000) do
     t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
   end
 
+  create_table "title_paths", force: :cascade do |t|
+    t.bigint "from_title_id", null: false
+    t.bigint "to_title_id", null: false
+    t.string "path_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["from_title_id", "to_title_id"], name: "index_title_paths_on_from_and_to", unique: true
+    t.index ["from_title_id"], name: "index_title_paths_on_from_title_id"
+    t.index ["path_type"], name: "index_title_paths_on_path_type"
+    t.index ["to_title_id"], name: "index_title_paths_on_to_title_id"
+  end
+
   create_table "titles", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.bigint "position_major_level_id", null: false
@@ -2177,6 +2189,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_09_120000) do
     t.text "work_environment"
     t.text "physical_requirements"
     t.text "travel"
+    t.boolean "end_cap", default: false, null: false
     t.index ["company_id", "position_major_level_id", "external_title"], name: "index_titles_on_company_level_title_unique", unique: true
     t.index ["company_id"], name: "index_titles_on_company_id"
     t.index ["deleted_at"], name: "index_titles_on_deleted_at"
@@ -2443,6 +2456,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_09_120000) do
   add_foreign_key "teams", "organizations", column: "company_id"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
+  add_foreign_key "title_paths", "titles", column: "from_title_id"
+  add_foreign_key "title_paths", "titles", column: "to_title_id"
   add_foreign_key "titles", "departments"
   add_foreign_key "titles", "organizations", column: "company_id"
   add_foreign_key "titles", "position_major_levels"

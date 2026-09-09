@@ -657,6 +657,8 @@ Rails.application.routes.draw do
     resources :titles, module: :organizations do
       member do
         post :clone_positions
+        get :manage_paths
+        patch :update_paths
         get :archive
         patch :execute_archive
         patch :restore

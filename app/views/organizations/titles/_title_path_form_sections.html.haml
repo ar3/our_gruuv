@@ -1,0 +1,69 @@
+-# Locals: form, associated_titles, available_titles, existing_paths_by_title_id, subject_name, end_cap
+- expand_add = associated_titles.empty?
+- available_count = available_titles.size
+- subject_name = local_assigns.fetch(:subject_name, "this title")
+- end_cap = local_assigns.fetch(:end_cap, false)
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-sliders.me-2
+      Configure Title Paths
+  .card-body
+    - if associated_titles.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th{scope: "col"} Title
+              %th{scope: "col"} Path type
+              %th{scope: "col"} Association
+          %tbody
+            - associated_titles.each do |other_title|
+              = render "organizations/titles/title_path_association_row",
+                other_title: other_title,
+                form: form,
+                existing_path: existing_paths_by_title_id[other_title.id],
+                mode: :configure,
+                end_cap: end_cap
+    - else
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No title paths yet. Add titles below to declare inbound or outbound moves for #{subject_name}.
+
+.card.mb-4
+  - unless expand_add
+    .card-body.py-3.border-bottom
+      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addTitlePaths", "aria-expanded" => "false", "aria-controls" => "addTitlePaths", href: "#addTitlePaths"}
+        #{subject_name} needs more of the #{available_count} available Titles… add new title path
+  .collapse{id: "addTitlePaths", class: ("show" if expand_add)}
+    - if expand_add
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          Add Title Paths
+    .card-body
+      - if available_titles.any?
+        .mb-3{data: {controller: "options-filter"}}
+          %input.form-control.form-control-lg.mb-3{type: "search", placeholder: "Search titles by name or department...", "data-options-filter-target": "input", "aria-label": "Filter titles by name or department"}
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th{scope: "col"} Title
+                  %th{scope: "col"} Association
+              %tbody{data: {"options-filter-target": "list"}}
+                - available_titles.each do |other_title|
+                  = render "organizations/titles/title_path_association_row",
+                    other_title: other_title,
+                    form: form,
+                    existing_path: nil,
+                    mode: :add,
+                    end_cap: end_cap
+      - else
+        .alert.alert-info.mb-0
+          %i.bi.bi-info-circle.me-2
+          - if associated_titles.any?
+            All available titles are already associated.
+          - else
+            No other titles found in this organization.

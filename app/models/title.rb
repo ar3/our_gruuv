@@ -11,6 +11,18 @@ class Title < ApplicationRecord
   has_many :seat_titles, dependent: :destroy
   has_many :associated_seats, through: :seat_titles, source: :seat
   has_many :comments, as: :commentable, dependent: :destroy
+  has_many :outbound_title_paths,
+           class_name: "TitlePath",
+           foreign_key: :from_title_id,
+           dependent: :destroy,
+           inverse_of: :from_title
+  has_many :inbound_title_paths,
+           class_name: "TitlePath",
+           foreign_key: :to_title_id,
+           dependent: :destroy,
+           inverse_of: :to_title
+  has_many :outbound_titles, through: :outbound_title_paths, source: :to_title
+  has_many :inbound_titles, through: :inbound_title_paths, source: :from_title
   has_one :published_external_reference, -> { where(reference_type: 'published') },
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') },
@@ -23,6 +35,7 @@ class Title < ApplicationRecord
   validates :external_title, uniqueness: { scope: [:company_id, :position_major_level_id] }
   validate :company_must_be_company_type
   validate :department_must_belong_to_company
+  validate :end_cap_has_no_outbound_paths
 
   before_validation :normalize_job_description_hr_blanks
 
@@ -75,7 +88,11 @@ class Title < ApplicationRecord
   end
 
   def display_name_with_major_level
-    "#{position_major_level.major_level} #{external_title}"
+    title_including_level
+  end
+
+  def title_including_level
+    "#{external_title} [L#{position_major_level.major_level}]"
   end
 
   def job_description_hr_text
@@ -139,5 +156,12 @@ class Title < ApplicationRecord
     if department.company_id != company_id
       errors.add(:department, 'must belong to the same company')
     end
+  end
+
+  def end_cap_has_no_outbound_paths
+    return unless end_cap?
+    return unless outbound_title_paths.exists?
+
+    errors.add(:end_cap, "cannot be enabled while outbound paths exist")
   end
 end
