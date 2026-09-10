@@ -11,6 +11,10 @@
 - stored_node_fingerprint = local_assigns.fetch(:stored_node_fingerprint, "")
 - layout_url = local_assigns.fetch(:layout_url, "")
 - can_edit_layout = local_assigns.fetch(:can_edit_layout, false)
+- edge_colors = local_assigns.fetch(:edge_colors, false)
+- edge_tooltips = local_assigns.fetch(:edge_tooltips, false)
+- preset_layout = local_assigns.fetch(:preset_layout, false)
+- nodes_draggable = local_assigns.fetch(:nodes_draggable, false)
 
 .assignment-cytoscape-flow-graph{
   data: {
@@ -19,6 +23,10 @@
     assignment_accountability_flow_roots_json_value: root_node_ids.to_json,
     assignment_accountability_flow_lazy_value: lazy,
     assignment_accountability_flow_highlight_tiers_value: highlight_tiers,
+    assignment_accountability_flow_edge_colors_value: edge_colors,
+    assignment_accountability_flow_edge_tooltips_value: edge_tooltips,
+    assignment_accountability_flow_preset_layout_value: preset_layout,
+    assignment_accountability_flow_nodes_draggable_value: nodes_draggable,
     assignment_accountability_flow_export_filename_value: export_filename,
     assignment_accountability_flow_saved_positions_json_value: saved_positions.to_json,
     assignment_accountability_flow_node_fingerprint_value: node_fingerprint,
@@ -30,6 +38,9 @@
   - if can_edit_layout
     %p.small.text-muted.mb-2
       Drag nodes to rearrange, then save. The layout is shared for everyone in the company.
+  - elsif nodes_draggable
+    %p.small.text-muted.mb-2
+      Drag nodes to rearrange for this session. Click a node to open that title. Refresh restores the default level columns.
   .d-flex.flex-wrap.justify-content-end.align-items-center.gap-2.mb-2
     - if can_edit_layout
       %span.small.text-muted.me-auto{data: { assignment_accountability_flow_target: "saveStatus" }}

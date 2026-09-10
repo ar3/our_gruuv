@@ -87,7 +87,9 @@ module Titles
           id: "tp#{path.id}",
           source: node_id(source.id),
           target: node_id(target.id),
-          label: path.path_type_label
+          label: path.path_type_label,
+          pathType: path.path_type,
+          lineColor: Insights::TitlePathsOverview::PATH_TYPE_COLORS.fetch(path.path_type, "#6c757d")
         }
       }
     end

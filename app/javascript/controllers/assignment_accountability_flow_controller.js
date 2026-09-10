@@ -30,6 +30,10 @@ export default class extends Controller {
     rootsJson: { type: String, default: "[]" },
     lazy: { type: Boolean, default: false },
     highlightTiers: { type: Boolean, default: false },
+    edgeColors: { type: Boolean, default: false },
+    edgeTooltips: { type: Boolean, default: false },
+    presetLayout: { type: Boolean, default: false },
+    nodesDraggable: { type: Boolean, default: false },
     exportFilename: { type: String, default: "supply-network-graph" },
     savedPositionsJson: { type: String, default: "{}" },
     nodeFingerprint: { type: String, default: "" },
@@ -117,8 +121,10 @@ export default class extends Controller {
     if (!elements.length || !this.hasGraphTarget) return
 
     const savedPositions = this.parsedSavedPositions()
-    const usePreset = this.shouldUsePresetLayout(elements, savedPositions)
-    const preparedElements = usePreset ? this.prepareElements(elements, savedPositions) : elements
+    const usePreset = this.presetLayoutValue || this.shouldUsePresetLayout(elements, savedPositions)
+    const preparedElements = (!this.presetLayoutValue && usePreset)
+      ? this.prepareElements(elements, savedPositions)
+      : elements
     const useDagreLayout = !usePreset && registerDagreLayout()
 
     this.cy = cytoscape({
@@ -127,7 +133,7 @@ export default class extends Controller {
       minZoom: 0.4,
       maxZoom: 2,
       style: this.graphStyles(),
-      layout: usePreset ? { name: "preset", padding: 30 } : this.layoutConfig(roots, useDagreLayout),
+      layout: usePreset ? { name: "preset", padding: 30, fit: true } : this.layoutConfig(roots, useDagreLayout),
       wheelSensitivity: 0.2
     })
 
@@ -171,18 +177,23 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this.hideEdgeTooltip()
+    this.edgeTooltipEl?.remove()
+    this.edgeTooltipEl = null
     this.cy?.destroy()
     this.cy = null
   }
 
   configureInteraction() {
-    if (this.canEditLayoutValue) {
+    if (this.canEditLayoutValue || this.nodesDraggableValue) {
       this.cy.nodes().grabify()
-      this.cy.on("free", "node", () => {
-        this.layoutDirty = true
-        this.updateSaveButton()
-        this.setSaveStatus("Unsaved changes")
-      })
+      if (this.canEditLayoutValue) {
+        this.cy.on("free", "node", () => {
+          this.layoutDirty = true
+          this.updateSaveButton()
+          this.setSaveStatus("Unsaved changes")
+        })
+      }
     } else {
       this.cy.nodes().ungrabify()
     }
@@ -199,6 +210,47 @@ export default class extends Controller {
       const url = event.target.data("url")
       if (url) window.location.assign(url)
     })
+
+    if (this.edgeTooltipsValue) {
+      this.ensureEdgeTooltip()
+      this.cy.on("mouseover", "edge", (event) => {
+        const label = event.target.data("label")
+        if (!label) return
+        this.showEdgeTooltip(event.originalEvent, label)
+      })
+      this.cy.on("mousemove", "edge", (event) => {
+        const label = event.target.data("label")
+        if (!label) return
+        this.showEdgeTooltip(event.originalEvent, label)
+      })
+      this.cy.on("mouseout", "edge", () => this.hideEdgeTooltip())
+    }
+  }
+
+  ensureEdgeTooltip() {
+    if (this.edgeTooltipEl) return
+
+    this.edgeTooltipEl = document.createElement("div")
+    this.edgeTooltipEl.className = "cytoscape-edge-tooltip badge text-bg-dark"
+    this.edgeTooltipEl.style.position = "fixed"
+    this.edgeTooltipEl.style.zIndex = "1080"
+    this.edgeTooltipEl.style.pointerEvents = "none"
+    this.edgeTooltipEl.style.display = "none"
+    document.body.appendChild(this.edgeTooltipEl)
+  }
+
+  showEdgeTooltip(originalEvent, label) {
+    if (!this.edgeTooltipEl || !originalEvent) return
+
+    this.edgeTooltipEl.textContent = label
+    this.edgeTooltipEl.style.display = "block"
+    this.edgeTooltipEl.style.left = `${originalEvent.clientX + 12}px`
+    this.edgeTooltipEl.style.top = `${originalEvent.clientY + 12}px`
+  }
+
+  hideEdgeTooltip() {
+    if (!this.edgeTooltipEl) return
+    this.edgeTooltipEl.style.display = "none"
   }
 
   shouldUsePresetLayout(elements, savedPositions) {
@@ -350,8 +402,8 @@ export default class extends Controller {
       selector: "edge",
       style: {
         width: 2,
-        "line-color": "#6c757d",
-        "target-arrow-color": "#6c757d",
+        "line-color": this.edgeColorsValue ? "data(lineColor)" : "#6c757d",
+        "target-arrow-color": this.edgeColorsValue ? "data(lineColor)" : "#6c757d",
         "target-arrow-shape": "triangle",
         "curve-style": "bezier",
         "control-point-distances": 22,
@@ -360,9 +412,10 @@ export default class extends Controller {
       }
     }
 
+    const styles = [baseNodeStyle]
+
     if (this.highlightTiersValue) {
-      return [
-        baseNodeStyle,
+      styles.push(
         {
           selector: "node[highlightTier = 'required']",
           style: {
@@ -388,14 +441,10 @@ export default class extends Controller {
             "border-width": 1,
             "border-color": "#ced4da"
           }
-        },
-        edgeStyle
-      ]
-    }
-
-    return [
-      baseNodeStyle,
-      {
+        }
+      )
+    } else {
+      styles.push({
         selector: "node[?isCurrent]",
         style: {
           "background-color": "#cfe2ff",
@@ -403,9 +452,11 @@ export default class extends Controller {
           "border-color": "#0d6efd",
           "font-weight": "bold"
         }
-      },
-      edgeStyle
-    ]
+      })
+    }
+
+    styles.push(edgeStyle)
+    return styles
   }
 
   layoutConfig(roots, useDagreLayout = false) {

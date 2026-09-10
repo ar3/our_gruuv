@@ -1,0 +1,86 @@
+-# Locals: overview (Insights::TitlePathsOverview::Result), organization
+- overview = local_assigns.fetch(:overview)
+- organization = local_assigns.fetch(:organization)
+
+.card.border-0.shadow-sm.mb-4{role: "region", "aria-labelledby": "title-paths-insights-heading"}
+  .card-header.bg-white.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+    %h4.mb-0{id: "title-paths-insights-heading"}
+      %i.bi.bi-signpost-split.me-2
+      Title paths
+    = form_with url: organization_insights_seats_titles_positions_path(organization), method: :get, local: true, class: "d-flex align-items-center gap-2 mb-0" do |f|
+      = label_tag :department_id, "Department", class: "form-label mb-0 small text-muted"
+      = select_tag :department_id,
+                   options_for_select([["All departments", ""]] + overview.department_options, overview.selected_department&.id),
+                   class: "form-select form-select-sm",
+                   style: "min-width: 14rem;",
+                   onchange: "this.form.requestSubmit()"
+  .card-body
+    %p.mb-3
+      There are
+      %strong= overview.connected_count
+      Position Titles that have a path defined (or are end-caps), and
+      %strong= overview.unconnected_count
+      that have no path defined. The easiest way to see and fix any that have a missing path is by visiting
+      = link_to "Position Health", organization_positions_health_path(organization), class: "fw-semibold"
+      \.
+
+    - if overview.show_graph
+      %p.text-muted.small.mb-3
+        Graph shows only titles with at least one path. Nodes are arranged by major level —
+        %strong L1
+        on the left through
+        %strong L10
+        on the right.
+      .mb-3
+        %ul.list-inline.small.text-muted.mb-0
+          - TitlePath::PATH_TYPES.each do |key, label|
+            - color = Insights::TitlePathsOverview::PATH_TYPE_COLORS.fetch(key)
+            %li.list-inline-item.me-3
+              %span.d-inline-block.rounded-circle.me-1{style: "width: 0.65rem; height: 0.65rem; background: #{color}; vertical-align: middle;"}
+              = label
+          %li.list-inline-item.me-3
+            %span.badge.text-bg-light.border Outside selected department
+
+      .insights-title-paths-dual{
+        data: {
+          controller: "insights-title-paths-graph",
+          action: "shown.bs.tab->insights-title-paths-graph#onTabShown",
+          insights_title_paths_graph_g6_graph_data_json_value: overview.g6_graph_data.to_json
+        }
+      }
+        %ul.nav.nav-tabs.mb-3{role: "tablist"}
+          %li.nav-item{role: "presentation"}
+            %button.nav-link.active{id: "insights-title-paths-cytoscape-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#insights-title-paths-cytoscape-pane", "aria-controls": "insights-title-paths-cytoscape-pane", "aria-selected": "true"}
+              Cytoscape
+          %li.nav-item{role: "presentation"}
+            %button.nav-link{id: "insights-title-paths-g6-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "#insights-title-paths-g6-pane", "aria-controls": "insights-title-paths-g6-pane", "aria-selected": "false"}
+              G6
+        .tab-content
+          .tab-pane.fade.show.active{id: "insights-title-paths-cytoscape-pane", role: "tabpanel", "aria-labelledby": "insights-title-paths-cytoscape-tab", data: { insights_title_paths_graph_target: "cytoscapePane" }}
+            = render "shared/cytoscape_dagre_scripts"
+            - fingerprint = Assignments::SupplyGraphElements.cytoscape_node_fingerprint(overview.elements)
+            = render "shared/cytoscape/supply_flow_graph",
+              elements: overview.elements,
+              root_node_ids: overview.root_node_ids,
+              highlight_tiers: true,
+              edge_colors: true,
+              edge_tooltips: true,
+              preset_layout: true,
+              nodes_draggable: true,
+              export_filename: "title-paths-#{organization.id}",
+              graph_id: "insights-title-paths-graph",
+              aria_label: "Organization title path network",
+              extra_graph_classes: "insights-title-paths-graph",
+              saved_positions: {},
+              node_fingerprint: fingerprint,
+              stored_node_fingerprint: "",
+              layout_url: "",
+              can_edit_layout: false
+          .tab-pane.fade{id: "insights-title-paths-g6-pane", role: "tabpanel", "aria-labelledby": "insights-title-paths-g6-tab", data: { insights_title_paths_graph_target: "g6Pane" }}
+            #insights-title-paths-g6.insights-title-paths-graph.border.rounded.bg-white{
+              data: { insights_title_paths_graph_target: "g6Container" }
+            }
+    - else
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No title paths in this view yet. Add paths on Title show, or visit Position Health to find titles missing a path.

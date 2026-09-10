@@ -87,7 +87,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
   def seats_titles_positions
     authorize company, :view_seats?
-    
+
+    @organization = company
+
     # Seat statistics
     seats = Seat.for_organization(company)
     @total_seats = seats.count
@@ -141,6 +143,11 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       .tally
       .sort_by { |k, _v| k }
       .to_h
+
+    @title_paths_overview = Insights::TitlePathsOverview.call(
+      organization: company,
+      department_id: params[:department_id]
+    )
   end
   
   def assignments

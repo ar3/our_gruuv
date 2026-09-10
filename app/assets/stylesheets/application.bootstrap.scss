@@ -2007,6 +2007,11 @@ body:has(.vertical-nav.open) .floating-toggle {
   min-height: 560px;
 }
 
+.insights-title-paths-graph {
+  min-height: 480px;
+  height: 70vh;
+}
+
 // Check-in auto-save: fixed indicator bottom-right of viewport
 .check-in-autosave-status {
   z-index: 1040;

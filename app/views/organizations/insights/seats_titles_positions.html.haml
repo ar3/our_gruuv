@@ -7,6 +7,10 @@
            current_lens: :insights
 
 .container-fluid
+  = render "organizations/insights/title_paths_section",
+           overview: @title_paths_overview,
+           organization: @organization
+
   / Seats Section
   .row.mb-4
     .col-12
