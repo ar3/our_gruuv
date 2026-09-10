@@ -377,14 +377,23 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
   def download_positions_csv
     CSV.generate(headers: true) do |csv|
       csv << [
-        'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
+        'External Title', 'Level', 'Major Level', 'Major Level Description', 'Position Level Description',
+        'Position Expectation Alignment Score', 'End Cap', 'Outbound Paths',
+        'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
         'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Direct Milestone Requirements', 'Version Count',
         'Title', 'Position Summary', 'Seats', 'Other Uploads'
       ]
       
       Position.includes(
-        title: [:company, :seats, :department],
-        position_level: [],
+        :expectation_alignment_score_cache,
+        :position_level,
+        title: [
+          :company,
+          :seats,
+          :department,
+          :position_major_level,
+          { outbound_title_paths: { to_title: :position_major_level } }
+        ],
         position_assignments: :assignment,
         position_abilities: :ability
       )
@@ -464,10 +473,18 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         else
           ''
         end
+
+        major = position.title&.position_major_level
         
         csv << [
           position.title&.external_title || '',
           position.position_level&.level || '',
+          major&.major_level || '',
+          major&.description.presence || '',
+          position_level_tier_description_for_csv(position.position_level),
+          eas_score_for_csv(position.expectation_alignment_score_cache),
+          end_cap_for_csv(position.title),
+          outbound_paths_for_csv(position.title),
           position.company&.display_name || '',
           department_name,
           position.semantic_version || '',
@@ -533,14 +550,24 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
   def download_titles_csv
     CSV.generate(headers: true) do |csv|
       csv << [
-        'Title ID', 'External Title', 'Organization', 'Position Major Level',
+        'Title ID', 'External Title', 'Organization', 'Department',
+        'Position Major Level', 'Position Major Level Description',
+        'Title Expectation Alignment Score', 'End Cap', 'Outbound Paths',
         'Number of Positions', 'Number of Seats', 'Number of Active Employment Tenures',
         'Created At', 'Updated At'
       ]
       
       org_ids = company.self_and_descendants.map(&:id)
       Title.where(company_id: org_ids)
-           .includes(:company, :position_major_level, :positions, :seats)
+           .includes(
+             :company,
+             :department,
+             :position_major_level,
+             :positions,
+             :seats,
+             :expectation_alignment_score_cache,
+             outbound_title_paths: { to_title: :position_major_level }
+           )
            .order(:external_title)
            .find_each do |title|
         # Count positions
@@ -562,7 +589,12 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           title.id,
           title.external_title,
           title.company.display_name,
-          title.position_major_level.major_level,
+          title.department&.display_name || '',
+          title.position_major_level&.major_level || '',
+          title.position_major_level&.description.presence || '',
+          eas_score_for_csv(title.expectation_alignment_score_cache),
+          end_cap_for_csv(title),
+          outbound_paths_for_csv(title),
           positions_count,
           seats_count,
           active_tenures_count,
@@ -615,6 +647,37 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         ]
       end
     end
+  end
+
+  def eas_score_for_csv(cache)
+    return "" if cache.blank? || cache.score.nil?
+
+    cache.score.to_s
+  end
+
+  def end_cap_for_csv(title)
+    return "" if title.blank?
+
+    title.end_cap? ? "Yes" : "No"
+  end
+
+  def outbound_paths_for_csv(title)
+    return "" if title.blank?
+
+    title.outbound_title_paths.map do |path|
+      "#{path.to_title.title_including_level} (#{path.path_type_label})"
+    end.join("\n")
+  end
+
+  def position_level_tier_description_for_csv(position_level)
+    return "" if position_level.blank?
+
+    minor = begin
+      position_level.eligibility_minor_slot
+    rescue ArgumentError
+      nil
+    end
+    PositionEligibilityMinorLevels.tier_description(minor).to_s
   end
 end
 

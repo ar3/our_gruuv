@@ -53,6 +53,20 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(positions).to include(position_v1, position_v1_2, position_v2, position_v0)
     end
 
+    it 'renders Other actions downloads for employed teammates with download_bulk_csv' do
+      teammate = person.company_teammates.find_by!(organization: organization)
+      teammate.update!(first_employed_at: 1.year.ago, last_terminated_at: nil)
+
+      get organization_positions_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Other actions')
+      expect(response.body).to include('Download positions (CSV)')
+      expect(response.body).to include('Download titles (CSV)')
+      expect(response.body).to include(download_organization_bulk_downloads_path(organization, type: 'positions'))
+      expect(response.body).to include(download_organization_bulk_downloads_path(organization, type: 'titles'))
+    end
+
     it 'includes a link icon next to departments that links to the department show page' do
       department = create(:department, company: organization, name: 'Engineering')
       title_in_dept = create(:title, company: organization, department: department,

@@ -496,7 +496,9 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           csv = CSV.parse(response.body, headers: true)
           expect(csv.headers).to include(
-            'External Title', 'Level', 'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
+            'External Title', 'Level', 'Major Level', 'Major Level Description', 'Position Level Description',
+            'Position Expectation Alignment Score', 'End Cap', 'Outbound Paths',
+            'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
             'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
             'Title', 'Position Summary', 'Seats', 'Other Uploads'
           )
@@ -509,6 +511,38 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           position = create(:position, title: title, position_level: position_level)
           get download_organization_bulk_downloads_path(organization, type: 'positions')
           expect(response.body).to include('Software Engineer')
+        end
+
+        it 'enriches positions CSV with major/level descriptions, Position EAS, end-cap, and outbound paths' do
+          major = create(:position_major_level, major_level: 3, description: 'Senior / Quad', set_name: "Base-#{SecureRandom.hex(4)}")
+          dest_major = create(:position_major_level, major_level: 4, set_name: "Base-#{SecureRandom.hex(4)}")
+          position_level = create(:position_level, position_major_level: major, level: '3.2')
+          title = create(:title, company: organization, position_major_level: major, external_title: 'Engineer', end_cap: false)
+          dest = create(:title, company: organization, position_major_level: dest_major, external_title: 'Staff Engineer')
+          create(:title_path, from_title: title, to_title: dest, path_type: 'natural_progression')
+          position = create(:position, title: title, position_level: position_level)
+          PositionExpectationAlignmentScore.create!(
+            position: position,
+            organization: organization,
+            score: 62.5,
+            calculated_at: Time.current,
+            cells: [],
+            required_assignments_count: 0
+          )
+
+          get download_organization_bulk_downloads_path(organization, type: 'positions')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['External Title'] == 'Engineer' }
+
+          expect(row['Level']).to eq('3.2')
+          expect(row['Major Level']).to eq('3')
+          expect(row['Major Level Description']).to eq('Senior / Quad')
+          expect(row['Position Level Description']).to include('Established')
+          expect(row['Position Expectation Alignment Score']).to eq('62.5')
+          expect(row['End Cap']).to eq('No')
+          expect(row['Outbound Paths']).to include('Staff Engineer')
+          expect(row['Outbound Paths']).to include('[L4]')
+          expect(row['Outbound Paths']).to include('Natural progression')
         end
 
         it 'includes public position URL in CSV' do
@@ -729,6 +763,39 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         get download_organization_bulk_downloads_path(organization, type: 'titles')
         expect(response).to have_http_status(:success)
         expect(response.content_type).to include('text/csv')
+      end
+
+      it 'enriches titles CSV with major description, Title EAS, end-cap, and outbound paths' do
+        major = create(:position_major_level, major_level: 2, description: 'Mid Career', set_name: "Base-#{SecureRandom.hex(4)}")
+        dest_major = create(:position_major_level, major_level: 3, set_name: "Base-#{SecureRandom.hex(4)}")
+        department = create(:department, company: organization, name: 'Product')
+        title = create(:title, company: organization, position_major_level: major, department: department, external_title: 'PM', end_cap: false)
+        dest = create(:title, company: organization, position_major_level: dest_major, external_title: 'Senior PM')
+        create(:title_path, from_title: title, to_title: dest, path_type: 'parallel_progression')
+        TitleExpectationAlignmentScore.create!(
+          title: title,
+          organization: organization,
+          score: 50.0,
+          calculated_at: Time.current,
+          cells: [],
+          path_clarity: true
+        )
+
+        get download_organization_bulk_downloads_path(organization, type: 'titles')
+        csv = CSV.parse(response.body, headers: true)
+        row = csv.find { |r| r['External Title'] == 'PM' }
+
+        expect(csv.headers).to include(
+          'Department',
+          'Position Major Level', 'Position Major Level Description',
+          'Title Expectation Alignment Score', 'End Cap', 'Outbound Paths'
+        )
+        expect(row['Department']).to eq(department.display_name)
+        expect(row['Position Major Level']).to eq('2')
+        expect(row['Position Major Level Description']).to eq('Mid Career')
+        expect(row['Title Expectation Alignment Score']).to eq('50.0')
+        expect(row['End Cap']).to eq('No')
+        expect(row['Outbound Paths']).to include('Senior PM [L3] (Parallel progression)')
       end
 
       it 'allows departments_and_teams download' do
