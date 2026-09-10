@@ -128,6 +128,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
     CSV.generate(headers: true) do |csv|
       csv << [
         'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Preferred Name', 'External Title',
+        'Department', 'Major Level', 'Major Level Description', 'Level', 'Position Level Description',
+        'Target Position', 'Target Major Level', 'Target Major Level Description', 'Target Level', 'Target Position Level Description',
         'Email', 'Slack User Name',
         'Last PageVisit Created At', 'First PageVisit Created At', 'PageVisit Count',
         'Last Position Finalized Check-In', 'Last Assignment Finalized Check-In', 'Last Aspiration Finalized Check-In',
@@ -138,10 +140,17 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       
       CompanyTeammate.includes(
         person: [:page_visits],
-        employment_tenures: { 
-          position: :title,
+        employment_tenures: {
+          position: [
+            :position_level,
+            { title: [:department, :position_major_level] }
+          ],
           manager_teammate: :person
         },
+        next_goal_position: [
+          :position_level,
+          { title: [:department, :position_major_level] }
+        ],
         assignment_tenures: :assignment,
         teammate_identities: [],
         teammate_milestones: [],
@@ -151,7 +160,15 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
                      .find_each do |teammate|
         person = teammate.person
         latest_tenure = teammate.employment_tenures.order(started_at: :desc).first
-        external_title = latest_tenure&.position&.title&.external_title || ''
+        current_position = latest_tenure&.position
+        external_title = current_position&.title&.external_title || ''
+        current_department = current_position&.title&.department&.display_name || ''
+        current_level_fields = position_maap_level_fields_for_csv(current_position)
+
+        target_position = teammate.next_goal_position
+        target_distinct = target_position.present? && target_position.id != current_position&.id
+        target_position_name = target_distinct ? (target_position.display_name || '') : ''
+        target_level_fields = target_distinct ? position_maap_level_fields_for_csv(target_position) : Array.new(4, '')
         
         # PageVisit data
         page_visits = person.page_visits
@@ -244,6 +261,10 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           person.suffix || '',
           person.preferred_name || '',
           external_title,
+          current_department,
+          *current_level_fields,
+          target_position_name,
+          *target_level_fields,
           email,
           slack_user_name,
           last_page_visit_created_at,
@@ -678,6 +699,18 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       nil
     end
     PositionEligibilityMinorLevels.tier_description(minor).to_s
+  end
+
+  def position_maap_level_fields_for_csv(position)
+    return Array.new(4, "") if position.blank?
+
+    major = position.title&.position_major_level
+    [
+      major&.major_level || "",
+      major&.description.presence || "",
+      position.position_level&.level || "",
+      position_level_tier_description_for_csv(position.position_level)
+    ]
   end
 end
 

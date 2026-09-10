@@ -80,6 +80,8 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           csv = CSV.parse(response.body, headers: true)
           expect(csv.headers).to include(
             'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Preferred Name', 'External Title',
+            'Department', 'Major Level', 'Major Level Description', 'Level', 'Position Level Description',
+            'Target Position', 'Target Major Level', 'Target Major Level Description', 'Target Level', 'Target Position Level Description',
             'Email', 'Slack User Name',
             'Last PageVisit Created At', 'First PageVisit Created At', 'PageVisit Count',
             'Last Position Finalized Check-In', 'Last Assignment Finalized Check-In', 'Last Aspiration Finalized Check-In',
@@ -96,6 +98,75 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           expect(response.body).to include('John')
           expect(response.body).to include('Doe')
           expect(response.body).to include('john@example.com')
+        end
+
+        it 'enriches company teammates CSV with current and distinct target position level fields' do
+          department = create(:department, company: organization, name: 'Engineering')
+          current_major = create(:position_major_level, major_level: 2, description: 'Mid Career', set_name: "Base-#{SecureRandom.hex(4)}")
+          target_major = create(:position_major_level, major_level: 3, description: 'Senior / Quad', set_name: "Base-#{SecureRandom.hex(4)}")
+          current_level = create(:position_level, position_major_level: current_major, level: '2.1')
+          target_level = create(:position_level, position_major_level: target_major, level: '3.2')
+          current_title = create(:title, company: organization, position_major_level: current_major, department: department, external_title: 'Engineer')
+          target_title = create(:title, company: organization, position_major_level: target_major, department: department, external_title: 'Staff Engineer')
+          current_position = create(:position, title: current_title, position_level: current_level)
+          target_position = create(:position, title: target_title, position_level: target_level)
+
+          person = create(:person, first_name: 'Pat', last_name: 'Lee', email: 'pat.lee@example.com')
+          teammate = CompanyTeammate.create!(
+            person: person,
+            organization: organization,
+            first_employed_at: 1.month.ago,
+            last_terminated_at: nil,
+            next_goal_position: target_position
+          )
+          et = build(:employment_tenure, teammate: teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
+          et.position = current_position
+          et.save!
+
+          get download_organization_bulk_downloads_path(organization, type: 'company_teammates')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Email'] == 'pat.lee@example.com' }
+
+          expect(row['External Title']).to eq('Engineer')
+          expect(row['Department']).to eq(department.display_name)
+          expect(row['Major Level']).to eq('2')
+          expect(row['Major Level Description']).to eq('Mid Career')
+          expect(row['Level']).to eq('2.1')
+          expect(row['Position Level Description']).to include('Emerging')
+          expect(row['Target Position']).to eq(target_position.display_name)
+          expect(row['Target Major Level']).to eq('3')
+          expect(row['Target Major Level Description']).to eq('Senior / Quad')
+          expect(row['Target Level']).to eq('3.2')
+          expect(row['Target Position Level Description']).to include('Established')
+        end
+
+        it 'leaves target position columns blank when target matches current position' do
+          major = create(:position_major_level, major_level: 1, description: 'Associates', set_name: "Base-#{SecureRandom.hex(4)}")
+          level = create(:position_level, position_major_level: major, level: '1.1')
+          title = create(:title, company: organization, position_major_level: major, external_title: 'Associate')
+          position = create(:position, title: title, position_level: level)
+
+          person = create(:person, email: 'same.target@example.com')
+          teammate = CompanyTeammate.create!(
+            person: person,
+            organization: organization,
+            first_employed_at: 1.month.ago,
+            last_terminated_at: nil,
+            next_goal_position: position
+          )
+          et = build(:employment_tenure, teammate: teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
+          et.position = position
+          et.save!
+
+          get download_organization_bulk_downloads_path(organization, type: 'company_teammates')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Email'] == 'same.target@example.com' }
+
+          expect(row['Target Position']).to eq('')
+          expect(row['Target Major Level']).to eq('')
+          expect(row['Target Major Level Description']).to eq('')
+          expect(row['Target Level']).to eq('')
+          expect(row['Target Position Level Description']).to eq('')
         end
 
         it 'includes PageVisit data in CSV' do

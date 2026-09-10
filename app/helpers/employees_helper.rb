@@ -1,5 +1,21 @@
 module EmployeesHelper
   include CheckInHelper
+
+  def employees_index_other_actions(organization)
+    can_download = policy(organization).download_company_teammates_csv?
+
+    [
+      {
+        label: "Download company teammates (CSV)",
+        path: download_organization_bulk_downloads_path(organization, type: "company_teammates"),
+        icon: "bi-download",
+        disabled: !can_download,
+        show_permission_warning: !can_download,
+        title: (can_download ? nil : "Requires employment management permission")
+      }
+    ]
+  end
+
   def format_snapshot_changes(snapshot, person, organization, current_user: nil, previous_snapshot: nil)
     return nil unless snapshot&.maap_data
     

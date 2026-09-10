@@ -42,10 +42,12 @@
                           %i.bi{class: "#{action[:icon]} me-1"}
                         = action[:label]
                     - elsif action[:disabled]
-                      %span.small.text-muted{title: action[:title], "data-bs-toggle" => ("tooltip" if action[:title].present?), "data-bs-placement" => "top"}
+                      %span.small.text-muted.d-inline-flex.align-items-center.gap-1{title: action[:title], "data-bs-toggle" => ("tooltip" if action[:title].present? && !action[:show_permission_warning]), "data-bs-placement" => "top"}
                         - if action[:icon].present?
                           %i.bi{class: "#{action[:icon]} me-1"}
                         = action[:label]
+                        - if action[:show_permission_warning]
+                          %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: action[:title], bs_placement: "top"}, title: action[:title]}
                     - else
                       = link_to action[:path], class: "small text-decoration-none text-body-secondary", title: action[:title] do
                         - if action[:icon].present?

@@ -43,6 +43,14 @@
 - else
   = render 'organizations/employees/spotlights/teammates_overview'
 
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :employees_list,
+      show_switcher: false,
+      other_actions: employees_index_other_actions(@organization)
+
 / Active Filters Display
 - if @has_active_filters && 1 == 2 # TODO: Make this work and when it works, show this section.
   .row.justify-content-center.mb-3
