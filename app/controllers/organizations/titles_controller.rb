@@ -89,6 +89,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     authorize @title, :archive?
     @blocking_positions = @title.blocking_positions.includes(:position_level).order('position_levels.level')
     @blocking_seats = @title.blocking_seats.includes(:title, :titles).ordered
+    @blocking_title_paths = @title.blocking_title_paths.includes(:from_title, :to_title)
     @archivable = @title.archivable?
   end
 
@@ -96,7 +97,7 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     authorize @title, :archive?
     unless @title.archivable?
       redirect_to archive_organization_title_path(@organization, @title),
-                  alert: 'Cannot archive: archive or clear all positions and seats that use this title first.'
+                  alert: 'Cannot archive: archive or clear all positions, seats, and title paths that use this title first.'
       return
     end
 

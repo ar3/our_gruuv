@@ -194,6 +194,26 @@ RSpec.describe Title, type: :model do
       seat.seat_titles.create!(title: title)
       expect(title.archivable?).to be false
     end
+
+    it 'is not archivable when an outbound title path exists' do
+      other = create(:title, company: company, position_major_level: position_major_level, external_title: 'Next')
+      create(:title_path, from_title: title, to_title: other)
+      expect(title.archivable?).to be false
+      expect(title.blocking_title_paths).to exist
+    end
+
+    it 'is not archivable when an inbound title path exists' do
+      other = create(:title, company: company, position_major_level: position_major_level, external_title: 'Prev')
+      create(:title_path, from_title: other, to_title: title)
+      expect(title.archivable?).to be false
+    end
+
+    it 'is archivable after title paths are cleared' do
+      other = create(:title, company: company, position_major_level: position_major_level, external_title: 'Next')
+      path = create(:title_path, from_title: title, to_title: other)
+      path.destroy!
+      expect(title.archivable?).to be true
+    end
   end
 
   describe 'instance methods' do

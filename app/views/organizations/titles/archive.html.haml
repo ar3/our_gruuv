@@ -19,7 +19,7 @@
           %li Keep the title page reachable by direct URL, with an "Archived as of [date]" banner.
           %li Preserve summary, positions, seats history, and comments.
         %p.mb-0.text-muted
-          You must archive all positions under this title, and archive or disassociate any seats still using this title, before archiving.
+          You must archive all positions under this title, archive or disassociate any seats still using this title, and clear all inbound and outbound title paths, before archiving.
 
     .card.mb-4
       .card-header
@@ -42,7 +42,7 @@
                     %span.text-muted.ms-1
                       —
                     = link_to 'Archive position', archive_organization_position_path(@organization, position), class: 'text-decoration-none'
-          %li
+          %li.mb-3
             - if @blocking_seats.empty?
               %i.bi.bi-check-circle.text-success.me-2
               No seats still using this title
@@ -63,6 +63,25 @@
                     = link_to 'Edit seat', edit_organization_seat_path(@organization, seat), class: 'text-decoration-none'
                     %span.text-muted.ms-1
                       to archive
+          %li
+            - if @blocking_title_paths.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No title paths
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              Clear #{pluralize(@blocking_title_paths.size, 'title path')} first
+              %ul.mt-1.mb-0.ms-4
+                - @blocking_title_paths.each do |path|
+                  - outbound = path.from_title_id == @title.id
+                  - peer = outbound ? path.to_title : path.from_title
+                  %li
+                    %span.text-muted= outbound ? "Outbound to" : "Inbound from"
+                    = link_to peer.display_name, organization_title_path(@organization, peer), class: 'text-decoration-none'
+                    %span.text-muted.ms-1
+                      (#{path.path_type_label})
+                    %span.text-muted.ms-1
+                      —
+                    = link_to 'Manage title paths', manage_paths_organization_title_path(@organization, @title), class: 'text-decoration-none'
 
     - if @archivable
       .card.mb-4
@@ -77,6 +96,6 @@
         .card-body
           %p.mb-2.text-warning
             %i.bi.bi-exclamation-triangle.me-2
-            You cannot archive until all positions are archived and all seats using this title are archived or disassociated.
+            You cannot archive until all positions are archived, all seats using this title are archived or disassociated, and all title paths are cleared.
           %p.mb-0
             = link_to 'Back to title', organization_title_path(@organization, @title), class: 'btn btn-outline-secondary'

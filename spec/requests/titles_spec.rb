@@ -320,6 +320,31 @@ RSpec.describe "Titles", type: :request do
         expect(response.body).to include(seat.display_name)
         expect(response.body).to include("You cannot archive until")
       end
+
+      it "lists blocking title paths and links to manage paths" do
+        other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Staff Next")
+        create(:title_path, from_title: title, to_title: other, path_type: "natural_progression")
+
+        get archive_organization_title_path(organization, title)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Clear 1 title path first")
+        expect(response.body).to include("Outbound to")
+        expect(response.body).to include("Staff Next")
+        expect(response.body).to include(manage_paths_organization_title_path(organization, title))
+        expect(response.body).to include("You cannot archive until")
+        expect(response.body).not_to include('value="Archive title"')
+      end
+
+      it "lists inbound title paths as blockers" do
+        other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Staff Prev")
+        create(:title_path, from_title: other, to_title: title, path_type: "parallel_progression")
+
+        get archive_organization_title_path(organization, title)
+
+        expect(response.body).to include("Inbound from")
+        expect(response.body).to include("Staff Prev")
+      end
     end
 
     describe "PATCH execute_archive" do
@@ -334,6 +359,17 @@ RSpec.describe "Titles", type: :request do
         create(:seat, :open, title: title)
         patch execute_archive_organization_title_path(organization, title)
         expect(response).to redirect_to(archive_organization_title_path(organization, title))
+        expect(title.reload.archived?).to be false
+      end
+
+      it "blocks archive when title paths remain" do
+        other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Staff Next")
+        create(:title_path, from_title: title, to_title: other)
+
+        patch execute_archive_organization_title_path(organization, title)
+
+        expect(response).to redirect_to(archive_organization_title_path(organization, title))
+        expect(flash[:alert]).to include("title paths")
         expect(title.reload.archived?).to be false
       end
     end

@@ -56,7 +56,7 @@ class Title < ApplicationRecord
   scope :unarchived, -> { where(deleted_at: nil) }
   scope :archived, -> { where.not(deleted_at: nil) }
 
-  # Archive (soft delete) – block if unarchived positions or non-archived seats still use this title
+  # Archive (soft delete) – block if unarchived positions, non-archived seats, or title paths remain
   def archived?
     deleted_at.present?
   end
@@ -70,7 +70,7 @@ class Title < ApplicationRecord
   end
 
   def archivable?
-    blocking_positions.none? && blocking_seats.none?
+    blocking_positions.none? && blocking_seats.none? && blocking_title_paths.none?
   end
 
   def blocking_positions
@@ -83,6 +83,11 @@ class Title < ApplicationRecord
       .where('seats.title_id = :id OR seat_titles.title_id = :id', id: id)
       .where.not(state: Seat.states[:archived])
       .distinct
+  end
+
+  # Any inbound or outbound career-path edge must be cleared before archive
+  def blocking_title_paths
+    TitlePath.where(from_title_id: id).or(TitlePath.where(to_title_id: id))
   end
 
   # Instance methods
