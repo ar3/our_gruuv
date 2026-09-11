@@ -286,6 +286,10 @@ Rails.application.routes.draw do
     post :positions_health_refresh_all,
          to: 'organizations/positions_health#refresh_all',
          as: :positions_health_refresh_all
+    get :departments_health, to: 'organizations/departments_health#index'
+    post :departments_health_refresh_all,
+         to: 'organizations/departments_health#refresh_all',
+         as: :departments_health_refresh_all
 
     resource :assignment_survey,
              path: "assignment-experience-survey",
@@ -827,6 +831,7 @@ Rails.application.routes.draw do
       get 'values', to: 'insights#values'
       get 'goals', to: 'insights#goals'
       get 'teams', to: 'insights#teams'
+      get 'departments', to: 'insights#departments'
       get 'who_is_doing_what', to: 'insights#who_is_doing_what'
       get 'check_ins_progress', to: 'insights#check_ins_progress'
       get 'acknowledgements', to: 'insights#acknowledgements'

@@ -1,0 +1,29 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    See how clear Titles, Positions, and Assignments are by department—so leaders can spot which
+    parts of the org need Expectation Alignment work.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-3
+    %li
+      Each row is a department (plus
+      %strong Company-wide
+      for records with no department).
+    %li
+      %strong Titles
+      ,
+      %strong Positions
+      , and
+      %strong Assignments
+      columns show the average Expectation Alignment Score for scored records in that department, plus scored/total counts.
+    %li
+      %strong Combined
+      is the mean of those three averages when at least one is scored.
+    %li
+      Use
+      %strong Other actions → Refresh all
+      to queue Title, Position, and Assignment EAS recalculations. Prefer Refresh after large MAAP edits—not on every page view.

@@ -23,6 +23,11 @@ RSpec.describe 'Organizations::Departments', type: :request do
       
       expect(response).to be_successful
       expect(response.body).to include('Departments')
+      expect(response.body).to include('Switch object')
+      expect(response.body).to include(organization_departments_health_path(organization))
+      expect(response.body).to include(organization_insights_departments_path(organization))
+      expect(response.body).to include('Add new Department')
+      expect(response.body).to include('departmentsListPageHelp')
     end
 
     it 'displays hierarchy correctly' do

@@ -10,12 +10,13 @@ module ObjectLensHeaderHelper
     { key: :check_ins, label: "Check-ins" },
     # Person-scoped last before catalog divider.
     { key: :milestones, label: "Milestones" },
-    # Org/MAAP catalog — Abilities first under the divider.
+    # Org/MAAP catalog — Abilities → Assignments → Positions, then Values/Teams.
     { key: :abilities, label: "Abilities", divider_before: true },
     { key: :assignments, label: "Assignments" },
-    { key: :values, label: "Values" },
-    { key: :position, label: "Position" },
-    { key: :teams, label: "Teams" }
+    { key: :position, label: "Positions" },
+    { key: :values, label: "Values", divider_before: true },
+    { key: :teams, label: "Teams" },
+    { key: :departments, label: "Departments" }
   ].freeze
 
   # Browse slot: Overall uses Directory; typed objects use List.
@@ -29,7 +30,8 @@ module ObjectLensHeaderHelper
     assignments: :list,
     values: :list,
     position: :list,
-    teams: :list
+    teams: :list,
+    departments: :list
   }.freeze
 
   LENS_LABELS = {
@@ -117,6 +119,12 @@ module ObjectLensHeaderHelper
       organization_teams_health_path(organization)
     when %i[teams insights]
       organization_insights_teams_path(organization)
+    when %i[departments list]
+      organization_departments_path(organization)
+    when %i[departments health]
+      organization_departments_health_path(organization)
+    when %i[departments insights]
+      organization_insights_departments_path(organization)
     else
       nil
     end
@@ -166,6 +174,12 @@ module ObjectLensHeaderHelper
       policy(organization).teams_health?
     when %i[teams insights]
       policy(organization).view_goals?
+    when %i[departments list]
+      policy(organization).show?
+    when %i[departments health]
+      policy(organization).departments_health?
+    when %i[departments insights]
+      policy(organization).view_titles?
     else
       false
     end

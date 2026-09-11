@@ -501,6 +501,10 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).positions_health? },
             goal: "See Title Expectation Alignment across departments and refresh all title scores.",
             synonyms: %w[position health positions health title health title eas maap]),
+          insights_page(:departments_health, "Departments Health", "bi-heart-pulse", :organization_departments_health_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).departments_health? },
+            goal: "See Title, Position, and Assignment Expectation Alignment aggregated by department.",
+            synonyms: %w[departments health department health expectation alignment]),
           insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
             policy: ->(ctx) {
               ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?
@@ -546,6 +550,10 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
             goal: "See team counts and week-over-week Team-owned goal activity.",
             synonyms: %w[team insights teams analytics team goals]),
+          insights_page(:insights_departments, "Departments", "bi-diagram-3", :organization_insights_departments_path,
+            policy: ->(ctx) { ctx.policy(ctx.company).view_titles? },
+            goal: "See average assignments, abilities, and seats per department.",
+            synonyms: %w[department insights departments analytics]),
           insights_page(:insights_prompts, "Prompts", "bi-journal-text", :organization_insights_prompts_path,
             policy: ->(ctx) { ctx.policy(ctx.company).view_prompts? },
             goal: "Review prompt usage and growth-plan activity.",

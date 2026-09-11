@@ -1,0 +1,86 @@
+- content_for :title, "Insights: Departments"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Departments", url: organization_departments_path(@organization) }, { label: "Insights: Departments", url: nil }])
+
+- content_for :header do
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :departments,
+           current_lens: :insights
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.text-center.g-3
+          .col-6.col-md-3
+            .h3.text-primary.mb-0= @departments_overview.departments_count
+            %small.text-muted Active departments
+          .col-6.col-md-3
+            .h3.text-primary.mb-0= @departments_overview.average_assignments_per_department
+            %small.text-muted Avg assignments / dept
+          .col-6.col-md-3
+            .h3.text-primary.mb-0= @departments_overview.average_abilities_per_department
+            %small.text-muted Avg abilities / dept
+          .col-6.col-md-3
+            .h3.text-primary.mb-0= @departments_overview.average_seats_per_department
+            %small.text-muted Avg seats / dept
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-primary.text-white
+        %h5.mb-0
+          %i.bi.bi-bar-chart.me-2
+          Assignments, abilities, and seats by department
+      .card-body
+        - if @departments_overview.departments_count.zero?
+          %p.text-muted.mb-0 No active departments yet.
+        - else
+          %p.small.text-muted.mb-3
+            Counts use unarchived assignments and abilities linked to the department, and active (open or filled) seats on that department’s titles.
+          #departments-coverage-chart{style: "height: 360px;"}
+
+:javascript
+  (function() {
+    var chartData = #{@departments_overview.chart_data.to_json};
+    var colors = ['#0d6efd', '#198754', '#6f42c1'];
+
+    function initChart() {
+      if (typeof Highcharts === 'undefined') return;
+      var el = document.getElementById('departments-coverage-chart');
+      if (!el) return;
+      var series = chartData.series.map(function(ser, i) {
+        var out = { name: ser.name, data: ser.data };
+        if (colors[i]) out.color = colors[i];
+        return out;
+      });
+      Highcharts.chart('departments-coverage-chart', {
+        chart: { type: 'column' },
+        title: { text: null },
+        accessibility: { enabled: false },
+        xAxis: { categories: chartData.categories, title: { text: 'Department' } },
+        yAxis: { min: 0, allowDecimals: false, title: { text: 'Count' } },
+        legend: { enabled: true },
+        plotOptions: { column: { dataLabels: { enabled: false } } },
+        series: series
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initChart();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initChart;
+        document.head.appendChild(script);
+      }
+    }
+    waitForHighcharts();
+  })();

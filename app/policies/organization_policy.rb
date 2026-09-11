@@ -218,6 +218,11 @@ class OrganizationPolicy < ApplicationPolicy
     view_titles?
   end
 
+  # Departments · Health — Title / Position / Assignment EAS rollups by department.
+  def departments_health?
+    view_titles?
+  end
+
   def view_titles?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

@@ -247,6 +247,13 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @teams_overview = Insights::TeamsOverview.new(organization: company, chart_range: chart_range).call
   end
 
+  def departments
+    authorize company, :view_titles?
+
+    @organization = company
+    @departments_overview = Insights::DepartmentsOverview.call(organization: company)
+  end
+
   def prompts
     authorize company, :view_prompts?
 

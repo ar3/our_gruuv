@@ -30,7 +30,8 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
           view_aspirations?: true,
           values_health?: true,
           view_titles?: true,
-          positions_health?: true
+          positions_health?: true,
+          departments_health?: true
         )
       )
       allow(helper).to receive(:policy).with(teammate).and_return(double(view_check_ins?: true))
@@ -76,6 +77,12 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
       expect(helper.object_lens_path(organization, :teams, :health)).to eq(organization_teams_health_path(organization))
       expect(helper.object_lens_path(organization, :teams, :insights)).to eq(organization_insights_teams_path(organization))
     end
+
+    it "maps Departments lenses" do
+      expect(helper.object_lens_path(organization, :departments, :list)).to eq(organization_departments_path(organization))
+      expect(helper.object_lens_path(organization, :departments, :health)).to eq(organization_departments_health_path(organization))
+      expect(helper.object_lens_path(organization, :departments, :insights)).to eq(organization_insights_departments_path(organization))
+    end
   end
 
   describe "#object_lens_resolve_lens" do
@@ -106,7 +113,8 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
             view_aspirations?: false,
             values_health?: false,
             view_titles?: false,
-            positions_health?: false
+            positions_health?: false,
+            departments_health?: false
           )
         )
       end
@@ -121,15 +129,23 @@ RSpec.describe ObjectLensHeaderHelper, type: :helper do
       expect(goals[:path]).to eq(organization_goals_health_path(organization))
     end
 
-    it "marks Abilities with a divider before (org catalog vs person-scoped objects)" do
+    it "orders catalog objects and dividers (person-scoped → MAAP → Values/Teams)" do
       menu = helper.object_lens_menu_objects(organization, current_object: :goals, current_lens: :list)
       abilities = menu.find { |o| o[:key] == :abilities }
+      values = menu.find { |o| o[:key] == :values }
       expect(abilities[:divider_before]).to eq(true)
+      expect(values[:divider_before]).to eq(true)
       expect(menu.find { |o| o[:key] == :milestones }[:divider_before]).to eq(false)
       expect(menu.find { |o| o[:key] == :assignments }[:divider_before]).to eq(false)
+      expect(menu.find { |o| o[:key] == :position }[:divider_before]).to eq(false)
       keys = menu.map { |o| o[:key] }
       expect(keys.index(:milestones)).to be < keys.index(:abilities)
       expect(keys.index(:abilities)).to be < keys.index(:assignments)
+      expect(keys.index(:assignments)).to be < keys.index(:position)
+      expect(keys.index(:position)).to be < keys.index(:values)
+      expect(keys.index(:values)).to be < keys.index(:teams)
+      expect(keys.index(:teams)).to be < keys.index(:departments)
+      expect(menu.find { |o| o[:key] == :position }[:label]).to eq("Positions")
     end
   end
 

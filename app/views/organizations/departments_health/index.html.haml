@@ -1,0 +1,96 @@
+- content_for :title, "Departments Health"
+- page_help_id = "departmentsHealthPageHelp"
+- band_colors = DepartmentsHealth::ExpectationAlignmentOverview::BAND_COLORS
+
+- content_for :header do
+  - object_lens_trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See Title, Position, and Assignment Expectation Alignment by department. Click for details."
+  = render "shared/object_lens_header/switchers",
+           organization: @organization,
+           current_object: :departments,
+           current_lens: :health,
+           trailing: object_lens_trailing
+
+.mb-4
+  = content_for :go_back_link
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/departments_health/page_help"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Departments Health", url: nil }])
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.align-items-center.text-center.g-3
+          .col-6.col-md-3
+            .h3.text-primary.mb-0= @overview.department_count
+            %small.text-muted Departments
+          .col-6.col-md-3
+            - if @overview.combined_average.present?
+              .h3.mb-0{style: "color: #{band_colors.fetch(@overview.combined_band_key)};"}= @overview.combined_average.round
+            - else
+              .h3.text-muted.mb-0 —
+            %small.text-muted Combined avg EAS
+          .col-6.col-md-3
+            .h3.text-muted.mb-0= @overview.title_ids.size
+            %small.text-muted Titles scored across
+          .col-6.col-md-3
+            .h3.text-muted.mb-0= @overview.assignment_ids.size
+            %small.text-muted Assignments scored across
+      .card-footer.bg-light
+        %small.text-muted
+          Combined average is the mean of each department’s Title, Position, and Assignment Expectation Alignment averages (when scored). Bands match other Health pages.
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/health/dashboard_toolbar",
+      organization: @organization,
+      current: :departments_health,
+      show_switcher: false,
+      other_actions: departments_health_other_actions(@organization, record_count: @overview.title_ids.size + @overview.position_ids.size + @overview.assignment_ids.size)
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    - if @overview.department_rows.empty?
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No departments or company-wide MAAP records yet.
+    - else
+      .table-responsive
+        %table.table.align-middle.mb-0
+          %thead
+            %tr
+              %th Department
+              %th.text-center Titles
+              %th.text-center Positions
+              %th.text-center Assignments
+              %th.text-center Combined
+          %tbody
+            - @overview.department_rows.each do |row|
+              %tr
+                %td
+                  - if row.department
+                    = link_to row.label, organization_department_path(@organization, row.department), class: "text-decoration-none"
+                  - else
+                    %span.text-muted= row.label
+                - [row.titles, row.positions, row.assignments].each do |summary|
+                  %td.text-center
+                    - if summary.average_score.present?
+                      %span.fw-semibold{style: "color: #{band_colors.fetch(summary.band_key)};"}= summary.average_score.round
+                      %div.small.text-muted
+                        = "#{summary.scored_count}/#{summary.count}"
+                    - elsif summary.count.zero?
+                      %span.text-muted —
+                    - else
+                      %span.text-muted Unscored
+                      %div.small.text-muted= "0/#{summary.count}"
+                %td.text-center
+                  - if row.combined_average.present?
+                    %span.fw-semibold{style: "color: #{band_colors.fetch(row.combined_band_key)};"}= row.combined_average.round
+                  - else
+                    %span.text-muted —

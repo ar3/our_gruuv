@@ -188,4 +188,17 @@ module HealthDashboardsHelper
       }
     ]
   end
+
+  def departments_health_other_actions(organization, record_count:)
+    [
+      {
+        label: record_count.positive? ? "Refresh all (#{record_count})" : "Refresh all",
+        path: organization_departments_health_refresh_all_path(organization),
+        icon: "bi-arrow-clockwise",
+        method: :post,
+        disabled: record_count.zero?,
+        title: (record_count.zero? ? "Nothing to refresh" : "Recalculate Title, Position, and Assignment EAS for this organization")
+      }
+    ]
+  end
 end
