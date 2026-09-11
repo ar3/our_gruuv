@@ -231,6 +231,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @current_organization = organization
     load_my_growth_employment_context
     load_my_growth_positions_by_department
+    load_my_growth_suggested_next_positions
     ensure_default_next_goal_position!
     @next_goal_position = @teammate.next_goal_position
     if (pos = @current_employment&.position)
@@ -1385,6 +1386,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       .includes(:title, :position_level)
       .ordered
     @positions_by_department = positions.group_by { |pos| pos.title.department || co }
+  end
+
+  def load_my_growth_suggested_next_positions
+    result = Positions::SuggestedNextForGrowBy.call(current_position: @current_employment&.position)
+    @suggested_next_same_title_positions = result.same_title_positions
+    @suggested_next_path_positions = result.path_positions
+    @suggested_next_empty_note = result.empty_note
   end
 
   def ensure_default_next_goal_position!

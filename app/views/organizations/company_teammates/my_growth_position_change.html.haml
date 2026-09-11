@@ -45,8 +45,11 @@
         - if @positions_by_department.present?
           = form_with url: update_next_goal_position_organization_company_teammate_path(organization, @teammate), method: :patch, local: true, data: { turbo: false } do
             = label_tag :next_goal_position_id, 'Select the position you are working toward', class: 'form-label'
+            - if @suggested_next_empty_note.present?
+              %p.small.text-muted.mb-2= @suggested_next_empty_note
+            - suggested_groups = [{ label: "Suggested next (this title)", positions: @suggested_next_same_title_positions }, { label: "Suggested next (via title paths)", positions: @suggested_next_path_positions }]
             = select_tag :next_goal_position_id,
-              positions_grouped_options_for_select(@positions_by_department, @teammate.next_goal_position_id),
+              positions_grouped_options_for_select(@positions_by_department, @teammate.next_goal_position_id, suggested_groups: suggested_groups),
               class: 'form-select',
               onchange: 'this.form.requestSubmit()'
         - else

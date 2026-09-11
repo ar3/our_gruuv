@@ -43,10 +43,28 @@ module PositionsHelper
   end
 
   # Same grouping as shared/forms/_position_field (seat management).
-  def positions_grouped_options_for_select(positions_by_department, selected_id)
-    return '' if positions_by_department.blank?
+  # Optional suggested groups appear first (also remain in dept groups).
+  # suggested_groups: [{ label:, positions: }, ...]
+  def positions_grouped_options_for_select(positions_by_department, selected_id, suggested_positions: nil, suggested_groups: nil)
+    groups = Array(suggested_groups)
+    if groups.blank? && suggested_positions.present?
+      groups = [{ label: "Suggested next", positions: Array(suggested_positions) }]
+    end
+
+    return '' if positions_by_department.blank? && groups.none? { |g| Array(g[:positions]).any? }
 
     grouped_options = []
+
+    groups.each do |group|
+      positions = Array(group[:positions])
+      next if positions.blank?
+
+      label = group[:label].presence || "Suggested next"
+      grouped_options << [label, positions.map { |p| [p.display_name, p.id] }]
+    end
+
+    return grouped_options_for_select(grouped_options, selected_id) if positions_by_department.blank?
+
     organization = positions_by_department.keys.find { |org| org.is_a?(Organization) && !org.is_a?(Department) }
     departments = positions_by_department.keys.select { |org| org.is_a?(Department) }.sort_by(&:display_name)
 

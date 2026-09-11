@@ -476,6 +476,45 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).not_to include('Current role')
       end
 
+      it 'shows Suggested next optgroup for higher same-title levels and outbound path positions' do
+        current_position = employee_teammate.employment_tenures.active.first.position
+        title = current_position.title
+        major = title.position_major_level
+        current_major = current_position.position_level.level.to_s.split('.').first.to_i
+        higher_level = create(
+          :position_level,
+          position_major_level: major,
+          level: "#{current_major + 1}.1"
+        )
+        higher_position = create(:position, title: title, position_level: higher_level)
+
+        dest_major = create(:position_major_level, major_level: 8, set_name: "Grow-#{SecureRandom.hex(4)}")
+        dest_title = create(:title, company: organization, position_major_level: dest_major, external_title: 'Next Title')
+        dest_level = create(:position_level, position_major_level: dest_major, level: '8.1')
+        dest_position = create(:position, title: dest_title, position_level: dest_level)
+        create(:title_path, from_title: title, to_title: dest_title, path_type: 'natural_progression')
+
+        get my_growth_position_change_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Suggested next (this title)')
+        expect(response.body).to include('Suggested next (via title paths)')
+        expect(response.body).to include(higher_position.display_name)
+        expect(response.body).to include(dest_position.display_name)
+      end
+
+      it 'shows a short note when the career map has no suggested next positions' do
+        current_position = employee_teammate.employment_tenures.active.first.position
+        current_position.title.update!(end_cap: true)
+
+        get my_growth_position_change_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('end-cap')
+        expect(response.body).not_to include('Suggested next (this title)')
+        expect(response.body).not_to include('Suggested next (via title paths)')
+      end
+
       it 'defaults target position to current and shows keystone conversation section' do
         current_position = employee_teammate.employment_tenures.active.first.position
         employee_teammate.update!(next_goal_position: nil)
