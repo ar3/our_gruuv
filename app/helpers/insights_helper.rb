@@ -137,13 +137,17 @@ module InsightsHelper
       end
   end
 
-  WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_ORDER = %w[one_on_one_only about_me_only both none].freeze
+  WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_ORDER = %w[
+    one_on_one_only about_me_only both none day_set_no_style
+  ].freeze
   WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_LABELS = {
     'one_on_one_only' => '1:1 guide only',
     'about_me_only' => 'About Me only',
     'both' => 'Both',
-    'none' => 'Neither'
+    'none' => 'Neither',
+    'day_set_no_style' => 'Day set, no style'
   }.freeze
+  WHO_IS_DOING_WHAT_WEEKLY_DIGEST_INACTIVE_KEYS = %w[none day_set_no_style].freeze
 
   def who_is_doing_what_weekly_digest_type_series
     return [] unless @weekly_digest_type_distribution.is_a?(Hash)
@@ -155,7 +159,7 @@ module InsightsHelper
       who_is_doing_what_digest_stacked_series_entry(
         WHO_IS_DOING_WHAT_WEEKLY_DIGEST_TYPE_LABELS[key],
         @weekly_digest_type_distribution.fetch(key, 0),
-        inactive: key == 'none'
+        inactive: WHO_IS_DOING_WHAT_WEEKLY_DIGEST_INACTIVE_KEYS.include?(key)
       )
     end
   end

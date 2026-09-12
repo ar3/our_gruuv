@@ -226,7 +226,8 @@ RSpec.describe InsightsHelper, type: :helper do
         'one_on_one_only' => 2,
         'about_me_only' => 1,
         'both' => 0,
-        'none' => 3
+        'none' => 3,
+        'day_set_no_style' => 1
       })
 
       series = helper.who_is_doing_what_weekly_digest_type_series
@@ -235,10 +236,13 @@ RSpec.describe InsightsHelper, type: :helper do
         '1:1 guide only',
         'About Me only',
         'Both',
-        'Neither'
+        'Neither',
+        'Day set, no style'
       ])
-      expect(series.map { |s| s[:data] }).to eq([[2], [1], [0], [3]])
-      expect(series.last[:color]).to eq(InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR)
+      expect(series.map { |s| s[:data] }).to eq([[2], [1], [0], [3], [1]])
+      inactive = InsightsHelper::WHO_IS_DOING_WHAT_DIGEST_INACTIVE_STACK_COLOR
+      expect(series[-2][:color]).to eq(inactive)
+      expect(series.last[:color]).to eq(inactive)
     end
 
     it 'returns empty array when there are no active teammates' do

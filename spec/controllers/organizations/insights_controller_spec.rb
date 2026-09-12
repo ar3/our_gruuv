@@ -539,8 +539,9 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:active_teammates_without_visit)).to eq(0)
     end
 
-    it 'assigns weekly_digest_type_distribution by digest toggle combination' do
+    it 'assigns weekly_digest_type_distribution by day + digest style combination' do
       prefs = UserPreference.for_person(person)
+      prefs.update_preference('about_me_weekly_day', '2')
       prefs.update_preference('one_on_one_digest_enabled', 'on')
       prefs.update_preference('about_me_digest_enabled', 'off')
 
@@ -551,6 +552,33 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:weekly_digest_type_distribution)['about_me_only']).to eq(0)
       expect(assigns(:weekly_digest_type_distribution)['both']).to eq(0)
       expect(assigns(:weekly_digest_type_distribution)['none']).to eq(0)
+      expect(assigns(:weekly_digest_type_distribution)['day_set_no_style']).to eq(0)
+    end
+
+    it 'counts weekly digest as neither when no day is selected' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('about_me_weekly_day', 'off')
+      prefs.update_preference('one_on_one_digest_enabled', 'on')
+      prefs.update_preference('about_me_digest_enabled', 'on')
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      expect(assigns(:weekly_digest_type_distribution)['none']).to eq(1)
+      expect(assigns(:weekly_digest_type_distribution)['both']).to eq(0)
+      expect(assigns(:weekly_digest_type_distribution)['day_set_no_style']).to eq(0)
+    end
+
+    it 'counts weekly digest as day_set_no_style when day is set but both styles are off' do
+      prefs = UserPreference.for_person(person)
+      prefs.update_preference('about_me_weekly_day', '3')
+      prefs.update_preference('one_on_one_digest_enabled', 'off')
+      prefs.update_preference('about_me_digest_enabled', 'off')
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      expect(assigns(:weekly_digest_type_distribution)['day_set_no_style']).to eq(1)
+      expect(assigns(:weekly_digest_type_distribution)['none']).to eq(0)
+      expect(assigns(:weekly_digest_type_distribution)['one_on_one_only']).to eq(0)
     end
 
     it 'assigns daily_digest_type_distribution by Interesting Things / GSD combination' do

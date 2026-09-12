@@ -465,14 +465,17 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
       one_on_one_on = prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)
       about_me_on = prefs.weekly_digest_enabled?(:about_me_digest_enabled)
-      weekly_digest_category = if one_on_one_on && about_me_on
+      day_selected = day.to_s.match?(/\A[0-6]\z/)
+      weekly_digest_category = if !day_selected
+                                 'none'
+                               elsif one_on_one_on && about_me_on
                                  'both'
                                elsif one_on_one_on
                                  'one_on_one_only'
                                elsif about_me_on
                                  'about_me_only'
                                else
-                                 'none'
+                                 'day_set_no_style'
                                end
       weekly_digest_types[weekly_digest_category] += 1
 
