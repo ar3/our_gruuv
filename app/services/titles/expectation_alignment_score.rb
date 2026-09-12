@@ -12,7 +12,7 @@ module Titles
         "We have work to do! Making expectations clear is the first step to creating an environment " \
         "where flow state powered excellence can thrive! This score means %{title} is missing path " \
         "clarity and/or L1–L3 position expectation setup. Fill all three position levels, strengthen " \
-        "each position’s required assignments, and set outbound paths or mark the title end-cap.",
+        "each position’s required assignments, and set after paths or mark the title end-cap.",
       misaligned:
         "This needs attention. Making expectations clear is the first step to creating an environment " \
         "where flow state powered excellence can thrive! This score means %{title} still has gaps in " \
@@ -33,7 +33,7 @@ module Titles
       strongly_aligned:
         "Congrats! Making expectations clear is the first step to creating an environment where flow " \
         "state powered excellence can thrive! This score means %{title} has path clarity (end-cap or " \
-        "outbound paths) and strong expectation alignment across L1–L3. Well done!"
+        "after paths) and strong expectation alignment across L1–L3. Well done!"
     }.freeze
 
     SCORE_BANDS = AssignmentSurveys::ExpectationAlignmentScore::SCORE_BANDS.map do |band|

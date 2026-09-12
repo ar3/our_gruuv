@@ -399,7 +399,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
     CSV.generate(headers: true) do |csv|
       csv << [
         'External Title', 'Level', 'Major Level', 'Major Level Description', 'Position Level Description',
-        'Position Expectation Alignment Score', 'End Cap', 'Outbound Paths',
+        'Position Expectation Alignment Score', 'End Cap', 'After Paths',
         'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
         'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Direct Milestone Requirements', 'Version Count',
         'Title', 'Position Summary', 'Seats', 'Other Uploads'
@@ -573,7 +573,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
       csv << [
         'Title ID', 'External Title', 'Organization', 'Department',
         'Position Major Level', 'Position Major Level Description',
-        'Title Expectation Alignment Score', 'End Cap', 'Outbound Paths',
+        'Title Expectation Alignment Score', 'End Cap', 'After Paths',
         'Number of Positions', 'Number of Seats', 'Number of Active Employment Tenures',
         'Created At', 'Updated At'
       ]

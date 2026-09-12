@@ -120,10 +120,10 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("Title paths")
       expect(response.body).to include("Manage paths")
       expect(response.body).to include(manage_paths_organization_title_path(organization, title))
-      expect(response.body).to include("No outbound paths yet")
+      expect(response.body).to include("No paths after this title yet")
     end
 
-    it "shows inbound and outbound paths and the neighborhood graph" do
+    it "shows before and after paths and the neighborhood graph" do
       other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Lead Engineer")
       create(:title_path, from_title: title, to_title: other, path_type: "natural_progression")
 
@@ -185,8 +185,8 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("End-cap title")
       expect(response.body).to include("Configure Title Paths")
       expect(response.body).to include("Add Title Paths")
-      expect(response.body).to include("Inbound")
-      expect(response.body).to include("Outbound")
+      expect(response.body).to include("Before this title")
+      expect(response.body).to include("After this title")
       expect(response.body).to include("No Association")
       expect(response.body).to include("Manager")
       expect(response.body).to include("Search titles by name or department")
@@ -329,20 +329,20 @@ RSpec.describe "Titles", type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Clear 1 title path first")
-        expect(response.body).to include("Outbound to")
+        expect(response.body).to include("Moves from here to")
         expect(response.body).to include("Staff Next")
         expect(response.body).to include(manage_paths_organization_title_path(organization, title))
         expect(response.body).to include("You cannot archive until")
         expect(response.body).not_to include('value="Archive title"')
       end
 
-      it "lists inbound title paths as blockers" do
+      it "lists before title paths as blockers" do
         other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Staff Prev")
         create(:title_path, from_title: other, to_title: title, path_type: "parallel_progression")
 
         get archive_organization_title_path(organization, title)
 
-        expect(response.body).to include("Inbound from")
+        expect(response.body).to include("Moves here from")
         expect(response.body).to include("Staff Prev")
       end
     end

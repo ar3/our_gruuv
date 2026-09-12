@@ -25,7 +25,7 @@
           Refresh
     .card-body
       %p.text-muted.small.mb-3
-        Path clarity is 25% (end-cap or any outbound path). L1, L2, and L3 each contribute 25% from
+        Path clarity is 25% (end-cap or any after path). L1, L2, and L3 each contribute 25% from
         that position’s Expectation Alignment Score. Missing unarchived levels score 0 for that quarter.
         Refresh recalculates each position under this title, then this title score. Recalculated daily
         and when you queue a refresh.
@@ -75,9 +75,9 @@
                       - if cell.path_clarity_reason == "end_cap"
                         End-cap title
                       - elsif cell.path_clarity_reason == "has_outbound"
-                        Has outbound path(s)
+                        Has after path(s)
                       - else
-                        Needs end-cap or outbound path
+                        Needs end-cap or after path
                         = link_to "Manage paths", manage_paths_organization_title_path(organization, title), class: "ms-1"
                     - elsif cell.position_id.present?
                       = link_to cell.position_name, organization_position_path(organization, cell.position_id), class: "text-decoration-none"

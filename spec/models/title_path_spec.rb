@@ -23,7 +23,7 @@ RSpec.describe TitlePath, type: :model do
     from_title.update!(end_cap: true)
     path = described_class.new(from_title: from_title, to_title: to_title, path_type: "natural_progression")
     expect(path).not_to be_valid
-    expect(path.errors[:base]).to include("end-cap titles cannot have outbound paths")
+    expect(path.errors[:base]).to include("end-cap titles cannot have after paths")
   end
 
   it "rejects circular references" do

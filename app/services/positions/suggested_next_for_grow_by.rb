@@ -101,7 +101,7 @@ module Positions
       if title.end_cap? && higher.empty?
         "This title is an end-cap and there is no higher level on it, so there is no suggested next position from the career map. You can still pick any position below."
       elsif higher.empty? && title.outbound_title_paths.none?
-        "No suggested next positions yet — add a higher level on this title or an outbound title path, or pick any position below."
+        "No suggested next positions yet — add a higher level on this title or an after title path, or pick any position below."
       else
         "No suggested next positions from the career map right now. You can still pick any position below."
       end

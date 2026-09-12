@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
-// When End-cap is checked on manage title paths, disable outbound radios and
-// force any checked outbound back to No Association.
+// When End-cap is checked on manage title paths, disable after (outbound) radios and
+// force any checked after path back to No Association.
 export default class extends Controller {
   static targets = ["endCap"]
 

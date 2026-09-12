@@ -1,8 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Manages Inbound / Outbound / No Association radios for a title-path row.
+// Manages Before this title / After this title / No Association radios for a title-path row.
 // Configure rows: disable path type when No Association is selected.
-// Add rows: default path type when Inbound or Outbound is chosen.
+// Add rows: default path type when Before or After is chosen.
 export default class extends Controller {
   static targets = ["pathType", "direction"]
   static values = {

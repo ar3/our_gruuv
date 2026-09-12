@@ -568,7 +568,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           csv = CSV.parse(response.body, headers: true)
           expect(csv.headers).to include(
             'External Title', 'Level', 'Major Level', 'Major Level Description', 'Position Level Description',
-            'Position Expectation Alignment Score', 'End Cap', 'Outbound Paths',
+            'Position Expectation Alignment Score', 'End Cap', 'After Paths',
             'Company', 'Department', 'Semantic Version', 'Created At', 'Updated At',
             'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
             'Title', 'Position Summary', 'Seats', 'Other Uploads'
@@ -584,7 +584,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           expect(response.body).to include('Software Engineer')
         end
 
-        it 'enriches positions CSV with major/level descriptions, Position EAS, end-cap, and outbound paths' do
+        it 'enriches positions CSV with major/level descriptions, Position EAS, end-cap, and after paths' do
           major = create(:position_major_level, major_level: 3, description: 'Senior / Quad', set_name: "Base-#{SecureRandom.hex(4)}")
           dest_major = create(:position_major_level, major_level: 4, set_name: "Base-#{SecureRandom.hex(4)}")
           position_level = create(:position_level, position_major_level: major, level: '3.2')
@@ -611,9 +611,9 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           expect(row['Position Level Description']).to include('Established')
           expect(row['Position Expectation Alignment Score']).to eq('62.5')
           expect(row['End Cap']).to eq('No')
-          expect(row['Outbound Paths']).to include('Staff Engineer')
-          expect(row['Outbound Paths']).to include('[L4]')
-          expect(row['Outbound Paths']).to include('Natural progression')
+          expect(row['After Paths']).to include('Staff Engineer')
+          expect(row['After Paths']).to include('[L4]')
+          expect(row['After Paths']).to include('Natural progression')
         end
 
         it 'includes public position URL in CSV' do
@@ -836,7 +836,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         expect(response.content_type).to include('text/csv')
       end
 
-      it 'enriches titles CSV with major description, Title EAS, end-cap, and outbound paths' do
+      it 'enriches titles CSV with major description, Title EAS, end-cap, and after paths' do
         major = create(:position_major_level, major_level: 2, description: 'Mid Career', set_name: "Base-#{SecureRandom.hex(4)}")
         dest_major = create(:position_major_level, major_level: 3, set_name: "Base-#{SecureRandom.hex(4)}")
         department = create(:department, company: organization, name: 'Product')
@@ -859,14 +859,14 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         expect(csv.headers).to include(
           'Department',
           'Position Major Level', 'Position Major Level Description',
-          'Title Expectation Alignment Score', 'End Cap', 'Outbound Paths'
+          'Title Expectation Alignment Score', 'End Cap', 'After Paths'
         )
         expect(row['Department']).to eq(department.display_name)
         expect(row['Position Major Level']).to eq('2')
         expect(row['Position Major Level Description']).to eq('Mid Career')
         expect(row['Title Expectation Alignment Score']).to eq('50.0')
         expect(row['End Cap']).to eq('No')
-        expect(row['Outbound Paths']).to include('Senior PM [L3] (Parallel progression)')
+        expect(row['After Paths']).to include('Senior PM [L3] (Parallel progression)')
       end
 
       it 'allows departments_and_teams download' do

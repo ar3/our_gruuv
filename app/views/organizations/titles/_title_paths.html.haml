@@ -24,9 +24,9 @@
 
     .row.g-4.mb-3
       .col-md-6
-        %h6.fw-semibold.mb-2 Inbound
+        %h6.fw-semibold.mb-2 Before this title
         - if inbound_paths.blank?
-          %p.text-muted.small.mb-0 No inbound paths.
+          %p.text-muted.small.mb-0 No paths before this title.
         - else
           %ul.list-unstyled.mb-0
             - inbound_paths.each do |path|
@@ -34,11 +34,11 @@
                 = link_to path.from_title.title_including_level, organization_title_path(organization, path.from_title), class: "text-decoration-none fw-semibold"
                 %span.badge.text-bg-light.border.ms-1= path.path_type_label
       .col-md-6
-        %h6.fw-semibold.mb-2 Outbound
+        %h6.fw-semibold.mb-2 After this title
         - if title.end_cap?
-          %p.text-muted.small.mb-0 End-cap — no outbound paths.
+          %p.text-muted.small.mb-0 End-cap — no after paths.
         - elsif outbound_paths.blank?
-          %p.text-muted.small.mb-0 No outbound paths yet.
+          %p.text-muted.small.mb-0 No paths after this title yet.
         - else
           %ul.list-unstyled.mb-0
             - outbound_paths.each do |path|
@@ -50,7 +50,7 @@
       %hr
       %h6.fw-semibold.mb-2 Neighborhood
       %p.text-muted.small.mb-2
-        This title (emphasized) with direct inbound and outbound neighbors.
+        This title (emphasized) with direct before and after neighbors.
       - elements = neighborhood.elements
       - fingerprint = Assignments::SupplyGraphElements.cytoscape_node_fingerprint(elements)
       = render "shared/cytoscape/supply_flow_graph",

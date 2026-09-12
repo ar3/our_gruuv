@@ -29,7 +29,7 @@
         data: { title_path_association_target: "pathType" }
   %td
     .btn-group.btn-group-sm{role: "group", "aria-label": "Association for #{other_title.external_title}"}
-      - [["inbound", "Inbound"], ["outbound", "Outbound"], ["none", "No Association"]].each do |value, label|
+      - [["inbound", "Before this title"], ["outbound", "After this title"], ["none", "No Association"]].each do |value, label|
         - radio_id = "title_path_#{other_title.id}_direction_#{value}"
         - disabled = value == "outbound" && outbound_disabled
         = radio_button_tag "#{prefix}[direction]", value, current_direction == value && !disabled,

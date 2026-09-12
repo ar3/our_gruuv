@@ -170,6 +170,6 @@ class Title < ApplicationRecord
     return unless end_cap?
     return unless outbound_title_paths.exists?
 
-    errors.add(:end_cap, "cannot be enabled while outbound paths exist")
+    errors.add(:end_cap, "cannot be enabled while after paths exist")
   end
 end

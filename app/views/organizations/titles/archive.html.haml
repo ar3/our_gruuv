@@ -19,7 +19,7 @@
           %li Keep the title page reachable by direct URL, with an "Archived as of [date]" banner.
           %li Preserve summary, positions, seats history, and comments.
         %p.mb-0.text-muted
-          You must archive all positions under this title, archive or disassociate any seats still using this title, and clear all inbound and outbound title paths, before archiving.
+          You must archive all positions under this title, archive or disassociate any seats still using this title, and clear all before and after title paths, before archiving.
 
     .card.mb-4
       .card-header
@@ -75,7 +75,7 @@
                   - outbound = path.from_title_id == @title.id
                   - peer = outbound ? path.to_title : path.from_title
                   %li
-                    %span.text-muted= outbound ? "Outbound to" : "Inbound from"
+                    %span.text-muted= outbound ? "Moves from here to" : "Moves here from"
                     = link_to peer.display_name, organization_title_path(@organization, peer), class: 'text-decoration-none'
                     %span.text-muted.ms-1
                       (#{path.path_type_label})

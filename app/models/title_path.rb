@@ -42,7 +42,7 @@ class TitlePath < ApplicationRecord
   def from_title_not_end_cap
     return unless from_title&.end_cap?
 
-    errors.add(:base, "end-cap titles cannot have outbound paths")
+    errors.add(:base, "end-cap titles cannot have after paths")
   end
 
   def no_circular_paths
