@@ -53,7 +53,7 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(positions).to include(position_v1, position_v1_2, position_v2, position_v0)
     end
 
-    it 'renders Other actions downloads for employed teammates with download_bulk_csv' do
+    it 'renders Other actions with Position levels and downloads for employed teammates' do
       teammate = person.company_teammates.find_by!(organization: organization)
       teammate.update!(first_employed_at: 1.year.ago, last_terminated_at: nil)
 
@@ -61,6 +61,8 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Other actions')
+      expect(response.body).to include('Position levels')
+      expect(response.body).to include(organization_position_major_levels_path(organization))
       expect(response.body).to include('Download positions (CSV)')
       expect(response.body).to include('Download titles (CSV)')
       expect(response.body).to include(download_organization_bulk_downloads_path(organization, type: 'positions'))

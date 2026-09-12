@@ -1,0 +1,62 @@
+- content_for :title, @set_name
+- page_help_id = "positionLevelSetPageHelp"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position levels", url: organization_position_major_levels_path(@organization) }, { label: @set_name, url: nil }])
+
+- content_for :header do
+  %h1.mb-0.d-flex.align-items-center.gap-2
+    %i.bi.bi-collection
+    = @set_name
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "What a position level set is, and how custom sets work. Click for details."
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/position_level_sets/page_help"
+
+.row.justify-content-center
+  .col-lg-10
+    .alert.alert-light.border.mb-4
+      %h3.fw-semibold.mb-2 What is a position level set?
+      %p.mb-3
+        A
+        %strong position level set
+        is the ladder of major and minor levels your organization uses for Titles and Positions
+        (for example
+        %code= "L:1.*"
+        through
+        %code= "L:10.*"
+        with minors like
+        %code= "3.1"
+        /
+        %code= "3.2"
+        /
+        %code= "3.3"
+        ).
+        %strong= @set_name
+        is the standard OG set most organizations start with.
+
+      %h3.fw-semibold.mb-2 Want a different set?
+      %p.mb-0
+        If this organization needs a different ladder (different bands, naming, or guidance), talk to your
+        %strong OG representative.
+        Custom position level sets can be created and wired up for your company — this is an advanced configuration, not something you change day to day in the product.
+
+    .card
+      .card-header
+        %h5.mb-0 Majors in #{@set_name}
+      .card-body.p-0
+        .table-responsive
+          %table.table.table-hover.mb-0
+            %thead.table-light
+              %tr
+                %th Major
+                %th Description
+            %tbody
+              - @position_major_levels.each do |major|
+                %tr
+                  %td
+                    = link_to organization_position_major_level_path(@organization, major), class: "text-decoration-none fw-bold" do
+                      = major.display_name
+                  %td= major.description.presence || "—"

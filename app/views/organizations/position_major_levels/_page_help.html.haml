@@ -1,0 +1,23 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Give a single reference for every major and minor position level, and see which titles and positions in this organization sit at each level.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %p.mb-3
+    Titles pick a
+    %strong major level
+    (career band like
+    %code L:3.*
+    ). Each
+    %strong position
+    is that title at one minor level (like
+    %code 3.2
+    ).
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-0
+    %li Majors group the page (like departments on the Positions list). Each major shows its number, description, and a title count you can expand. The position level set name (for example Base 10x3) appears once at the top and links to an explainer.
+    %li Under each major, every minor level is listed with its number, guidance copy, and a position count you can expand.
+    %li Counts and links are for this organization only. Expanded titles go to the title show page (with department); expanded positions go to the position show page.

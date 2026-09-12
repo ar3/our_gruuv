@@ -1,7 +1,7 @@
 - content_for :title, @position_major_level.display_name
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @position_major_level.display_name, url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position levels", url: organization_position_major_levels_path(@organization) }, { label: @position_major_level.display_name, url: nil }])
 
 - content_for :header do
   %h1.mb-0
@@ -17,8 +17,6 @@
           Details
       .card-body
         %dl.row.mb-0
-          %dt.col-sm-3 Set
-          %dd.col-sm-9= @position_major_level.set_name
           %dt.col-sm-3 Major level
           %dd.col-sm-9
             %span.badge.bg-secondary= @position_major_level.major_level

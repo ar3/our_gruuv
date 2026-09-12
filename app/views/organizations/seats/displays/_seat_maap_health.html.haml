@@ -12,7 +12,7 @@
               = title.external_title
             %span.badge.bg-secondary.ms-2= "#{@seats_by_title[title].count} seat#{'s' if @seats_by_title[title].count != 1}"
           .text-muted
-            %small= title.position_major_level.set_name
+            %small= title.position_major_level.display_name
       
         .mt-1.mb-1
           = maap_maturity_status_bar(title)

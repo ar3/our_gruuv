@@ -7,20 +7,32 @@ module PositionsHelper
   end
 
   def positions_index_other_actions(organization)
-    return [] unless policy(organization).download_bulk_csv?
-
-    [
+    actions = [
       {
-        label: "Download positions (CSV)",
-        path: download_organization_bulk_downloads_path(organization, type: "positions"),
-        icon: "bi-download"
-      },
-      {
-        label: "Download titles (CSV)",
-        path: download_organization_bulk_downloads_path(organization, type: "titles"),
-        icon: "bi-download"
+        label: "Position levels",
+        path: organization_position_major_levels_path(organization),
+        icon: "bi-layers"
       }
     ]
+
+    if policy(organization).download_bulk_csv?
+      actions.concat(
+        [
+          {
+            label: "Download positions (CSV)",
+            path: download_organization_bulk_downloads_path(organization, type: "positions"),
+            icon: "bi-download"
+          },
+          {
+            label: "Download titles (CSV)",
+            path: download_organization_bulk_downloads_path(organization, type: "titles"),
+            icon: "bi-download"
+          }
+        ]
+      )
+    end
+
+    actions
   end
 
   # PaperTrail actor + timestamps for position Spotlight card (same pattern as titles / abilities).

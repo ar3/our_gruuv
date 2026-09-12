@@ -675,7 +675,8 @@ Rails.application.routes.draw do
     end
 
 
-    resources :position_major_levels, only: [:show], module: :organizations
+    resources :position_major_levels, only: [:index, :show], module: :organizations
+    resources :position_level_sets, only: [:show], param: :name, module: :organizations
     
     # Aspirations management
     resources :aspirations, module: :organizations do

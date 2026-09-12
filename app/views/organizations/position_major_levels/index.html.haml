@@ -1,0 +1,121 @@
+- content_for :title, "Position levels"
+- page_help_id = "positionLevelsPageHelp"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position levels", url: nil }])
+
+- content_for :header do
+  %h1.mb-0.d-flex.align-items-center.gap-2
+    %i.bi.bi-layers
+    Position levels
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Reference for major and minor position levels in this organization. Click for details."
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/position_major_levels/page_help"
+
+.row.justify-content-center
+  .col-lg-12
+    - if @position_major_levels.any?
+      - set_names = @position_major_levels.map(&:set_name).uniq
+      %p.text-muted.mb-3
+        Position level set#{'s' if set_names.size != 1}:
+        - set_names.each_with_index do |set_name, index|
+          - unless index.zero?
+            = ", "
+          = link_to set_name, organization_position_level_set_path(@organization, set_name), class: "text-decoration-none"
+
+      - @position_major_levels.each do |major|
+        - titles = @titles_by_major_id[major.id] || []
+        - titles_collapse_id = "majorTitles#{major.id}"
+        - levels = major.position_levels.sort_by(&:level)
+        .card.mb-4
+          .card-header.bg-primary.text-white
+            .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+              .d-flex.flex-wrap.align-items-center.gap-2
+                %span.badge.bg-light.text-dark= "L:#{major.major_level}.*"
+                %span= major.description.presence || "No description"
+              %a.text-white.text-decoration-none.d-inline-flex.align-items-center{"data-bs-toggle" => "collapse", "data-bs-target" => "##{titles_collapse_id}", "aria-expanded" => "false", "aria-controls" => titles_collapse_id, href: "##{titles_collapse_id}", role: "button"}
+                %span.not-collapsed
+                  %i.bi.bi-chevron-down.me-1
+                %span.collapsed
+                  %i.bi.bi-chevron-right.me-1
+                %span.badge.bg-light.text-dark
+                  = "#{titles.size} title#{'s' if titles.size != 1}"
+
+          .collapse{id: titles_collapse_id}
+            .card-body.p-0.border-bottom
+              - if titles.any?
+                .table-responsive
+                  %table.table.table-hover.mb-0
+                    %thead.table-light
+                      %tr
+                        %th Department
+                        %th Title
+                    %tbody
+                      - titles.each do |title|
+                        %tr
+                          %td
+                            - if title.department
+                              = link_to organization_department_path(@organization, title.department), class: "text-decoration-none" do
+                                = title.department.display_name
+                            - else
+                              %span.text-muted —
+                          %td
+                            = link_to organization_title_path(@organization, title), class: "text-decoration-none fw-bold" do
+                              = title.external_title
+              - else
+                .p-3.text-muted No titles in this organization use this major level.
+
+          - levels.each do |level|
+            - positions = @positions_by_level_id[level.id] || []
+            - positions_collapse_id = "levelPositions#{level.id}"
+            - minor_slot = level.eligibility_minor_slot rescue nil
+            - tier_description = minor_slot && PositionEligibilityMinorLevels.tier_description(minor_slot)
+            .card.mb-3.ms-4.mt-3.border-0.border-start
+              .card-header.bg-white.d-flex.flex-wrap.align-items-start.justify-content-between.gap-2
+                .d-flex.flex-wrap.align-items-start.gap-2
+                  %span.badge.bg-info.mt-1= level.level
+                  %div
+                    - if tier_description.present?
+                      %div= tier_description
+                    - elsif level.ideal_assignment_goal_types.blank?
+                      %span.text-muted —
+                    - if level.ideal_assignment_goal_types.present?
+                      %div.small.text-muted{class: ("mt-1" if tier_description.present?), style: "white-space: pre-line;"}= level.ideal_assignment_goal_types
+                %a.text-decoration-none.text-dark.d-inline-flex.align-items-center.mt-1{"data-bs-toggle" => "collapse", "data-bs-target" => "##{positions_collapse_id}", "aria-expanded" => "false", "aria-controls" => positions_collapse_id, href: "##{positions_collapse_id}", role: "button"}
+                  %span.not-collapsed
+                    %i.bi.bi-chevron-down.me-1
+                  %span.collapsed
+                    %i.bi.bi-chevron-right.me-1
+                  %span.badge.bg-secondary
+                    = "#{positions.size} position#{'s' if positions.size != 1}"
+
+              .collapse{id: positions_collapse_id}
+                .card-body.p-0
+                  - if positions.any?
+                    .table-responsive
+                      %table.table.table-hover.mb-0
+                        %thead.table-light
+                          %tr
+                            %th Department
+                            %th Position
+                        %tbody
+                          - positions.each do |position|
+                            %tr
+                              %td
+                                - if position.title.department
+                                  = link_to organization_department_path(@organization, position.title.department), class: "text-decoration-none" do
+                                    = position.title.department.display_name
+                                - else
+                                  %span.text-muted —
+                              %td
+                                = link_to organization_position_path(@organization, position), class: "text-decoration-none fw-bold" do
+                                  = position.display_name
+                  - else
+                    .p-3.text-muted No positions at this level in this organization.
+    - else
+      .alert.alert-info
+        %i.bi.bi-info-circle.me-2
+        No position levels are configured yet.
