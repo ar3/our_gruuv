@@ -1,0 +1,95 @@
+-# Locals: path_neighborhood, organization, position; optional company_teammate for Grow-by links
+- path_neighborhood = local_assigns.fetch(:path_neighborhood, @path_neighborhood)
+- organization = local_assigns.fetch(:organization, @organization)
+- position = local_assigns.fetch(:position, @position)
+- company_teammate = local_assigns.fetch(:company_teammate, current_company_teammate)
+- title = path_neighborhood.title
+
+.card.mt-4{role: "region", "aria-labelledby": "position-pathing-heading"}
+  .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+    %h5.mb-0{id: "position-pathing-heading"}
+      %i.bi.bi-signpost-split.me-2
+      Position pathing
+      - if title.end_cap?
+        %span.badge.text-bg-secondary.ms-2 End-cap title
+    - if policy(title).manage_paths?
+      = link_to manage_paths_organization_title_path(organization, title), class: "btn btn-outline-primary btn-sm" do
+        %i.bi.bi-pencil.me-1
+        Manage title paths
+  .card-body
+    %p.text-muted.small.mb-3
+      Where this position sits in the ladder: within-title levels for
+      %strong= title.external_title
+      \, then title paths from the exit level into another title’s landing level.
+
+    .row.g-4
+      .col-md-6
+        %h6.fw-semibold.mb-2 Positions before
+        - if path_neighborhood.positions_before.blank?
+          %p.text-muted.small.mb-0
+            - if path_neighborhood.entry_level?
+              No defined positions before this title’s entry level.
+            - else
+              No previous level defined on this title.
+        - else
+          %ul.list-unstyled.mb-0
+            - path_neighborhood.positions_before.each do |neighbor|
+              %li.mb-2
+                = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
+                - if neighbor.path_type_label.present?
+                  %span.badge.text-bg-light.border.ms-1= neighbor.path_type_label
+                - elsif neighbor.source == :same_title
+                  %span.badge.text-bg-light.border.ms-1 Within title
+
+      .col-md-6
+        %h6.fw-semibold.mb-2 Positions after
+        - case path_neighborhood.after_state
+        - when :within_title
+          %ul.list-unstyled.mb-0
+            - path_neighborhood.positions_after.each do |neighbor|
+              %li.mb-2
+                = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
+                %span.badge.text-bg-light.border.ms-1 Within title
+        - when :outbound_paths
+          %ul.list-unstyled.mb-0
+            - path_neighborhood.positions_after.each do |neighbor|
+              %li.mb-2
+                = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
+                - if neighbor.path_type_label.present?
+                  %span.badge.text-bg-light.border.ms-1= neighbor.path_type_label
+        - when :missing_next_level
+          %p.text-muted.small.mb-0
+            The next level on this title is not defined yet.
+            - if policy(title).manage_paths? || policy(position).update?
+              Ask a MAAP maintainer to add the missing position level, or
+              = link_to "open the title", organization_title_path(organization, title), class: "text-decoration-none"
+              \.
+        - when :end_cap
+          %p.mb-2
+            This is an
+            %strong end-cap title
+            — there is no defined business need for a title after
+            %strong= title.external_title
+            \, so there are no positions after this one.
+          %p.text-muted.small.mb-2
+            Growth from here is through the other three ways to grow: experiences, abilities, and goals. Talk with your manager about which fit the business need.
+          - if company_teammate.present?
+            .d-flex.flex-wrap.gap-2
+              = link_to "Grow by experiences", my_growth_experiences_organization_company_teammate_path(organization, company_teammate), class: "btn btn-outline-primary btn-sm"
+              = link_to "Grow by abilities", my_growth_abilities_organization_company_teammate_path(organization, company_teammate), class: "btn btn-outline-primary btn-sm"
+              = link_to "Grow by goals", my_growth_goals_organization_company_teammate_path(organization, company_teammate), class: "btn btn-outline-primary btn-sm"
+        - when :undefined
+          %p.mb-2
+            No after positions are defined for this title yet — neither an after title path nor an end-cap.
+          %p.text-muted.small.mb-2
+            Talk with your manager about the other three ways to grow (experiences, abilities, goals), and about what business need would justify a position after this one.
+          - if company_teammate.present?
+            .d-flex.flex-wrap.gap-2.mb-2
+              = link_to "Grow by experiences", my_growth_experiences_organization_company_teammate_path(organization, company_teammate), class: "btn btn-outline-secondary btn-sm"
+              = link_to "Grow by abilities", my_growth_abilities_organization_company_teammate_path(organization, company_teammate), class: "btn btn-outline-secondary btn-sm"
+              = link_to "Grow by goals", my_growth_goals_organization_company_teammate_path(organization, company_teammate), class: "btn btn-outline-secondary btn-sm"
+          - if policy(title).manage_paths?
+            %p.mb-0
+              = link_to manage_paths_organization_title_path(organization, title), class: "btn btn-outline-primary btn-sm" do
+                %i.bi.bi-signpost-split.me-1
+                Define after paths or mark end-cap

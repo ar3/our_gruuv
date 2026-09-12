@@ -286,3 +286,10 @@
     score: @expectation_alignment_score,
     organization: @organization,
     position: @position
+
+- if @path_neighborhood
+  = render "organizations/positions/position_pathing",
+    path_neighborhood: @path_neighborhood,
+    organization: @organization,
+    position: @position,
+    company_teammate: current_company_teammate

@@ -145,6 +145,7 @@ class Organizations::PositionsController < ApplicationController
       viewer: current_company_teammate,
       organization: @organization
     )
+    @path_neighborhood = Positions::PathNeighborhood.call(position: @position)
     render layout: determine_layout
   end
 

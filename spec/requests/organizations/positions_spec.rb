@@ -253,6 +253,61 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).not_to include('bi-arrow-clockwise')
     end
 
+    it 'renders the Position pathing section at the bottom' do
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Position pathing')
+      expect(response.body).to include('Positions before')
+      expect(response.body).to include('Positions after')
+    end
+
+    context 'when the position is the exit level with an outbound title path' do
+      let(:major) { title.position_major_level }
+      let(:level_l1) { create(:position_level, position_major_level: major, level: '2.1') }
+      let(:level_l2) { create(:position_level, position_major_level: major, level: '2.2') }
+      let(:level_l3) { create(:position_level, position_major_level: major, level: '2.3') }
+      let!(:pos_l1) { create(:position, title: title, position_level: level_l1) }
+      let!(:pos_l2) { create(:position, title: title, position_level: level_l2) }
+      let!(:pos_l3) { create(:position, title: title, position_level: level_l3) }
+      let(:dest_major) { create(:position_major_level, major_level: 3, set_name: "Dest-#{SecureRandom.hex(4)}") }
+      let(:dest_title) { create(:title, company: organization, position_major_level: dest_major, external_title: 'Staff Engineer') }
+      let(:dest_level) { create(:position_level, position_major_level: dest_major, level: '3.1') }
+      let!(:dest_pos) { create(:position, title: dest_title, position_level: dest_level) }
+
+      before do
+        create(:title_path, from_title: title, to_title: dest_title, path_type: 'natural_progression')
+      end
+
+      it 'shows the previous same-title level and the earliest destination position' do
+        get organization_position_path(organization, pos_l3)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Position pathing')
+        expect(response.body).to include(pos_l2.display_name)
+        expect(response.body).to include(dest_pos.display_name)
+        expect(response.body).to include('Natural progression')
+      end
+    end
+
+    context 'when the exit-level title is an end-cap' do
+      let(:level_l3) { create(:position_level, position_major_level: title.position_major_level, level: '2.3') }
+      let!(:pos_l3) { create(:position, title: title, position_level: level_l3) }
+
+      before { title.update!(end_cap: true) }
+
+      it 'explains end-cap and links to the other three ways to grow' do
+        get organization_position_path(organization, pos_l3)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('end-cap title')
+        expect(response.body).to include('no defined business need')
+        expect(response.body).to include('Grow by experiences')
+        expect(response.body).to include('Grow by abilities')
+        expect(response.body).to include('Grow by goals')
+      end
+    end
+
     context 'when the viewer can manage MAAP and a score is cached' do
       before do
         CompanyTeammate.find_by!(person: person, organization: organization).update!(can_manage_maap: true)
