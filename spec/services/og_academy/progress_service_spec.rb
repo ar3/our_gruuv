@@ -16,23 +16,61 @@ RSpec.describe OgAcademy::ProgressService do
         expect(levels.map(&:level)).to eq([1, 2, 3, 4, 5])
         expect(levels[0].criteria.map(&:key)).to eq(%i[logged_in check_in_types published_ogo added_goal])
         expect(levels[1].criteria.map(&:key)).to eq(%i[
-          real_milestone confidence_checks notifications visited_my_growth visited_my_one_thing
+          prior_milestone real_milestone confidence_checks notifications visited_my_growth visited_my_one_thing
           sent_feedback_request
         ])
         expect(levels[2].audience).to eq(:everyone)
         expect(levels[2].criteria.map(&:key)).to include(
-          :check_in_depth, :visited_teammates_index, :visited_teammate_internals,
+          :prior_milestone, :check_in_depth, :visited_teammates_index, :visited_teammate_internals,
           :responded_to_feedback_request, :linked_goals, :observe_three, :four_ratings, :maap_comment
         )
         expect(levels[2].criteria.map(&:key)).not_to include(:visited_my_growth, :visited_my_one_thing)
-        expect(levels[3].criteria.map(&:key)).to eq(%i[maap_edits employment_stewardship visited_insights_and_billing])
+        expect(levels[3].criteria.map(&:key)).to eq(%i[
+          prior_milestone maap_edits employment_stewardship visited_insights_and_billing
+        ])
         expect(levels.last.criteria.map(&:key)).to eq(%i[
+          prior_milestone
           published_position_other_orgs
           published_assignment_other_orgs
           published_ability_other_orgs
         ])
-        expect(levels.last.criteria.map(&:done)).to all(eq(false))
+        expect(levels.last.criteria.reject { |c| c.key == :prior_milestone }.map(&:done)).to all(eq(false))
       }.not_to change(TeammateMilestone, :count)
+    end
+
+    it 'requires the previous milestone before a later milestone is complete' do
+      allow(service).to receive_messages(
+        real_job_milestone?: true,
+        confidence_check_count: 2,
+        all_three_notifications?: true,
+        visited_my_growth?: true,
+        visited_my_one_thing?: true,
+        sent_feedback_request?: true
+      )
+
+      m2 = service.levels[1]
+      prior = m2.criteria.find { |c| c.key == :prior_milestone }
+      expect(prior.label).to eq('Earned Milestone 1')
+      expect(prior.done).to eq(false)
+      expect(m2.complete?).to eq(false)
+
+      gated = described_class.new(organization: company, company_teammate: teammate)
+      allow(gated).to receive_messages(
+        employee_check_in_types_done?: true,
+        published_ogo?: true,
+        has_goal?: true,
+        real_job_milestone?: true,
+        confidence_check_count: 2,
+        all_three_notifications?: true,
+        visited_my_growth?: true,
+        visited_my_one_thing?: true,
+        sent_feedback_request?: true
+      )
+
+      m2_ready = gated.levels[1]
+      expect(m2_ready.criteria.find { |c| c.key == :prior_milestone }.done).to eq(true)
+      expect(m2_ready.complete?).to eq(true)
+      expect(gated.levels[2].criteria.find { |c| c.key == :prior_milestone }.done).to eq(true)
     end
 
     it 'marks logged_in complete when viewing' do

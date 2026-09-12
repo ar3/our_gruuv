@@ -34,6 +34,7 @@ module OgAcademy
       published_ogo: "Continuous feedback only works if you publish observations into the shared record.",
       added_goal: "A goal gives weekly confidence checks somewhere concrete to land.",
       real_milestone: "Job Ability milestones are the real ceremony you’re practicing toward with OG Mastery.",
+      prior_milestone: "OG Mastery milestones build in order — each one unlocks only after the previous is earned.",
       confidence_checks: "Confidence over time is how goals stay alive instead of becoming set-and-forget.",
       notifications: "Digests keep clarity and growth in your weekly rhythm without hunting for them.",
       check_in_depth: "Repeating all three check-in types builds fluency as employee or manager.",
@@ -80,7 +81,12 @@ module OgAcademy
     end
 
     def levels
-      @levels ||= LEVELS.map { |n| build_level(n) }
+      return @levels if @levels
+
+      # Build in order so later levels can require the previous milestone as a criterion.
+      @levels = []
+      LEVELS.each { |n| @levels << build_level(n) }
+      @levels
     end
 
     def earned_levels
@@ -175,6 +181,7 @@ module OgAcademy
 
     def level_two
       criteria = [
+        prior_milestone_criterion(1),
         criterion(
           :real_milestone,
           "Earned a real Ability Milestone",
@@ -236,13 +243,14 @@ module OgAcademy
         audience: :everyone,
         complete: criteria.all?(&:done),
         criteria: criteria,
-        marketing_why: why_for(criteria, "owning growth signals, weekly confidence, digests, visiting My Growth and One Thing, and asking for feedback"),
+        marketing_why: why_for(criteria, "earning Milestone 1, owning growth signals, weekly confidence, digests, visiting My Growth and One Thing, and asking for feedback"),
         placeholder: false
       )
     end
 
     def level_three
       criteria = [
+        prior_milestone_criterion(2),
         criterion(
           :check_in_depth,
           "Participated in 2 completed check-ins of each type (Values, Assignments, Position)",
@@ -322,13 +330,14 @@ module OgAcademy
         audience: :everyone,
         complete: criteria.all?(&:done),
         criteria: criteria,
-        marketing_why: why_for(criteria, "deepening check-ins, knowing teammates, answering feedback asks, linking goals to MAAP, richer observations, and improving definitions"),
+        marketing_why: why_for(criteria, "earning Milestone 2, deepening check-ins, knowing teammates, answering feedback asks, linking goals to MAAP, richer observations, and improving definitions"),
         placeholder: false
       )
     end
 
     def level_four
       criteria = [
+        prior_milestone_criterion(3),
         criterion(
           :maap_edits,
           "Created or edited 2+ MAAP object types (seat, position, assignment, ability, or value)",
@@ -363,7 +372,7 @@ module OgAcademy
         audience: :admin,
         complete: criteria.all?(&:done),
         criteria: criteria,
-        marketing_why: why_for(criteria, "stewarding MAAP, employment structure, and company insight"),
+        marketing_why: why_for(criteria, "earning Milestone 3, stewarding MAAP, employment structure, and company insight"),
         placeholder: false
       )
     end
@@ -371,6 +380,7 @@ module OgAcademy
     def level_five
       global_repo_hint = "When the global MAAP repository ships, we'll check this automatically if other organizations adopt your published work. Until then this stays open."
       criteria = [
+        prior_milestone_criterion(4),
         criterion(
           :published_position_other_orgs,
           "Published a Position that is in use by other organizations",
@@ -399,8 +409,23 @@ module OgAcademy
         audience: :future,
         complete: false,
         criteria: criteria,
-        marketing_why: why_for(criteria, "contributing MAAP pieces that scale beyond one company"),
+        marketing_why: why_for(criteria, "earning Milestone 4 and contributing MAAP pieces that scale beyond one company"),
         placeholder: false
+      )
+    end
+
+    def prior_milestone_criterion(previous_level_number)
+      prior = @levels&.find { |l| l.level == previous_level_number }
+      done = prior&.complete? == true
+      attained_at = done ? prior.criteria.map(&:attained_at).compact.max : nil
+      criterion(
+        :prior_milestone,
+        "Earned Milestone #{previous_level_number}",
+        done,
+        "Earn OG Academy Milestone #{previous_level_number} first.",
+        "Milestone #{previous_level_number}",
+        what: "Earned OG Mastery practice Milestone #{previous_level_number}.",
+        attained_at: attained_at
       )
     end
 
