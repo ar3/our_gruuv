@@ -37,7 +37,13 @@ RSpec.describe 'Position Assignments Management', type: :request do
       expect(assigns(:available_assignments).map(&:id)).to include(department_assignment.id)
       expect(assigns(:available_assignments).map(&:id)).not_to include(company_assignment.id)
       expect(response.body).to include('Configure Position Assignments')
-      expect(response.body).to include('add new assignment')
+      expect(response.body).to include('Add Assignments')
+      expect(response.body).to include('bi-chevron-down')
+      expect(response.body).to include('Click to expand if being a')
+      expect(response.body).to include('available Assignments')
+      expect(response.body).to include('aria-controls="addPositionAssignments"')
+      expect(response.body).not_to include('class="collapse show" id="addPositionAssignments"')
+      expect(response.body).not_to include('id="addPositionAssignments" class="collapse show"')
     end
 
     it 'requires MAAP permission' do

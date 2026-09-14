@@ -1,0 +1,20 @@
+-# Locals:
+-#   collapse_id (required) — Bootstrap collapse target id
+-#   cta_label (required) — short verb CTA, e.g. "Add Assignments"
+-#   supporting_text (required) — one explanatory sentence under the CTA
+-#   aria_expanded (optional) — default "false"
+- aria_expanded = local_assigns.fetch(:aria_expanded, "false")
+
+%a.text-decoration-none.d-block{
+  "data-bs-toggle" => "collapse",
+  "data-bs-target" => "##{collapse_id}",
+  "aria-expanded" => aria_expanded,
+  "aria-controls" => collapse_id,
+  href: "##{collapse_id}"
+}
+  %span.d-block.fw-semibold.fs-5
+    %i.bi.bi-plus-circle.me-1
+    = cta_label
+    %i.bi.bi-chevron-down.ms-1
+  %span.d-block.text-muted.mt-1
+    = supporting_text
