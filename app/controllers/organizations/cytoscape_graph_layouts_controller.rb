@@ -36,7 +36,7 @@ module Organizations
 
     def set_layoutable
       @layoutable = case graph_kind
-                    when "full_network"
+                    when "full_network", "title_paths"
                       company
                     when "accountability_flow"
                       policy_scope(Assignment).find(params[:assignment_id])
@@ -75,6 +75,9 @@ module Organizations
         node_ids_from_elements(assignments_accountability_flow_elements)
       when "position_reliance"
         node_ids_from_elements(positions_reliance_flow_elements)
+      when "title_paths"
+        # Always org-wide (no department filter) so saved layouts stay stable.
+        node_ids_from_elements(::Insights::TitlePathsOverview.call(organization: company).elements)
       else
         []
       end

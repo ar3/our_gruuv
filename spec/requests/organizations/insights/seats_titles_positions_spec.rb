@@ -35,7 +35,33 @@ RSpec.describe "Organizations::Insights seats_titles_positions title paths", typ
     expect(response.body).to include("L1")
     expect(response.body).to include("Linked")
     expect(response.body).to include("Drag nodes to rearrange")
+    expect(response.body).to include("reduce crossed lines")
     expect(response.body).not_to include("\"label\":\"Orphan")
+  end
+
+  it "shows save/reset layout controls for MAAP managers when viewing all departments" do
+    teammate.update!(can_manage_maap: true)
+    linked = create(:title, company: organization, position_major_level: major_level, department: department, external_title: "Linked")
+    create(:title_path, from_title: linked, to_title: create(:title, company: organization, position_major_level: major_level, department: department, external_title: "Dest"))
+
+    get organization_insights_seats_titles_positions_path(organization)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include("Save layout")
+    expect(response.body).to include("Reset layout")
+    expect(response.body).to include(organization_title_paths_cytoscape_graph_layout_path(organization))
+  end
+
+  it "hides save layout controls when a department filter is applied" do
+    teammate.update!(can_manage_maap: true)
+    linked = create(:title, company: organization, position_major_level: major_level, department: department, external_title: "Linked")
+    create(:title_path, from_title: linked, to_title: create(:title, company: organization, position_major_level: major_level, department: department, external_title: "Dest"))
+
+    get organization_insights_seats_titles_positions_path(organization, department_id: department.id)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).not_to include("Save layout")
+    expect(response.body).to include("All departments")
   end
 
   it "filters the graph by department_id" do

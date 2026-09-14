@@ -58,6 +58,32 @@ RSpec.describe "Organizations::CytoscapeGraphLayouts", type: :request do
     end
   end
 
+  describe "PATCH /organizations/:organization_id/title_paths_cytoscape_graph_layout" do
+    it "persists node positions for the organization title paths graph" do
+      major = create(:position_major_level, major_level: 1, set_name: "TP-#{SecureRandom.hex(4)}")
+      dest_major = create(:position_major_level, major_level: 2, set_name: "TP-#{SecureRandom.hex(4)}")
+      from_title = create(:title, company: organization, position_major_level: major, external_title: "From")
+      to_title = create(:title, company: organization, position_major_level: dest_major, external_title: "To")
+      create(:title_path, from_title: from_title, to_title: to_title, path_type: "natural_progression")
+
+      patch organization_title_paths_cytoscape_graph_layout_path(organization),
+            params: {
+              positions: {
+                "title-#{from_title.id}" => { x: 10, y: 20 },
+                "title-#{to_title.id}" => { x: 230, y: 40 }
+              },
+              node_fingerprint: "title-paths-fingerprint"
+            },
+            as: :json
+
+      expect(response).to have_http_status(:no_content)
+
+      layout = CytoscapeGraphLayout.for_layoutable(organization, graph_kind: "title_paths")
+      expect(layout.positions.keys).to contain_exactly("title-#{from_title.id}", "title-#{to_title.id}")
+      expect(layout.node_fingerprint).to eq("title-paths-fingerprint")
+    end
+  end
+
   describe "DELETE /organizations/:organization_id/full_network_cytoscape_graph_layout" do
     it "removes the organization full-network layout" do
       CytoscapeGraphLayout.create!(
@@ -70,6 +96,21 @@ RSpec.describe "Organizations::CytoscapeGraphLayouts", type: :request do
 
       expect(response).to have_http_status(:no_content)
       expect(CytoscapeGraphLayout.for_layoutable(organization, graph_kind: "full_network")).to be_nil
+    end
+  end
+
+  describe "DELETE /organizations/:organization_id/title_paths_cytoscape_graph_layout" do
+    it "removes the organization title-paths layout" do
+      CytoscapeGraphLayout.create!(
+        layoutable: organization,
+        graph_kind: "title_paths",
+        positions: { "title-1" => { "x" => 1, "y" => 2 } }
+      )
+
+      delete organization_title_paths_cytoscape_graph_layout_path(organization)
+
+      expect(response).to have_http_status(:no_content)
+      expect(CytoscapeGraphLayout.for_layoutable(organization, graph_kind: "title_paths")).to be_nil
     end
   end
 end

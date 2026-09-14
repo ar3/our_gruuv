@@ -125,7 +125,7 @@ module Insights
         highlight = primary_ids.include?(title.id) ? HIGHLIGHT_PRIMARY : HIGHLIGHT_EXTERNAL
         add_node!(nodes, title, highlight)
       end
-      apply_major_level_positions!(nodes, graph_titles)
+      apply_major_level_positions!(nodes, graph_titles, paths)
 
       edges = paths.filter_map do |path|
         next unless nodes.key?(node_id(path.from_title_id)) && nodes.key?(node_id(path.to_title_id))
@@ -136,11 +136,29 @@ module Insights
       nodes.values + edges
     end
 
-    def apply_major_level_positions!(nodes, graph_titles)
+    # Keep major levels as fixed X columns; order Y within each column with a
+    # barycenter heuristic so connected titles line up and edge crossings drop.
+    def apply_major_level_positions!(nodes, graph_titles, paths)
       by_level = graph_titles.group_by { |title| major_level_for(title) }
-      by_level.keys.sort.each do |level|
-        titles_at_level = by_level[level].sort_by { |title| title.external_title.to_s.downcase }
-        titles_at_level.each_with_index do |title, index|
+      levels = by_level.keys.sort
+      order_by_level = levels.index_with do |level|
+        by_level[level].sort_by { |title| title.external_title.to_s.downcase }
+      end
+      neighbor_ids = undirected_neighbor_ids(paths)
+
+      8.times do
+        levels.each do |level|
+          order_by_level[level] = barycenter_order(
+            titles: order_by_level[level],
+            order_by_level: order_by_level,
+            neighbor_ids: neighbor_ids,
+            exclude_level: level
+          )
+        end
+      end
+
+      levels.each do |level|
+        order_by_level[level].each_with_index do |title, index|
           node = nodes[node_id(title.id)]
           next unless node
 
@@ -150,6 +168,36 @@ module Insights
           }
           node[:data][:majorLevel] = level
         end
+      end
+    end
+
+    def undirected_neighbor_ids(paths)
+      neighbors = Hash.new { |hash, key| hash[key] = [] }
+      paths.each do |path|
+        neighbors[path.from_title_id] << path.to_title_id
+        neighbors[path.to_title_id] << path.from_title_id
+      end
+      neighbors
+    end
+
+    def barycenter_order(titles:, order_by_level:, neighbor_ids:, exclude_level:)
+      reference_index = {}
+      order_by_level.each do |level, level_titles|
+        next if level == exclude_level
+
+        level_titles.each_with_index do |title, index|
+          reference_index[title.id] = index
+        end
+      end
+
+      titles.sort_by.with_index do |title, original_index|
+        neighbor_positions = neighbor_ids[title.id].filter_map { |id| reference_index[id] }
+        average = if neighbor_positions.any?
+                    neighbor_positions.sum.to_f / neighbor_positions.size
+                  else
+                    Float::INFINITY
+                  end
+        [average, original_index, title.external_title.to_s.downcase]
       end
     end
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class CytoscapeGraphLayout < ApplicationRecord
-  GRAPH_KINDS = %w[full_network accountability_flow position_reliance].freeze
+  GRAPH_KINDS = %w[full_network accountability_flow position_reliance title_paths].freeze
 
   belongs_to :layoutable, polymorphic: true
 

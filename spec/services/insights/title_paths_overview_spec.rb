@@ -58,6 +58,31 @@ RSpec.describe Insights::TitlePathsOverview do
     expect(sales_node.dig(:data, :majorLevel)).to eq(3)
   end
 
+  it "orders titles within a column to reduce crossed edges (barycenter)" do
+    major_l1 = create(:position_major_level, major_level: 1, set_name: "Cross-#{SecureRandom.hex(4)}")
+    major_l2 = create(:position_major_level, major_level: 2, set_name: "Cross-#{SecureRandom.hex(4)}")
+    org2 = create(:organization)
+    dept = create(:department, company: org2, name: "Engineering")
+
+    # Alphabetical L2 order (Alpha above Zebra) would cross A→Zebra and B→Alpha.
+    left_a = create(:title, company: org2, position_major_level: major_l1, department: dept, external_title: "A Left")
+    left_b = create(:title, company: org2, position_major_level: major_l1, department: dept, external_title: "B Left")
+    right_alpha = create(:title, company: org2, position_major_level: major_l2, department: dept, external_title: "Alpha Right")
+    right_zebra = create(:title, company: org2, position_major_level: major_l2, department: dept, external_title: "Zebra Right")
+    create(:title_path, from_title: left_a, to_title: right_zebra, path_type: "natural_progression")
+    create(:title_path, from_title: left_b, to_title: right_alpha, path_type: "natural_progression")
+
+    result = described_class.call(organization: org2)
+    y_for = lambda do |title|
+      result.elements.find { |e| e.dig(:data, :id) == "title-#{title.id}" }[:position][:y]
+    end
+
+    # Target Y order should match source Y order (no crossing for this matching).
+    left_ordered = [left_a, left_b].sort_by { |title| y_for.call(title) }
+    target_ys = left_ordered.map { |source| y_for.call(source == left_a ? right_zebra : right_alpha) }
+    expect(target_ys).to eq(target_ys.sort)
+  end
+
   it "builds colored edges and g6 payload with the same positions" do
     result = described_class.call(organization: organization)
 

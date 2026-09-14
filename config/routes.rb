@@ -454,6 +454,12 @@ Rails.application.routes.draw do
              controller: "cytoscape_graph_layouts",
              defaults: { graph_kind: "full_network" }
 
+    resource :title_paths_cytoscape_graph_layout,
+             only: %i[show update destroy],
+             module: :organizations,
+             controller: "cytoscape_graph_layouts",
+             defaults: { graph_kind: "title_paths" }
+
     # Assignment Flows (ordered lists of assignments)
     resources :assignment_flows, module: :organizations, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
       collection do
