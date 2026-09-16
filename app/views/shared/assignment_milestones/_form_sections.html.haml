@@ -36,8 +36,10 @@
 .card.mb-4
   - unless expand_add
     .card-body.py-3.border-bottom
-      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addAssignmentMilestoneRequirements", "aria-expanded" => "false", "aria-controls" => "addAssignmentMilestoneRequirements", href: "#addAssignmentMilestoneRequirements"}
-        #{subject_name} is required by more of the #{available_count} available Assignments… add new milestone requirement
+      = render "shared/association_expand/add_more_link",
+        collapse_id: "addAssignmentMilestoneRequirements",
+        cta_label: "Add Assignment Milestones",
+        supporting_text: "Click to expand if #{subject_name} is required by more of the #{available_count} available Assignments."
   .collapse{id: "addAssignmentMilestoneRequirements", class: ("show" if expand_add)}
     - if expand_add
       .card-header

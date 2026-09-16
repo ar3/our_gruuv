@@ -99,7 +99,9 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         expect(assigns(:current_assignments).map(&:id)).to contain_exactly(assignment1.id)
         expect(assigns(:available_assignments).map(&:id)).to contain_exactly(assignment2.id, assignment3.id)
         expect(response.body).to include('Current Assignments')
-        expect(response.body).to include('Need more of the 2 available Assignments')
+        expect(response.body).to include('Add Assignments')
+        expect(response.body).to include("Click to expand if #{employee_teammate.person.casual_name} needs more of the 2 available Assignments")
+        expect(response.body).to include('bi-chevron-down')
         expect(response.body).to include('data-controller="options-filter"')
       end
 

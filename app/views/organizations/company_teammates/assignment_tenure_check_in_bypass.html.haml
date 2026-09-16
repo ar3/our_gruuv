@@ -104,8 +104,10 @@
     .card.mb-4#add-day-to-day-assignments
       - unless expand_add
         .card-body.py-3.border-bottom
-          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addDayToDayAssignments", "aria-expanded" => "false", "aria-controls" => "addDayToDayAssignments", href: "#addDayToDayAssignments"}
-            Need more of the #{available_count} available Assignments… add an assignment
+          = render "shared/association_expand/add_more_link",
+            collapse_id: "addDayToDayAssignments",
+            cta_label: "Add Assignments",
+            supporting_text: "Click to expand if #{@teammate.person.casual_name} needs more of the #{available_count} available Assignments."
       .collapse{id: "addDayToDayAssignments", class: ("show" if expand_add)}
         - if expand_add
           .card-header

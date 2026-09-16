@@ -191,6 +191,23 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("Manager")
       expect(response.body).to include("Search titles by name or department")
     end
+
+    it "shows a collapsed Add Title Paths expand control when paths already exist" do
+      other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Manager")
+      create(:title_path, from_title: title, to_title: other, path_type: "natural_progression")
+      create(:title, company: organization, position_major_level: position_major_level, external_title: "Director")
+
+      get manage_paths_organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Add Title Paths")
+      expect(response.body).to include("Click to expand if Engineer needs more of the")
+      expect(response.body).to include("available Titles")
+      expect(response.body).to include("bi-chevron-down")
+      expect(response.body).to include('aria-controls="addTitlePaths"')
+      expect(response.body).not_to include('class="collapse show" id="addTitlePaths"')
+      expect(response.body).not_to include('id="addTitlePaths" class="collapse show"')
+    end
   end
 
   describe "PATCH /update_paths" do

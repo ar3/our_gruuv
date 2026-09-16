@@ -52,6 +52,8 @@ RSpec.describe 'Position Direct Milestone Requirements', type: :request do
       expect(response.body).to include('pointer-events: auto')
       expect(response.body).not_to match(/id="ability_#{ability1.id}_milestone_4"[^>]*disabled|disabled[^>]*id="ability_#{ability1.id}_milestone_4"/)
       expect(response.body).to include('requires more of the')
+      expect(response.body).to include('Add Ability Milestones')
+      expect(response.body).to include('Click to expand if being a')
       expect(response.body).not_to include('class="collapse show" id="addMilestoneRequirements"')
       expect(response.body).not_to include('No milestone requirements yet')
     end
@@ -62,10 +64,13 @@ RSpec.describe 'Position Direct Milestone Requirements', type: :request do
       get organization_position_ability_milestones_path(company, position)
 
       expect(response.body).to include('requires more of the')
+      expect(response.body).to include('Add Ability Milestones')
+      expect(response.body).to include('Click to expand if being a')
       expect(response.body).to include('available Abilities')
       expect(response.body).to include(ability1.name)
       expect(response.body).to include('id="addMilestoneRequirements"')
       expect(response.body).to include('aria-controls="addMilestoneRequirements"')
+      expect(response.body).to include('bi-chevron-down')
       expect(response.body).not_to include('class="collapse show" id="addMilestoneRequirements"')
       expect(response.body).not_to include('id="addMilestoneRequirements" class="collapse show"')
     end

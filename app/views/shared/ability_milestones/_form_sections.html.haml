@@ -42,8 +42,10 @@
 .card.mb-4
   - unless expand_add
     .card-body.py-3.border-bottom
-      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#addMilestoneRequirements", "aria-expanded" => "false", "aria-controls" => "addMilestoneRequirements", href: "#addMilestoneRequirements"}
-        Being a #{subject_name} requires more of the #{available_count} available Abilities… add new milestone requirement
+      = render "shared/association_expand/add_more_link",
+        collapse_id: "addMilestoneRequirements",
+        cta_label: "Add Ability Milestones",
+        supporting_text: "Click to expand if being a #{subject_name} requires more of the #{available_count} available Abilities."
   .collapse{id: "addMilestoneRequirements", class: ("show" if expand_add)}
     - if expand_add
       .card-header

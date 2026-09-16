@@ -6,13 +6,16 @@
 
 On “associate multiple things” pages where the **already associated** list is shown first, and the **available / not-yet-associated** list is collapsed behind an expand control.
 
-Examples (roll out one page at a time after visual approval):
+## Where it’s used
 
-- Position manage assignments (done — reference)
-- Ability / assignment milestone requirement forms (`shared/ability_milestones/_form_sections`, `shared/assignment_milestones/_form_sections`)
-- Title path associations (`organizations/titles/_title_path_form_sections`)
-- Day-to-day assignment tenure bypass add section
-- Any similar Change + collapsed Add pattern
+| Page | Partial | CTA |
+|------|---------|-----|
+| Position manage assignments | `organizations/positions/_assignment_form_sections` | Add Assignments |
+| Position Direct Milestone Requirements | `shared/ability_milestones/_form_sections` | Add Ability Milestones |
+| Assignment Ability Milestone Requirements | same shared partial | Add Ability Milestones |
+| Ability Assignment Milestone Requirements | `shared/assignment_milestones/_form_sections` | Add Assignment Milestones |
+| Title manage paths | `organizations/titles/_title_path_form_sections` | Add Title Paths |
+| Day-to-day assignment tenure bypass | page-local | Add Assignments |
 
 ## Pattern
 
@@ -20,7 +23,7 @@ Do **not** bury the action in one long sentence.
 
 Use a single clickable control (`shared/association_expand/_add_more_link`) with:
 
-1. **CTA** — short, verb-first, slightly larger (`fw-semibold fs-5`), with `bi-plus-circle` before and `bi-chevron-down` after; capitalize the domain noun when it is a product proper noun (e.g. **Assignments**)
+1. **CTA** — short, verb-first, slightly larger (`fw-semibold fs-5`), with `bi-plus-circle` before and `bi-chevron-down` after; capitalize the domain noun when it is a product proper noun (e.g. **Assignments**, **Abilities**, **Titles**)
 2. **Supporting sentence** — muted, one line under the CTA (why / what’s available)
 3. **Whole block expands** — both CTA and sentence are inside the same collapse toggle link
 
@@ -28,10 +31,10 @@ Use a single clickable control (`shared/association_expand/_add_more_link`) with
 
 | Part | Example |
 |------|---------|
-| CTA | `Add Assignments` |
+| CTA | `Add Assignments` / `Add Ability Milestones` / `Add Title Paths` |
 | Supporting | `Click to expand if being a Senior Software Engineer needs more of the 42 available Assignments.` |
 
-CTA should name the thing being added (`Add Abilities`, `Add Title Paths`, etc.). Supporting text starts with **Click to expand if…** then subject + available count context.
+Supporting text starts with **Click to expand if…**, then keep the page’s natural subject wording (including inverse forms like “is required by more of the…”).
 
 ### Markup
 
@@ -47,7 +50,3 @@ CTA should name the thing being added (`Add Abilities`, `Add Title Paths`, etc.)
 - One long link line ending in “… add new …”
 - CTA only (no context) or context only (no clear verb)
 - Separate links for CTA vs sentence (they must share one expand target)
-
-## Rollout
-
-Reference page first; after manual review, apply the same partial + copy shape to the other associate pages listed above.

@@ -37,8 +37,10 @@ RSpec.describe 'Assignment Ability Milestones', type: :request do
       get organization_assignment_ability_milestones_path(company, assignment)
 
       expect(response.body).to include(ability1.name)
-      expect(response.body).to include("Being a #{assignment.title} requires more of the")
+      expect(response.body).to include('Add Ability Milestones')
+      expect(response.body).to include("Click to expand if being a #{assignment.title} requires more of the")
       expect(response.body).to include('available Abilities')
+      expect(response.body).to include('bi-chevron-down')
       expect(response.body).to include(ability2.name)
       expect(response.body).to include('No Association')
     end
