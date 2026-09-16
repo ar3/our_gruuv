@@ -232,6 +232,10 @@
           Employees with this Position
       .card-body
         - if current_company_teammate&.has_direct_reports?
+          %p.text-muted.small.mb-3
+            This section is only visible by managers, because typically the specific level a teammate is at is not public information. However, everyone can see who has the title of
+            = link_to @position.title.display_name, organization_title_path(@organization, @position.title), class: "text-decoration-none"
+            \.
           - if @employees_with_position&.any?
             .table-responsive
               %table.table.table-hover
@@ -268,6 +272,13 @@
               = link_to @position.title.external_title, organization_title_path(@organization, @position.title), class: "text-decoration-none fw-bold"
               page.
 
+- if @path_neighborhood
+  = render "organizations/positions/position_pathing",
+    path_neighborhood: @path_neighborhood,
+    organization: @organization,
+    position: @position,
+    company_teammate: current_company_teammate
+
 - if @position_reliance_network&.show_graph?
   .row
     .col-12
@@ -286,10 +297,3 @@
     score: @expectation_alignment_score,
     organization: @organization,
     position: @position
-
-- if @path_neighborhood
-  = render "organizations/positions/position_pathing",
-    path_neighborhood: @path_neighborhood,
-    organization: @organization,
-    position: @position,
-    company_teammate: current_company_teammate

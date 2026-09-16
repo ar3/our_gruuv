@@ -253,13 +253,41 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).not_to include('bi-arrow-clockwise')
     end
 
-    it 'renders the Position pathing section at the bottom' do
+    it 'renders Position pathing below Employees and above the reliance network' do
+      assignment = create(:assignment, company: organization, title: 'Networked Assignment')
+      create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+
       get organization_position_path(organization, position)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Position pathing')
       expect(response.body).to include('Positions before')
       expect(response.body).to include('Positions after')
+      employees_idx = response.body.index('Employees with this Position')
+      pathing_idx = response.body.index('Position pathing')
+      reliance_idx = response.body.index('Position assignment reliance network')
+      expect(employees_idx).to be < pathing_idx
+      expect(pathing_idx).to be < reliance_idx
+    end
+
+    it 'shows a manager-only note with title link in Employees with this Position' do
+      viewer = person.company_teammates.find_by!(organization: organization)
+      report_person = create(:person)
+      report_teammate = create(:teammate, person: report_person, organization: organization)
+      other_position = create(:position, title: title, position_level: create(:position_level, position_major_level: title.position_major_level))
+      create(:employment_tenure,
+        teammate: report_teammate,
+        company: organization,
+        position: other_position,
+        manager_teammate: viewer,
+        ended_at: nil)
+
+      get organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('This section is only visible by managers')
+      expect(response.body).to include(organization_title_path(organization, title))
+      expect(response.body).to include(title.display_name)
     end
 
     context 'when the position is the exit level with an outbound title path' do
