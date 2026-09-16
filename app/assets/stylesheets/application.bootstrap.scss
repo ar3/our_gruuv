@@ -1985,8 +1985,12 @@ body:has(.vertical-nav.open) .floating-toggle {
 }
 
 // Cytoscape supply flow graphs (assignment show, position, full network)
+// Cap viewport height so dense dagre layouts cannot stretch the page.
 .assignment-accountability-flow-graph {
   min-height: 560px;
+  height: 70vh;
+  max-height: 720px;
+  overflow: hidden;
   width: 100%;
   cursor: pointer;
 }
@@ -2005,6 +2009,9 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 .assignment-full-network-graph-cytoscape {
   min-height: 560px;
+  height: 70vh;
+  max-height: 720px;
+  overflow: hidden;
 }
 
 .insights-title-paths-graph {

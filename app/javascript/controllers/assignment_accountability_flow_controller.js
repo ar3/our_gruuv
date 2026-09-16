@@ -59,7 +59,7 @@ export default class extends Controller {
 
   resize() {
     this.cy?.resize()
-    this.cy?.fit(undefined, 24)
+    this.fitGraph()
   }
 
   exportPng() {
@@ -130,7 +130,8 @@ export default class extends Controller {
     this.cy = cytoscape({
       container: this.graphTarget,
       elements: preparedElements,
-      minZoom: 0.4,
+      // Low enough that dense LR dagre graphs can still fit inside the capped container.
+      minZoom: 0.05,
       maxZoom: 2,
       style: this.graphStyles(),
       layout: usePreset ? { name: "preset", padding: 30, fit: true } : this.layoutConfig(roots, useDagreLayout),
@@ -138,7 +139,7 @@ export default class extends Controller {
     })
 
     if (usePreset) {
-      this.cy.fit(undefined, 24)
+      this.fitGraph()
       this.configureInteraction()
       this.setSaveStatus("")
     } else {
@@ -288,7 +289,7 @@ export default class extends Controller {
 
   applySavedPositions(savedPositions) {
     if (!this.cy || !Object.keys(savedPositions).length) {
-      this.cy?.fit(undefined, 24)
+      this.fitGraph()
       return
     }
 
@@ -296,7 +297,7 @@ export default class extends Controller {
       const position = savedPositions[node.id()]
       if (position) node.position({ x: position.x, y: position.y })
     })
-    this.cy.fit(undefined, 24)
+    this.fitGraph()
   }
 
   parsedSavedPositions() {
@@ -357,7 +358,11 @@ export default class extends Controller {
 
   prepareForExport() {
     this.cy.resize()
-    this.cy.fit(undefined, 24)
+    this.fitGraph()
+  }
+
+  fitGraph() {
+    this.cy?.fit(undefined, 24)
   }
 
   downloadDataUri(dataUri, filename) {
@@ -469,6 +474,7 @@ export default class extends Controller {
         nodeSep: 48,
         edgeSep: 24,
         animate: false,
+        fit: true,
         padding: 30
       }
     }
@@ -479,6 +485,7 @@ export default class extends Controller {
       spacingFactor: 2,
       avoidOverlap: true,
       animate: false,
+      fit: true,
       padding: 30
     }
 
