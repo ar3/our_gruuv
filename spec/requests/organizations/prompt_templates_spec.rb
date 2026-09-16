@@ -23,6 +23,15 @@ RSpec.describe 'Prompt Templates', type: :request do
       get organization_prompt_templates_path(organization)
       expect(response).to render_template(:index)
     end
+
+    it 'breadcrumbs to Prompt templates without an Observations parent' do
+      get organization_prompt_templates_path(organization)
+      expect(response).to have_http_status(:success)
+      breadcrumb = CGI.unescapeHTML(response.body[%r{page-context-nav__breadcrumb.*?</nav>}m].to_s)
+      expect(breadcrumb).to include('Prompts templates')
+      expect(breadcrumb).not_to include('>Observations<')
+      expect(breadcrumb).not_to match(/href="#{Regexp.escape(organization_observations_path(organization))}"/)
+    end
   end
 
   describe 'GET /organizations/:organization_id/prompt_templates/new' do

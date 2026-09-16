@@ -21,6 +21,15 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it 'breadcrumbs to My Prompts without an Observations parent' do
+      get organization_prompts_path(organization)
+      expect(response).to have_http_status(:success)
+      breadcrumb = CGI.unescapeHTML(response.body[%r{page-context-nav__breadcrumb.*?</nav>}m].to_s)
+      expect(breadcrumb).to include('My Prompts')
+      expect(breadcrumb).not_to include('>Observations<')
+      expect(breadcrumb).not_to match(/href="#{Regexp.escape(organization_observations_path(organization))}"/)
+    end
+
     context 'when user has prompts from inactive templates' do
       let(:inactive_template) { create(:prompt_template, :unavailable, company: organization, title: 'Old Check-in') }
       let!(:inactive_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: inactive_template) }

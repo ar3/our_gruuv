@@ -12,7 +12,7 @@
           New Request
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Observations", url: organization_observations_path(organization) }, { label: "Feedback Requests", url: nil }])
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Feedback Requests", url: nil }])
 
 = render partial: 'organizations/feedback_requests/tabs'
 

@@ -7,7 +7,7 @@
       My #{company_label_plural('prompt', 'Prompts')}
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Observations", url: organization_observations_path(@organization) }, { label: "My #{company_label_plural('prompt', 'Prompts')}", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "My #{company_label_plural('prompt', 'Prompts')}", url: nil }])
 
 - if @active_templates.any?
   .row
