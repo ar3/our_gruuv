@@ -200,6 +200,18 @@ module PositionsHelper
     path.join(' > ')
   end
 
+  # Returns a comparison URL when both positions exist and the viewer can open Position Comparison.
+  def organization_position_comparison_url_for(organization, left_position:, right_position:)
+    return nil if left_position.blank? || right_position.blank?
+    return nil unless policy(:eligibility_requirement).index?
+
+    organization_position_comparison_path(
+      organization,
+      left_position_id: left_position.id,
+      right_position_id: right_position.id
+    )
+  end
+
   private
 
   def build_department_children(assignments_by_org, department)

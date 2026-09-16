@@ -1,9 +1,10 @@
+- content_for :title, "Position Comparison"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Position Comparison", url: nil }])
+
 - content_for :header do
-  .d-flex.align-items-center.gap-2.flex-wrap
-    %h1.mb-0 Position Comparison
-    %span.badge.text-bg-warning
-      %i.bi.bi-flask.me-1
-      Beta
+  %h1.mb-0 Position Comparison
 
 %style
   :plain
@@ -59,16 +60,14 @@
           .row.g-3.align-items-end
             .col-12.col-lg-5
               = form.label :left_position_id, "Position A", class: "form-label"
-              - left_options = @positions.map { |position| [position.display_name, position.id] }
               = form.select :left_position_id,
-                options_for_select(left_options, @left_position&.id),
+                positions_grouped_options_for_select(@positions_by_department, @left_position&.id),
                 { include_blank: "Select a position" },
                 class: "form-select"
             .col-12.col-lg-5
               = form.label :right_position_id, "Position B", class: "form-label"
-              - right_options = @positions.map { |position| [position.display_name, position.id] }
               = form.select :right_position_id,
-                options_for_select(right_options, @right_position&.id),
+                positions_grouped_options_for_select(@positions_by_department, @right_position&.id),
                 { include_blank: "Select a position" },
                 class: "form-select"
             .col-12.col-lg-2
@@ -81,7 +80,7 @@
   .row.mb-3
     .col-12
       %h2.h4.mb-0 Position + Title Description
-      %p.text-muted.mb-0 Compare the combined markdown description (title summary + position summary).
+      %p.text-muted.mb-0 Compare the combined description (title summary + position summary).
 
   .row.mb-4
     - description_sides = [{ key: :left, position: @left_position, description: @left_combined_description }, { key: :right, position: @right_position, description: @right_combined_description }]
@@ -93,16 +92,19 @@
           .card-header.d-flex.justify-content-between.align-items-center.position-comparison-toggle{"data-bs-toggle" => "collapse", "data-bs-target" => ".#{collapse_group_class}", "data-position-comparison-group" => "description", role: "button", tabindex: "0", style: "cursor: pointer;", "aria-expanded" => "false"}
             .d-flex.flex-column
               %strong= side[:position]&.display_name || "No position selected"
-              %span.small.text-muted Combined position + title markdown
+              %span.small.text-muted Combined position + title description
             %i.bi.bi-chevron-down.position-comparison-chevron
           .collapse{ id: collapse_id, class: collapse_group_class, "data-position-comparison-group-body" => "description" }
             .card-body
               - if side[:position].blank?
                 %p.text-muted.mb-0 Not required or suggested
-              - elsif side[:description].present?
-                .markdown-content= render_markdown(side[:description])
               - else
-                %p.text-muted.mb-0 No combined description is configured.
+                %p.mb-3
+                  = link_to side[:position].display_name, organization_position_path(@organization, side[:position]), class: "text-decoration-none fw-semibold"
+                - if side[:description].present?
+                  .markdown-content= render_markdown(side[:description])
+                - else
+                  %p.text-muted.mb-0 No combined description is configured.
 
   .row.mb-3
     .col-12

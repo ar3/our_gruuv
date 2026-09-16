@@ -1,0 +1,32 @@
+-# Locals: neighborhood (Titles::PathNeighborhoodGraph), organization, title; optional graph_id
+- neighborhood = local_assigns.fetch(:neighborhood)
+- organization = local_assigns.fetch(:organization)
+- title = local_assigns.fetch(:title)
+- graph_id = local_assigns.fetch(:graph_id) { "title-paths-graph-#{title.id}" }
+
+- if neighborhood&.show_graph?
+  %hr
+  %h6.fw-semibold.mb-2 Neighborhood
+  %p.text-muted.small.mb-2
+    This title (emphasized) with direct before and after neighbors. Nodes are arranged by major level —
+    %strong L1
+    on the left through
+    %strong L10
+    on the right — with within-column order chosen to reduce crossed lines.
+  - elements = neighborhood.elements
+  - fingerprint = Assignments::SupplyGraphElements.cytoscape_node_fingerprint(elements)
+  = render "shared/cytoscape/supply_flow_graph",
+    elements: elements,
+    root_node_ids: neighborhood.root_node_ids,
+    highlight_tiers: true,
+    edge_colors: true,
+    edge_tooltips: true,
+    preset_layout: true,
+    export_filename: "title-paths-#{title.id}",
+    graph_id: graph_id,
+    aria_label: "Title path neighborhood for #{title.external_title}",
+    saved_positions: {},
+    node_fingerprint: fingerprint,
+    stored_node_fingerprint: "",
+    layout_url: "",
+    can_edit_layout: false

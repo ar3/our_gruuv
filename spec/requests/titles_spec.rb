@@ -118,6 +118,7 @@ RSpec.describe "Titles", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Title paths")
+      expect(response.body).to include("This title")
       expect(response.body).to include("Manage paths")
       expect(response.body).to include(manage_paths_organization_title_path(organization, title))
       expect(response.body).to include("No paths after this title yet")
@@ -133,6 +134,50 @@ RSpec.describe "Titles", type: :request do
       expect(response.body).to include("Natural progression")
       expect(response.body).to include("Neighborhood")
       expect(response.body).to include("title-paths-graph-#{title.id}")
+      expect(response.body).to include("arranged by major level")
+    end
+
+    it "links title-path neighbors to Position Comparison using exit and entry positions" do
+      major = position_major_level
+      level_l1 = create(:position_level, position_major_level: major, level: "2.1")
+      level_l3 = create(:position_level, position_major_level: major, level: "2.3")
+      current_entry = create(:position, title: title, position_level: level_l1)
+      current_exit = create(:position, title: title, position_level: level_l3)
+
+      before_major = create(:position_major_level, major_level: 1, set_name: "Before-#{SecureRandom.hex(4)}")
+      before_title = create(:title, company: organization, position_major_level: before_major, external_title: "Associate Engineer")
+      before_exit_level = create(:position_level, position_major_level: before_major, level: "1.3")
+      before_exit = create(:position, title: before_title, position_level: before_exit_level)
+
+      after_major = create(:position_major_level, major_level: 3, set_name: "After-#{SecureRandom.hex(4)}")
+      after_title = create(:title, company: organization, position_major_level: after_major, external_title: "Principal Engineer")
+      after_entry_level = create(:position_level, position_major_level: after_major, level: "3.1")
+      after_entry = create(:position, title: after_title, position_level: after_entry_level)
+
+      create(:title_path, from_title: before_title, to_title: title, path_type: "natural_progression")
+      create(:title_path, from_title: title, to_title: after_title, path_type: "natural_progression")
+
+      get organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("This title")
+      expect(response.body).to include("left_position_id=#{before_exit.id}")
+      expect(response.body).to include("right_position_id=#{current_entry.id}")
+      expect(response.body).to include("left_position_id=#{current_exit.id}")
+      expect(response.body).to include("right_position_id=#{after_entry.id}")
+      expect(response.body).to include("Compare these positions")
+    end
+
+    it "omits compare links when a path neighbor title has no positions" do
+      other = create(:title, company: organization, position_major_level: position_major_level, external_title: "Lead Engineer")
+      create(:title_path, from_title: title, to_title: other, path_type: "natural_progression")
+
+      get organization_title_path(organization, title)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(other.title_including_level)
+      expect(response.body).not_to include("left_position_id=")
+      expect(response.body).not_to include("Compare these positions")
     end
 
     it "renders the Title Expectation Alignment Score card" do

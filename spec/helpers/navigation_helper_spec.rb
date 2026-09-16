@@ -506,6 +506,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Aspirational Values')
         expect(labels).to include('Departments')
         expect(labels).to include('Teams')
+        expect(labels).to include('Position Comparison')
         expect(labels.any? { |l| l&.end_with?(' Preferences') }).to be true
       end
 
@@ -521,7 +522,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('Check-ins Health')
       end
 
-      it 'includes Beta section with Insights, Position Comparison, Eligibility Requirements, Position Suggestions, and Coach Inbox' do
+      it 'includes Beta section with Insights, Eligibility Requirements, Position Suggestions, and Coach Inbox' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Beta' }
         expect(section).to be_present
@@ -530,7 +531,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).not_to include('OG Academy')
         expect(labels).to include('Insights')
         expect(labels).not_to include('Meeting transcripts')
-        expect(labels).to include('Position Comparison')
+        expect(labels).not_to include('Position Comparison')
         expect(labels).to include('Eligibility Requirements')
         expect(labels).not_to include('Goal Impact Scanner')
         expect(labels).not_to include('Goals Hierarchy Map')

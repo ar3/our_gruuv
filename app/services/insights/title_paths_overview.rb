@@ -3,21 +3,14 @@
 module Insights
   # Org-wide (optionally department-filtered) title-path graph for Position · Insights.
   class TitlePathsOverview
-    PATH_TYPE_COLORS = {
-      "natural_progression" => "#0d6efd",
-      "parallel_progression" => "#6f42c1",
-      "switch_to_people_management" => "#198754",
-      "switch_to_individual_contribution" => "#fd7e14",
-      "switch_to_project_technical_leadership" => "#20c997"
-    }.freeze
+    PATH_TYPE_COLORS = Titles::PathGraphLayout::PATH_TYPE_COLORS
+    COLUMN_WIDTH = Titles::PathGraphLayout::COLUMN_WIDTH
+    ROW_HEIGHT = Titles::PathGraphLayout::ROW_HEIGHT
+    MIN_MAJOR_LEVEL = Titles::PathGraphLayout::MIN_MAJOR_LEVEL
+    MAX_MAJOR_LEVEL = Titles::PathGraphLayout::MAX_MAJOR_LEVEL
 
     HIGHLIGHT_PRIMARY = "suggested"
     HIGHLIGHT_EXTERNAL = "external"
-
-    COLUMN_WIDTH = 220
-    ROW_HEIGHT = 72
-    MIN_MAJOR_LEVEL = 1
-    MAX_MAJOR_LEVEL = 10
 
     Result = Struct.new(
       :connected_count,
@@ -123,89 +116,26 @@ module Insights
       nodes = {}
       graph_titles.each do |title|
         highlight = primary_ids.include?(title.id) ? HIGHLIGHT_PRIMARY : HIGHLIGHT_EXTERNAL
-        add_node!(nodes, title, highlight)
+        nodes[Titles::PathGraphLayout.node_id(title.id)] = Titles::PathGraphLayout.node_element(
+          organization: organization,
+          title: title,
+          highlight: highlight
+        )
       end
-      apply_major_level_positions!(nodes, graph_titles, paths)
+      Titles::PathGraphLayout.apply_major_level_positions!(
+        nodes: nodes,
+        titles: graph_titles,
+        paths: paths
+      )
 
       edges = paths.filter_map do |path|
-        next unless nodes.key?(node_id(path.from_title_id)) && nodes.key?(node_id(path.to_title_id))
+        next unless nodes.key?(Titles::PathGraphLayout.node_id(path.from_title_id)) &&
+                    nodes.key?(Titles::PathGraphLayout.node_id(path.to_title_id))
 
-        edge_element(path)
+        Titles::PathGraphLayout.edge_element(path)
       end
 
       nodes.values + edges
-    end
-
-    # Keep major levels as fixed X columns; order Y within each column with a
-    # barycenter heuristic so connected titles line up and edge crossings drop.
-    def apply_major_level_positions!(nodes, graph_titles, paths)
-      by_level = graph_titles.group_by { |title| major_level_for(title) }
-      levels = by_level.keys.sort
-      order_by_level = levels.index_with do |level|
-        by_level[level].sort_by { |title| title.external_title.to_s.downcase }
-      end
-      neighbor_ids = undirected_neighbor_ids(paths)
-
-      8.times do
-        levels.each do |level|
-          order_by_level[level] = barycenter_order(
-            titles: order_by_level[level],
-            order_by_level: order_by_level,
-            neighbor_ids: neighbor_ids,
-            exclude_level: level
-          )
-        end
-      end
-
-      levels.each do |level|
-        order_by_level[level].each_with_index do |title, index|
-          node = nodes[node_id(title.id)]
-          next unless node
-
-          node[:position] = {
-            x: (level - MIN_MAJOR_LEVEL) * COLUMN_WIDTH,
-            y: index * ROW_HEIGHT
-          }
-          node[:data][:majorLevel] = level
-        end
-      end
-    end
-
-    def undirected_neighbor_ids(paths)
-      neighbors = Hash.new { |hash, key| hash[key] = [] }
-      paths.each do |path|
-        neighbors[path.from_title_id] << path.to_title_id
-        neighbors[path.to_title_id] << path.from_title_id
-      end
-      neighbors
-    end
-
-    def barycenter_order(titles:, order_by_level:, neighbor_ids:, exclude_level:)
-      reference_index = {}
-      order_by_level.each do |level, level_titles|
-        next if level == exclude_level
-
-        level_titles.each_with_index do |title, index|
-          reference_index[title.id] = index
-        end
-      end
-
-      titles.sort_by.with_index do |title, original_index|
-        neighbor_positions = neighbor_ids[title.id].filter_map { |id| reference_index[id] }
-        average = if neighbor_positions.any?
-                    neighbor_positions.sum.to_f / neighbor_positions.size
-                  else
-                    Float::INFINITY
-                  end
-        [average, original_index, title.external_title.to_s.downcase]
-      end
-    end
-
-    def major_level_for(title)
-      level = title.position_major_level&.major_level.to_i
-      level = MIN_MAJOR_LEVEL if level < MIN_MAJOR_LEVEL
-      level = MAX_MAJOR_LEVEL if level > MAX_MAJOR_LEVEL
-      level
     end
 
     def root_node_ids_for(graph_titles, paths, primary_ids)
@@ -214,39 +144,11 @@ module Insights
         set << path.to_title_id if primary_ids.include?(path.to_title_id)
       end
 
-      roots = primary_graph.reject { |title| targets_in_graph.include?(title.id) }.map { |title| node_id(title.id) }
-      roots = primary_graph.first(1).map { |title| node_id(title.id) } if roots.empty? && primary_graph.any?
+      roots = primary_graph.reject { |title| targets_in_graph.include?(title.id) }.map do |title|
+        Titles::PathGraphLayout.node_id(title.id)
+      end
+      roots = primary_graph.first(1).map { |title| Titles::PathGraphLayout.node_id(title.id) } if roots.empty? && primary_graph.any?
       roots
-    end
-
-    def add_node!(nodes, title_record, highlight)
-      id = node_id(title_record.id)
-      return if nodes.key?(id)
-
-      nodes[id] = {
-        group: "nodes",
-        data: {
-          id: id,
-          label: title_record.title_including_level.to_s.truncate(60),
-          url: Rails.application.routes.url_helpers.organization_title_path(organization, title_record),
-          highlightTier: highlight
-        }
-      }
-    end
-
-    def edge_element(path)
-      color = PATH_TYPE_COLORS.fetch(path.path_type, "#6c757d")
-      {
-        group: "edges",
-        data: {
-          id: "tp#{path.id}",
-          source: node_id(path.from_title_id),
-          target: node_id(path.to_title_id),
-          label: path.path_type_label,
-          pathType: path.path_type,
-          lineColor: color
-        }
-      }
     end
 
     def g6_graph_data_for(elements)
@@ -295,10 +197,6 @@ module Insights
       end
 
       { nodes: nodes, edges: edges }
-    end
-
-    def node_id(title_id)
-      "title-#{title_id}"
     end
 
     def department_options

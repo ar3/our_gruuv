@@ -21,7 +21,17 @@ class Organizations::PositionComparisonsController < Organizations::Organization
   private
 
   def set_positions
-    @positions = Position.for_company(organization).unarchived.ordered
+    @positions = Position.for_company(organization).unarchived
+      .includes(:position_level, title: [:department, :position_major_level])
+      .left_joins(title: :department)
+      .order(
+        Arel.sql('CASE WHEN titles.department_id IS NULL THEN 0 ELSE 1 END'),
+        'departments.name',
+        'titles.external_title',
+        'position_levels.level'
+      )
+      .to_a
+    @positions_by_department = @positions.group_by { |position| position.title.department || organization }
   end
 
   def set_selected_positions

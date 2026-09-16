@@ -22,8 +22,8 @@
       %strong= title.external_title
       \. Within-title level steps are automatic; these paths cover leaving this title’s exit level for another title’s landing level.
 
-    .row.g-4.mb-3
-      .col-md-6
+    .row.g-3.align-items-start.mb-3
+      .col-md-5
         %h6.fw-semibold.mb-2 Before this title
         - if inbound_paths.blank?
           %p.text-muted.small.mb-0 No paths before this title.
@@ -31,9 +31,20 @@
           %ul.list-unstyled.mb-0
             - inbound_paths.each do |path|
               %li.mb-2
-                = link_to path.from_title.title_including_level, organization_title_path(organization, path.from_title), class: "text-decoration-none fw-semibold"
-                %span.badge.text-bg-light.border.ms-1= path.path_type_label
-      .col-md-6
+                .d-flex.align-items-center.justify-content-end.gap-2
+                  .text-end.min-w-0
+                    = link_to path.from_title.title_including_level, organization_title_path(organization, path.from_title), class: "text-decoration-none fw-semibold"
+                    %span.badge.text-bg-light.border.ms-1= path.path_type_label
+                  = render "organizations/positions/compare_link",
+                    organization: organization,
+                    left_position: path.from_title.exit_position,
+                    right_position: title.entry_position
+
+      .col-md-2.text-center
+        %h6.fw-semibold.mb-2 This title
+        %p.mb-0.fw-semibold= title.title_including_level
+
+      .col-md-5
         %h6.fw-semibold.mb-2 After this title
         - if title.end_cap?
           %p.text-muted.small.mb-0 End-cap — no after paths.
@@ -43,27 +54,16 @@
           %ul.list-unstyled.mb-0
             - outbound_paths.each do |path|
               %li.mb-2
-                = link_to path.to_title.title_including_level, organization_title_path(organization, path.to_title), class: "text-decoration-none fw-semibold"
-                %span.badge.text-bg-light.border.ms-1= path.path_type_label
+                .d-flex.align-items-center.gap-2
+                  = render "organizations/positions/compare_link",
+                    organization: organization,
+                    left_position: title.exit_position,
+                    right_position: path.to_title.entry_position
+                  .min-w-0
+                    = link_to path.to_title.title_including_level, organization_title_path(organization, path.to_title), class: "text-decoration-none fw-semibold"
+                    %span.badge.text-bg-light.border.ms-1= path.path_type_label
 
-    - if neighborhood&.show_graph?
-      %hr
-      %h6.fw-semibold.mb-2 Neighborhood
-      %p.text-muted.small.mb-2
-        This title (emphasized) with direct before and after neighbors.
-      - elements = neighborhood.elements
-      - fingerprint = Assignments::SupplyGraphElements.cytoscape_node_fingerprint(elements)
-      = render "shared/cytoscape/supply_flow_graph",
-        elements: elements,
-        root_node_ids: neighborhood.root_node_ids,
-        highlight_tiers: true,
-        edge_colors: true,
-        edge_tooltips: true,
-        export_filename: "title-paths-#{title.id}",
-        graph_id: "title-paths-graph-#{title.id}",
-        aria_label: "Title path neighborhood for #{title.external_title}",
-        saved_positions: {},
-        node_fingerprint: fingerprint,
-        stored_node_fingerprint: "",
-        layout_url: "",
-        can_edit_layout: false
+    = render "organizations/titles/title_path_neighborhood_graph",
+      neighborhood: neighborhood,
+      organization: organization,
+      title: title

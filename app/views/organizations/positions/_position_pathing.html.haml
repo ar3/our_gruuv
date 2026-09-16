@@ -1,9 +1,10 @@
--# Locals: path_neighborhood, organization, position; optional company_teammate for Grow-by links
+-# Locals: path_neighborhood, organization, position; optional company_teammate, title_path_neighborhood
 - path_neighborhood = local_assigns.fetch(:path_neighborhood, @path_neighborhood)
 - organization = local_assigns.fetch(:organization, @organization)
 - position = local_assigns.fetch(:position, @position)
 - company_teammate = local_assigns.fetch(:company_teammate, current_company_teammate)
 - title = path_neighborhood.title
+- title_path_neighborhood = local_assigns.fetch(:title_path_neighborhood, @title_path_neighborhood)
 
 .card.mt-4{role: "region", "aria-labelledby": "position-pathing-heading"}
   .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
@@ -22,8 +23,8 @@
       %strong= title.external_title
       \, then title paths from the exit level into another title’s landing level.
 
-    .row.g-4
-      .col-md-6
+    .row.g-3.align-items-start
+      .col-md-5
         %h6.fw-semibold.mb-2 Positions before
         - if path_neighborhood.positions_before.blank?
           %p.text-muted.small.mb-0
@@ -35,28 +36,50 @@
           %ul.list-unstyled.mb-0
             - path_neighborhood.positions_before.each do |neighbor|
               %li.mb-2
-                = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
-                - if neighbor.path_type_label.present?
-                  %span.badge.text-bg-light.border.ms-1= neighbor.path_type_label
-                - elsif neighbor.source == :same_title
-                  %span.badge.text-bg-light.border.ms-1 Within title
+                .d-flex.align-items-center.justify-content-end.gap-2
+                  .text-end.min-w-0
+                    = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
+                    - if neighbor.path_type_label.present?
+                      %span.badge.text-bg-light.border.ms-1= neighbor.path_type_label
+                    - elsif neighbor.source == :same_title
+                      %span.badge.text-bg-light.border.ms-1 Within title
+                  = render "organizations/positions/compare_link",
+                    organization: organization,
+                    left_position: neighbor.position,
+                    right_position: position
 
-      .col-md-6
+      .col-md-2.text-center
+        %h6.fw-semibold.mb-2 This position
+        %p.mb-0.fw-semibold= position.display_name
+
+      .col-md-5
         %h6.fw-semibold.mb-2 Positions after
         - case path_neighborhood.after_state
         - when :within_title
           %ul.list-unstyled.mb-0
             - path_neighborhood.positions_after.each do |neighbor|
               %li.mb-2
-                = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
-                %span.badge.text-bg-light.border.ms-1 Within title
+                .d-flex.align-items-center.gap-2
+                  = render "organizations/positions/compare_link",
+                    organization: organization,
+                    left_position: position,
+                    right_position: neighbor.position
+                  .min-w-0
+                    = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
+                    %span.badge.text-bg-light.border.ms-1 Within title
         - when :outbound_paths
           %ul.list-unstyled.mb-0
             - path_neighborhood.positions_after.each do |neighbor|
               %li.mb-2
-                = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
-                - if neighbor.path_type_label.present?
-                  %span.badge.text-bg-light.border.ms-1= neighbor.path_type_label
+                .d-flex.align-items-center.gap-2
+                  = render "organizations/positions/compare_link",
+                    organization: organization,
+                    left_position: position,
+                    right_position: neighbor.position
+                  .min-w-0
+                    = link_to neighbor.position.display_name, organization_position_path(organization, neighbor.position), class: "text-decoration-none fw-semibold"
+                    - if neighbor.path_type_label.present?
+                      %span.badge.text-bg-light.border.ms-1= neighbor.path_type_label
         - when :missing_next_level
           %p.text-muted.small.mb-0
             The next level on this title is not defined yet.
@@ -93,3 +116,9 @@
               = link_to manage_paths_organization_title_path(organization, title), class: "btn btn-outline-primary btn-sm" do
                 %i.bi.bi-signpost-split.me-1
                 Define after paths or mark end-cap
+
+    = render "organizations/titles/title_path_neighborhood_graph",
+      neighborhood: title_path_neighborhood,
+      organization: organization,
+      title: title,
+      graph_id: "position-title-paths-graph-#{position.id}"

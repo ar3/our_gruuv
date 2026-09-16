@@ -652,6 +652,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Position Comparison',
+            icon: 'bi-layout-split',
+            path: organization_position_comparison_path(current_organization),
+            policy_check: -> { policy(:eligibility_requirement).index? },
+            coming_soon: false
+          },
+          {
             label: "#{current_company.name} Preferences",
             icon: 'bi-sliders',
             path: edit_organization_company_preference_path(current_organization),
@@ -711,13 +718,6 @@ module NavigationHelper
             label: 'Eligibility Requirements',
             icon: 'bi-check2-circle',
             path: organization_eligibility_requirements_path(current_organization),
-            policy_check: -> { policy(:eligibility_requirement).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Position Comparison',
-            icon: 'bi-layout-split',
-            path: organization_position_comparison_path(current_organization),
             policy_check: -> { policy(:eligibility_requirement).index? },
             coming_soon: false
           },

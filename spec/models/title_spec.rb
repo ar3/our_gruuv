@@ -228,5 +228,24 @@ RSpec.describe Title, type: :model do
     it 'returns draft URL' do
       expect(title.draft_url).to be_nil
     end
+
+    describe 'entry_position and exit_position' do
+      it 'returns nil when the title has no positions' do
+        expect(title.entry_position).to be_nil
+        expect(title.exit_position).to be_nil
+      end
+
+      it 'returns the earliest and latest unarchived positions by level' do
+        level_low = create(:position_level, position_major_level: position_major_level, level: '2.1')
+        level_mid = create(:position_level, position_major_level: position_major_level, level: '2.2')
+        level_high = create(:position_level, position_major_level: position_major_level, level: '2.3')
+        entry = create(:position, title: title, position_level: level_low)
+        create(:position, title: title, position_level: level_mid)
+        exit_pos = create(:position, title: title, position_level: level_high)
+
+        expect(title.entry_position).to eq(entry)
+        expect(title.exit_position).to eq(exit_pos)
+      end
+    end
   end
 end

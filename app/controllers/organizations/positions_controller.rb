@@ -146,6 +146,10 @@ class Organizations::PositionsController < ApplicationController
       organization: @organization
     )
     @path_neighborhood = Positions::PathNeighborhood.call(position: @position)
+    @title_path_neighborhood = Titles::PathNeighborhoodGraph.new(
+      title: @position.title,
+      organization: @organization
+    )
     render layout: determine_layout
   end
 

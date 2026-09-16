@@ -1,0 +1,6 @@
+-# Locals: organization, left_position, right_position
+- compare_path = organization_position_comparison_url_for(organization, left_position: left_position, right_position: right_position)
+- if compare_path
+  = link_to compare_path, class: "small text-muted text-decoration-none text-nowrap flex-shrink-0", title: "Compare these positions", aria: { label: "Compare these positions" }, data: { bs_toggle: "tooltip" } do
+    %i.bi.bi-layout-split.me-1
+    Compare

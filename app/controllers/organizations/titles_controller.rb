@@ -28,8 +28,8 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
     grouped = all_tenures.to_a.group_by(&:teammate_id)
     @teammates_with_title = all_tenures.to_a.uniq(&:teammate_id)
 
-    @inbound_title_paths = @title.inbound_title_paths.includes(from_title: :position_major_level).sort_by { |p| p.from_title.external_title.to_s.downcase }
-    @outbound_title_paths = @title.outbound_title_paths.includes(to_title: :position_major_level).sort_by { |p| p.to_title.external_title.to_s.downcase }
+    @inbound_title_paths = @title.inbound_title_paths.includes(from_title: [:position_major_level, { positions: :position_level }]).sort_by { |p| p.from_title.external_title.to_s.downcase }
+    @outbound_title_paths = @title.outbound_title_paths.includes(to_title: [:position_major_level, { positions: :position_level }]).sort_by { |p| p.to_title.external_title.to_s.downcase }
     @title_path_neighborhood = Titles::PathNeighborhoodGraph.new(title: @title, organization: @organization)
     @expectation_alignment_score = Titles::ExpectationAlignmentScore.for_viewer(
       title: @title,
@@ -308,8 +308,8 @@ class Organizations::TitlesController < Organizations::OrganizationNamespaceBase
   end
 
   def load_path_manager_collections
-    @inbound_title_paths = @title.inbound_title_paths.includes(from_title: :position_major_level).sort_by { |p| p.from_title.external_title.to_s.downcase }
-    @outbound_title_paths = @title.outbound_title_paths.includes(to_title: :position_major_level).sort_by { |p| p.to_title.external_title.to_s.downcase }
+    @inbound_title_paths = @title.inbound_title_paths.includes(from_title: [:position_major_level, { positions: :position_level }]).sort_by { |p| p.from_title.external_title.to_s.downcase }
+    @outbound_title_paths = @title.outbound_title_paths.includes(to_title: [:position_major_level, { positions: :position_level }]).sort_by { |p| p.to_title.external_title.to_s.downcase }
 
     @existing_paths_by_title_id = {}
     @inbound_title_paths.each { |path| @existing_paths_by_title_id[path.from_title_id] = path }

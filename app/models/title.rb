@@ -103,6 +103,16 @@ class Title < ApplicationRecord
     "#{external_title} [L#{position_major_level.major_level}]"
   end
 
+  # Earliest unarchived position on this title (path landing / entry level).
+  def entry_position
+    path_ordered_positions.first
+  end
+
+  # Latest unarchived position on this title (path exit level).
+  def exit_position
+    path_ordered_positions.last
+  end
+
   def job_description_hr_text
     JobDescriptionHrText.for(organization: company, title: self)
   end
@@ -142,6 +152,14 @@ class Title < ApplicationRecord
   end
 
   private
+
+  def path_ordered_positions
+    @path_ordered_positions ||= positions.unarchived.includes(:position_level).sort_by do |position|
+      level_str = position.position_level&.level
+      major, minor = level_str.to_s.split(".", 2).map(&:to_i)
+      [major.to_i, minor.to_i]
+    end
+  end
 
   def normalize_job_description_hr_blanks
     self.job_description_disclaimer = job_description_disclaimer.presence

@@ -263,6 +263,7 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('Position pathing')
       expect(response.body).to include('Positions before')
       expect(response.body).to include('Positions after')
+      expect(response.body).to include('This position')
       employees_idx = response.body.index('Employees with this Position')
       pathing_idx = response.body.index('Position pathing')
       reliance_idx = response.body.index('Position assignment reliance network')
@@ -312,9 +313,18 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Position pathing')
+        expect(response.body).to include('This position')
         expect(response.body).to include(pos_l2.display_name)
         expect(response.body).to include(dest_pos.display_name)
         expect(response.body).to include('Natural progression')
+        expect(response.body).to include("left_position_id=#{pos_l2.id}")
+        expect(response.body).to include("right_position_id=#{pos_l3.id}")
+        expect(response.body).to include("left_position_id=#{pos_l3.id}")
+        expect(response.body).to include("right_position_id=#{dest_pos.id}")
+        expect(response.body).to include('Compare these positions')
+        expect(response.body).to include('Neighborhood')
+        expect(response.body).to include("position-title-paths-graph-#{pos_l3.id}")
+        expect(response.body).to include('arranged by major level')
       end
     end
 
