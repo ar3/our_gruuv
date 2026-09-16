@@ -240,6 +240,9 @@ Rails.application.routes.draw do
     resource :coach_inbox,
              only: [:show],
              controller: "organizations/coach_inbox"
+    resource :maap_cleanup_inbox,
+             only: [:show],
+             controller: "organizations/maap_cleanup_inbox"
 
     resource :talent_density,
              only: [:show, :update],

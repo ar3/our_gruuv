@@ -107,6 +107,15 @@ class OrganizationPolicy < ApplicationPolicy
     check_ins_health?
   end
 
+  # MAAP Cleanup Inbox — any employed teammate in this org for now.
+  def maap_cleanup_inbox?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+
+    true
+  end
+
   def goals_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

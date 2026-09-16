@@ -35,22 +35,17 @@ RSpec.describe EmploymentTenure, type: :model do
       end
     end
 
-    describe 'seat title matching validation' do
-      it 'allows a seat that includes the position title in associated titles' do
+    describe 'seat and position title association' do
+      it 'allows a seat that does not include the position title' do
         company = create(:organization, :company)
         teammate = create(:company_teammate, organization: company)
-        primary_title = create(:title, company: company)
-        secondary_title = create(:title, company: company)
-        position_level = create(:position_level, position_major_level: secondary_title.position_major_level)
-        secondary_position = create(:position, title: secondary_title, position_level: position_level)
-        seat = create(:seat, title: primary_title, seat_needed_by: Date.current + 2.months)
-        seat.update!(title_ids: [primary_title.id, secondary_title.id])
-        seat.reload
+        other_title = create(:title, company: company)
+        seat = create(:seat, title: other_title, seat_needed_by: Date.current + 2.months)
 
-        # Factory after(:build) overwrites position; set the secondary position after build.
+        # Factory builds a position with a different title than the seat.
         tenure = build(:employment_tenure, company_teammate: teammate, company: company, seat: seat, ended_at: nil)
-        tenure.position = secondary_position
 
+        expect(seat.includes_title_id?(tenure.position.title_id)).to be(false)
         expect(tenure).to be_valid
       end
     end

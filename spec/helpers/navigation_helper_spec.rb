@@ -215,7 +215,7 @@ RSpec.describe NavigationHelper, type: :helper do
         # Handle Organization class or instance
         if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
           # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
-          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, milestones_health?: true, observations_health?: true, assignments_health?: true, values_health?: true, abilities_health?: true, view_slack_settings?: true, view_company_preferences?: true, protect_flow?: true, talent_density?: true, talent_density_explainer?: true, coach_inbox?: true)
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true, view_feedback_requests?: true, check_ins_health?: true, goals_health?: true, milestones_health?: true, observations_health?: true, assignments_health?: true, values_health?: true, abilities_health?: true, positions_health?: true, view_slack_settings?: true, view_company_preferences?: true, protect_flow?: true, talent_density?: true, talent_density_explainer?: true, coach_inbox?: true, maap_cleanup_inbox?: true)
         elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
           double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, view_company_preferences?: true)
         elsif record.is_a?(CompanyTeammate)
@@ -450,8 +450,9 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels.index('Assignments Health')).to eq(7)
         expect(labels.index('Values Health')).to eq(8)
         expect(labels.index('Abilities Health')).to eq(9)
-        expect(labels.index('Protect Flow')).to eq(10)
-        expect(labels.index('Observations')).to eq(11)
+        expect(labels.index('Position Health')).to eq(10)
+        expect(labels.index('Protect Flow')).to eq(11)
+        expect(labels.index('Observations')).to eq(12)
         expect(labels).to include('Seats, Titles, Positions')
         expect(labels).to include('Assignments')
         expect(labels).to include('Abilities')
@@ -538,6 +539,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Position Suggestions')
         expect(labels).to include('Talent Density')
         expect(labels).to include('Coach Inbox')
+        expect(labels).to include('MAAP Cleanup Inbox')
         expect(labels).not_to include("#{person.casual_name}'s Dashboard")
         expect(labels).not_to include('Start Here')
         expect(labels).not_to include('Something Interesting')

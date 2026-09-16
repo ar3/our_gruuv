@@ -748,6 +748,13 @@ module NavigationHelper
             path: organization_coach_inbox_path(current_organization),
             policy_check: -> { policy(current_organization).coach_inbox? },
             coming_soon: false
+          },
+          {
+            label: 'MAAP Cleanup Inbox',
+            icon: 'bi-clipboard2-check',
+            path: organization_maap_cleanup_inbox_path(current_organization),
+            policy_check: -> { policy(current_organization).maap_cleanup_inbox? },
+            coming_soon: false
           }
         ]
       },

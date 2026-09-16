@@ -712,7 +712,11 @@ module OrganizationSitemap
           beta_page(:coach_inbox, "Coach Inbox", "bi-inbox", :organization_coach_inbox_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).coach_inbox? },
             goal: "See outstanding coachables across check-ins, OGOs, goals, and expectation alignment — and prepare to nudge.",
-            synonyms: %w[coach inbox nudges encourage outstanding rollout coachables])
+            synonyms: %w[coach inbox nudges encourage outstanding rollout coachables]),
+          beta_page(:maap_cleanup_inbox, "MAAP Cleanup Inbox", "bi-clipboard2-check", :organization_maap_cleanup_inbox_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).maap_cleanup_inbox? },
+            goal: "See org-wide MAAP cleanup items — starting with active tenures whose seat does not include the position title.",
+            synonyms: %w[maap cleanup inbox seat position mismatch tenure alignment clean maap])
         ]
       }
     end

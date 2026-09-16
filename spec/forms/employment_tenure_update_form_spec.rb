@@ -123,43 +123,30 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
       end
     end
 
-    describe 'seat_id validation' do
-      it 'validates seat_id matches position title if provided' do
+    describe 'seat_id' do
+      it 'allows a seat that does not match the position title' do
         other_position_major_level = create(:position_major_level)
         other_title = create(:title, company: company, position_major_level: other_position_major_level)
         other_seat = create(:seat, title: other_title, seat_needed_by: Date.current + 4.months)
-        
+
         form.position_id = position.id
         form.seat_id = other_seat.id
-        
-        expect(form).not_to be_valid
-        expect(form.errors[:seat]).to be_present
+        form.employment_type = 'full_time'
+
+        expect(form).to be_valid
       end
 
       it 'allows nil seat_id' do
         form.position_id = position.id
         form.seat_id = nil
         form.employment_type = 'full_time'
-        
+
         expect(form).to be_valid
       end
 
       it 'allows empty string seat_id' do
         form.position_id = position.id
         form.seat_id = ''
-        form.employment_type = 'full_time'
-        
-        expect(form).to be_valid
-      end
-
-      it 'allows a seat when the position title is an associated seat title' do
-        second_title = create(:title, company: company, position_major_level: position_major_level, external_title: 'Cross Functional Seat Title')
-        second_position_level = create(:position_level, position_major_level: position_major_level)
-        second_position = create(:position, title: second_title, position_level: second_position_level)
-        seat.update!(title_ids: [seat.title_id, second_title.id])
-
-        form.position_id = second_position.id
-        form.seat_id = seat.id
         form.employment_type = 'full_time'
 
         expect(form).to be_valid

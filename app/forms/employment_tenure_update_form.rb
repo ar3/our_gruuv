@@ -10,7 +10,6 @@ class EmploymentTenureUpdateForm < Reform::Form
   validates :position_id, presence: true
   validate :position_exists
   validate :manager_teammate_exists, if: -> { manager_teammate_id.present? }
-  validate :seat_matches_title, if: -> { seat_id.present? && seat_id.to_s.strip != '' }
   validate :employment_type_inclusion, if: -> { employment_type.present? }
   validate :reason_only_with_major_changes
 
@@ -130,27 +129,6 @@ class EmploymentTenureUpdateForm < Reform::Form
     return if manager_teammate_id.blank?
     unless CompanyTeammate.exists?(id: manager_teammate_id)
       errors.add(:manager_teammate_id, 'does not exist')
-    end
-  end
-
-  def seat_matches_title
-    # Skip validation if seat_id is blank, nil, empty string, or "0"
-    # Convert to string and strip to handle edge cases
-    seat_id_str = seat_id.to_s.strip
-    return if seat_id_str.blank? || seat_id_str == '' || seat_id_str == '0' || position_id.blank?
-    
-    # Try to parse as integer - if it's not a valid integer, skip validation
-    seat_id_int = seat_id_str.to_i
-    return if seat_id_int == 0  # "0" or non-numeric strings become 0
-    
-    # Try to find seat - if not found, skip validation (invalid seat_id will be caught elsewhere)
-    seat = Seat.find_by(id: seat_id_int)
-    position = Position.find_by(id: position_id)
-    
-    return unless seat && position
-    
-    unless seat.includes_title_id?(position.title_id)
-      errors.add(:seat, 'must match the title of the selected position')
     end
   end
 
