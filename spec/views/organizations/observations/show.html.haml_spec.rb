@@ -14,6 +14,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     obs
   end
 
+  before do
+    view.define_singleton_method(:current_company_teammate) { nil }
+  end
+
   describe 'observation trigger display' do
     context 'when observation has a trigger' do
       let(:trigger) { create(:observation_trigger, trigger_source: 'slack', trigger_type: 'slack_command') }

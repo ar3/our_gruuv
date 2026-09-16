@@ -1163,6 +1163,40 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/observations/:id (show) breadcrumb' do
+    let(:observee_person) { create(:person) }
+    let(:observee_teammate) { create(:teammate, person: observee_person, organization: organization) }
+    let(:observation) do
+      obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    it 'links My OGOs and company public kudos instead of the unfiltered observations index' do
+      get organization_observation_path(organization, observation)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Observation Details')
+
+      breadcrumb = CGI.unescapeHTML(response.body[%r{page-context-nav__breadcrumb.*?</nav>}m].to_s)
+      expect(breadcrumb).to include('My OGOs')
+      expect(breadcrumb).to include("#{organization.name} Kudos")
+      expect(breadcrumb).to include(ogos_organization_company_teammate_path(organization, 'me'))
+      expect(breadcrumb).to include(
+        organization_observations_path(
+          organization,
+          privacy: %w[public_to_company public_to_world],
+          spotlight: 'most_observed',
+          view: 'wall'
+        )
+      )
+      expect(breadcrumb).not_to include('>Observations<')
+      bare_index_href = organization_observations_path(organization)
+      expect(breadcrumb).not_to match(/href="#{Regexp.escape(bare_index_href)}"/)
+    end
+  end
+
   describe 'GET /organizations/:organization_id/observations/:id (show) when kudos points are disabled' do
     let(:observee_person) { create(:person) }
     let(:observee_teammate) { create(:teammate, person: observee_person, organization: organization) }
