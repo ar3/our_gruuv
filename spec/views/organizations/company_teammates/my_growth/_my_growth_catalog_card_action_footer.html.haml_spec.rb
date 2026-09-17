@@ -30,7 +30,7 @@ RSpec.describe 'organizations/company_teammates/my_growth/_my_growth_catalog_car
                teammate: teammate,
                associable: assignment,
                casual_name: casual_name,
-               counts: { open_associated_goals_count: 0 },
+               counts: { open_associated_goals_count: 0, open_associated_goals: [] },
                return_url: return_url,
                return_text: return_text
              }
@@ -49,13 +49,39 @@ RSpec.describe 'organizations/company_teammates/my_growth/_my_growth_catalog_car
                teammate: teammate,
                associable: assignment,
                casual_name: casual_name,
-               counts: { open_associated_goals_count: 0 },
+               counts: { open_associated_goals_count: 0, open_associated_goals: [] },
                return_url: return_url,
                return_text: return_text
              }
 
       expect(rendered).to include('/observations/new')
       expect(rendered).to include('Add a win/challenge/note (OGO)')
+    end
+
+    it 'shows goals popover when open goals exist' do
+      open_goals = [
+        { title: 'First linked goal', confidence_percentage: 75, confidence_saved_at: Time.zone.parse('2026-03-12') },
+        { title: 'Second linked goal', confidence_percentage: nil, confidence_saved_at: nil }
+      ]
+
+      render partial: 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
+             locals: {
+               organization: organization,
+               teammate: teammate,
+               associable: assignment,
+               casual_name: casual_name,
+               counts: { open_associated_goals_count: 2, open_associated_goals: open_goals },
+               return_url: return_url,
+               return_text: return_text
+             }
+
+      expect(rendered).to match(/data-bs-toggle="popover"/)
+      expect(rendered).to include('First linked goal')
+      expect(rendered).to include('75% as of')
+      expect(rendered).to include('Second linked goal')
+      expect(rendered).to include('no confidence yet')
+      expect(rendered).to include("to see all of the goals, click on the #{assignment.title} name link above")
+      expect(rendered).to include('You need access as this teammate, their manager, or an employment administrator to set or link goals here.')
     end
   end
 
@@ -69,7 +95,7 @@ RSpec.describe 'organizations/company_teammates/my_growth/_my_growth_catalog_car
                teammate: teammate,
                associable: assignment,
                casual_name: casual_name,
-               counts: { open_associated_goals_count: 2 },
+               counts: { open_associated_goals_count: 2, open_associated_goals: [] },
                return_url: return_url,
                return_text: return_text
              }
@@ -77,6 +103,29 @@ RSpec.describe 'organizations/company_teammates/my_growth/_my_growth_catalog_car
       expect(rendered).to include('choose_manage_goals')
       expect(rendered).to include("Add to the 2 active goals for #{casual_name} &amp; #{assignment.title}")
       expect(rendered).not_to include('bi-exclamation-triangle')
+    end
+
+    it 'attaches goals popover on the goal link when open goals are present' do
+      open_goals = [
+        { title: 'Ship onboarding', confidence_percentage: 80, confidence_saved_at: Time.zone.parse('2026-03-12') }
+      ]
+
+      render partial: 'organizations/company_teammates/my_growth/my_growth_catalog_card_action_footer',
+             locals: {
+               organization: organization,
+               teammate: teammate,
+               associable: assignment,
+               casual_name: casual_name,
+               counts: { open_associated_goals_count: 1, open_associated_goals: open_goals },
+               return_url: return_url,
+               return_text: return_text
+             }
+
+      expect(rendered).to include('choose_manage_goals')
+      expect(rendered).to match(/data-bs-toggle="popover"/)
+      expect(rendered).to include('Ship onboarding')
+      expect(rendered).to include('80% as of')
+      expect(rendered).to include("to see all of the goals, click on the #{assignment.title} name link above")
     end
   end
 end

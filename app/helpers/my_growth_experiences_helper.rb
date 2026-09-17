@@ -59,6 +59,8 @@ module MyGrowthExperiencesHelper
     'You need access as this teammate, their manager, or an employment administrator to set or link goals here.'
   end
 
+  MY_GROWTH_CATALOG_GOALS_POPOVER_LIMIT = 5
+
   def my_growth_catalog_goal_button_label(casual_name:, associable:, open_count:)
     title = associable_display_title(associable)
     if open_count.zero?
@@ -66,6 +68,60 @@ module MyGrowthExperiencesHelper
     else
       goals_phrase = "#{open_count} #{open_count == 1 ? 'active goal' : 'active goals'}"
       "Add to the #{goals_phrase} for #{casual_name} & #{title}"
+    end
+  end
+
+  def my_growth_catalog_goal_action_data(associable:, open_goals:, extra_footer: nil)
+    base = { turbo: false }
+    return base if open_goals.blank?
+
+    base.merge(
+      bs_toggle: "popover",
+      bs_trigger: "hover focus",
+      bs_placement: "top",
+      bs_html: true,
+      bs_custom_class: "text-start",
+      bs_title: "Active goals",
+      bs_content: my_growth_catalog_goals_popover_html(
+        associable: associable,
+        open_goals: open_goals,
+        extra_footer: extra_footer
+      )
+    )
+  end
+
+  def my_growth_catalog_goals_popover_html(associable:, open_goals:, extra_footer: nil)
+    return "".html_safe if open_goals.blank?
+
+    object_name = associable_display_title(associable)
+    shown = open_goals.first(MY_GROWTH_CATALOG_GOALS_POPOVER_LIMIT)
+    list_items = shown.map do |goal_row|
+      content_tag(:li, my_growth_catalog_goal_popover_line(goal_row))
+    end
+    list = content_tag(:ul, safe_join(list_items), class: "mb-2 ps-3")
+    footer_class = extra_footer.present? ? "mb-2 small text-muted" : "mb-0 small text-muted"
+    footer = content_tag(
+      :p,
+      "to see all of the goals, click on the #{object_name} name link above",
+      class: footer_class
+    )
+    parts = [list, footer]
+    if extra_footer.present?
+      parts << content_tag(:p, extra_footer, class: "mb-0 small text-muted")
+    end
+    safe_join(parts)
+  end
+
+  def my_growth_catalog_goal_popover_line(goal_row)
+    title = ERB::Util.html_escape(goal_row[:title].to_s)
+    percentage = goal_row[:confidence_percentage]
+    saved_at = goal_row[:confidence_saved_at]
+
+    if percentage.present? && saved_at.present?
+      date = format_date_in_user_timezone(saved_at, format: "%b %d, %Y")
+      "#{title} — #{percentage}% as of #{ERB::Util.html_escape(date)}".html_safe
+    else
+      "#{title} — no confidence yet".html_safe
     end
   end
 

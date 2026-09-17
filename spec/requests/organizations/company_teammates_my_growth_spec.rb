@@ -253,6 +253,25 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
           expect(response.body).to include("Add to the 2 active goals for #{casual} &amp; #{assignment.title}")
         end
+
+        it 'includes a goals popover with confidence and saved-at details when open goals exist' do
+          goal = create(:goal, **started_goal_attrs.merge(title: 'Ship onboarding'))
+          create(:goal_association, goal: goal, associable: assignment)
+          check_in = create(
+            :goal_check_in,
+            goal: goal,
+            confidence_percentage: 75,
+            confidence_reporter: employee,
+            check_in_week_start: Date.current.beginning_of_week(:monday)
+          )
+          check_in.update_columns(created_at: Time.zone.parse('2026-03-12 10:00'))
+
+          get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+          expect(response.body).to include('data-bs-toggle="popover"')
+          expect(response.body).to include('Ship onboarding')
+          expect(response.body).to include('75% as of')
+          expect(response.body).to include("to see all of the goals, click on the #{assignment.title} name link above")
+        end
       end
 
       it 'allows GET my_growth/abilities' do
