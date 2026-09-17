@@ -1,0 +1,50 @@
+- goals = local_assigns.fetch(:goals)
+- goal_links = local_assigns.fetch(:goal_links)
+- organization = local_assigns[:organization]
+- chart_id_prefix = local_assigns.fetch(:chart_id_prefix)
+- defer_init = local_assigns.fetch(:defer_init, false)
+- network_data = Goals::NetworkGraphData.new(goals: goals, goal_links: goal_links, organization: organization)
+- organization_pane_id = "#{chart_id_prefix}-organization-pane"
+- cytoscape_pane_id = "#{chart_id_prefix}-cytoscape-pane"
+- organization_tab_id = "#{chart_id_prefix}-organization-tab"
+- cytoscape_tab_id = "#{chart_id_prefix}-cytoscape-tab"
+- organization_container_id = "#{chart_id_prefix}-organization-chart"
+
+= render "shared/cytoscape_dagre_scripts"
+
+.goals-network-graph{
+  data: {
+    controller: "goals-network-graph",
+    action: "shown.bs.tab->goals-network-graph#onTabShown",
+    goals_network_graph_organization_data_json_value: network_data.highcharts_organization_data.to_json,
+    goals_network_graph_defer_init_value: defer_init
+  }
+}
+  %ul.nav.nav-tabs.card-header-tabs{role: "tablist"}
+    %li.nav-item{role: "presentation"}
+      %button.nav-link.active{id: cytoscape_tab_id, type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "##{cytoscape_pane_id}", "aria-controls": cytoscape_pane_id, "aria-selected": "true"}
+        Network
+    %li.nav-item{role: "presentation"}
+      %button.nav-link{id: organization_tab_id, type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "##{organization_pane_id}", "aria-controls": organization_pane_id, "aria-selected": "false"}
+        Organization
+  .tab-content.pt-3
+    .tab-pane.fade.show.active{id: cytoscape_pane_id, role: "tabpanel", "aria-labelledby": cytoscape_tab_id, data: { goals_network_graph_target: "cytoscapePane" }}
+      %p.small.text-muted.mb-2
+        Interactive network layout. Click a goal to open it, or export as PNG or SVG.
+      = render partial: "shared/cytoscape/supply_flow_graph",
+        locals: { elements: network_data.cytoscape_elements,
+                  root_node_ids: network_data.cytoscape_root_node_ids,
+                  export_filename: "goals-network-#{chart_id_prefix}",
+                  lazy: true,
+                  can_edit_layout: false,
+                  layout_url: "",
+                  saved_positions: {},
+                  node_fingerprint: "",
+                  stored_node_fingerprint: "",
+                  graph_id: "#{chart_id_prefix}-cytoscape-graph",
+                  extra_graph_classes: "goals-network-cytoscape",
+                  aria_label: "Interactive map of goal parent-child relationships" }
+    .tab-pane.fade{id: organization_pane_id, role: "tabpanel", "aria-labelledby": organization_tab_id, data: { goals_network_graph_target: "organizationPane" }}
+      %p.small.text-muted.mb-2
+        Horizontal parent → child organization chart. Click a goal to open it.
+      %div{id: organization_container_id, class: "goals-network-organization-chart", style: "min-height: 420px;", data: { goals_network_graph_target: "organizationContainer" }}

@@ -1,8 +1,5 @@
 - content_for :title, "#{@selected_teammate.person.casual_name.strip}'s Growth"
 
-- content_for :head do
-  %script{ src: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js", "data-turbo-track": "reload" }
-
 - content_for :header do
   = render 'organizations/company_teammates/my_growth/header',
     path_for_teammate: ->(tm) { my_growth_goals_organization_company_teammate_path(organization, tm, timeframe: params[:timeframe]) },
@@ -56,6 +53,13 @@
   teammate: @teammate,
   timeframe: @timeframe
 
+- after_network = capture do
+  = render 'organizations/company_teammates/my_growth/bulk_confidence_check_section',
+    organization: organization,
+    teammate: @teammate,
+    bulk_check_in_goals: @bulk_check_in_goals,
+    bulk_check_in_hierarchy: @bulk_check_in_hierarchy
+
 = render 'shared/goals_weekly_charts',
   chart_title_period: @chart_title_period,
   goals_for_network_graph: @goals_for_network_graph,
@@ -68,13 +72,9 @@
   second_y_axis_title: 'Number of goals',
   second_highcharts_title: '',
   hide_second_chart: true,
-  wrap_class: 'container-fluid px-0'
-
-= render 'organizations/company_teammates/my_growth/bulk_confidence_check_section',
-  organization: organization,
-  teammate: @teammate,
-  bulk_check_in_goals: @bulk_check_in_goals,
-  bulk_check_in_hierarchy: @bulk_check_in_hierarchy
+  wrap_class: 'container-fluid px-0',
+  after_network: after_network,
+  collapse_network_by_default: true
 
 = render 'organizations/company_teammates/my_growth/completed_goals_section',
   completed_goals_journey: @completed_goals_journey,

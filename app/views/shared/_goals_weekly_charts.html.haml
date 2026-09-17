@@ -16,51 +16,54 @@
 - goals_summary = local_assigns[:goals_summary]
 - goals_summary_timespan_label = local_assigns[:goals_summary_timespan_label]
 - goals_org = local_assigns[:organization]
+- after_network = local_assigns[:after_network]
+- network_chart_id_prefix = local_assigns[:network_chart_id_prefix] || first_chart_dom_id.to_s.sub(/-by-week-chart.*\z/, '')
+- network_chart_id_prefix = 'goals-network' if network_chart_id_prefix.blank?
+- collapse_network_by_default = local_assigns.fetch(:collapse_network_by_default, false)
+- network_collapse_id = "#{network_chart_id_prefix}-network-collapse"
+- network_goal_count = goals_for_network_graph.respond_to?(:size) ? goals_for_network_graph.size : 0
+- network_goal_possessive = network_goal_count == 1 ? "goal's" : "goals'"
+- network_expand_label = "Expand to see your #{network_goal_count} #{network_goal_possessive} relationships visualized"
 -# Bootstrap Icons: pass suffix only (e.g. bi-people) so we output bi bi-people
 
 %div{class: wrap_class}
   - if goals_for_network_graph.present? || goals_for_network_graph == []
     .row.mb-4
       .col-12
-        .card.border-0.shadow-sm
+        .card.border-0.shadow-sm.goals-network-section
           .card-header.bg-light
             %h5.mb-0
               %i.bi.bi-diagram-3-fill.me-2
               Goals Network
           .card-body
             - if goals_for_network_graph.any?
-              .goals-network-mermaid
-                %pre.mermaid
-                  != goals_mermaid_flowchart_dsl(goals_for_network_graph, goal_links_for_network_graph, organization: goals_org)
-              :javascript
-                (function() {
-                  function initMermaid() {
-                    if (typeof mermaid === 'undefined') {
-                      setTimeout(initMermaid, 100);
-                      return;
-                    }
-                    mermaid.initialize({
-                      startOnLoad: false,
-                      flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
-                      securityLevel: 'loose'
-                    });
-                    var container = document.querySelector('.goals-network-mermaid');
-                    if (container && container.querySelector('.mermaid')) {
-                      mermaid.run({ nodes: container.querySelectorAll('.mermaid'), suppressErrors: true });
-                    }
-                  }
-                  if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', initMermaid);
-                  } else {
-                    initMermaid();
-                  }
-                })();
+              - if collapse_network_by_default
+                %button.btn.btn-link.btn-sm.text-decoration-none.px-0.mb-0{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{network_collapse_id}", "aria-expanded": "false", "aria-controls": network_collapse_id}
+                  %i.bi.bi-arrows-expand.me-1
+                  = network_expand_label
+                .collapse{id: network_collapse_id}
+                  .pt-3
+                    = render 'shared/goals_network_graph',
+                      goals: goals_for_network_graph,
+                      goal_links: goal_links_for_network_graph,
+                      organization: goals_org,
+                      chart_id_prefix: network_chart_id_prefix,
+                      defer_init: true
+              - else
+                = render 'shared/goals_network_graph',
+                  goals: goals_for_network_graph,
+                  goal_links: goal_links_for_network_graph,
+                  organization: goals_org,
+                  chart_id_prefix: network_chart_id_prefix
             - else
               .alert.alert-info.mb-0
                 %h6.mb-2
                   %i.bi.bi-info-circle.me-2
                   No goals to display
                 %p.mb-0 There are no active goals or recently completed goals in this scope.
+
+  - if after_network.present?
+    = after_network
 
   - if goals_summary.present?
     .row.mb-2

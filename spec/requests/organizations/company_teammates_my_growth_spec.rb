@@ -367,6 +367,38 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include('No completed goals in this timeframe yet')
       end
 
+      it 'renders goals network chart tabs and places weekly confidence above goals by week' do
+        create(
+          :goal,
+          creator: employee_teammate,
+          owner: employee_teammate,
+          company: organization,
+          title: 'Grow network goal',
+          started_at: 1.week.ago
+        )
+        get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+        body = response.body
+        expect(body).to include('Goals Network')
+        expect(body).to include('Expand to see your 1 goal&#39;s relationships visualized')
+        expect(body).to include('goals-network-graph')
+        expect(body).to include('Organization')
+        expect(body).to include('data-goals-network-graph-target="organizationContainer"')
+        expect(body).to include('data-goals-network-graph-defer-init-value')
+        expect(body).to include('my-growth-goals-network-collapse')
+        expect(body).to match(/aria-selected="true"[^>]*class="[^"]*nav-link active[^"]*"[^>]*>\s*Network/m)
+        expect(body).not_to include('goals-network-mermaid')
+        expect(body).not_to include('mermaid.min.js')
+
+        network_idx = body.index('Goals Network')
+        confidence_idx = body.index('Weekly goal confidence check (in bulk)')
+        week_idx = body.index('Goals by Week')
+        expect(network_idx).to be_present
+        expect(confidence_idx).to be_present
+        expect(week_idx).to be_present
+        expect(network_idx).to be < confidence_idx
+        expect(confidence_idx).to be < week_idx
+      end
+
       context 'completed goals journey' do
         let!(:hit_goal) do
           goal = create(

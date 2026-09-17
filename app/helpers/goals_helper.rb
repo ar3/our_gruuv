@@ -1,39 +1,7 @@
 module GoalsHelper
   include TerminologyHelper
   include AssociableGoalsHelper
-  include MermaidFlowchartEscaping
   include GroupAvatarHelper
-
-  # Build Mermaid flowchart DSL for goal parent-child links.
-  # Node IDs are safe (g_<id>); labels are escaped for Mermaid (quotes, backslashes).
-  # Optional organization for click hrefs to goal show pages.
-  def goals_mermaid_flowchart_dsl(goals, goal_links, organization: nil)
-    return '' if goals.blank?
-
-    lines = []
-    lines << 'flowchart TB'
-    lines << '%% Goal links: parent --> child'
-
-    goal_ids = goals.map(&:id).to_set
-
-    # Node definitions: g_<id>("Label")
-    goals.each do |g|
-      node_id = "g_#{g.id}"
-      label = mermaid_normalize_flowchart_text(g.title).truncate(50)
-      escaped_label = mermaid_escape_flowchart_label(label)
-      lines << "  #{node_id}(\"#{escaped_label}\")"
-    end
-
-    # Edges: parent --> child
-    goal_links.each do |link|
-      pid = link.parent_id
-      cid = link.child_id
-      next unless goal_ids.include?(pid) && goal_ids.include?(cid)
-      lines << "  g_#{pid} --> g_#{cid}"
-    end
-
-    lines.join("\n")
-  end
 
   def goal_badge_class(goal_type)
     case goal_type

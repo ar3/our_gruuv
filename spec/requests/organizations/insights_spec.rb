@@ -670,12 +670,17 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('goals-association-chart')
     end
 
-    it 'includes the goals network graph section above the timeframe selector' do
+    it 'includes the goals network graph section with organization and network chart tabs' do
       create(:goal, creator: teammate, owner: teammate, company: organization, privacy_level: 'everyone_in_company', started_at: 1.week.ago)
       get organization_insights_goals_path(organization)
       expect(response.body).to include('Goals Network')
-      expect(response.body).to include('goals-network-mermaid')
-      expect(response.body).to include('mermaid.min.js')
+      expect(response.body).to include('goals-network-graph')
+      expect(response.body).to include('Organization')
+      expect(response.body).to include('data-goals-network-graph-target="organizationContainer"')
+      expect(response.body).to include('assignment-accountability-flow')
+      expect(response.body).to match(/aria-selected="true"[^>]*class="[^"]*nav-link active[^"]*"[^>]*>\s*Network/m)
+      expect(response.body).not_to include('goals-network-mermaid')
+      expect(response.body).not_to include('mermaid.min.js')
     end
 
     it 'includes an hr divider between the network graph and timeframe-dependent content' do
