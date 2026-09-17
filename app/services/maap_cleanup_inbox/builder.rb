@@ -4,6 +4,7 @@ module MaapCleanupInbox
   # Org-wide MAAP cleanup inbox: mismatches and gaps that keep a MAAP from being "clean".
   # Counts always; item rows only for expanded subtypes.
   class Builder
+    Action = Data.define(:label, :url)
     Item = Data.define(
       :id,
       :subtype_key,
@@ -11,8 +12,7 @@ module MaapCleanupInbox
       :person_name,
       :title,
       :subtitle,
-      :tenure_url,
-      :seat_url
+      :actions
     )
     SubtypeSummary = Data.define(:key, :label, :count, :items, :expanded)
     Section = Data.define(:key, :label, :subtypes)
@@ -96,6 +96,7 @@ module MaapCleanupInbox
       teammate = tenure.company_teammate
       seat = tenure.seat
       position = tenure.position
+      casual = casual_name_for(teammate)
 
       Item.new(
         id: "mismatched-seat-position-#{tenure.id}",
@@ -104,17 +105,29 @@ module MaapCleanupInbox
         person_name: person_name_for(teammate),
         title: "#{seat.display_name} ↔ #{position.title.display_name}",
         subtitle: "Seat titles do not include this position's title",
-        tenure_url: routes.organization_company_teammate_employment_tenure_path(
-          organization,
-          teammate,
-          tenure
-        ),
-        seat_url: routes.organization_seat_path(organization, seat)
+        actions: [
+          Action.new(
+            label: "Change #{casual}'s Seat",
+            url: routes.edit_organization_company_teammate_employment_tenure_path(
+              organization,
+              teammate,
+              tenure
+            )
+          ),
+          Action.new(
+            label: "Add Positions to #{seat.display_name}",
+            url: routes.manage_titles_organization_seat_path(organization, seat)
+          )
+        ]
       )
     end
 
     def person_name_for(teammate)
       teammate.person&.display_name || teammate.to_s
+    end
+
+    def casual_name_for(teammate)
+      teammate.person&.casual_name.presence || person_name_for(teammate)
     end
   end
 end

@@ -49,8 +49,18 @@ RSpec.describe MaapCleanupInbox::Builder do
     expect(item.person_name).to eq(person.display_name)
     expect(item.title).to eq("#{tenure.seat.display_name} ↔ #{tenure.position.title.display_name}")
     expect(item.title).not_to include(tenure.position.position_level.level)
-    expect(item.tenure_url).to include("/employment_tenures/#{tenure.id}")
-    expect(item.seat_url).to include("/seats/#{tenure.seat_id}")
+    expect(item.actions.map(&:label)).to eq([
+      "Change #{person.casual_name}'s Seat",
+      "Add Positions to #{tenure.seat.display_name}"
+    ])
+    expect(item.actions.map(&:url)).to eq([
+      Rails.application.routes.url_helpers.edit_organization_company_teammate_employment_tenure_path(
+        organization,
+        teammate,
+        tenure
+      ),
+      Rails.application.routes.url_helpers.manage_titles_organization_seat_path(organization, tenure.seat)
+    ])
   end
 
   it "ignores ended tenures and matching seat/position pairs" do

@@ -25,7 +25,7 @@ RSpec.describe "MAAP Cleanup Inbox", type: :request do
       expect(response.body).to include("maapCleanupInboxPageHelp")
     end
 
-    it "expands the mismatched subtype and shows Tenure and Seat actions" do
+    it "expands the mismatched subtype and shows thin Change Seat / Add Positions actions" do
       other_title = create(:title, company: organization)
       seat = create(:seat, title: other_title, seat_needed_by: Date.current + 2.months)
       tenure = create(
@@ -41,12 +41,16 @@ RSpec.describe "MAAP Cleanup Inbox", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Hide")
       expect(response.body).to include(person.display_name)
-      expect(response.body).to include(">Tenure<")
-      expect(response.body).to include(">Seat<")
+      expect(CGI.unescapeHTML(response.body)).to include("Change #{person.casual_name}'s Seat")
+      expect(response.body).to include("Add Positions to #{seat.display_name}")
       expect(response.body).to include(
-        organization_company_teammate_employment_tenure_path(organization, teammate, tenure)
+        edit_organization_company_teammate_employment_tenure_path(organization, teammate, tenure)
       )
-      expect(response.body).to include(organization_seat_path(organization, seat))
+      expect(response.body).to include(manage_titles_organization_seat_path(organization, seat))
+      expect(response.body).to include("btn-link")
+      expect(response.body).to include("link-primary")
+      expect(response.body).to include("text-decoration-underline")
+      expect(response.body).to include("bi-box-arrow-up-right")
     end
 
     it "is linked from Beta navigation" do
