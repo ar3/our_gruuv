@@ -63,6 +63,22 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         expect(teammate_ids.map(&:to_i)).to include(observer_teammate.id)
       end
 
+      it 'uses casual names for observees in DM intro text (not Slack @ mentions)' do
+        job = Observations::PostNotificationJob.new
+        job.perform(observation.id, notify_teammate_ids)
+
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
+        intro_block = rich_message.find { |block| block['type'] == 'context' }
+        intro_text = intro_block.dig('elements', 0, 'text')
+
+        expect(intro_text).to include(observee_person.casual_name)
+        expect(intro_text).not_to include('<@U789012>')
+        expect(intro_text).to include('<@U123456>') # observer may still be mentioned
+      end
+
       it 'sends individual DM to observer when only observer has Slack configured' do
         # Remove observee's Slack identity
         observee_teammate.teammate_identities.destroy_all

@@ -77,7 +77,7 @@ class Observations::PostNotificationJob < ApplicationJob
   def post_to_dm_channel(observation, channel_id, teammate_ids, is_group_dm: false)
     # Build main message and thread reply using same template as channel posts
     # Use observation.company as the organization for building messages
-    main_blocks = build_channel_main_message(observation, observation.company)
+    main_blocks = build_channel_main_message(observation, observation.company, mention_observees: false)
     thread_blocks = build_channel_thread_reply(observation, observation.company)
     
     # Get observer's casual name and Slack identity for username/icon override
@@ -153,7 +153,7 @@ class Observations::PostNotificationJob < ApplicationJob
     teammate_ids = Array(existing_main.metadata['teammate_ids']).map(&:to_i).reject(&:zero?)
     is_group_dm = [true, 'true'].include?(existing_main.metadata['is_group_dm'])
 
-    main_blocks = build_channel_main_message(observation, observation.company)
+    main_blocks = build_channel_main_message(observation, observation.company, mention_observees: false)
     thread_blocks = build_channel_thread_reply(observation, observation.company)
 
     observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
@@ -402,7 +402,7 @@ class Observations::PostNotificationJob < ApplicationJob
     { success: false, error: e.message }
   end
 
-  def build_channel_main_message(observation, organization)
+  def build_channel_main_message(observation, organization, mention_observees: true)
     # Load observer teammate with slack identity from observation's company (not the kudos channel org)
     observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
     
@@ -416,15 +416,16 @@ class Observations::PostNotificationJob < ApplicationJob
       observation.observer.casual_name
     end
     
-    # Get observed Slack mentions or fallback to casual names
-    # Observed teammates are already in observation.company (validation ensures this)
-    # Ensure we load teammate_identities for observed teammates
+    # Observed teammates: Slack @ for channel posts; casual names for private DMs so @ doesn't imply they were notified
     observed_mentions = observation.observed_teammates.includes(:teammate_identities).map do |teammate|
-      # Check slack_identity directly to ensure it's loaded
-      slack_identity = teammate.teammate_identities.find { |ti| ti.provider == 'slack' }
-      slack_id = slack_identity&.uid
-      if slack_id.present?
-        "<@#{slack_id}>"
+      if mention_observees
+        slack_identity = teammate.teammate_identities.find { |ti| ti.provider == 'slack' }
+        slack_id = slack_identity&.uid
+        if slack_id.present?
+          "<@#{slack_id}>"
+        else
+          teammate.person.casual_name
+        end
       else
         teammate.person.casual_name
       end

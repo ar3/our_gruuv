@@ -132,6 +132,7 @@
               %i.bi.bi-sort-down.me-1
               Sort:
               = observation_sort_options.find { |o| o[1] == @current_sort }&.first || 'Most recent'
+            = render "organizations/observations/privacy_quick_filter"
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-table.me-1

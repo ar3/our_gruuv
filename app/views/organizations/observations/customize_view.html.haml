@@ -7,16 +7,20 @@
 - content_for :return_text do
   = @return_text || 'Back to Culture of Feedback and Recognition'
 
-= form_with url: update_view_organization_observations_path(@organization), method: :patch, local: true, data: { controller: "timeframe" } do |form|
-  .row
-    .col-md-4
-      .mb-4
-        %h2 Choose Preset
-    .col-md-8
-      / Preset Section - Grid of Buttons
-      .card.mb-4
+- nav_links = observation_customize_view_section_nav_links
+- nav_title = "On this page"
+- initial_section = "choose-preset"
+
+= render layout: "shared/in_page_section_nav/wrapper", locals: { nav_title: nav_title, nav_links: nav_links, initial_section: initial_section } do
+  = form_with url: update_view_organization_observations_path(@organization), method: :patch, local: true, data: { controller: "timeframe" } do |form|
+    %section#choose-preset.mb-5
+      = render 'shared/section_header',
+               title: 'Choose Preset',
+               icon: 'bi-check-circle',
+               description: 'Jump to a ready-made view',
+               include_top_header_margin: false
+      .card.mb-0
         .card-body
-          %label.form-label.fw-bold.mb-3 Choose Preset
           - presets = available_observation_presets_with_permissions(@organization, current_company_teammate)
           .row.g-3
             - presets.each do |preset|
@@ -32,23 +36,21 @@
                         %i.bi.bi-lock.mb-2{style: "font-size: 1.5rem;"}
                         %span.fw-bold.text-center= preset[:name]
                     %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: preset[:tooltip]}, style: "font-size: 1.2rem;"}
-  .row
-    .col-12.text-center
+
+    .text-center.mb-5
       %hr/
-      %h1.text-muted --OR--
+      %h1.h4.text-muted.mb-1 --OR--
       %small.text-muted Customize Your View
       %hr/
-  .row
-    .col-md-4
-      .mb-4
-        %h2 Select What Observations You See
-    
-    .col-md-8
-      / Filters Section
-      .card.mb-4
+
+    %section#filters.mb-5
+      = render 'shared/section_header',
+               title: 'Filter the OGOs You See',
+               icon: 'bi-funnel',
+               description: 'Privacy, people, and timeframe',
+               include_top_header_margin: false
+      .card.mb-0
         .card-body
-          %label.form-label.fw-bold Select What Observations You See
-          
           .mb-3
             %label.form-label Privacy Level
             .form-check
@@ -69,7 +71,7 @@
             .form-check
               = check_box_tag 'privacy[]', 'public_to_world', @current_filters[:privacy]&.include?('public_to_world'), class: 'form-check-input', id: 'privacy_public_to_world'
               = label_tag 'privacy_public_to_world', '🌍 Public to World', class: 'form-check-label'
-          
+
           .mb-3
             .form-check
               = check_box_tag 'include_soft_deleted', 'true', @current_filters[:include_soft_deleted] == 'true' || @current_filters[:include_soft_deleted] == true, class: 'form-check-input', id: 'include_soft_deleted'
@@ -90,8 +92,8 @@
                       - input_id = "involving_teammate_#{teammate.id}"
                       = check_box_tag 'involving_teammate_ids[]', teammate.id, selected_involving_teammate_ids.include?(teammate.id.to_s), class: 'form-check-input', id: input_id
                       = label_tag input_id, teammate.person.casual_name, class: 'form-check-label'
-          
-          .mb-3
+
+          .mb-0
             %label.form-label Timeframe
             .form-check
               = radio_button_tag 'timeframe', 'this_week', @current_filters[:timeframe] == 'this_week', class: 'form-check-input', id: 'timeframe_this_week'
@@ -126,30 +128,26 @@
               = radio_button_tag 'timeframe', 'all', @current_filters[:timeframe].blank? || @current_filters[:timeframe] == 'all', class: 'form-check-input', id: 'timeframe_all'
               = label_tag 'timeframe_all', 'All Time', class: 'form-check-label'
 
-  .row
-    .col-md-4
-      .mb-4
-        %h2 Select What Order You See Them In
-    
-    .col-md-8
-      / Sort Section
-      .card.mb-4
+    %section#order.mb-5
+      = render 'shared/section_header',
+               title: 'Select What Order You See Them In',
+               icon: 'bi-sort-down',
+               description: 'Sort the list',
+               include_top_header_margin: false
+      .card.mb-0
         .card-body
-          %label.form-label.fw-bold Select What Order You See Them In
-          .mb-3
+          .mb-0
             %label.form-label Sort By
             = select_tag 'sort', options_for_select(observation_sort_options, @current_sort), class: 'form-select', id: 'sort_select'
 
-  .row
-    .col-md-4
-      .mb-4
-        %h2 Select How They Appear
-    
-    .col-md-8
-      / View Style Section
-      .card.mb-4
+    %section#appearance.mb-5
+      = render 'shared/section_header',
+               title: 'Select How They Appear',
+               icon: 'bi-layout-text-window',
+               description: 'Table, cards, list, or wall',
+               include_top_header_margin: false
+      .card.mb-0
         .card-body
-          %label.form-label.fw-bold Select How They Appear
           .form-check
             = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
             = label_tag 'view_table', class: 'form-check-label' do
@@ -176,16 +174,14 @@
               %i.bi.bi-images.me-2
               Social Wall View
 
-  .row
-    .col-md-4
-      .mb-4
-        %h2 Select the Spotlight for Them
-    
-    .col-md-8
-      / Spotlight Section
-      .card.mb-4
+    %section#spotlight.mb-5
+      = render 'shared/section_header',
+               title: 'Select the Spotlight for Them',
+               icon: 'bi-eye',
+               description: 'Choose the spotlight summary',
+               include_top_header_margin: false
+      .card.mb-0
         .card-body
-          %label.form-label.fw-bold Select the Spotlight for Them
           .form-check
             = radio_button_tag 'spotlight', 'overview', (@current_spotlight.blank? || @current_spotlight == 'overview'), class: 'form-check-input', id: 'spotlight_overview'
             = label_tag 'spotlight_overview', 'Overview', class: 'form-check-label'
@@ -208,10 +204,6 @@
             = radio_button_tag 'spotlight', 'none', @current_spotlight == 'none', class: 'form-check-input', id: 'spotlight_none'
             = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
 
-  .row
-    .col-12
-      / Form Actions
-      .d-flex.gap-2.mt-4.mb-4
-        = form.submit 'Apply View', class: 'btn btn-primary'
-        = link_to 'Cancel', @return_url || organization_observations_path(@organization), class: 'btn btn-outline-secondary'
-
+    .d-flex.gap-2.mt-4.mb-4
+      = form.submit 'Apply View', class: 'btn btn-primary'
+      = link_to 'Cancel', @return_url || organization_observations_path(@organization), class: 'btn btn-outline-secondary'

@@ -1,0 +1,17 @@
+- selection = observation_privacy_quick_filter_selection(@current_filters)
+- enabled = selection != :custom
+- options = [[:public, "Only Public"], [:private, "Only Private"], [:all, "All Privacy Levels"]]
+.observation-privacy-quick-filter.mt-2
+  - if enabled
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Privacy filter"}
+      - options.each do |key, label|
+        - active = selection == key
+        = link_to label, observation_privacy_quick_filter_path(@organization, key), class: "btn #{active ? 'btn-primary' : 'btn-outline-secondary'}", "aria-current": (active ? "true" : nil)
+  - else
+    %span.d-inline-block{"data-bs-toggle" => "tooltip", "data-bs-title" => ObservationsHelper::PRIVACY_QUICK_FILTER_CUSTOM_TOOLTIP}
+      .btn-group.btn-group-sm{role: "group", "aria-label": "Privacy filter"}
+        - options.each do |_key, label|
+          %button.btn.btn-outline-secondary.disabled{type: "button", disabled: true}= label
+  %small.text-muted.d-block.mt-1
+    Same privacy filter can be set in
+    = link_to "Customize View", customize_view_organization_observations_path(@organization, params.except(:controller, :action, :page).permit!.to_h), class: "link-secondary"

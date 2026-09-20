@@ -21,6 +21,37 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it 'shows privacy quick filter chips in the spotlight footer' do
+      get organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      body = CGI.unescapeHTML(response.body)
+      expect(body).to include('observation-privacy-quick-filter')
+      expect(body).to include('Only Public')
+      expect(body).to include('Only Private')
+      expect(body).to include('All Privacy Levels')
+      expect(body).to include('Same privacy filter can be set in')
+      expect(body).to include('Customize View')
+      expect(body).to include(
+        organization_observations_path(organization, privacy: ObservationsHelper::PUBLIC_PRIVACY_QUICK_FILTER)
+      )
+    end
+
+    it 'marks All Privacy Levels active when no privacy filter is set' do
+      get organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/btn-primary[^>]*>\s*All Privacy Levels/)
+    end
+
+    it 'disables the privacy quick filter when privacy is a custom mix' do
+      get organization_observations_path(organization, privacy: %w[public_to_company observer_only])
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(ObservationsHelper::PRIVACY_QUICK_FILTER_CUSTOM_TOOLTIP)
+      expect(response.body).to include('btn-outline-secondary disabled')
+      expect(response.body).not_to include('>Only Public</a>')
+      expect(response.body).not_to include('>Only Private</a>')
+      expect(response.body).not_to include('>All Privacy Levels</a>')
+    end
+
     context 'with involving_teammate_id' do
       it 'shows Observations involving pill in Filters area when filter is active' do
         get organization_observations_path(organization, involving_teammate_id: teammate.id)
@@ -84,6 +115,28 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('involving_teammate_ids[]')
       expect(response.body).to include(person.casual_name)
       expect(response.body).to include(teammate_two_person.casual_name)
+    end
+
+    it 'renders in-page section navigation for customize sections' do
+      get customize_view_organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('On this page')
+      expect(response.body).to include('data-controller="in-page-section-nav"')
+      expect(response.body).to include('href="#choose-preset"')
+      expect(response.body).to include('href="#filters"')
+      expect(response.body).to include('href="#order"')
+      expect(response.body).to include('href="#appearance"')
+      expect(response.body).to include('href="#spotlight"')
+      expect(response.body).to include('id="choose-preset"')
+      expect(response.body).to include('id="filters"')
+      expect(response.body).to include('id="order"')
+      expect(response.body).to include('id="appearance"')
+      expect(response.body).to include('id="spotlight"')
+      expect(response.body).to include('text-primary')
+      expect(response.body).to include('border-primary')
+      expect(response.body).to include('Jump to a ready-made view')
+      expect(response.body).to include('Filter the OGOs You See')
+      expect(response.body).to include('Privacy, people, and timeframe')
     end
   end
 

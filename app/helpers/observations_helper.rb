@@ -1,4 +1,14 @@
 module ObservationsHelper
+  PUBLIC_PRIVACY_QUICK_FILTER = %w[public_to_company public_to_world].freeze
+  PRIVATE_PRIVACY_QUICK_FILTER = %w[
+    observer_only
+    observed_only
+    managers_only
+    observed_and_managers
+  ].freeze
+  PRIVACY_QUICK_FILTER_CUSTOM_TOOLTIP =
+    "Privacy must be set in Customize View".freeze
+
   # Returns observations visible to the given person within the organization
   # Uses ObservationVisibilityQuery to respect privacy levels, drafts, and access rules
   def visible_observations_for_person(person, organization)
@@ -6,6 +16,43 @@ module ObservationsHelper
     
     visibility_query = ObservationVisibilityQuery.new(person, organization)
     visibility_query.visible_observations
+  end
+
+  # :all / :public / :private when filters match a neat preset; :custom otherwise.
+  def observation_privacy_quick_filter_selection(filters)
+    levels = Array(filters && filters[:privacy]).map(&:to_s).reject(&:blank?).uniq.sort
+    return :all if levels.empty?
+    return :public if levels == PUBLIC_PRIVACY_QUICK_FILTER.sort
+    return :private if levels == PRIVATE_PRIVACY_QUICK_FILTER.sort
+
+    :custom
+  end
+
+  def observation_privacy_quick_filter_path(organization, selection)
+    path_params = params.except(:controller, :action, :page, :privacy, :organization_id, :id).permit!.to_h
+    case selection.to_sym
+    when :public
+      path_params[:privacy] = PUBLIC_PRIVACY_QUICK_FILTER
+    when :private
+      path_params[:privacy] = PRIVATE_PRIVACY_QUICK_FILTER
+    when :all
+      path_params.delete("privacy")
+      path_params.delete(:privacy)
+    else
+      raise ArgumentError, "Unknown privacy quick filter selection: #{selection}"
+    end
+
+    organization_observations_path(organization, path_params)
+  end
+
+  def observation_customize_view_section_nav_links
+    [
+      { id: "choose-preset", label: "Choose Preset", icon: "bi-check-circle", primary: true },
+      { id: "filters", label: "Filters", icon: "bi-funnel", primary: true },
+      { id: "order", label: "Order", icon: "bi-sort-down", primary: true },
+      { id: "appearance", label: "How They Appear", icon: "bi-layout-text-window", primary: true },
+      { id: "spotlight", label: "Spotlight", icon: "bi-eye", primary: true }
+    ]
   end
 
   def available_observation_presets_with_permissions(organization, current_company_teammate)
