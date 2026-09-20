@@ -38,6 +38,52 @@ RSpec.describe Observation, type: :model do
     it { should have_many(:assignments).through(:observation_ratings).source(:rateable) }
     it { should have_many(:aspirations).through(:observation_ratings).source(:rateable) }
     it { should have_many(:notifications).dependent(:destroy) }
+    it { should have_many_attached(:story_images) }
+  end
+
+  describe 'story_images validations' do
+    it 'rejects more than MAX_STORY_IMAGES attachments' do
+      obs = save_observation_with_observees
+      Observation::MAX_STORY_IMAGES.times do |i|
+        obs.story_images.attach(
+          io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+          filename: "logo#{i}.png",
+          content_type: 'image/png'
+        )
+      end
+      expect(obs.reload.story_images.count).to eq(Observation::MAX_STORY_IMAGES)
+
+      obs.story_images.attach(
+        io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+        filename: 'overflow.png',
+        content_type: 'image/png'
+      )
+      expect(obs).not_to be_valid
+      expect(obs.errors[:story_images].join).to include('at most')
+    end
+
+    it 'rejects disallowed content types' do
+      obs = save_observation_with_observees
+      obs.story_images.attach(
+        io: StringIO.new('not an image'),
+        filename: 'notes.txt',
+        content_type: 'text/plain'
+      )
+      expect(obs).not_to be_valid
+      expect(obs.errors[:story_images].join).to match(/JPEG|PNG|WebP|HEIC/i)
+    end
+
+    it 'exposes public story image URLs for Slack (public method)' do
+      obs = save_observation_with_observees
+      obs.story_images.attach(
+        io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+        filename: 'logo.png',
+        content_type: 'image/png'
+      )
+      urls = obs.story_image_public_urls
+      expect(urls.size).to eq(1)
+      expect(urls.first).to include('/rails/active_storage/')
+    end
   end
 
   describe 'enums' do

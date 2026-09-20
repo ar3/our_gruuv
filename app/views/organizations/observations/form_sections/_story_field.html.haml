@@ -11,6 +11,23 @@
     .form-text.mt-2
       %small.text-muted
         = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "observation_story" }
+
+    / Story images (all observation types)
+    .mt-3
+      %h6 Images that help tell this story
+      - if observation.persisted? && observation.story_images.attached?
+        .mb-3.border.rounded.p-2.bg-light
+          .row
+            - observation.story_images.each do |image|
+              .col-6.col-md-4.col-lg-3.mb-2
+                .position-relative
+                  = image_tag url_for(image), alt: 'Story image', class: 'img-fluid rounded'
+                  .form-check.mt-1
+                    = check_box_tag 'observation[remove_story_image_ids][]', image.id, false, class: 'form-check-input', id: "remove_story_image_#{image.id}"
+                    = label_tag "remove_story_image_#{image.id}", 'Remove', class: 'form-check-label small'
+      = form.file_field :story_images, multiple: true, accept: 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif', class: 'form-control', direct_upload: false
+      %small.form-text.text-muted
+        Up to 20 images, 20 MB each. JPEG, PNG, WebP, or HEIC.
     
     - if show_gifs != false
       / GIF Picker
@@ -41,4 +58,3 @@
           = image_tag "/PoweredBy_200px-White_HorizText.png", alt: "Powered by GIPHY", class: "img-fluid"
         
         / Hidden inputs for selected GIFs will be added here by JavaScript
-

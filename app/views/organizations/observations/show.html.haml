@@ -112,14 +112,14 @@
     - if @observation.published? && !@observation.soft_deleted?
       = render 'shared/comment_summary', commentable: @observation, organization: @organization
         
-    - if @observation.decorate.gifs_html.present?
-      .card.mb-4{ role: "region", "aria-labelledby": "observation-gifs" }
+    - if @observation.decorate.story_media_html.present?
+      .card.mb-4{ role: "region", "aria-labelledby": "observation-images" }
         .card-header
-          %h5.mb-0{ id: "observation-gifs" }
+          %h5.mb-0{ id: "observation-images" }
             %i.bi.bi-images.me-2
-            GIFs
+            Images
         .card-body
-          != @observation.decorate.gifs_html.html_safe
+          != @observation.decorate.story_media_html.html_safe
         
     .card.mb-4{ role: "region", "aria-labelledby": "observation-details" }
       .card-header

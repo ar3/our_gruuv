@@ -1351,6 +1351,81 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Archive')
       end
+
+      it 'renders uploaded story images before GIFs' do
+        observation.story_images.attach(
+          io: File.open(Rails.root.join('spec/fixtures/files/logo.png')),
+          filename: 'logo.png',
+          content_type: 'image/png'
+        )
+        observation.update!(story_extras: { 'gif_urls' => ['https://example.com/gif1.gif'] })
+
+        get organization_observation_path(organization, observation)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Images')
+        expect(response.body).to include('Story image')
+        expect(response.body).to include('https://example.com/gif1.gif')
+        expect(response.body.index('Story image')).to be < response.body.index('https://example.com/gif1.gif')
+      end
+    end
+  end
+
+  describe 'story images on draft update' do
+    let(:observee_teammate) { create(:teammate, organization: organization) }
+    let(:observation) do
+      build(:observation, observer: person, company: organization, observation_type: 'feedback', created_as_type: 'feedback', published_at: nil).tap(&:save!)
+    end
+
+    it 'attaches story images on update_draft' do
+      image = fixture_file_upload('logo.png', 'image/png')
+
+      post update_draft_organization_observation_path(organization, observation), params: {
+        _method: 'patch',
+        observation: {
+          story: 'Story with a photo',
+          privacy_level: 'observed_and_managers',
+          observation_type: 'feedback',
+          story_images: [image]
+        },
+        observee_ids: [observee_teammate.id]
+      }
+
+      expect(response).to have_http_status(:redirect)
+      expect(observation.reload.story_images).to be_attached
+      expect(observation.story_images.count).to eq(1)
+    end
+
+    it 'removes story images when remove_story_image_ids is submitted' do
+      observation.story_images.attach(
+        io: File.open(Rails.root.join('spec/fixtures/files/logo.png')),
+        filename: 'logo.png',
+        content_type: 'image/png'
+      )
+      attachment_id = observation.story_images.attachments.first.id
+
+      post update_draft_organization_observation_path(organization, observation), params: {
+        _method: 'patch',
+        observation: {
+          story: observation.story,
+          privacy_level: observation.privacy_level,
+          observation_type: 'feedback',
+          remove_story_image_ids: [attachment_id]
+        }
+      }
+
+      expect(response).to have_http_status(:redirect)
+      expect(observation.reload.story_images).not_to be_attached
+    end
+  end
+
+  describe 'GET new feedback form includes story image uploader' do
+    it 'shows the story images field for feedback' do
+      get new_feedback_organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Images that help tell this story')
+      expect(response.body).to include('Up to 20 images, 20 MB each')
+      expect(response.body).to include('observation[story_images][]')
     end
   end
 

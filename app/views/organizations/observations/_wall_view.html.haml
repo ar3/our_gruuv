@@ -28,13 +28,11 @@
           %p.card-text.mb-3
             = truncate(observation.story, length: 200)
           
-          / GIF if exists
-          - if observation.story_extras.present?
-            - gif_urls = observation.story_extras['gif_urls'] || observation.story_extras[:gif_urls] || []
-            - first_gif = Array(gif_urls).reject(&:blank?).first
-            - if first_gif
-              .mb-3
-                = image_tag first_gif, alt: 'GIF', class: 'img-fluid rounded'
+          / Story image or GIF if exists (uploads first)
+          - first_media = observation.decorate.first_story_media_url
+          - if first_media.present?
+            .mb-3
+              = image_tag first_media, alt: 'Story image', class: 'img-fluid rounded'
           
           / Ratings
           - if observation.observation_ratings.any?

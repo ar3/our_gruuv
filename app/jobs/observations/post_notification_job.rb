@@ -454,7 +454,17 @@ class Observations::PostNotificationJob < ApplicationJob
       }
     ]
     
-    # Add GIF URLs as image blocks
+    # Add uploaded story images first, then GIF URLs as image blocks
+    observation.story_image_public_urls.each do |image_url|
+      next if image_url.blank?
+
+      blocks << {
+        type: "image",
+        image_url: image_url,
+        alt_text: "Story image"
+      }
+    end
+
     if observation.story_extras.present? && observation.story_extras['gif_urls'].present?
       gif_urls = Array(observation.story_extras['gif_urls']).reject(&:blank?)
       gif_urls.each do |gif_url|

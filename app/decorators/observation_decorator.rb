@@ -149,13 +149,28 @@ class ObservationDecorator < Draper::Decorator
                           .gsub(/\*(.*?)\*/, '<em>\1</em>')
                           .gsub(/\n/, '<br>')
     
-    # Don't append GIFs if omit_gifs is true
+    # Don't append media if omit_gifs is true (legacy flag name)
     unless omit_gifs
-      gifs_html = self.gifs_html
-      html += gifs_html if gifs_html.present?
+      media_html = story_media_html
+      html += media_html if media_html.present?
     end
     
     html
+  end
+
+  def story_images_html
+    return '' unless story_images.attached?
+
+    image_columns = story_images.map do |image|
+      url = Rails.application.routes.url_helpers.rails_blob_path(image, only_path: true)
+      "<div class='col-12 col-md-6 col-lg-4 mb-3'>" \
+        "<div class='gif-container'>" \
+          "<img src='#{ERB::Util.html_escape(url)}' alt='Story image' class='img-fluid rounded' />" \
+        "</div>" \
+      "</div>"
+    end.join
+
+    "<div class=\"row\">#{image_columns}</div>"
   end
 
   def gifs_html
@@ -176,6 +191,34 @@ class ObservationDecorator < Draper::Decorator
     end.join
     
     "<div class=\"row\">#{gif_columns}</div>"
+  end
+
+  # Uploaded story images first, then Giphy GIFs — single grid for display surfaces.
+  def story_media_html
+    return '' unless story_images.attached? || gif_urls_list.any?
+
+    columns = []
+
+    if story_images.attached?
+      story_images.each do |image|
+        url = Rails.application.routes.url_helpers.rails_blob_path(image, only_path: true)
+        columns << media_column_html(url, 'Story image')
+      end
+    end
+
+    gif_urls_list.each do |url|
+      columns << media_column_html(url, 'GIF')
+    end
+
+    "<div class=\"row\">#{columns.join}</div>"
+  end
+
+  def first_story_media_url
+    if story_images.attached?
+      return Rails.application.routes.url_helpers.rails_blob_path(story_images.first, only_path: true)
+    end
+
+    gif_urls_list.first
   end
 
   def timeframe
@@ -219,5 +262,21 @@ class ObservationDecorator < Draper::Decorator
     end
     
     parts.join(' • ')
+  end
+
+  private
+
+  def gif_urls_list
+    return [] unless story_extras.present?
+
+    Array(story_extras['gif_urls'] || story_extras[:gif_urls]).reject(&:blank?)
+  end
+
+  def media_column_html(url, alt)
+    "<div class='col-12 col-md-6 col-lg-4 mb-3'>" \
+      "<div class='gif-container'>" \
+        "<img src='#{ERB::Util.html_escape(url)}' alt='#{ERB::Util.html_escape(alt)}' class='img-fluid rounded' />" \
+      "</div>" \
+    "</div>"
   end
 end

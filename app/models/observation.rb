@@ -3,6 +3,17 @@ class Observation < ApplicationRecord
   include PgSearch::Model
   include ObservationRatingFormatter
   has_paper_trail
+
+  MAX_STORY_IMAGES = 20
+  MAX_STORY_IMAGE_BYTES = 20.megabytes
+  ALLOWED_STORY_IMAGE_CONTENT_TYPES = %w[
+    image/png
+    image/jpeg
+    image/jpg
+    image/webp
+    image/heic
+    image/heif
+  ].freeze
   
   belongs_to :observer, class_name: 'Person'
   belongs_to :company, class_name: 'Organization'
@@ -19,6 +30,7 @@ class Observation < ApplicationRecord
   has_many :aspirations, through: :observation_ratings, source: :rateable, source_type: 'Aspiration'
   has_many :notifications, as: :notifiable, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
+  has_many_attached :story_images
 
   # Provider-specific source runs (Slack / Zoom / Meet / …) must NOT get FKs here.
   # Attribute excavation via ObservationTrigger — see docs/ogo-creation-attribution.md
@@ -58,6 +70,7 @@ class Observation < ApplicationRecord
   
   validate :observer_and_observees_in_same_company
   validate :goal_belongs_to_same_company_as_observation
+  validate :acceptable_story_images, if: -> { story_images.attached? }
   
   scope :recent, -> { order(observed_at: :desc) }
   scope :journal, -> { where(privacy_level: :observer_only) }
@@ -88,7 +101,9 @@ class Observation < ApplicationRecord
 
   before_validation :set_observed_at_default
   after_update :update_slack_notifications_if_needed
-  
+
+  attr_accessor :force_slack_notification_refresh
+
   def permalink_id
     base_id = "#{observed_at.strftime('%Y-%m-%d')}-#{id}"
     custom_slug.present? ? "#{base_id}-#{custom_slug}" : base_id
@@ -191,6 +206,18 @@ class Observation < ApplicationRecord
     # DMs can be sent for any observation where observees have Slack identities
     privacy_level == 'public_to_company' || privacy_level == 'public_to_world'
   end
+
+  def story_image_public_urls
+    return [] unless story_images.attached?
+
+    opts = Rails.application.routes.default_url_options
+    host = opts[:host].presence || 'www.example.com'
+    protocol = opts[:protocol].presence || 'http'
+
+    story_images.map do |image|
+      Rails.application.routes.url_helpers.rails_blob_url(image, host: host, protocol: protocol)
+    end
+  end
   
   private
   
@@ -227,13 +254,31 @@ class Observation < ApplicationRecord
     errors.add(:goal, 'must belong to the same company as the observation')
   end
 
+  def acceptable_story_images
+    if story_images.count > MAX_STORY_IMAGES
+      errors.add(:story_images, "can have at most #{MAX_STORY_IMAGES} images")
+    end
+
+    story_images.each do |image|
+      unless image.content_type.in?(ALLOWED_STORY_IMAGE_CONTENT_TYPES)
+        errors.add(:story_images, 'must be JPEG, PNG, WebP, or HEIC')
+        break
+      end
+      if image.byte_size > MAX_STORY_IMAGE_BYTES
+        errors.add(:story_images, "must be under #{MAX_STORY_IMAGE_BYTES / 1.megabyte} MB each")
+        break
+      end
+    end
+  end
+
   def update_slack_notifications_if_needed
     return unless published?
 
     relevant_changes = saved_change_to_story? ||
                        saved_change_to_primary_feeling? ||
                        saved_change_to_secondary_feeling? ||
-                       saved_change_to_story_extras?
+                       saved_change_to_story_extras? ||
+                       force_slack_notification_refresh
 
     return unless relevant_changes
 
@@ -268,6 +313,8 @@ class Observation < ApplicationRecord
         existing_dm_main_notification_id: notification.id
       )
     end
+  ensure
+    self.force_slack_notification_refresh = false
   end
   
   # pg_search configuration

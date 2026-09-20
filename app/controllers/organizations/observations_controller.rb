@@ -1,4 +1,6 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
+  include ObservationStoryImageParams
+
   before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :skip_gsd_notification, :share_publicly, :share_privately, :award_kudos, :award_celebratory_kudos, :convert_to_generic, :convert_to_kudos]
   
 
@@ -30,6 +32,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     # Eager load associations needed for the view
     sorted_observations = sorted_observations.includes(:observer, { observed_teammates: :person }, :observation_ratings, :notifications)
+                                             .with_attached_story_images
     
     # Paginate using Pagy (25 items per page, similar to employees controller)
     @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
@@ -1193,6 +1196,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation = @form.model if saved
     
     if saved
+      unless apply_story_images!(@observation)
+        flash[:alert] = @observation.errors.full_messages.presence&.join(', ') || 'Could not save story images.'
+        redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
+        return
+      end
+
       # Enforce privacy level if public observation has negative ratings
       if Observations::PrivacyLevelEnforcementService.call(@observation)
         flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
@@ -1745,6 +1754,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           return
         end
       end
+    end
+
+    unless apply_story_images!(@observation)
+      flash[:alert] = @observation.errors.full_messages.presence&.join(', ') || 'Could not save story images.'
+      redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
+      return
     end
     
     # Publish will validate story is present (required for published observations)

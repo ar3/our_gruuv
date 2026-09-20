@@ -62,6 +62,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           double(
             story_html: '<p>Test story</p>',
             gifs_html: '',
+            story_media_html: '',
             visibility_text: 'Public to Company',
             visibility_text_style: 'text-primary',
             visibility_icon: '<i class="bi bi-people"></i>',
@@ -114,6 +115,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           double(
             story_html: '<p>Test story</p>',
             gifs_html: '',
+            story_media_html: '',
             visibility_text: 'Public to Company',
             visibility_text_style: 'text-primary',
             visibility_icon: '<i class="bi bi-people"></i>',
@@ -168,6 +170,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       double(
         story_html: '<p>Test story</p>',
         gifs_html: '',
+            story_media_html: '',
         visibility_text_style: 'text-info',
         visibility_icon: '👁️',
         visibility_text: 'Public to Company',
@@ -210,6 +213,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           double(
             story_html: '<p>Test</p>',
             gifs_html: '',
+            story_media_html: '',
             visibility_text_style: 'text-info',
             visibility_icon: '👤',
             visibility_text: 'Just for their eyes only',
@@ -245,6 +249,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           double(
             story_html: '<p>Test</p>',
             gifs_html: '',
+            story_media_html: '',
             visibility_text_style: 'text-info',
             visibility_icon: '👔',
             visibility_text: 'Just Managers',
@@ -299,6 +304,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         double(
           story_html: '<p>Story</p>',
           gifs_html: '',
+            story_media_html: '',
           visibility_text_style: 'text-primary',
           visibility_text: 'Stakeholders',
           visibility_icon: '',
@@ -379,6 +385,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           double(
             story_html: '<p>Draft story</p>',
             gifs_html: '',
+            story_media_html: '',
             visibility_text_style: 'text-primary',
             visibility_text: 'Public to Company',
             visibility_icon: '',
@@ -420,6 +427,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           double(
             story_html: '<p>Test story</p>',
             gifs_html: '',
+            story_media_html: '',
             visibility_text_style: 'text-primary',
             visibility_text: 'Public to Company',
             visibility_icon: '',
@@ -1152,6 +1160,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         double(
           story_html: '<p>Test story</p>',
           gifs_html: '',
+            story_media_html: '',
           visibility_text_style: 'text-info',
           visibility_icon: '👁️',
           visibility_text: 'Public to Company',
@@ -1199,6 +1208,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
             double(
               story_html: '<p>Test story</p>',
               gifs_html: '',
+            story_media_html: '',
               visibility_text_style: 'text-info',
               visibility_icon: '👁️',
               visibility_text: 'Public to World',
@@ -1322,6 +1332,7 @@ RSpec.  describe 'organizations/observations/show', type: :view do
             double(
               story_html: '<p>Test story</p>',
               gifs_html: '',
+            story_media_html: '',
               visibility_text_style: 'text-info',
               visibility_icon: '👁️',
               visibility_text: 'Public to Company',

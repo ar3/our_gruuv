@@ -342,6 +342,29 @@ RSpec.describe ObservationDecorator, type: :decorator do
     end
   end
 
+  describe '#story_media_html' do
+    it 'returns empty string when there are no images or GIFs' do
+      observation.story_extras = nil
+      expect(decorated_observation.story_media_html).to eq('')
+    end
+
+    it 'renders uploaded images before GIF URLs' do
+      observation.save!
+      observation.story_images.attach(
+        io: StringIO.new(File.binread(Rails.root.join('spec/fixtures/files/logo.png'))),
+        filename: 'logo.png',
+        content_type: 'image/png'
+      )
+      observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
+
+      html = decorated_observation.story_media_html
+
+      expect(html).to include('Story image')
+      expect(html).to include('https://example.com/gif1.gif')
+      expect(html.index('Story image')).to be < html.index('https://example.com/gif1.gif')
+    end
+  end
+
   describe '#story_html' do
     it 'does not include GIFs (GIFs are displayed in a separate section)' do
       observation.story = 'Great work!'
