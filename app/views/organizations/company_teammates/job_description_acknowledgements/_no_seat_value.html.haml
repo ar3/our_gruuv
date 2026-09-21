@@ -1,0 +1,6 @@
+-# Locals: organization, teammate, casual_name
+%span
+  no seat defined… correct this in
+  = link_to "Seat Management for #{casual_name}",
+            organization_teammate_position_path(organization, teammate),
+            class: "text-decoration-none"

@@ -1,0 +1,35 @@
+-# Locals: seat, organization, teammate, casual_name
+- seat = seat.with_indifferent_access
+
+.row.mb-4
+  .col-12
+    %p.mb-2
+      %strong Reports To:
+      - if seat[:present]
+        = seat[:reports_to]
+      - else
+        = render "organizations/company_teammates/job_description_acknowledgements/no_seat_value", organization: organization, teammate: teammate, casual_name: casual_name
+    %p.mb-2
+      %strong Job Classification:
+      - if seat[:present]
+        = seat[:job_classification]
+      - else
+        = render "organizations/company_teammates/job_description_acknowledgements/no_seat_value", organization: organization, teammate: teammate, casual_name: casual_name
+    %p.mb-2
+      %strong Team:
+      - if seat[:present]
+        = seat[:team]
+      - else
+        = render "organizations/company_teammates/job_description_acknowledgements/no_seat_value", organization: organization, teammate: teammate, casual_name: casual_name
+    %p.mb-2
+      %strong Department:
+      - if seat[:present]
+        = seat[:department]
+      - else
+        = render "organizations/company_teammates/job_description_acknowledgements/no_seat_value", organization: organization, teammate: teammate, casual_name: casual_name
+    %p.mb-0
+      %strong Direct Reports:
+      - if seat[:present]
+        = seat[:direct_reports]
+      - else
+        = render "organizations/company_teammates/job_description_acknowledgements/no_seat_value", organization: organization, teammate: teammate, casual_name: casual_name

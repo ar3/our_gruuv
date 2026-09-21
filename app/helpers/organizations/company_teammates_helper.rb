@@ -218,6 +218,13 @@ module Organizations::CompanyTeammatesHelper
             tooltip: context[:internal_teammate_tooltip]
           ),
           internal_teammate_views_entry(
+            title: true_jd_signed_view_label_for(teammate),
+            description: "Acknowledge the true job description and review past signatures.",
+            path: organization_company_teammate_job_description_acknowledgements_path(organization, teammate),
+            enabled: policy(teammate).view_job_description_acknowledgements?,
+            tooltip: context[:hierarchy_complete_picture]
+          ),
+          internal_teammate_views_entry(
             title: set_assignments_view_label,
             description: "Set or update this teammate's day-to-day assignment tenures.",
             path: assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, teammate),

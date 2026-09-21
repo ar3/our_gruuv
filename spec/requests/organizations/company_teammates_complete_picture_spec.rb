@@ -50,7 +50,7 @@ RSpec.describe 'Company teammate complete_picture page', type: :request do
       it 'includes check-in summary popover markup for the three sentences' do
         get complete_picture_organization_company_teammate_path(organization, employee_teammate)
         expect(response.body).to include('data-bs-toggle="popover"')
-        expect(response.body).to include('Love')
+        expect(response.body).to include('Meeting')
       end
     end
 

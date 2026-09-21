@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_09_140000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_21_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -860,6 +860,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_09_140000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["person_id"], name: "index_interest_submissions_on_person_id"
+  end
+
+  create_table "job_description_acknowledgements", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.bigint "employment_tenure_id"
+    t.bigint "position_id"
+    t.string "typed_name", null: false
+    t.datetime "signed_at", null: false
+    t.text "document_html", null: false
+    t.jsonb "snapshot", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "request_info", default: {}, null: false
+    t.index ["company_teammate_id", "signed_at"], name: "idx_on_company_teammate_id_signed_at_67b9c148e9"
+    t.index ["company_teammate_id"], name: "index_job_description_acknowledgements_on_company_teammate_id"
+    t.index ["employment_tenure_id"], name: "index_job_description_acknowledgements_on_employment_tenure_id"
+    t.index ["organization_id"], name: "index_job_description_acknowledgements_on_organization_id"
+    t.index ["position_id"], name: "index_job_description_acknowledgements_on_position_id"
   end
 
   create_table "kudos_points_ledgers", force: :cascade do |t|
@@ -2327,6 +2346,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_09_140000) do
   add_foreign_key "huddle_participants", "teammates"
   add_foreign_key "huddles", "teams"
   add_foreign_key "interest_submissions", "people"
+  add_foreign_key "job_description_acknowledgements", "employment_tenures"
+  add_foreign_key "job_description_acknowledgements", "organizations"
+  add_foreign_key "job_description_acknowledgements", "positions"
+  add_foreign_key "job_description_acknowledgements", "teammates", column: "company_teammate_id"
   add_foreign_key "kudos_points_ledgers", "organizations"
   add_foreign_key "kudos_points_ledgers", "teammates", column: "company_teammate_id"
   add_foreign_key "kudos_redemptions", "kudos_rewards"

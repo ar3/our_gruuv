@@ -1,0 +1,20 @@
+-# Locals: ability_row, organization, teammate
+- ability_row = ability_row.with_indifferent_access
+- milestones = ability_row[:milestones] || []
+
+%h5.mb-2
+  %strong= ability_row[:ability_name]
+  - if ability_row[:ability_param].present? || ability_row[:ability_id].present?
+    = link_to organization_teammate_ability_path(organization, teammate, ability_row[:ability_param].presence || ability_row[:ability_id]), target: "_blank", rel: "noopener", class: "ms-2 text-muted", title: "Open ability", "aria-label" => "Open #{ability_row[:ability_name]}" do
+      %i.bi.bi-link-45deg
+- if ability_row[:description].present?
+  .markdown-content.mb-3= render_markdown(ability_row[:description])
+- else
+  %p.text-muted.mb-3 No description provided.
+
+.ms-4.ps-3.border-start.border-2.border-secondary
+  - if milestones.any?
+    - milestones.each do |milestone|
+      = render "organizations/company_teammates/job_description_acknowledgements/required_milestone", milestone: milestone
+  - else
+    %p.text-muted.mb-0 No milestones required.

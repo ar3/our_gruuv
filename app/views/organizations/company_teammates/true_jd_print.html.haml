@@ -22,10 +22,15 @@
       of the job description.
     - else
       This is #{casual}'s actual current job description. A position blueprint is unavailable.
-  = link_to "Print",
-            "#",
-            class: "text-muted small text-decoration-none flex-shrink-0 ms-auto d-print-none true-jd-print-action",
-            onclick: "window.print(); return false;"
+  .d-flex.gap-3.flex-shrink-0.ms-auto.d-print-none
+    - if policy(@teammate).view_job_description_acknowledgements?
+      = link_to "Acknowledge job description",
+                organization_company_teammate_job_description_acknowledgements_path(@current_organization, @teammate),
+                class: "text-muted small text-decoration-none true-jd-print-action"
+    = link_to "Print",
+              "#",
+              class: "text-muted small text-decoration-none true-jd-print-action",
+              onclick: "window.print(); return false;"
 
 .true-jd-print-document
   - if @print_position

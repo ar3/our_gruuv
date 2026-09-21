@@ -1,0 +1,99 @@
+-# Locals: snapshot (Hash), organization, teammate, typed_name (optional), signed_at (optional)
+- snapshot = snapshot.with_indifferent_access
+- seat = (snapshot[:seat] || {}).with_indifferent_access
+- casual_name = snapshot[:casual_name].presence || teammate.person.casual_name.to_s.strip
+- required_assignments = snapshot[:required_assignments] || []
+- optional_assignments = snapshot[:optional_assignments] || []
+- required_abilities = snapshot[:required_abilities] || []
+- direct_milestones = snapshot[:direct_milestones] || []
+
+.jd-acknowledgement-document
+  - if snapshot[:position_name].present?
+    %h3.mb-3
+      %strong= snapshot[:position_name]
+
+  = render "organizations/company_teammates/job_description_acknowledgements/seat_header",
+           seat: seat,
+           organization: organization,
+           teammate: teammate,
+           casual_name: casual_name
+
+  - if snapshot[:summary].present?
+    .row.mb-4
+      .col-12
+        %h3
+          %strong Summary:
+        .markdown-content= render_markdown(snapshot[:summary])
+  - elsif snapshot[:position_name].blank?
+    .row.mb-4
+      .col-12
+        %h3
+          %strong Summary:
+        %p.text-muted No current position — summary from a position blueprint is not available.
+
+  %h3.mb-3
+    %strong Required Assignments:
+  - if required_assignments.any?
+    - required_assignments.each_with_index do |row, index|
+      - if index > 0
+        %hr.my-4
+      = render "organizations/company_teammates/job_description_acknowledgements/assignment",
+               row: row,
+               organization: organization,
+               teammate: teammate
+  - else
+    %p.text-muted None
+
+  - if optional_assignments.any?
+    %hr.mb-4.mt-4
+    %h3.mb-1.mt-4
+      %strong Optional / Elective / Uniquely-You Assignments
+    %p.text-muted.mb-3
+      %em We are all about growth… as such, we do our best to make it possible to successfully complete required Assignments and have room for special/elective/unique-to-you Assignments. These should only be taken on if the required Assignments are being completed and we are meeting expectations across them.
+    - optional_assignments.each_with_index do |row, index|
+      - if index > 0
+        %hr.my-4
+      = render "organizations/company_teammates/job_description_acknowledgements/assignment",
+               row: row,
+               organization: organization,
+               teammate: teammate
+
+  %hr.mb-4.mt-4
+  %h3.mb-3
+    %strong Required Abilities (skills, knowledge, and behaviors)
+  - if required_abilities.any?
+    - required_abilities.each_with_index do |ability_row, index|
+      - if index > 0
+        %hr.my-4
+      = render "organizations/company_teammates/job_description_acknowledgements/required_ability",
+               ability_row: ability_row,
+               organization: organization,
+               teammate: teammate
+  - else
+    %p.text-muted None
+
+  - if direct_milestones.any?
+    %hr.mb-4.mt-4
+    %h3.mb-3
+      %strong Additional Abilities required
+    .ms-4.ps-3.border-start.border-2.border-secondary
+      %p.mb-2.text-muted
+        %span … needing Abilities such as –
+        = render "organizations/company_teammates/job_description_acknowledgements/abilities_sentence",
+                 abilities: direct_milestones,
+                 organization: organization,
+                 teammate: teammate
+
+  = render "organizations/company_teammates/job_description_acknowledgements/seat_footer",
+           seat: seat,
+           organization: organization,
+           teammate: teammate,
+           casual_name: casual_name
+
+  - if local_assigns[:signed_at].present?
+    %hr.mt-4
+    %p.mb-0
+      %strong Signed by
+      = typed_name
+      on
+      = format_time_in_user_timezone(signed_at, format: "%B %-d, %Y at %-I:%M %p")

@@ -197,7 +197,11 @@ module PeopleHelper
     if controller_name == 'company_teammates' && %w[my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
       return growth_label_for(@teammate)
     end
-    
+
+    if controller_name == 'job_description_acknowledgements'
+      return true_jd_signed_view_label_for(@teammate)
+    end
+
     case action_name.downcase
     when 'show'
       profile_settings_label

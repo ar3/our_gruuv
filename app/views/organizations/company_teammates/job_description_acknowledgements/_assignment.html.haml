@@ -1,0 +1,39 @@
+-# Locals: row, organization, teammate
+- row = row.with_indifferent_access
+- abilities = row[:abilities] || []
+
+%h5.mb-0
+  %strong= row[:title]
+  - if row[:assignment_param].present? || row[:assignment_id].present?
+    = link_to organization_teammate_assignment_path(organization, teammate, row[:assignment_param].presence || row[:assignment_id]), target: "_blank", rel: "noopener", class: "ms-2 text-muted", title: "Open assignment", "aria-label" => "Open assignment" do
+      %i.bi.bi-link-45deg
+%p.mb-2
+  %small.text-muted.fst-italic
+    - if row[:missing]
+      (0% of your energy)
+      %span.jd-acknowledgement-missing-warning.ms-1
+        %i.bi.bi-exclamation-triangle-fill.text-warning{ title: "They need to be taking on this assignment." }
+        They need to be taking on this assignment.
+    - elsif row[:energy_unset]
+      (energy not set)
+    - else
+      (#{row[:energy_percentage]}% of your energy)
+
+.assignment-details.ms-4.ps-3.border-start.border-2{ class: row[:kind] == "optional" ? "border-info" : "border-primary" }
+  - if row[:tagline].present?
+    .markdown-content.mb-2= render_markdown(row[:tagline])
+  %p.mb-1.text-muted
+    %span … as measured by –
+    - if row[:outcomes].present?
+      %ul.mt-0
+        - row[:outcomes].each do |outcome|
+          %li.text-muted.markdown-content= render_markdown(outcome)
+    - else
+      %span.text-muted outcomes to be determined
+  %p.mb-2.text-muted
+    - if abilities.any?
+      %span … needing Abilities such as –
+      = render "organizations/company_teammates/job_description_acknowledgements/abilities_sentence", abilities: abilities, organization: organization, teammate: teammate
+    - else
+      %span … needing Abilities such as –
+      %span.text-muted ability milestones to be determined

@@ -14,9 +14,13 @@
 
 .d-flex.justify-content-between.align-items-baseline.gap-3.mb-3.w-100
   %p.text-muted.mb-0.small= "#{casual}'s real job description"
-  = link_to "Print / clean view",
-            true_jd_print_organization_company_teammate_path(organization, @selected_teammate),
-            class: "text-muted small text-decoration-none flex-shrink-0 ms-auto"
+  .d-flex.gap-3.flex-shrink-0.ms-auto
+    = link_to "Acknowledge job description",
+              organization_company_teammate_job_description_acknowledgements_path(organization, @selected_teammate),
+              class: "text-muted small text-decoration-none"
+    = link_to "Print / clean view",
+              true_jd_print_organization_company_teammate_path(organization, @selected_teammate),
+              class: "text-muted small text-decoration-none"
 
 / Position + spotlight: two cards side by side
 - if @current_employment&.position

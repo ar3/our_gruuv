@@ -57,6 +57,18 @@ class CompanyTeammatePolicy < ApplicationPolicy
 
   alias_method :my_growth?, :complete_picture?
 
+  # Job description acknowledgement: same audience as the manager true job description.
+  def view_job_description_acknowledgements?
+    complete_picture?
+  end
+
+  # Only the employee signs. Managers and employment admins may view, not sign for someone else.
+  def create_job_description_acknowledgement?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    viewing_teammate == record
+  end
+
   def internal?
     # Internal teammate view - allows viewing any teammate record that exists
     # regardless of employment status (not yet active, inactive, or active)

@@ -1,0 +1,54 @@
+- casual = @teammate.person.casual_name.strip
+- signed_on = format_time_in_user_timezone(@acknowledgement.signed_at, format: "%B %-d, %Y")
+- request_info = @acknowledgement.request_info_hash
+- content_for :title, "#{casual}'s #{true_jd_signed_view_suffix} — #{signed_on}"
+
+- content_for :header do
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { organization_company_teammate_job_description_acknowledgements_path(organization, tm) },
+           switch_aria_label: "Switch teammate for #{true_jd_signed_view_label_for(@teammate)}"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: true_jd_signed_view_suffix, url: organization_company_teammate_job_description_acknowledgements_path(organization, @teammate) }, { label: signed_on, url: nil }])
+
+%p.text-muted.small.mb-3
+  This is the job description #{casual} signed on #{signed_on}. It is the wording from that moment, not the job description as it stands now.
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 Signature details
+  .card-body
+    %p.mb-2
+      %strong Signed by:
+      = @acknowledgement.typed_name
+    %p.mb-2
+      %strong Timestamp:
+      = format_time_in_user_timezone(@acknowledgement.signed_at, format: "%B %-d, %Y at %-I:%M:%S %p %Z")
+    - if request_info[:timestamp].present?
+      %p.mb-2
+        %strong Request timestamp:
+        - begin
+          - request_timestamp = request_info[:timestamp].is_a?(String) ? Time.zone.parse(request_info[:timestamp]) : request_info[:timestamp]
+          = format_time_in_user_timezone(request_timestamp, format: "%B %-d, %Y at %-I:%M:%S %p %Z")
+        - rescue ArgumentError, TypeError
+          = request_info[:timestamp]
+    %p.mb-2
+      %strong IP address:
+      = request_info[:ip_address].presence || "—"
+    %p.mb-2
+      %strong User agent:
+      = request_info[:user_agent].presence || "—"
+    %p.mb-2
+      %strong Session ID:
+      = request_info[:session_id].presence || "—"
+    %p.mb-2
+      %strong Request ID:
+      = request_info[:request_id].presence || "—"
+    %p.mb-0
+      %strong Request source:
+      = request_info[:request_source].presence || "—"
+
+= @acknowledgement.document_html.html_safe

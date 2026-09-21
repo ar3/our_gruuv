@@ -544,6 +544,10 @@ Rails.application.routes.draw do
         end
       end
       
+      resources :job_description_acknowledgements,
+                controller: 'company_teammates/job_description_acknowledgements',
+                only: [:index, :show, :create]
+
       # Notifications tab on the profile (digest preferences; editable by self, management chain, admins)
       resource :notifications, controller: 'company_teammates/notifications', only: [:show, :update] do
         post :send_gsd_test, on: :member

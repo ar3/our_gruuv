@@ -1,0 +1,17 @@
+-# Locals: abilities — array of { ability_id, ability_name, milestone_level }, organization, teammate
+-# Matches shared/abilities_sentence wording; link icon goes to the teammate ability page.
+- abilities = Array(abilities).map { |item| item.respond_to?(:with_indifferent_access) ? item.with_indifferent_access : item }
+
+- abilities.each_with_index do |ability, index|
+  - milestone_text = milestone_level_display(ability[:milestone_level]).downcase
+  - ability_name = ability[:ability_name]
+  - if index > 0
+    - if index == abilities.length - 1
+      = " and "
+    - else
+      = ", "
+  %span.d-inline-flex.align-items-center.gap-1
+    = "#{milestone_text} #{ability_name}"
+    - if ability[:ability_param].present? || ability[:ability_id].present?
+      = link_to organization_teammate_ability_path(organization, teammate, ability[:ability_param].presence || ability[:ability_id]), target: "_blank", rel: "noopener", class: "text-muted", title: "Open ability", "aria-label" => "Open #{ability_name}" do
+        %i.bi.bi-link-45deg

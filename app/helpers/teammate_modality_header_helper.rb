@@ -32,6 +32,7 @@ module TeammateModalityHeaderHelper
     return :seat_management if controller_name == "position" && action_name == "show"
     return :kudos if controller_name == "company_teammates" && action_name == "kudos_points"
     return :goals if controller_name == "company_teammates" && action_name == "my_growth_goals"
+    return :true_jd_signed if controller_name == "job_description_acknowledgements"
     if controller_name == "company_teammates" && %w[my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
       return :growth
     end
@@ -114,6 +115,15 @@ module TeammateModalityHeaderHelper
         allowed: policy(teammate).true_jd_print?,
         disabled_tooltip: "You must be an active employee in the same organization to view the print True Job Description (JD)"
       ),
+      teammate_modality_item(
+        key: :true_jd_signed,
+        icon: "bi-pen",
+        label: true_jd_signed_view_label_for(teammate),
+        active: controller_name == "job_description_acknowledgements",
+        path: (organization_company_teammate_job_description_acknowledgements_path(organization, teammate_route_param(teammate)) if policy(teammate).view_job_description_acknowledgements?),
+        allowed: policy(teammate).view_job_description_acknowledgements?,
+        disabled_tooltip: "You need employment management permissions or to be in the managerial hierarchy to view the signed True Job Description (JD)"
+      ),
       one_thing_modality_item(organization, teammate),
       teammate_modality_item(
         key: :growth,
@@ -183,6 +193,7 @@ module TeammateModalityHeaderHelper
     when :teammate then policy(teammate).internal?
     when :complete_picture then policy(teammate).complete_picture?
     when :true_jd_print then policy(teammate).true_jd_print?
+    when :true_jd_signed then policy(teammate).view_job_description_acknowledgements?
     when :one_thing
       policy(teammate.one_on_one_link || OneOnOneLink.new(teammate: teammate)).show?
     when :growth, :goals then policy(teammate).complete_picture?
@@ -208,6 +219,7 @@ module TeammateModalityHeaderHelper
     when :teammate then internal_organization_company_teammate_path(organization, tm)
     when :complete_picture then complete_picture_organization_company_teammate_path(organization, tm)
     when :true_jd_print then true_jd_print_organization_company_teammate_path(organization, tm)
+    when :true_jd_signed then organization_company_teammate_job_description_acknowledgements_path(organization, tm)
     when :one_thing then organization_company_teammate_one_on_one_link_path(organization, tm)
     when :growth then my_growth_experiences_organization_company_teammate_path(organization, tm)
     when :public then (public_person_path(teammate.person) if teammate.person)

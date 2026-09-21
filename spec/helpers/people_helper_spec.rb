@@ -114,6 +114,22 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq("Alex's True JD (print)")
     end
 
+    it 'returns possessive True JD signed view for job_description_acknowledgements' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
+      allow(helper).to receive(:action_name).and_return('index')
+      allow(helper).to receive(:controller_name).and_return('job_description_acknowledgements')
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's True JD (signed)")
+    end
+
+    it 'returns possessive True JD signed view for a specific signed JD show page' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
+      allow(helper).to receive(:action_name).and_return('show')
+      allow(helper).to receive(:controller_name).and_return('job_description_acknowledgements')
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's True JD (signed)")
+    end
+
     it 'returns possessive Growth for my_growth_experiences on company_teammates' do
       teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
       allow(helper).to receive(:action_name).and_return('my_growth_experiences')

@@ -1,0 +1,80 @@
+- casual = @teammate.person.casual_name.strip
+- page_label = true_jd_signed_view_suffix
+- page_help_id = "jobDescriptionAcknowledgementHelp"
+- content_for :title, "#{casual}'s #{page_label}"
+
+- content_for :header do
+  - trailing = capture do
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "How the signed True Job Description works. Click for details."
+  = render "shared/teammate_modality_header/switchers",
+           organization: organization,
+           selected_teammate: @selected_teammate,
+           viewable_teammate_groups: @viewable_teammate_groups,
+           path_for_teammate: ->(tm) { organization_company_teammate_job_description_acknowledgements_path(organization, tm) },
+           switch_aria_label: "Switch teammate for #{true_jd_signed_view_label_for(@teammate)}",
+           trailing: trailing
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: page_label, url: nil }])
+
+.collapse.mb-4{ id: page_help_id }
+  = render "page_help"
+
+- if @compliance_status.compliant?
+  .alert.alert-success.py-2.px-3.mb-3{ role: "alert" }
+    %i.bi.bi-check-circle.me-1
+    This job description has been signed recently enough.
+- else
+  .alert.alert-warning.py-2.px-3.mb-3{ role: "alert" }
+    %i.bi.bi-exclamation-triangle.me-1
+    This job description needs to be signed.
+
+- if @acknowledgements.any?
+  %h3.mb-3 Signed job descriptions
+  %ul.list-unstyled.mb-3
+    - @acknowledgements.each do |acknowledgement|
+      %li.mb-2.d-flex.flex-wrap.align-items-baseline.gap-2
+        %span
+          = format_time_in_user_timezone(acknowledgement.signed_at, format: "%B %-d, %Y")
+          - if acknowledgement.position_name.present?
+            %span.text-muted
+              — #{acknowledgement.position_name}
+        = link_to "View signed JD",
+                  organization_company_teammate_job_description_acknowledgement_path(organization, @teammate, acknowledgement),
+                  class: "text-decoration-none small"
+  %p.mb-4
+    = link_to "Review and Sign the current JD below", "#sign-current-jd", class: "text-decoration-none"
+- else
+  %p.mb-4
+    No signatures yet.
+    = link_to "Review and Sign the current JD below", "#sign-current-jd", class: "text-decoration-none"
+
+%p.text-muted.small.mb-4
+  This is #{casual}'s true job description as it stands now. Signing stores this wording.
+
+= render "organizations/company_teammates/job_description_acknowledgements/document",
+         snapshot: @document.snapshot,
+         organization: organization,
+         teammate: @teammate
+
+%div{ id: "sign-current-jd" }
+  - if policy(@teammate).create_job_description_acknowledgement?
+    %hr.my-4
+    %h3.mb-2 Sign this job description
+    %p.mb-3
+      Type your full name,
+      %strong= @teammate.person.full_name
+      , to acknowledge the job description above.
+    = form_with model: @acknowledgement, url: organization_company_teammate_job_description_acknowledgements_path(organization, @teammate) do |form|
+      - if @acknowledgement.errors[:typed_name].any?
+        .alert.alert-danger
+          = @acknowledgement.errors.full_messages.to_sentence
+      .mb-3
+        = form.label :typed_name, "Full name", class: "form-label"
+        = form.text_field :typed_name, class: "form-control", autocomplete: "name", required: true
+      = form.submit "Sign job description", class: "btn btn-primary"
+  - else
+    %hr.my-4
+    %p.text-muted.mb-0 Only #{casual} can sign this job description.
