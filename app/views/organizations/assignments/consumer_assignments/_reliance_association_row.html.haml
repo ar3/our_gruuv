@@ -1,0 +1,27 @@
+-# Locals:
+-#   other_assignment, form, current_direction (upstream|downstream|none), mode: :configure | :add, can_manage
+- mode = local_assigns.fetch(:mode, :configure)
+- current_direction = local_assigns.fetch(:current_direction, "none").to_s
+- can_manage = local_assigns.fetch(:can_manage, true)
+- add_mode = mode == :add
+- department_label = other_assignment.department.present? ? other_assignment.department.display_name : other_assignment.company.name
+- row_class = add_mode ? "filterable-option" : nil
+- prefix = "assignment_reliance[#{other_assignment.id}]"
+
+%tr{class: row_class}
+  %td
+    %small.text-muted.d-block= department_label
+    %strong= other_assignment.title
+    = link_to organization_assignment_path(@organization, other_assignment), target: "_blank", class: "ms-2", title: "View assignment" do
+      %i.bi.bi-box-arrow-up-right
+  %td
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Association for #{other_assignment.title}"}
+      - [["upstream", "Upstream of this assignment"], ["downstream", "Downstream of this assignment"], ["none", "No Association"]].each do |value, label|
+        - radio_id = "assignment_reliance_#{other_assignment.id}_direction_#{value}"
+        = radio_button_tag "#{prefix}[direction]", value, current_direction == value,
+          class: "btn-check",
+          id: radio_id,
+          disabled: !can_manage
+        - btn_class = value == "none" ? "btn btn-outline-secondary" : "btn btn-outline-primary"
+        - btn_class = "#{btn_class} disabled" unless can_manage
+        = label_tag radio_id, label, class: btn_class

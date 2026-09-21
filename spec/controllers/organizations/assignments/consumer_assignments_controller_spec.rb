@@ -1,16 +1,14 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::Assignments::ConsumerAssignmentsController, type: :controller do
-  let(:person) { create(:person) }
   let(:organization) { create(:organization) }
   let(:maap_person) { create(:person) }
   let(:no_permission_person) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }
-  let(:consumer1) { create(:assignment, company: organization, title: 'Consumer 1') }
-  let(:consumer2) { create(:assignment, company: organization, title: 'Consumer 2') }
+  let(:upstream) { create(:assignment, company: organization, title: 'Upstream') }
+  let(:downstream) { create(:assignment, company: organization, title: 'Downstream') }
 
   before do
-    create(:teammate, person: person, organization: organization, can_manage_employment: true)
     create(:teammate, person: maap_person, organization: organization, can_manage_maap: true)
     create(:teammate, person: no_permission_person, organization: organization)
   end
@@ -25,29 +23,27 @@ RSpec.describe Organizations::Assignments::ConsumerAssignmentsController, type: 
         expect(response).to have_http_status(:success)
       end
 
-      it 'loads all assignments in organization hierarchy' do
-        # Ensure assignments are created before the request
-        assignment
-        consumer1
-        consumer2
-        
+      it 'loads associated and available assignments' do
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+        upstream
+
         get :show, params: { organization_id: organization.id, assignment_id: assignment.id }
-        
-        # Debug: check what was loaded
-        loaded_assignments = assigns(:assignments)
-        expect(loaded_assignments).to be_present, "Expected assignments to be loaded, but got: #{loaded_assignments.inspect}"
-        expect(loaded_assignments).to include(consumer1, consumer2)
-        expect(loaded_assignments).not_to include(assignment) # Current assignment excluded
+
+        expect(assigns(:associated_assignments)).to include(downstream)
+        expect(assigns(:associated_assignments)).not_to include(upstream)
+        expect(assigns(:available_assignments)).to include(upstream)
+        expect(assigns(:available_assignments)).not_to include(downstream)
+        expect(assigns(:available_assignments)).not_to include(assignment)
       end
 
-      it 'loads existing consumer assignments' do
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer1
-        )
+      it 'loads existing directions for upstream and downstream' do
+        create(:assignment_supply_relationship, supplier_assignment: upstream, consumer_assignment: assignment)
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+
         get :show, params: { organization_id: organization.id, assignment_id: assignment.id }
-        expect(assigns(:existing_consumer_assignment_ids)).to include(consumer1.id)
-        expect(assigns(:existing_consumer_assignment_ids)).not_to include(consumer2.id)
+
+        expect(assigns(:existing_directions_by_assignment_id)[upstream.id]).to eq('upstream')
+        expect(assigns(:existing_directions_by_assignment_id)[downstream.id]).to eq('downstream')
       end
 
       it 'uses overlay layout' do
@@ -70,46 +66,48 @@ RSpec.describe Organizations::Assignments::ConsumerAssignmentsController, type: 
     context 'with manage_maap permission' do
       before { sign_in_as_teammate(maap_person, organization) }
 
-      it 'creates new consumer assignment relationships' do
+      it 'creates upstream and downstream relationships' do
         expect {
           patch :update, params: {
             organization_id: organization.id,
             assignment_id: assignment.id,
-            consumer_assignment_ids: [consumer1.id, consumer2.id]
+            assignment_reliance: {
+              upstream.id.to_s => { direction: 'upstream' },
+              downstream.id.to_s => { direction: 'downstream' }
+            }
           }
         }.to change(AssignmentSupplyRelationship, :count).by(2)
       end
 
-      it 'removes existing consumer assignment relationships' do
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer1
-        )
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer2
-        )
+      it 'removes relationships marked none' do
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: upstream)
 
         expect {
           patch :update, params: {
             organization_id: organization.id,
             assignment_id: assignment.id,
-            consumer_assignment_ids: [consumer1.id]
+            assignment_reliance: {
+              downstream.id.to_s => { direction: 'downstream' },
+              upstream.id.to_s => { direction: 'none' }
+            }
           }
         }.to change(AssignmentSupplyRelationship, :count).by(-1)
 
-        expect(assignment.consumer_assignments).to include(consumer1)
-        expect(assignment.consumer_assignments).not_to include(consumer2)
+        expect(assignment.reload.consumer_assignments).to include(downstream)
+        expect(assignment.consumer_assignments).not_to include(upstream)
       end
 
       it 'redirects to assignment show page with notice' do
         patch :update, params: {
           organization_id: organization.id,
           assignment_id: assignment.id,
-          consumer_assignment_ids: [consumer1.id]
+          assignment_reliance: {
+            downstream.id.to_s => { direction: 'downstream' }
+          }
         }
         expect(response).to redirect_to(organization_assignment_path(organization, assignment))
-        expect(flash[:notice]).to eq('Consumer assignments were successfully updated.')
+        expect(flash[:notice]).to eq('Assignment reliance was successfully updated.')
       end
     end
 
@@ -120,7 +118,9 @@ RSpec.describe Organizations::Assignments::ConsumerAssignmentsController, type: 
         patch :update, params: {
           organization_id: organization.id,
           assignment_id: assignment.id,
-          consumer_assignment_ids: [consumer1.id]
+          assignment_reliance: {
+            downstream.id.to_s => { direction: 'downstream' }
+          }
         }
         expect(response).to redirect_to(root_path)
       end

@@ -161,13 +161,18 @@
           %h5.mb-0{ id: "assignment-accountability-flow" }
             %i.bi.bi-diagram-3.me-2
             Assignment Accountability Flow
-          - if policy(@organization).view_assignment_flows?
-            = link_to full_network_graph_organization_assignment_flows_path(@organization), class: "btn btn-sm btn-outline-secondary" do
-              %i.bi.bi-diagram-3-fill.me-1
-              Full organization map
+          .d-flex.flex-wrap.gap-2
+            - if policy(@assignment).manage_consumer_assignments?
+              = link_to organization_assignment_consumer_assignments_path(@organization, @assignment), class: "btn btn-sm btn-outline-primary" do
+                %i.bi.bi-pencil.me-1
+                Manage reliance
+            - if policy(@organization).view_assignment_flows?
+              = link_to full_network_graph_organization_assignment_flows_path(@organization), class: "btn btn-sm btn-outline-secondary" do
+                %i.bi.bi-diagram-3-fill.me-1
+                Full organization map
         .card-body
           %p.text-muted.mb-3
-            How this assignment connects to others through supply and consumption—who it supports downstream and who supplies it upstream.
+            How this assignment connects to others through supply and consumption—who supplies it upstream and who relies on it downstream.
           = render "organizations/assignments/accountability_flow", accountability_flow: @accountability_flow, assignment: @assignment, organization: @organization
 
     - if @position_assignments.any?

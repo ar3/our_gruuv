@@ -23,7 +23,7 @@ Each option shows **primary name** (`strong`) + **muted subtitle** (department, 
 | Pros | Cons |
 |------|------|
 | Works with existing **`options-filter`** — search matches all visible text (name + department) | No visual “chunking” when scrolling a very long flat list |
-| No new Stimulus; matches **Manage Consumer Assignments** and **Manage Observees** | Company-wide / nil department needs a consistent label (e.g. “Company-wide”) |
+| No new Stimulus; matches **Manage Observees** and other selection pages | Company-wide / nil department needs a consistent label (e.g. “Company-wide”) |
 | Pills stay name-only via `data-selection-toolbar-label` | |
 | Easy to add in HAML on every rollout page | |
 

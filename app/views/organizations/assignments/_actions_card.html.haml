@@ -116,18 +116,18 @@
       - if is_consumer_assignments_view
         .d-flex.align-items-center.gap-2
           %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
-            %i.bi.bi-arrow-down-circle.me-2
-            Manage Consumer Assignments (Active)
+            %i.bi.bi-diagram-3.me-2
+            Manage Assignment Reliance (Active)
       - elsif @assignment && assignment_org && policy(@assignment).manage_consumer_assignments?
         .d-flex.align-items-center.gap-2
           = link_to organization_assignment_consumer_assignments_path(assignment_org, @assignment), class: 'btn btn-outline-primary btn-sm text-start flex-grow-1' do
-            %i.bi.bi-arrow-down-circle.me-2
-            Manage Consumer Assignments
+            %i.bi.bi-diagram-3.me-2
+            Manage Assignment Reliance
       - else
         .d-flex.align-items-center.gap-2
           %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
-            %i.bi.bi-arrow-down-circle.me-2
-            Manage Consumer Assignments
+            %i.bi.bi-diagram-3.me-2
+            Manage Assignment Reliance
           %span.text-warning.flex-shrink-0.align-self-center{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
             %i.bi.bi-exclamation-triangle
 

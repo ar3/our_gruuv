@@ -1,0 +1,70 @@
+-# Locals: form, associated_assignments, available_assignments, existing_directions_by_assignment_id, subject_name, can_manage
+- expand_add = associated_assignments.empty?
+- available_count = available_assignments.size
+- subject_name = local_assigns.fetch(:subject_name, "this assignment")
+- can_manage = local_assigns.fetch(:can_manage, true)
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-sliders.me-2
+      Configure Assignment Reliance
+  .card-body
+    - if associated_assignments.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th{scope: "col"} Assignment
+              %th{scope: "col"} Association
+          %tbody
+            - associated_assignments.each do |other_assignment|
+              = render "organizations/assignments/consumer_assignments/reliance_association_row",
+                other_assignment: other_assignment,
+                form: form,
+                current_direction: existing_directions_by_assignment_id[other_assignment.id],
+                mode: :configure,
+                can_manage: can_manage
+    - else
+      .alert.alert-info.mb-0
+        %i.bi.bi-info-circle.me-2
+        No assignment reliance yet. Add assignments below to declare upstream or downstream links for #{subject_name}.
+
+.card.mb-4
+  - unless expand_add
+    .card-body.py-3.border-bottom
+      = render "shared/association_expand/add_more_link",
+        collapse_id: "addAssignmentReliance",
+        cta_label: "Add Assignment Reliance",
+        supporting_text: "Click to expand if #{subject_name} needs more of the #{available_count} available Assignments."
+  .collapse{id: "addAssignmentReliance", class: ("show" if expand_add)}
+    - if expand_add
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          Add Assignment Reliance
+    .card-body
+      - if available_assignments.any?
+        .mb-3{data: {controller: "options-filter"}}
+          %input.form-control.form-control-lg.mb-3{type: "search", placeholder: "Search assignments by name or department...", "data-options-filter-target": "input", "aria-label": "Filter assignments by name or department"}
+          .table-responsive
+            %table.table.table-hover.mb-0
+              %thead
+                %tr
+                  %th{scope: "col"} Assignment
+                  %th{scope: "col"} Association
+              %tbody{data: {"options-filter-target": "list"}}
+                - available_assignments.each do |other_assignment|
+                  = render "organizations/assignments/consumer_assignments/reliance_association_row",
+                    other_assignment: other_assignment,
+                    form: form,
+                    current_direction: "none",
+                    mode: :add,
+                    can_manage: can_manage
+      - else
+        .alert.alert-info.mb-0
+          %i.bi.bi-info-circle.me-2
+          - if associated_assignments.any?
+            All available assignments are already associated.
+          - else
+            No assignments found in this organization hierarchy.

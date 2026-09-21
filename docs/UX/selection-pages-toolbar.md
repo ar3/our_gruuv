@@ -2,9 +2,11 @@
 
 Use this pattern on **multi-select “pick from a long list and save”** pages: a toolbar inside the selection card with **search → selected pills → save**, plus a **duplicate save** at the bottom of the form.
 
-**Reference implementation:** Manage Consumer Assignments — `app/views/organizations/assignments/consumer_assignments/show.html.haml`
+**Reference implementation:** Manage Observees — `app/views/organizations/observations/manage_observees.html.haml`
 
 **Rollout plan (one phase at a time):** [selection-pages-rollout-plan.md](./selection-pages-rollout-plan.md)
+
+> **Note:** Assignment reliance (`assignments/:id/consumer_assignments`) used to be the checkbox reference; it now uses the title-pathing **association radios** pattern (upstream / downstream / none), not this toolbar.
 
 ---
 
@@ -149,7 +151,7 @@ Use the shared **CSS column** layout so long lists use horizontal space without 
 - **Styles:** `app/assets/stylesheets/application.bootstrap.scss` (`.selection-page-columns`).
 - **Do not** use `row` / `col-md-4` + `each_slice` for new selection pages — column flow handles balance automatically.
 
-**Reference:** Manage Observees (cards), Add Abilities (compact checkboxes), Manage Consumer Assignments (compact checkboxes).
+**Reference:** Manage Observees (cards), Add Abilities (compact checkboxes).
 
 ## Secondary metadata (department, tagline, etc.)
 
@@ -165,7 +167,6 @@ For MAAP-style pages, users without permission are **redirected** — do not bui
 
 ## Where it’s used
 
-- **Manage Consumer Assignments** — `organizations/assignments/:id/consumer_assignments`
 - **Manage Observees** — `organizations/observations/:id/manage_observees`
 - **Manage Team Members** — `organizations/teams/:id/manage_members`
 - **Add Abilities to Observation** — `organizations/observations/:id/add_abilities`

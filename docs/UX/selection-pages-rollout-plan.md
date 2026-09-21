@@ -17,7 +17,8 @@ Do **not** batch multiple pages unless you ask for it.
 
 ## Phase A — Document pattern ✅
 
-- [x] Reference implementation: Manage Consumer Assignments (`/organizations/:organization_id/assignments/:assignment_id/consumer_assignments`)
+- [x] Reference implementation: Manage Observees (`/organizations/:organization_id/observations/:id/manage_observees`) — current checkbox toolbar reference
+- [x] Historical reference: Assignment reliance / former Manage Consumer Assignments (now association radios, not this toolbar)
 - [x] UX doc + agent skill + this plan
 
 ---
@@ -43,7 +44,7 @@ Do **not** batch multiple pages unless you ask for it.
 | C2 | Teammate assignment selection ✅ (`GET/POST …/company_teammates/:id/assignment_selection`) | `company_teammates/assignment_selection` | Done; tagline + status badges; suggested enabled/unchecked |
 | C3 | ~~People assignment selection~~ | ~~`people/assignment_selection`~~ | **Removed** — unused duplicate view; route always rendered `company_teammates/assignment_selection` |
 | C4 | Associate Assignments — department (`GET/PATCH …/departments/:id/associate_assignments`) | `departments/associate_assignments` | Table + select-all |
-| — | Manage Consumer Assignments ✅ (`GET/PATCH …/assignments/:id/consumer_assignments`) | `assignments/consumer_assignments/show` | Reference (pre–Phase A) |
+| — | ~~Manage Consumer Assignments~~ | ~~`assignments/consumer_assignments/show`~~ | **Moved off this pattern** — now upstream/downstream association radios (title-pathing style) |
 
 **Gate:** Your approval after C4 before Phase D.
 

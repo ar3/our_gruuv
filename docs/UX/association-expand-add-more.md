@@ -15,6 +15,7 @@ On “associate multiple things” pages where the **already associated** list i
 | Assignment Ability Milestone Requirements | same shared partial | Add Ability Milestones |
 | Ability Assignment Milestone Requirements | `shared/assignment_milestones/_form_sections` | Add Assignment Milestones |
 | Title manage paths | `organizations/titles/_title_path_form_sections` | Add Title Paths |
+| Assignment reliance | `organizations/assignments/consumer_assignments/_reliance_form_sections` | Add Assignment Reliance |
 | Day-to-day assignment tenure bypass | page-local | Add Assignments |
 
 ## Pattern

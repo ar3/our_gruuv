@@ -1,9 +1,9 @@
-- content_for :title, "Manage Consumer Assignments - #{@assignment.title}"
+- content_for :title, "Manage assignment reliance for #{@assignment.title}"
 
 - content_for :header do
   %h1.mb-0
-    %i.bi.bi-arrow-down-circle.me-2
-    Manage Consumer Assignments - #{@assignment.title}
+    %i.bi.bi-diagram-3.me-2
+    Manage assignment reliance for #{@assignment.title}
 
 - content_for :return_url do
   = @return_url || organization_assignment_path(@organization, @assignment)
@@ -13,60 +13,29 @@
 
 - can_manage = policy(@assignment).manage_consumer_assignments?
 
-= form_with url: organization_assignment_consumer_assignments_path(@organization, @assignment), method: :patch, local: true do |form|
-  .row
-    .col-12
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-list-check.me-2
-            Select Consumer Assignments
-        .card-body
-          %p.text-muted.mb-3
-            Select which assignments benefit from or consume the results of
-            %strong= @assignment.title
-            = ". These assignments will be able to reference this assignment's outcomes."
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-diagram-3.me-2
+      Assignment Reliance
+    %p.mb-0.text-muted
+      Set whether each assignment is upstream of this assignment, downstream of this assignment, or not associated.
+      Arrows in Accountability Flow run left → right: upstream supplies, downstream relies.
 
-          - if @assignments.any?
-            .mb-3{data: {controller: "selection-toolbar options-filter"}}
-              = render "shared/selection_pages/toolbar",
-                form: form,
-                save_label: "Save Consumer Assignments",
-                can_manage: can_manage,
-                search_placeholder: "Search assignments...",
-                search_aria_label: "Filter assignments",
-                disabled_tooltip: "Requires manage MAAP permission",
-                large_save: true
+  .card-body
+    = form_with url: organization_assignment_consumer_assignments_path(@organization, @assignment), method: :patch, local: true do |form|
+      = render "organizations/assignments/consumer_assignments/reliance_form_sections",
+        form: form,
+        associated_assignments: @associated_assignments,
+        available_assignments: @available_assignments,
+        existing_directions_by_assignment_id: @existing_directions_by_assignment_id,
+        subject_name: @assignment.title,
+        can_manage: can_manage
 
-              .selection-page-columns{data: {options_filter_target: "list"}}
-                - @assignments.each do |assignment|
-                  .filterable-option
-                    .form-check
-                      = check_box_tag "consumer_assignment_ids[]",
-                        assignment.id,
-                        @existing_consumer_assignment_ids.include?(assignment.id),
-                        class: "form-check-input",
-                        id: "consumer_assignment_#{assignment.id}",
-                        disabled: !can_manage,
-                        data: {selection_toolbar_label: assignment.title}
-                      = label_tag "consumer_assignment_#{assignment.id}", class: "form-check-label" do
-                        %strong= assignment.title
-                        - if assignment.department
-                          %br
-                          %small.text-muted= assignment.department.display_name
-                        - else
-                          %br
-                          %small.text-muted= assignment.company.name
-          - else
-            .alert.alert-info
-              %i.bi.bi-info-circle.me-2
-              No assignments found in this organization hierarchy.
-
-      .card.mb-4
-        .card-body
-          = render "shared/selection_pages/save_button",
-            form: form,
-            label: "Save Consumer Assignments",
-            can_manage: can_manage,
-            large: true,
-            disabled_tooltip: "Requires manage MAAP permission"
+      .mt-4.d-flex.justify-content-between
+        = link_to "Cancel", @return_url, class: "btn btn-secondary"
+        - if can_manage
+          = form.submit "Save Assignment Reliance", class: "btn btn-primary"
+        - else
+          %span{title: "Requires manage MAAP permission", "data-bs-toggle": "tooltip"}
+            = form.submit "Save Assignment Reliance", class: "btn btn-primary", disabled: true

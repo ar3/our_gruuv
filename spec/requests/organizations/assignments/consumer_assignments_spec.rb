@@ -2,15 +2,15 @@ require 'rails_helper'
 
 RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request do
   let(:organization) { create(:organization) }
-  let(:assignment) { create(:assignment, company: organization, title: 'Supplier Assignment') }
-  let(:consumer1) { create(:assignment, company: organization, title: 'Consumer Assignment 1') }
-  let(:consumer2) { create(:assignment, company: organization, title: 'Consumer Assignment 2') }
-  let(:consumer3) { create(:assignment, company: organization, title: 'Consumer Assignment 3') }
-  
+  let(:assignment) { create(:assignment, company: organization, title: 'Core Assignment') }
+  let(:upstream) { create(:assignment, company: organization, title: 'Upstream Assignment') }
+  let(:downstream) { create(:assignment, company: organization, title: 'Downstream Assignment') }
+  let(:other) { create(:assignment, company: organization, title: 'Other Assignment') }
+
   let(:admin) { create(:person, :admin) }
   let(:maap_person) { create(:person) }
   let(:regular_person) { create(:person) }
-  
+
   let(:admin_teammate) { create(:teammate, person: admin, organization: organization) }
   let(:maap_teammate) { create(:teammate, person: maap_person, organization: organization, can_manage_maap: true) }
   let(:regular_teammate) { create(:teammate, person: regular_person, organization: organization) }
@@ -35,94 +35,61 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
         expect(response).to have_http_status(:success)
       end
 
-      it 'renders the show template' do
+      it 'renders the reliance manage page' do
+        upstream
+
         get organization_assignment_consumer_assignments_path(organization, assignment)
-        expect(response.body).to include('Manage Consumer Assignments')
+        expect(response.body).to include('Manage assignment reliance for')
         expect(response.body).to include(assignment.title)
-        expect(response.body).to include('Select Consumer Assignments')
+        expect(response.body).to include('Upstream of this assignment')
+        expect(response.body).to include('Downstream of this assignment')
+        expect(response.body).to include('No Association')
+        expect(response.body).to include('Save Assignment Reliance')
       end
 
       it 'shows all assignments in organization hierarchy' do
-        # Ensure assignments are created before the request
         assignment
-        consumer1
-        consumer2
-        
+        upstream
+        downstream
+
         get organization_assignment_consumer_assignments_path(organization, assignment)
-        
-        expect(response.body).to include(consumer1.title)
-        expect(response.body).to include(consumer2.title)
-        # Current assignment should not appear in the checkbox list (but may appear in header)
-        expect(response.body).not_to match(/consumer_assignment_#{assignment.id}/)
+
+        expect(response.body).to include(upstream.title)
+        expect(response.body).to include(downstream.title)
+        expect(response.body).not_to match(/assignment_reliance_#{assignment.id}_direction/)
       end
 
-      it 'shows existing consumer assignments as checked' do
-        # Create an existing relationship
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer1
-        )
-        
+      it 'marks existing upstream and downstream associations' do
+        create(:assignment_supply_relationship, supplier_assignment: upstream, consumer_assignment: assignment)
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+
         get organization_assignment_consumer_assignments_path(organization, assignment)
-        
-        # Check that the checkbox for consumer1 exists and is checked
-        # check_box_tag generates HTML with checked attribute when the value is true
-        checkbox_html = response.body[/<input[^>]*id=["']consumer_assignment_#{consumer1.id}["'][^>]*>/]
-        expect(checkbox_html).to be_present
-        expect(checkbox_html).to include('checked')
+
+        upstream_checked = response.body[%r{id=["']assignment_reliance_#{upstream.id}_direction_upstream["'][^>]*>}]
+        downstream_checked = response.body[%r{id=["']assignment_reliance_#{downstream.id}_direction_downstream["'][^>]*>}]
+        expect(upstream_checked).to include('checked')
+        expect(downstream_checked).to include('checked')
       end
 
-      it 'shows unchecked assignments that are not consumers' do
-        # Ensure consumer2 is created before the request
-        consumer2
-        
-        # consumer2 is not a consumer
+      it 'shows configure section when associations exist and collapses add section' do
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+        other
+
         get organization_assignment_consumer_assignments_path(organization, assignment)
-        
-        # The checkbox should exist but not be checked
-        # The checkbox ID should be in the response
-        expect(response.body).to include("consumer_assignment_#{consumer2.id}")
-        # Find the position of the checkbox ID and extract the input tag
-        id_index = response.body.index("consumer_assignment_#{consumer2.id}")
-        expect(id_index).to be_present
-        # Look backwards to find the start of the input tag
-        tag_start = response.body.rindex('<input', id_index)
-        # Look forwards to find the end of the input tag
-        tag_end = response.body.index('>', id_index)
-        if tag_start && tag_end
-          input_tag = response.body[tag_start..tag_end]
-          # The checked attribute should not appear in the input tag
-          expect(input_tag).not_to match(/\schecked(\s|>|=)/)
-        else
-          # Fallback: just verify the ID exists (the checkbox is there)
-          expect(id_index).to be_present
-        end
+
+        expect(response.body).to include('Configure Assignment Reliance')
+        expect(response.body).to include('Add Assignment Reliance')
+        expect(response.body).to include('Click to expand if')
       end
 
-      it 'shows enabled save buttons at top and bottom when options exist' do
-        consumer1
+      it 'expands add section when no associations exist' do
+        upstream
 
         get organization_assignment_consumer_assignments_path(organization, assignment)
 
-        assert_select 'input[type="submit"][value="Save Consumer Assignments"]', count: 2
-      end
-
-      it 'shows bottom save when no other assignments exist' do
-        get organization_assignment_consumer_assignments_path(organization, assignment)
-
-        assert_select 'input[type="submit"][value="Save Consumer Assignments"]', count: 1
-      end
-
-      it 'shows selection toolbar with search and empty selection label' do
-        consumer1
-        consumer2
-
-        get organization_assignment_consumer_assignments_path(organization, assignment)
-
-        expect(response.body).to include('placeholder="Search assignments..."')
-        expect(response.body).to include('aria-label="Filter assignments"')
-        expect(response.body).to include('None selected')
-        expect(response.body).to include('data-controller="selection-toolbar options-filter"')
+        expect(response.body).to include('No assignment reliance yet')
+        expect(response.body).to include('addAssignmentReliance')
+        expect(response.body).to include('class="collapse show"')
       end
     end
 
@@ -135,14 +102,6 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
       it 'returns success' do
         get organization_assignment_consumer_assignments_path(organization, assignment)
         expect(response).to have_http_status(:success)
-      end
-
-      it 'shows enabled save buttons at top and bottom when options exist' do
-        consumer1
-
-        get organization_assignment_consumer_assignments_path(organization, assignment)
-
-        assert_select 'input[type="submit"][value="Save Consumer Assignments"]', count: 2
       end
     end
 
@@ -178,58 +137,58 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
         sign_in_as_teammate_for_request(admin, organization)
       end
 
-      it 'creates new consumer assignment relationships' do
+      it 'creates upstream and downstream relationships' do
         expect {
           patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-            consumer_assignment_ids: [consumer1.id, consumer2.id]
+            assignment_reliance: {
+              upstream.id => { direction: 'upstream' },
+              downstream.id => { direction: 'downstream' },
+              other.id => { direction: 'none' }
+            }
           }
         }.to change(AssignmentSupplyRelationship, :count).by(2)
-        
-        expect(assignment.consumer_assignments).to include(consumer1, consumer2)
+
+        expect(assignment.reload.supplier_assignments).to include(upstream)
+        expect(assignment.consumer_assignments).to include(downstream)
       end
 
-      it 'removes existing consumer assignment relationships' do
-        # Create existing relationships
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer1
-        )
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer2
-        )
-        
+      it 'removes relationships marked none' do
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: other)
+
         expect {
           patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-            consumer_assignment_ids: [consumer1.id]
+            assignment_reliance: {
+              downstream.id => { direction: 'downstream' },
+              other.id => { direction: 'none' }
+            }
           }
         }.to change(AssignmentSupplyRelationship, :count).by(-1)
-        
+
         assignment.reload
-        expect(assignment.consumer_assignments).to include(consumer1)
-        expect(assignment.consumer_assignments).not_to include(consumer2)
+        expect(assignment.consumer_assignments).to include(downstream)
+        expect(assignment.consumer_assignments).not_to include(other)
       end
 
-      it 'updates relationships correctly' do
-        # Start with consumer1 as a consumer
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer1
-        )
-        
-        # Update to have consumer2 and consumer3 instead
+      it 'switches a relationship from downstream to upstream' do
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: other)
+
         patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-          consumer_assignment_ids: [consumer2.id, consumer3.id]
+          assignment_reliance: {
+            other.id => { direction: 'upstream' }
+          }
         }
-        
+
         assignment.reload
-        expect(assignment.consumer_assignments).not_to include(consumer1)
-        expect(assignment.consumer_assignments).to include(consumer2, consumer3)
+        expect(assignment.consumer_assignments).not_to include(other)
+        expect(assignment.supplier_assignments).to include(other)
       end
 
       it 'redirects to assignment show page' do
         patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-          consumer_assignment_ids: [consumer1.id]
+          assignment_reliance: {
+            downstream.id => { direction: 'downstream' }
+          }
         }
         expect(response).to have_http_status(:redirect)
         expect(response.location).to include(organization_assignment_path(organization, assignment))
@@ -237,26 +196,24 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
 
       it 'shows success notice' do
         patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-          consumer_assignment_ids: [consumer1.id]
+          assignment_reliance: {
+            downstream.id => { direction: 'downstream' }
+          }
         }
         follow_redirect!
-        expect(response.body).to include('Consumer assignments were successfully updated')
+        expect(response.body).to include('Assignment reliance was successfully updated')
       end
 
-      it 'handles empty selection' do
-        # Start with some relationships
-        AssignmentSupplyRelationship.create!(
-          supplier_assignment: assignment,
-          consumer_assignment: consumer1
-        )
-        
-        # Remove all relationships
+      it 'handles clearing all reliance' do
+        create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream)
+
         patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-          consumer_assignment_ids: []
+          assignment_reliance: {
+            downstream.id => { direction: 'none' }
+          }
         }
-        
-        assignment.reload
-        expect(assignment.consumer_assignments).to be_empty
+
+        expect(assignment.reload.consumer_assignments).to be_empty
       end
     end
 
@@ -266,10 +223,12 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
         sign_in_as_teammate_for_request(maap_person, organization)
       end
 
-      it 'creates new consumer assignment relationships' do
+      it 'creates relationships' do
         expect {
           patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-            consumer_assignment_ids: [consumer1.id]
+            assignment_reliance: {
+              downstream.id => { direction: 'downstream' }
+            }
           }
         }.to change(AssignmentSupplyRelationship, :count).by(1)
       end
@@ -283,9 +242,11 @@ RSpec.describe 'Organizations::Assignments::ConsumerAssignments', type: :request
 
       it 'denies access' do
         patch organization_assignment_consumer_assignments_path(organization, assignment), params: {
-          consumer_assignment_ids: [consumer1.id]
+          assignment_reliance: {
+            downstream.id => { direction: 'downstream' }
+          }
         }
-        
+
         expect(response).to redirect_to(root_path)
         expect(assignment.consumer_assignments).to be_empty
       end

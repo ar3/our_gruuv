@@ -95,17 +95,17 @@
       %li
         - if is_consumer_assignments_view
           .dropdown-item.text-muted
-            %i.bi.bi-arrow-down-circle.me-2
-            Manage Consumer Assignments (Active)
+            %i.bi.bi-diagram-3.me-2
+            Manage Assignment Reliance (Active)
             %i.bi.bi-check-circle.text-success.ms-2
         - elsif @assignment && assignment_org && policy(@assignment).manage_consumer_assignments?
           = link_to organization_assignment_consumer_assignments_path(assignment_org, @assignment), class: 'dropdown-item' do
-            %i.bi.bi-arrow-down-circle.me-2
-            Manage Consumer Assignments
+            %i.bi.bi-diagram-3.me-2
+            Manage Assignment Reliance
         - else
           .dropdown-item.text-muted.disabled
-            %i.bi.bi-arrow-down-circle.me-2
-            Manage Consumer Assignments
+            %i.bi.bi-diagram-3.me-2
+            Manage Assignment Reliance
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission"}
       
       %li

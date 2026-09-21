@@ -13,7 +13,7 @@ description: >-
 
 1. Read **`docs/UX/selection-pages-toolbar.md`** (pattern, markup, checklist).
 2. If the user named a rollout item, read **`docs/UX/selection-pages-rollout-plan.md`** and implement **only that one page** unless they explicitly ask for more.
-3. Read the **reference implementation:** `app/views/organizations/assignments/consumer_assignments/show.html.haml`.
+3. Read the **reference implementation:** `app/views/organizations/observations/manage_observees.html.haml`.
 
 ## Rules
 

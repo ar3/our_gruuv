@@ -20,5 +20,5 @@
   %p.text-muted.mb-0
     No supply relationships are linked to this assignment yet.
     - if policy(assignment).manage_consumer_assignments?
-      = link_to "Manage consumer assignments", organization_assignment_consumer_assignments_path(organization, assignment), class: "text-decoration-none"
-      to map how this assignment's results flow to others.
+      = link_to "Manage assignment reliance", organization_assignment_consumer_assignments_path(organization, assignment), class: "text-decoration-none"
+      to map upstream suppliers and downstream consumers.

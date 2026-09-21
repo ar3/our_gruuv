@@ -4,60 +4,28 @@ class Organizations::Assignments::ConsumerAssignmentsController < Organizations:
 
   def show
     authorize @assignment, :manage_consumer_assignments?
-    
-    # Load all assignments in organization hierarchy (excluding current assignment)
-    company = @assignment.company
-    company_hierarchy_ids = company.self_and_descendants.map(&:id)
-    all_assignments = Assignment.unarchived
-                                .where(company_id: company_hierarchy_ids)
-                                .where.not(id: @assignment.id)
-                                .includes(:department, :company)
-                                .order(:title)
-    
-    # Sort by hierarchical department name then assignment name
-    @assignments = sort_assignments_by_hierarchy(all_assignments)
-    
-    # Load existing consumer assignments
-    @existing_consumer_assignment_ids = @assignment.consumer_assignments.pluck(:id).to_set
-    
-    # Set return URL and text for overlay
-    return_params = params.except(:controller, :action, :assignment_id).permit!.to_h
-    @return_url = organization_assignment_path(@organization, @assignment, return_params)
-    @return_text = "Back to #{@assignment.title}"
-    
-    render layout: 'overlay'
+    load_reliance_collections
+    set_return_navigation
+    render layout: "overlay"
   end
 
   def update
     authorize @assignment, :manage_consumer_assignments?
-    
-    # Get selected consumer assignment IDs from params
-    selected_ids = Array(params[:consumer_assignment_ids]).map(&:to_i).reject(&:zero?)
-    
-    # Get current consumer assignment IDs
-    current_ids = @assignment.consumer_assignments.pluck(:id).to_set
-    
-    # Determine which to add and which to remove
-    selected_set = selected_ids.to_set
-    to_add = selected_set - current_ids
-    to_remove = current_ids - selected_set
-    
-    # Add new relationships
-    to_add.each do |consumer_id|
-      AssignmentSupplyRelationship.create!(
-        supplier_assignment: @assignment,
-        consumer_assignment_id: consumer_id
-      )
+
+    result = Assignments::RelianceManager.call(
+      assignment: @assignment,
+      associations: reliance_params
+    )
+
+    if result.ok?
+      redirect_to organization_assignment_path(@organization, @assignment),
+                  notice: "Assignment reliance was successfully updated."
+    else
+      flash.now[:alert] = result.error
+      load_reliance_collections
+      set_return_navigation
+      render :show, layout: "overlay", status: :unprocessable_entity
     end
-    
-    # Remove old relationships
-    @assignment.supplier_supply_relationships
-                .where(consumer_assignment_id: to_remove.to_a)
-                .destroy_all
-    
-    # Build return URL (don't preserve params for redirect)
-    redirect_to organization_assignment_path(@organization, @assignment), 
-                notice: 'Consumer assignments were successfully updated.'
   end
 
   private
@@ -66,22 +34,61 @@ class Organizations::Assignments::ConsumerAssignmentsController < Organizations:
     @assignment = @organization.assignments.find(params[:assignment_id])
   end
 
+  def set_return_navigation
+    return_params = params.except(:controller, :action, :assignment_id).permit!.to_h
+    @return_url = organization_assignment_path(@organization, @assignment, return_params)
+    @return_text = "Back to #{@assignment.title}"
+  end
+
+  def load_reliance_collections
+    company_hierarchy_ids = @assignment.company.self_and_descendants.map(&:id)
+    all_assignments = Assignment.unarchived
+                                .where(company_id: company_hierarchy_ids)
+                                .where.not(id: @assignment.id)
+                                .includes(:department, :company)
+                                .order(:title)
+
+    @existing_directions_by_assignment_id = {}
+    @assignment.consumer_assignments.each do |other|
+      @existing_directions_by_assignment_id[other.id] = "downstream"
+    end
+    @assignment.supplier_assignments.each do |other|
+      @existing_directions_by_assignment_id[other.id] = "upstream"
+    end
+
+    associated_ids = @existing_directions_by_assignment_id.keys
+    sorted = sort_assignments_by_hierarchy(all_assignments)
+
+    @associated_assignments = sorted.select { |a| associated_ids.include?(a.id) }
+    @available_assignments = sorted.reject { |a| associated_ids.include?(a.id) }
+  end
+
+  def reliance_params
+    raw = params[:assignment_reliance]
+    return {} if raw.blank?
+
+    permitted = raw.permit!
+    result = {}
+    permitted.each do |other_assignment_id, attrs|
+      next if other_assignment_id.blank?
+
+      result[other_assignment_id.to_i] = { direction: attrs[:direction] }
+    end
+    result
+  end
+
   def sort_assignments_by_hierarchy(assignments)
-    # Build sort keys for each assignment
     assignments_with_keys = assignments.map do |assignment|
-      # Build hierarchical path: company > dept > subdept > assignment_name
       hierarchy_path = if assignment.department
         assignment.department.display_name
       else
         assignment.company.name
       end
-      
+
       sort_key = "#{hierarchy_path} > #{assignment.title}"
-      
       [sort_key, assignment]
     end
-    
-    # Sort by the hierarchical path string, then return just the assignments
+
     assignments_with_keys.sort_by(&:first).map(&:last)
   end
 end
