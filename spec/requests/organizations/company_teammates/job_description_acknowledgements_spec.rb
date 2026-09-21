@@ -47,6 +47,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("True JD (signed)")
+      expect(response.body).to include("True Job Description (signed)")
       expect(response.body).to include("True Job Description (JD) (signed view)")
       expect(response.body).to include("Goal of this page")
       expect(response.body).to include("This job description needs to be signed.")

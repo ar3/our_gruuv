@@ -62,15 +62,16 @@ module TeammateModalityHeaderHelper
   end
 
   # Closed header sits next to the teammate name — drop "{casual}'s " from modality labels.
-  # Menu rows keep the full possessive label.
+  # Menu rows keep the full possessive label. On True JD pages, spell out JD in the closed label only.
   def teammate_modality_closed_label(teammate, label = people_current_view_name)
     return label if teammate.blank? || label.blank?
 
     casual = teammate.person&.casual_name.to_s.presence
-    return label if casual.blank?
+    return expand_jd_in_closed_modality_label(label) if casual.blank?
 
     prefix = "#{casual}'s "
-    label.start_with?(prefix) ? label.delete_prefix(prefix) : label
+    closed = label.start_with?(prefix) ? label.delete_prefix(prefix) : label
+    expand_jd_in_closed_modality_label(closed)
   end
 
   def can_set_assignments_for_teammate?(teammate)
@@ -235,6 +236,10 @@ module TeammateModalityHeaderHelper
   end
 
   private
+
+  def expand_jd_in_closed_modality_label(label)
+    label.to_s.gsub(/\bJD\b/, "Job Description")
+  end
 
   def teammate_modality_item(key:, icon:, label:, active:, path:, allowed:, disabled_tooltip:)
     {
