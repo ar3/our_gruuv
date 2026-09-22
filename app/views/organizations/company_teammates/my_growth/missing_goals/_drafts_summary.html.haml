@@ -1,0 +1,46 @@
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- recent_draft_goals = local_assigns.fetch(:recent_draft_goals)
+- draft_goals_count = local_assigns.fetch(:draft_goals_count)
+- return_url = local_assigns.fetch(:return_url)
+- return_text = local_assigns.fetch(:return_text, "Back to Grow by Goals")
+- drafts_url = organization_goals_path(organization,
+    owner_id: "CompanyTeammate_#{teammate.id}",
+    status: "draft",
+    view: "hierarchical-collapsible",
+    return_url: return_url,
+    return_text: return_text)
+- other_draft_count = [draft_goals_count - recent_draft_goals.size, 0].max
+- start_goal_url = select_create_organization_goals_path(organization, for_company_teammate_id: teammate.id, return_url: return_url, return_text: return_text)
+
+.card.mb-4
+  .card-header.bg-light
+    %h5.mb-0
+      %i.bi.bi-pencil-square.me-2
+      Draft goals
+      %span.badge.text-bg-secondary.ms-2= draft_goals_count
+  .card-body
+    - if recent_draft_goals.any?
+      %ul.list-group.list-group-flush.mb-3
+        - recent_draft_goals.each do |goal|
+          %li.list-group-item.px-0
+            .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+              %div.min-w-0
+                = link_to goal.title, organization_goal_path(organization, goal), class: "fw-semibold text-decoration-none"
+                .small.text-muted
+                  Created
+                  = format_date_in_user_timezone(goal.created_at)
+              = link_to "Start goal", organization_goal_path(organization, goal), class: "btn btn-sm btn-outline-primary flex-shrink-0"
+      - if other_draft_count.positive?
+        = link_to drafts_url, class: "btn btn-primary w-100" do
+          %i.bi.bi-box-arrow-up-right.me-1
+          = "Or start one of the other #{pluralize(other_draft_count, 'draft goal')}"
+      - else
+        = link_to drafts_url, class: "btn btn-outline-secondary w-100" do
+          %i.bi.bi-box-arrow-up-right.me-1
+          Manage these draft goals
+    - else
+      %p.text-muted.mb-0 No draft goals right now.
+      = link_to start_goal_url, class: "btn btn-outline-primary mt-2" do
+        %i.bi.bi-plus.me-1
+        Start a draft goal

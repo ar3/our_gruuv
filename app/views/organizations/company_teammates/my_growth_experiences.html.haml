@@ -7,10 +7,10 @@
 
 = render 'organizations/company_teammates/my_growth/nav'
 
-.alert.alert-info
+= render 'shared/context_callout' do
   %p.mb-0
     There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the first of the four.
-    %span.fw-bold.fs-5 Grow by experiences.
+    %span.fw-bold Grow by experiences.
     Your Assignments are an indication of what you are being relied on for, and therefore can be a great way to gain new experiences that are invaluable to your growth.
 
 - header_row_class = @teammate.next_goal_position.blank? ? 'my-growth-experiences__header-row--elevated' : nil

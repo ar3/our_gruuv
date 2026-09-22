@@ -20,21 +20,25 @@
 - network_chart_id_prefix = local_assigns[:network_chart_id_prefix] || first_chart_dom_id.to_s.sub(/-by-week-chart.*\z/, '')
 - network_chart_id_prefix = 'goals-network' if network_chart_id_prefix.blank?
 - collapse_network_by_default = local_assigns.fetch(:collapse_network_by_default, false)
+- hide_network = local_assigns.fetch(:hide_network, false)
+- hide_weekly_charts = local_assigns.fetch(:hide_weekly_charts, false)
+- network_card_title = local_assigns.fetch(:network_card_title, 'Goals Network')
 - network_collapse_id = "#{network_chart_id_prefix}-network-collapse"
 - network_goal_count = goals_for_network_graph.respond_to?(:size) ? goals_for_network_graph.size : 0
 - network_goal_possessive = network_goal_count == 1 ? "goal's" : "goals'"
 - network_expand_label = "Expand to see your #{network_goal_count} #{network_goal_possessive} relationships visualized"
+- show_network = !hide_network && (goals_for_network_graph.present? || goals_for_network_graph == [])
 -# Bootstrap Icons: pass suffix only (e.g. bi-people) so we output bi bi-people
 
 %div{class: wrap_class}
-  - if goals_for_network_graph.present? || goals_for_network_graph == []
+  - if show_network
     .row.mb-4
       .col-12
         .card.border-0.shadow-sm.goals-network-section
           .card-header.bg-light
             %h5.mb-0
               %i.bi.bi-diagram-3-fill.me-2
-              Goals Network
+              = network_card_title
           .card-body
             - if goals_for_network_graph.any?
               - if collapse_network_by_default
@@ -65,92 +69,95 @@
   - if after_network.present?
     = after_network
 
-  - if goals_summary.present?
-    .row.mb-2
-      .col-12
-        %p.mb-0.text-muted= goals_summary_timespan_label
-    .row.mb-4.g-3
-      .col-md-3
-        .card.bg-light.border-0.h-100
-          .card-body.text-center
-            .display-6.fw-semibold= number_with_delimiter(goals_summary.created_goals_count)
-            .small.text-muted.mt-1 Goals created
-            .fw-semibold.mt-2= number_with_delimiter(goals_summary.created_teammates_count)
-            .small.text-muted Teammates
-      .col-md-3
-        .card.bg-light.border-0.h-100
-          .card-body.text-center
-            .display-6.fw-semibold= number_with_delimiter(goals_summary.confidence_checked_goals_count)
-            .small.text-muted.mt-1 Goals with a confidence check
-            .fw-semibold.mt-2= number_with_delimiter(goals_summary.confidence_checked_teammates_count)
-            .small.text-muted Teammates
-      .col-md-3
-        .card.bg-light.border-0.h-100
-          .card-body.text-center
-            .display-6.fw-semibold= number_with_delimiter(goals_summary.stale_goals_count)
-            .small.text-muted.mt-1{ title: "Created before this timespan with no confidence checks during this timespan" } Stale goals
-            .fw-semibold.mt-2= number_with_delimiter(goals_summary.stale_teammates_count)
-            .small.text-muted Teammates
-      .col-md-3
-        .card.bg-light.border-0.h-100
-          .card-body.text-center
-            .display-6.fw-semibold= number_with_delimiter(goals_summary.completed_goals_count)
-            .small.text-muted.mt-1 Goals completed
-            .fw-semibold.mt-2= number_with_delimiter(goals_summary.completed_teammates_count)
-            .small.text-muted Teammates
+  - unless hide_weekly_charts
+    - if goals_summary.present?
+      .row.mb-2
+        .col-12
+          %p.mb-0.text-muted= goals_summary_timespan_label
+      .row.mb-4.g-3
+        .col-md-3
+          .card.bg-light.border-0.h-100
+            .card-body.text-center
+              .display-6.fw-semibold= number_with_delimiter(goals_summary.created_goals_count)
+              .small.text-muted.mt-1 Goals created
+              .fw-semibold.mt-2= number_with_delimiter(goals_summary.created_teammates_count)
+              .small.text-muted Teammates
+        .col-md-3
+          .card.bg-light.border-0.h-100
+            .card-body.text-center
+              .display-6.fw-semibold= number_with_delimiter(goals_summary.confidence_checked_goals_count)
+              .small.text-muted.mt-1 Goals with a confidence check
+              .fw-semibold.mt-2= number_with_delimiter(goals_summary.confidence_checked_teammates_count)
+              .small.text-muted Teammates
+        .col-md-3
+          .card.bg-light.border-0.h-100
+            .card-body.text-center
+              .display-6.fw-semibold= number_with_delimiter(goals_summary.stale_goals_count)
+              .small.text-muted.mt-1{ title: "Created before this timespan with no confidence checks during this timespan" } Stale goals
+              .fw-semibold.mt-2= number_with_delimiter(goals_summary.stale_teammates_count)
+              .small.text-muted Teammates
+        .col-md-3
+          .card.bg-light.border-0.h-100
+            .card-body.text-center
+              .display-6.fw-semibold= number_with_delimiter(goals_summary.completed_goals_count)
+              .small.text-muted.mt-1 Goals completed
+              .fw-semibold.mt-2= number_with_delimiter(goals_summary.completed_teammates_count)
+              .small.text-muted Teammates
 
-  - if goals_for_network_graph.present? || goals_for_network_graph == [] || goals_summary.present?
-    %hr.my-5
-
-  .row.mb-4
-    .col-12
-      .card.border-0.shadow-sm
-        .card-header.bg-primary.text-white
-          %h4.mb-0
-            %i.bi.bi-bullseye.me-2
-            Goals by Week (#{chart_title_period})
-        .card-body
-          %div{id: first_chart_dom_id, style: "height: 400px;"}
-
-  - unless hide_second_chart
-    %hr.my-5
+    - if show_network || goals_summary.present?
+      %hr.my-5
 
     .row.mb-4
       .col-12
         .card.border-0.shadow-sm
-          .card-header.bg-secondary.text-white
+          .card-header.bg-primary.text-white
             %h4.mb-0
-              %i.bi{class: "#{second_header_icon} me-2"}
-              = second_card_heading
+              %i.bi.bi-bullseye.me-2
+              Goals by Week (#{chart_title_period})
           .card-body
-            %div{id: second_chart_dom_id, style: "height: 400px;"}
+            %div{id: first_chart_dom_id, style: "height: 400px;"}
 
-  - charts_after_first.each do |ch|
-    %hr.my-5
-    .row.mb-4
-      .col-12
-        .card.border-0.shadow-sm
-          .card-header{class: ch[:header_class]}
-            %h4.mb-0
-              %i.bi{class: "#{ch[:header_icon]} me-2"}
-              = ch[:card_heading]
-          .card-body
-            %div{id: ch[:dom_id], style: "height: 400px;"}
+    - unless hide_second_chart
+      %hr.my-5
 
-  - charts_after_second.each do |ch|
-    %hr.my-5
-    .row.mb-4
-      .col-12
-        .card.border-0.shadow-sm
-          .card-header{class: ch[:header_class]}
-            %h4.mb-0
-              %i.bi{class: "#{ch[:header_icon]} me-2"}
-              = ch[:card_heading]
-          .card-body
-            %div{id: ch[:dom_id], style: "height: 400px;"}
+      .row.mb-4
+        .col-12
+          .card.border-0.shadow-sm
+            .card-header.bg-secondary.text-white
+              %h4.mb-0
+                %i.bi{class: "#{second_header_icon} me-2"}
+                = second_card_heading
+            .card-body
+              %div{id: second_chart_dom_id, style: "height: 400px;"}
+
+    - charts_after_first.each do |ch|
+      %hr.my-5
+      .row.mb-4
+        .col-12
+          .card.border-0.shadow-sm
+            .card-header{class: ch[:header_class]}
+              %h4.mb-0
+                %i.bi{class: "#{ch[:header_icon]} me-2"}
+                = ch[:card_heading]
+            .card-body
+              %div{id: ch[:dom_id], style: "height: 400px;"}
+
+    - charts_after_second.each do |ch|
+      %hr.my-5
+      .row.mb-4
+        .col-12
+          .card.border-0.shadow-sm
+            .card-header{class: ch[:header_class]}
+              %h4.mb-0
+                %i.bi{class: "#{ch[:header_icon]} me-2"}
+                = ch[:card_heading]
+            .card-body
+              %div{id: ch[:dom_id], style: "height: 400px;"}
 
 :javascript
   (function() {
+    if (#{hide_weekly_charts.to_json}) return;
+
     var goalsChartData = #{goals_chart_data.to_json};
     var secondChartData = #{second_chart_data.to_json};
     var chartsAfterFirst = #{charts_after_first.to_json};

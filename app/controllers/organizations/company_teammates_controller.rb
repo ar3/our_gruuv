@@ -6,6 +6,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   helper MyGrowthAbilitiesHelper
   helper AssignmentEnergyAllocationHelper
   helper OgTipsHelper
+  helper Organizations::OneOnOneLinksHelper
 
   before_action :authenticate_person!
   before_action :set_teammate
@@ -208,9 +209,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     range = my_growth_date_range_for(@timeframe)
     chart_range = range || (52.weeks.ago..Time.current)
     @chart_title_period = my_growth_chart_title_period(@timeframe)
-    @completed_goals_timeframe = my_growth_parse_completed_goals_timeframe(params[:completed_goals_timeframe])
-    completed_range = my_growth_completed_goals_date_range_for(@completed_goals_timeframe)
-    @completed_goals_chart_title_period = my_growth_completed_goals_title_period(@completed_goals_timeframe)
+    completed_range = my_growth_date_range_for(@timeframe)
     goals_scope = GoalsChartSeries.goals_base_scope(company).where(owner: @teammate)
     @goals_chart_data = GoalsChartSeries.stacked_series(chart_range, goals_scope)
     graph_goal_ids = goals_scope.active.pluck(:id)
@@ -222,6 +221,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       completed_in: completed_range
     )
     load_bulk_confidence_check_goals
+    load_my_growth_goals_missing_sections
   end
 
   def my_growth_position_change
@@ -1392,6 +1392,39 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @teammate.update!(next_goal_position: current_position)
   end
 
+  def load_my_growth_goals_missing_sections
+    @work_to_meet_return_url = my_growth_goals_organization_company_teammate_path(
+      organization, @teammate, timeframe: params[:timeframe]
+    )
+    @work_to_meet_return_text = "Back to Grow by Goals"
+    @work_to_meet_summary = OneOnOne::WorkToMeetSummary.call(
+      organization: organization,
+      teammate: @teammate,
+      viewing_person: current_person
+    )
+    eh_records = EngagementHealthStatus.where(teammate: @teammate, organization: organization).to_a
+    if eh_records.empty?
+      EngagementHealth::Refresher.call(@teammate, organization)
+      eh_records = EngagementHealthStatus.where(teammate: @teammate, organization: organization).to_a
+    end
+    @engagement_health_by_item_key = EngagementHealth::UpNextSupport.index_items_by_key(eh_records)
+    @recent_draft_goals = Goal.where(company: organization, owner: @teammate)
+      .incomplete_unarchived
+      .where(started_at: nil)
+      .order(created_at: :desc)
+      .limit(3)
+    @draft_goals_count = Goal.where(company: organization, owner: @teammate)
+      .incomplete_unarchived
+      .where(started_at: nil)
+      .count
+    @exceed_expectation_gaps = MyGrowth::ExceedExpectationGaps.call(
+      organization: organization,
+      teammate: @teammate
+    )
+    @current_position_milestone_gaps = MyGrowth::CurrentPositionMilestoneGaps.call(teammate: @teammate)
+    @target_position_for_goals_note = @teammate.next_goal_position
+  end
+
   def load_bulk_confidence_check_goals
     viewing_teammate = current_company_teammate
     return unless viewing_teammate
@@ -1438,7 +1471,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     case timeframe
     when :'90_days' then 'Last 90 Days'
     when :year then 'Last Year'
-    when :all_time then 'Last 52 Weeks'
+    when :all_time then 'All-Time'
     else 'Last 90 Days'
     end
   end

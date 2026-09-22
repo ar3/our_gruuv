@@ -1,0 +1,62 @@
+- summary = local_assigns.fetch(:summary)
+- casual_name = local_assigns.fetch(:casual_name)
+- show_intro = local_assigns.fetch(:show_intro, true)
+- nested = local_assigns.fetch(:nested, false)
+- intro_heading_tag = nested ? :h5 : :h2
+- essential_rows = summary.essential_aspiration_rows + summary.essential_assignment_rows
+
+- if show_intro
+  .card.mb-4
+    .card-header
+      = content_tag intro_heading_tag, class: "mb-0" do
+        %i.bi.bi-exclamation-triangle.me-2
+        Working to Meet
+    .card-body
+      %p.mb-0
+        Central place for
+        %strong aspirational values
+        and
+        %strong essential assignments
+        whose most recent finalized check-in is
+        %strong Working to Meet
+        — with goal coverage called out so the path forward stays clear.
+
+- if essential_rows.empty?
+  .alert.alert-success
+    %i.bi.bi-check-circle.me-2
+    #{casual_name} has no essential aspirational values or assignments currently rated Working to Meet.
+
+= render "shared/work_to_meet/section",
+         title: "Aspirational Values",
+         icon: "bi-star",
+         rows: summary.essential_aspiration_rows,
+         casual_name: casual_name,
+         rating_display_method: :aspiration_rating_display,
+         sentence_type: :aspiration,
+         nested: nested
+
+= render "shared/work_to_meet/section",
+         title: "Assignments",
+         icon: "bi-briefcase",
+         rows: summary.essential_assignment_rows,
+         casual_name: casual_name,
+         rating_display_method: :assignment_rating_display,
+         sentence_type: :assignment,
+         nested: nested
+
+- if summary.non_essential_assignment_rows.any?
+  - non_essential_collapse_id = local_assigns.fetch(:non_essential_collapse_id, "nonEssentialWtmAssignments")
+  %p.mb-2
+    %a.d-flex.align-items-center.justify-content-between.text-decoration-none.p-3.border.rounded.bg-light.text-body{"data-bs-toggle" => "collapse", href: "##{non_essential_collapse_id}", role: "button", "aria-expanded" => "false", "aria-controls" => non_essential_collapse_id}
+      %span.fw-semibold
+        %i.bi.bi-chevron-down.me-2
+        Non-essential Assignments that are Working to Meet Expectations
+        %span.badge.text-bg-secondary.ms-2= summary.non_essential_assignment_rows.size
+      %span.text-muted.small Not included in the tab count
+  .collapse{id: non_essential_collapse_id}
+    .border.border-top-0.rounded-bottom.p-3.bg-white
+      = render "shared/work_to_meet/table",
+               rows: summary.non_essential_assignment_rows,
+               casual_name: casual_name,
+               rating_display_method: :assignment_rating_display,
+               sentence_type: :assignment

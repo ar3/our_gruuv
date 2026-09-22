@@ -1,0 +1,50 @@
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- milestone_gaps = local_assigns.fetch(:milestone_gaps)
+- return_url = local_assigns.fetch(:return_url)
+- return_text = local_assigns.fetch(:return_text, "Back to Grow by Goals")
+- position = milestone_gaps.position
+
+.card.mb-4
+  .card-header.bg-light
+    %h5.mb-0
+      %i.bi.bi-award.me-2
+      Missing milestone goals
+      - if position
+        %span.badge.text-bg-secondary.ms-2= position.display_name
+  .card-body
+    - if position.blank?
+      %p.text-muted.mb-0 No current position is set, so there are no required milestones to review.
+    - elsif milestone_gaps.rows.empty?
+      %p.text-muted.mb-0 This position has no required ability milestones configured.
+    - else
+      %p.small.text-muted.mb-3
+        Required milestones for the current position. When the milestone is earned, no goal is needed. When it is not, add a goal for the gap (or keep an existing active goal).
+      .table-responsive
+        %table.table.table-hover.align-middle.mb-0
+          %thead
+            %tr
+              %th Ability
+              %th Required
+              %th Earned
+              %th Status
+          %tbody
+            - milestone_gaps.rows.each do |row|
+              %tr
+                %td
+                  = link_to row.ability.name, organization_teammate_ability_path(organization, teammate, row.ability), class: "fw-semibold text-decoration-none"
+                %td M#{row.required_level}
+                %td= row.earned_level.positive? ? "M#{row.earned_level}" : "—"
+                %td
+                  - if row.met
+                    %span.badge.text-bg-success No goal needed
+                  - elsif row.has_active_goal
+                    %span.badge.text-bg-success= pluralize(row.active_goal_count, "active goal")
+                  - else
+                    %span.badge.text-bg-danger.me-2 Milestone gap
+                    = link_to "Add goal",
+                      choose_manage_goals_organization_ability_path(organization, row.ability, return_url: return_url, return_text: return_text, for_company_teammate_id: teammate.id),
+                      class: "btn btn-sm btn-outline-primary"
+                  - if !row.met && row.draft_goal_count.positive?
+                    %p.text-warning.small.mb-0.mt-1
+                      = pluralize(row.draft_goal_count, "draft goal")

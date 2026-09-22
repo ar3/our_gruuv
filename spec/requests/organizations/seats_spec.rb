@@ -24,6 +24,40 @@ RSpec.describe 'Organizations::Seats', type: :request do
     allow_any_instance_of(ApplicationController).to receive(:session).and_return({ current_company_teammate_id: person_teammate.id })
   end
 
+  describe 'GET /organizations/:organization_id/seats/:id' do
+    before { position }
+
+    it 'renders the seat and Required Abilities from the earliest title position' do
+      ability = create(
+        :ability,
+        company: company,
+        created_by: person,
+        updated_by: person,
+        name: 'Widget Craft',
+        description: 'Skill for making widgets.',
+        milestone_2_description: 'Builds widgets alone.'
+      )
+      assignment = create(:assignment, company: company, title: 'Build Widget')
+      create(:position_assignment, :required, position: position, assignment: assignment)
+      create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+      create(:position_ability, position: position, ability: ability, milestone_level: 2)
+
+      get organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(seat.display_name)
+      expect(response.body).to include('Job Description')
+      expect(response.body).to include('Required Abilities (skills, knowledge, and behaviors)')
+      expect(response.body).to include('Widget Craft')
+      expect(response.body).to include('Skill for making widgets.')
+      expect(response.body).to include('Milestone 2 (Advanced)')
+      expect(response.body).to include('Assignments that require at least this milestone:')
+      expect(response.body).to include('Build Widget')
+      expect(response.body).to include('Also required directly by the position.')
+      expect(response.body).to include('Additional Abilities required')
+    end
+  end
+
   describe 'GET /organizations/:organization_id/seats/customize_view' do
     it 'returns http success' do
       get customize_view_organization_seats_path(company)

@@ -1168,5 +1168,21 @@ module GoalsHelper
       { id: "check-in", label: goal_confidence_checks_label, icon: "bi-calendar-check", primary: true }
     ]
   end
+
+  def my_growth_goals_section_nav_links
+    [
+      { id: "active-goals", label: "Active Goals", icon: "bi-lightning-charge", primary: true },
+      { id: "active-goal-map", label: "Visualize goal map", icon: "bi-diagram-3", primary: false },
+      { id: "active-confidence", label: "Weekly confidence", icon: "bi-calendar-check", primary: false },
+      { id: "missing-goals", label: "Missing Goals", icon: "bi-exclamation-diamond", primary: true },
+      { id: "missing-draft-goals", label: "Draft goals", icon: "bi-pencil-square", primary: false },
+      { id: "missing-work-to-meet", label: "Working to Meet", icon: "bi-exclamation-triangle", primary: false },
+      { id: "missing-exceed", label: "Exceed expectation", icon: "bi-graph-up-arrow", primary: false },
+      { id: "missing-milestones", label: "Milestone goals", icon: "bi-award", primary: false },
+      { id: "goal-history", label: "Goal History", icon: "bi-clock-history", primary: true },
+      { id: "goals-by-week", label: "Goals by week", icon: "bi-bullseye", primary: false },
+      { id: "completed-goals", label: "Completed goals", icon: "bi-flag", primary: false }
+    ]
+  end
 end
 

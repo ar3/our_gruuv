@@ -74,8 +74,13 @@ class Seat < ApplicationRecord
   end
 
   # Assignment inheritance methods
+  # Seat JD inherits from the earliest (lowest level) position on the primary title.
+  def job_description_position
+    title.positions.order(:position_level_id).first
+  end
+
   def required_assignments
-    earliest_position = title.positions.order(:position_level_id).first
+    earliest_position = job_description_position
     return [] unless earliest_position
 
     earliest_position.required_assignments

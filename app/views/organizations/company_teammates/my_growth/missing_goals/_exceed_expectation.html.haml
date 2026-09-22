@@ -1,0 +1,52 @@
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- exceed_gaps = local_assigns.fetch(:exceed_gaps)
+- return_url = local_assigns.fetch(:return_url)
+- return_text = local_assigns.fetch(:return_text, "Back to Grow by Goals")
+
+.card.mb-4
+  .card-header.bg-light
+    %h5.mb-0
+      %i.bi.bi-graph-up-arrow.me-2
+      Exceed expectation requirement
+  .card-body
+    - unless exceed_gaps.applicable
+      %p.text-muted.mb-0
+        #{teammate.person.casual_name}'s current position does not require an exceed-expectation percentage right now — or eligibility is not configured for those checks.
+    - else
+      %p.small.text-muted.mb-3
+        Active assignments and values rated Meeting (not Exceeding) while the current position's exceed percentage is not yet met. Create a goal to push toward Exceeding.
+      - if exceed_gaps.rows.empty?
+        %p.text-success.mb-0
+          %i.bi.bi-check-circle.me-1
+          No exceed-expectation gaps to act on.
+      - else
+        .table-responsive
+          %table.table.table-hover.align-middle.mb-0
+            %thead
+              %tr
+                %th Object
+                %th Type
+                %th Goals
+            %tbody
+              - exceed_gaps.rows.each do |row|
+                - object_path = organization_teammate_assignment_path(organization, teammate, row.record) if row.record.is_a?(Assignment)
+                - object_path = organization_teammate_aspiration_path(organization, teammate, row.record) if row.record.is_a?(Aspiration)
+                %tr
+                  %td
+                    - if object_path
+                      = link_to row.object_label, object_path, class: "fw-semibold text-decoration-none"
+                    - else
+                      %span.fw-semibold= row.object_label
+                  %td= row.object_type_label
+                  %td
+                    - if row.has_active_goal
+                      %span.badge.text-bg-success= pluralize(row.active_goal_count, "active goal")
+                    - else
+                      %span.badge.text-bg-danger.me-2 No active goal
+                      = link_to "Add goal",
+                        associable_goals_choose_manage_path(organization, row.record, return_url: return_url, return_text: return_text, for_company_teammate_id: teammate.id),
+                        class: "btn btn-sm btn-outline-primary"
+                    - if row.draft_goal_count.positive?
+                      %p.text-warning.small.mb-0.mt-1
+                        = pluralize(row.draft_goal_count, "draft goal")

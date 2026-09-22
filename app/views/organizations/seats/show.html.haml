@@ -182,6 +182,15 @@
           
           = render 'organizations/positions/assignment_job_description', pa: pa, assignment_type: 'suggested', organization: organization
 
+    - jd_position = @seat.job_description_position
+    - if jd_position
+      = render 'organizations/positions/job_description_required_abilities',
+               position: jd_position,
+               organization: organization
+      = render 'organizations/positions/job_description_direct_milestones',
+               position: jd_position,
+               organization: organization
+
     - if @seat.required_assignments.empty? && @seat.suggested_assignments.empty?
       .alert.alert-warning
         %h6.mb-2

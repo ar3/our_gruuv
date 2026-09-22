@@ -1,0 +1,17 @@
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- target_position = local_assigns[:target_position]
+- position_change_path = my_growth_position_change_organization_company_teammate_path(organization, teammate)
+
+.alert.alert-light.border.mb-0
+  %i.bi.bi-geo-alt.me-2
+  - if target_position
+    To see goals for your target position of
+    %strong= target_position.display_name
+    go to the
+    = link_to "Position / Title Change", position_change_path, class: "alert-link"
+    page.
+  - else
+    No target position is set yet. Go to the
+    = link_to "Position / Title Change", position_change_path, class: "alert-link"
+    page to set a target and see pathing goals.

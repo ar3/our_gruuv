@@ -7,10 +7,10 @@
 
 = render 'organizations/company_teammates/my_growth/nav'
 
-.alert.alert-info
+= render 'shared/context_callout' do
   %p.mb-0
     There are four ways to grow: new experiences, gaining skills/knowledge/abilities, goal attainment, and position/title changes. This is the second of the four.
-    %span.fw-bold.fs-5 Grow by Abilities.
+    %span.fw-bold Grow by Abilities.
     Being recognized for demonstrating the skills, knowledge, and behaviors your organization and experts deem valuable is an incredible way to showcase your growth!
 
 - header_row_class = @teammate.next_goal_position.blank? ? 'my-growth-experiences__header-row--elevated' : nil

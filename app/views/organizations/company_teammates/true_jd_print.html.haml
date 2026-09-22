@@ -78,6 +78,11 @@
                assignment_type: 'suggested',
                organization: @current_organization
 
+  - if @print_position
+    = render 'organizations/positions/job_description_required_abilities',
+             position: @print_position,
+             organization: @current_organization
+
   - if @print_position&.position_abilities&.any?
     = render 'organizations/positions/job_description_direct_milestones',
              position: @print_position,

@@ -2,6 +2,7 @@
 - chart_title_period = local_assigns.fetch(:chart_title_period)
 - teammate = local_assigns.fetch(:teammate)
 - timeframe = local_assigns.fetch(:timeframe)
+- show_timeframe_toggle = local_assigns.fetch(:show_timeframe_toggle, true)
 - entries = journey[:entries]
 - chart_data = journey[:chart_data]
 
@@ -20,11 +21,12 @@
             - if chart_title_period.present?
               = " (#{chart_title_period})"
             — hits and learnings both count as progress.
-        = render 'organizations/company_teammates/my_growth/goals_timeframe_toggle',
-          teammate: teammate,
-          timeframe: timeframe,
-          anchor: 'completed-goals',
-          wrap_class: 'mb-0'
+        - if show_timeframe_toggle
+          = render 'organizations/company_teammates/my_growth/goals_timeframe_toggle',
+            teammate: teammate,
+            timeframe: timeframe,
+            anchor: 'completed-goals',
+            wrap_class: 'mb-0'
     .card-body
       - if journey[:empty]
         .alert.alert-light.border.mb-0

@@ -61,6 +61,30 @@ RSpec.describe 'Company teammate True JD print view', type: :request do
         expect(response.body).to include('Employee Signature')
         expect(response.body).to include('window.print()')
       end
+
+      it 'includes Required Abilities when the position has ability milestone requirements' do
+        position = employee_teammate.employment_tenures.find_by!(ended_at: nil).position
+        ability = create(
+          :ability,
+          company: organization,
+          name: 'Widget Craft',
+          description: 'Skill for making widgets.',
+          milestone_2_description: 'Builds widgets alone.'
+        )
+        create(:assignment_ability, assignment: required_assignment, ability: ability, milestone_level: 2)
+        create(:position_ability, position: position, ability: ability, milestone_level: 2)
+
+        get true_jd_print_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Required Abilities (skills, knowledge, and behaviors)')
+        expect(response.body).to include('Widget Craft')
+        expect(response.body).to include('Skill for making widgets.')
+        expect(response.body).to include('Milestone 2 (Advanced)')
+        expect(response.body).to include('Assignments that require at least this milestone:')
+        expect(response.body).to include('Close Deals')
+        expect(response.body).to include('Also required directly by the position.')
+      end
     end
 
     context 'when the person has no current position' do

@@ -30,6 +30,9 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Growth')
+        expect(response.body).to include('context-callout')
+        expect(response.body).to include('There are four ways to grow')
+        expect(response.body).to include('Grow by experiences')
       end
 
       context 'Grow by experiences energy summary' do
@@ -277,6 +280,9 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       it 'allows GET my_growth/abilities' do
         get my_growth_abilities_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('context-callout')
+        expect(response.body).to include('There are four ways to grow')
+        expect(response.body).to include('Grow by Abilities')
       end
 
       context 'Grow by abilities grid' do
@@ -358,16 +364,58 @@ RSpec.describe 'Company teammate My Growth', type: :request do
       it 'allows GET my_growth/goals' do
         get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('context-callout')
+        expect(response.body).to include('There are four ways to grow')
+        expect(response.body).to include('Grow by Goals')
+        expect(response.body).to include('data-controller="in-page-section-nav"')
+        expect(response.body).to include('On this page')
+        expect(response.body).to include('my-growth-section')
+        expect(response.body).to include('id="active-goals"')
+        expect(response.body).to include('id="missing-goals"')
+        expect(response.body).to include('id="goal-history"')
+        expect(response.body).to include('Active Goals')
+        expect(response.body).to include('Missing Goals')
+        expect(response.body).to include('Goal History')
         expect(response.body).to include('draft + active')
         expect(response.body).to include('Go add confidence checks on')
         expect(response.body).to include('draft goals')
         expect(response.body).to include('Weekly goal confidence check (in bulk)')
+        expect(response.body).to include('Working to Meet')
+        expect(response.body).to include('Exceed expectation requirement')
+        expect(response.body).to include('Missing milestone goals')
         expect(response.body).to include('No active goals')
         expect(response.body).to include('Completed goals')
         expect(response.body).to include('No completed goals in this timeframe yet')
       end
 
-      it 'renders goals network chart tabs and places weekly confidence above goals by week' do
+      it 'renders Start goal on draft teasers and a remaining-drafts CTA' do
+        create(
+          :goal,
+          creator: employee_teammate,
+          owner: employee_teammate,
+          company: organization,
+          title: 'Draft teaser goal',
+          started_at: nil
+        )
+        3.times do |i|
+          create(
+            :goal,
+            creator: employee_teammate,
+            owner: employee_teammate,
+            company: organization,
+            title: "Extra draft goal #{i}",
+            started_at: nil
+          )
+        end
+
+        get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response.body).to include('Start goal')
+        expect(response.body).to include('Or start one of the other')
+        expect(response.body).to include('draft goal')
+      end
+
+      it 'renders goals hub sections with map, confidence, then history charts' do
         create(
           :goal,
           creator: employee_teammate,
@@ -378,7 +426,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         )
         get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
         body = response.body
-        expect(body).to include('Goals Network')
+        expect(body).to include('Visualize goal map')
         expect(body).to include('Expand to see your 1 goal&#39;s relationships visualized')
         expect(body).to include('goals-network-graph')
         expect(body).to include('Organization')
@@ -389,14 +437,24 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(body).not_to include('goals-network-mermaid')
         expect(body).not_to include('mermaid.min.js')
 
-        network_idx = body.index('Goals Network')
-        confidence_idx = body.index('Weekly goal confidence check (in bulk)')
-        week_idx = body.index('Goals by Week')
-        expect(network_idx).to be_present
+        active_idx = body.index('id="active-goals"')
+        map_idx = body.index('id="active-goal-map"')
+        confidence_idx = body.index('id="active-confidence"')
+        missing_idx = body.index('id="missing-goals"')
+        history_idx = body.index('id="goal-history"')
+        week_idx = body.index('id="goals-by-week"')
+        expect(active_idx).to be_present
+        expect(map_idx).to be_present
         expect(confidence_idx).to be_present
+        expect(missing_idx).to be_present
+        expect(history_idx).to be_present
         expect(week_idx).to be_present
-        expect(network_idx).to be < confidence_idx
-        expect(confidence_idx).to be < week_idx
+        expect(body).to include('Weekly goal confidence check (in bulk)')
+        expect(active_idx).to be < map_idx
+        expect(map_idx).to be < confidence_idx
+        expect(confidence_idx).to be < missing_idx
+        expect(missing_idx).to be < history_idx
+        expect(history_idx).to be < week_idx
       end
 
       context 'completed goals journey' do
@@ -458,8 +516,9 @@ RSpec.describe 'Company teammate My Growth', type: :request do
           expect(response.body).to include(organization_goal_path(organization, hit_goal))
           expect(response.body).to include(organization_goal_path(organization, learning_goal))
           expect(response.body).to include('id="completed-goals"')
-          expect(response.body.scan(/Last 90 days/).size).to be >= 2
-          expect(response.body).to include('#completed-goals')
+          expect(response.body).to include('Goal History')
+          expect(response.body).to include('Last 90 days')
+          expect(response.body).to include('#goal-history')
         end
       end
 
@@ -525,6 +584,9 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include(organization_position_path(organization, current_position))
         expect(response.body).to include('Current Position')
         expect(response.body).not_to include('Current role')
+        expect(response.body).to include('context-callout')
+        expect(response.body).to include('There are four ways to grow')
+        expect(response.body).to include('Position / Title Change')
       end
 
       it 'shows Suggested next optgroup for higher same-title levels and outbound path positions' do

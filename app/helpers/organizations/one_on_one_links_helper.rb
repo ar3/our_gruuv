@@ -147,7 +147,12 @@ module Organizations
     end
 
     def work_to_meet_return_url
-      work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate))
+      @work_to_meet_return_url.presence ||
+        work_to_meet_organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate))
+    end
+
+    def work_to_meet_return_text
+      @work_to_meet_return_text.presence || "Back to Work to Meet"
     end
 
     def work_to_meet_add_goal_path(associable)
@@ -157,7 +162,7 @@ module Organizations
           organization,
           associable,
           return_url: work_to_meet_return_url,
-          return_text: "Back to Work to Meet",
+          return_text: work_to_meet_return_text,
           for_company_teammate_id: @teammate.id
         )
       when Aspiration
@@ -165,7 +170,7 @@ module Organizations
           organization,
           associable,
           return_url: work_to_meet_return_url,
-          return_text: "Back to Work to Meet",
+          return_text: work_to_meet_return_text,
           for_company_teammate_id: @teammate.id
         )
       end
@@ -187,7 +192,7 @@ module Organizations
         status: "draft",
         view: "hierarchical-collapsible",
         return_url: work_to_meet_return_url,
-        return_text: "Back to Work to Meet"
+        return_text: work_to_meet_return_text
       )
     end
 
@@ -198,7 +203,7 @@ module Organizations
         rateable_type: associable.class.name,
         rateable_id: associable.id,
         return_url: work_to_meet_return_url,
-        return_text: "Back to Work to Meet"
+        return_text: work_to_meet_return_text
       )
     end
 
@@ -209,7 +214,7 @@ module Organizations
         rateable_type: associable.class.name,
         rateable_id: associable.id,
         return_url: work_to_meet_return_url,
-        return_text: "Back to Work to Meet"
+        return_text: work_to_meet_return_text
       )
     end
 

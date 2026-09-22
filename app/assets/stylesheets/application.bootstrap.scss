@@ -2582,23 +2582,53 @@ $likert-colors: (
   }
 }
 
-// Soft context callout — skip-friendly secondary reading (left rail + light surface)
+// Soft context callout — skip-friendly "fine print" (thick left rail, no other border)
 .context-callout {
-  border-left: 0.25rem solid #ced4da;
+  border: 0;
+  border-left: 0.35rem solid #adb5bd;
   background-color: #f8f9fa;
-  color: #495057;
+  color: #6c757d;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   line-height: 1.55;
-  border-radius: 0 0.25rem 0.25rem 0;
+  border-radius: 0;
 
   p:last-child {
     margin-bottom: 0;
   }
 
+  .fw-bold,
   strong {
-    color: #343a40;
+    color: #495057;
     font-weight: 600;
+  }
+}
+
+// My Growth long pages: section hierarchy (top-level H2 > nested cards)
+.my-growth-section {
+  .my-growth-section__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .my-growth-section__body {
+    margin-left: 0.75rem;
+    padding-left: 1rem;
+    border-left: 2px solid #e9ecef;
+
+    .card-header h2,
+    .card-header h3,
+    .card-header h4,
+    .card-header h5,
+    .card-header .h2,
+    .card-header .h3,
+    .card-header .h4,
+    .card-header .h5 {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
   }
 }
 
