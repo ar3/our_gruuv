@@ -1,0 +1,17 @@
+-# Required Abilities section for Job Description views (blueprint + public MAAP).
+-# Locals: position, organization, public_view (optional)
+- public_view = defined?(public_view) ? public_view : (params[:controller].to_s.include?('public_maap') rescue false)
+- ability_rows = job_description_required_ability_rows(position)
+
+- if ability_rows.any?
+  %hr.mb-4.mt-4/
+  %h3.mb-3
+    %strong Required Abilities (skills, knowledge, and behaviors)
+  - ability_rows.each_with_index do |row, index|
+    - if index > 0
+      %hr.my-4
+    = render "organizations/positions/job_description_required_ability",
+             ability: row[:ability],
+             milestones: row[:milestones],
+             organization: organization,
+             public_view: public_view

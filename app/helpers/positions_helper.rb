@@ -112,6 +112,50 @@ module PositionsHelper
     end
   end
 
+  # Rows for Job Description "Required Abilities" section: each ability, description,
+  # and each required milestone with markdown noting which Assignments require at least that level.
+  # Uses the same union as MyGrowthAbilityMilestoneRows (direct + required assignments).
+  def job_description_required_ability_rows(position)
+    structured = MyGrowthAbilityMilestoneRows.structured_requirements_by_ability_id(position)
+    return [] if structured.blank?
+
+    abilities = Ability.where(id: structured.keys).index_by(&:id)
+    structured.keys.filter_map do |ability_id|
+      ability = abilities[ability_id]
+      next unless ability
+
+      sources = structured[ability_id][:sources]
+      levels = sources.map { |source| source[:level].to_i }.uniq.sort
+      {
+        ability: ability,
+        milestones: levels.map { |level| job_description_required_milestone_row(ability, level, sources) }
+      }
+    end.sort_by { |row| row[:ability].name.to_s.downcase }
+  end
+
+  def job_description_required_milestone_row(ability, level, sources)
+    assignment_titles = sources
+      .select { |source| source[:kind] == :assignment && source[:level].to_i >= level }
+      .map { |source| source[:assignment]&.title.presence }
+      .compact
+      .uniq
+    required_directly = sources.any? { |source| source[:kind] == :direct && source[:level].to_i >= level }
+    description = ability.milestone_description(level).to_s
+    markdown_parts = []
+    markdown_parts << description if description.present?
+    if assignment_titles.any?
+      markdown_parts << "Assignments that require at least this milestone: #{assignment_titles.to_sentence}."
+    end
+    if required_directly
+      markdown_parts << "Also required directly by the position."
+    end
+
+    {
+      milestone_level: level,
+      markdown: markdown_parts.join("\n\n")
+    }
+  end
+
   # Format a list of milestone levels for display, e.g. [1, 2, 3] => "1, 2, & 3"
   def milestone_levels_sentence(levels)
     return '' if levels.blank?

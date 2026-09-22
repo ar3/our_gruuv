@@ -17,7 +17,7 @@ class MyGrowthAbilityMilestoneRows
       grouped[pa.ability_id][:sources] << { kind: :direct, level: level, assignment: nil }
     end
 
-    position.required_assignments.each do |position_assignment|
+    position.position_assignments.required.includes(assignment: { assignment_abilities: :ability }).each do |position_assignment|
       assignment = position_assignment.assignment
       assignment&.assignment_abilities&.each do |aa|
         next unless aa.ability_id.present? && aa.milestone_level.present?

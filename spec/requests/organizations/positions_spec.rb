@@ -401,6 +401,36 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('Additional Abilities required')
       expect(response.body).to include('Collaboration')
       expect(response.body).to include('needing Abilities such as')
+      expect(response.body).to include('Required Abilities (skills, knowledge, and behaviors)')
+      expect(response.body).to include('Milestone 2 (Advanced)')
+      expect(response.body).to include('Also required directly by the position.')
+    end
+
+    it 'shows Required Abilities with assignment sources from required assignments' do
+      ability = create(
+        :ability,
+        company: organization,
+        created_by: person,
+        updated_by: person,
+        name: 'Widget Craft',
+        description: 'Skill for making widgets.',
+        milestone_2_description: 'Builds widgets alone.'
+      )
+      assignment = create(:assignment, company: organization, title: 'Build Widget')
+      create(:position_assignment, :required, position: position, assignment: assignment)
+      create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+
+      get job_description_organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Required Abilities (skills, knowledge, and behaviors)')
+      expect(response.body).to include('Widget Craft')
+      expect(response.body).to include('Skill for making widgets.')
+      expect(response.body).to include('Milestone 2 (Advanced)')
+      expect(response.body).to include('Builds widgets alone.')
+      expect(response.body).to include('Assignments that require at least this milestone:')
+      expect(response.body).to include('Build Widget')
+      expect(response.body).to include(organization_ability_path(organization, ability))
     end
 
     it 'does not show Additional Abilities required section when position has no direct milestone requirements' do
@@ -408,6 +438,7 @@ RSpec.describe 'Organizations::Positions', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).not_to include('Additional Abilities required')
+      expect(response.body).not_to include('Required Abilities (skills, knowledge, and behaviors)')
     end
   end
 

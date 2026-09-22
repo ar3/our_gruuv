@@ -1,0 +1,18 @@
+-# Locals: ability, milestones, organization, public_view
+- ability_path = public_view ? organization_public_maap_ability_path(organization, ability) : organization_ability_path(organization, ability)
+
+%h5.mb-2
+  %strong= ability.name
+  = link_to ability_path, target: "_blank", rel: "noopener", class: "ms-2 text-muted", title: "Open ability", "aria-label" => "Open #{ability.name}" do
+    %i.bi.bi-link-45deg
+- if ability.description.present?
+  .markdown-content.mb-3= render_markdown(ability.description)
+- else
+  %p.text-muted.mb-3 No description provided.
+
+.ms-4.ps-3.border-start.border-2.border-secondary
+  - if milestones.any?
+    - milestones.each do |milestone|
+      = render "organizations/positions/job_description_required_milestone", milestone: milestone
+  - else
+    %p.text-muted.mb-0 No milestones required.

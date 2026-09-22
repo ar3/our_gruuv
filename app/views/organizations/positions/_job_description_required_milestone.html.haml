@@ -1,0 +1,10 @@
+-# Locals: milestone — { milestone_level:, markdown: }
+- level = milestone[:milestone_level]
+- level_label = milestone_level_display(level)
+
+%h6.mb-2
+  %strong= "Milestone #{level} (#{level_label})"
+- if milestone[:markdown].present?
+  .markdown-content.mb-3= render_markdown(milestone[:markdown])
+- else
+  %p.text-muted.mb-3 No milestone description provided.
