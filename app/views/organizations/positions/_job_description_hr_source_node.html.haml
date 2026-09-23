@@ -1,0 +1,26 @@
+-# Locals: node (JobDescriptionHrText::Node), organization, title, seat, teammate, public_view
+- actions = job_description_hr_source_actions(node, organization: organization, title: title, seat: seat, teammate: teammate, public_view: public_view)
+
+%span.jd-hr-source-node{ class: "jd-hr-source-node--#{node.state}" }
+  Use #{node.label} if exists:
+  - case node.state.to_sym
+  - when :using
+    %i.bi.bi-check-lg.text-success.ms-1{"aria-hidden" => "true"}
+    %span.fw-semibold using this
+    - if node.fields_using.present? && node.fields_using.size < JobDescriptionHrText::FIELDS.size
+      %span.text-muted= "(#{node.fields_using.join(', ')})"
+  - when :does_not_exist
+    %span does not exist
+  - when :not_used
+    %span.text-muted not used (a more specific source applies)
+  - when :na
+    %span N/A
+    - if node.note.present?
+      %span.text-muted= " — #{node.note}"
+  - else
+    %span= job_description_hr_source_state_label(node.state)
+    - if node.note.present?
+      %span.text-muted= " — #{node.note}"
+  - actions.each do |action|
+    %span.text-muted= " |"
+    = link_to action[:label], action[:path], class: "text-decoration-none"

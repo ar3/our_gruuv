@@ -1,11 +1,37 @@
 -# Job Description Footer/Boilerplate Section
--# Usage: = render 'job_description_footer', organization: organization, title: title (optional), seat: seat (optional)
+-# Usage: = render 'job_description_footer', organization:, title: (optional), seat: (optional), teammate: (optional), public_view: false
 - organization = local_assigns[:organization] || local_assigns[:company]
 - title = local_assigns[:title]
 - seat = local_assigns[:seat]
+- teammate = local_assigns[:teammate]
+- public_view = local_assigns.fetch(:public_view, false)
 - hr = JobDescriptionHrText.for(organization: organization, title: title, seat: seat)
+- cascade = hr.source_cascade
+- collapse_id = "jd-hr-source-#{[organization.id, title&.id, seat&.id, teammate&.id].compact.join('-')}"
 
-.mt-5
+.mt-5.jd-hr-footer
+  .jd-hr-provenance.small.text-muted.mb-3
+    %a.d-inline-flex.align-items-center.gap-1.text-muted.text-decoration-none{href: "##{collapse_id}", "data-bs-toggle" => "collapse", role: "button", "aria-expanded" => "false", "aria-controls" => collapse_id}
+      %i.bi.bi-info-circle
+      %span Current source for #{JobDescriptionHrText::GROUP_NAME}
+      %span.not-collapsed
+        %i.bi.bi-chevron-up{"aria-hidden" => "true"}
+      %span.collapsed
+        %i.bi.bi-chevron-down{"aria-hidden" => "true"}
+    .collapse{id: collapse_id}
+      %p.mb-2.mt-2
+        These fields use the first available source (most specific wins):
+      %ul.mb-0.ps-3
+        - cascade.each do |node|
+          %li.mb-1
+            = render "organizations/positions/job_description_hr_source_node",
+                     node: node,
+                     organization: organization,
+                     title: title,
+                     seat: seat,
+                     teammate: teammate,
+                     public_view: public_view
+
   %p.text-muted
     %em= hr.disclaimer
 

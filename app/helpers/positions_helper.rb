@@ -156,6 +156,61 @@ module PositionsHelper
     }
   end
 
+  def job_description_hr_source_state_label(state)
+    case state.to_sym
+    when :using, :chosen then "using this"
+    when :does_not_exist, :undefined then "does not exist"
+    when :not_used, :skipped then "not used"
+    when :na then "N/A"
+    else state.to_s
+    end
+  end
+
+  def job_description_hr_source_actions(node, organization:, title: nil, seat: nil, teammate: nil, public_view: false)
+    return [] if public_view
+
+    if node.key.to_sym == :seat
+      actions = []
+      if seat.present?
+        actions << {
+          label: "Click to Configure Seat",
+          path: edit_organization_seat_path(organization, seat)
+        }
+      end
+      if teammate.present?
+        casual = teammate.person.casual_name.to_s.strip
+        actions << {
+          label: "Click to modify #{casual}'s seat",
+          path: organization_teammate_position_path(organization, teammate)
+        }
+      end
+      return actions
+    end
+
+    return [] if %i[na not_used skipped].include?(node.state.to_sym)
+
+    path =
+      case node.key.to_sym
+      when :title
+        edit_organization_title_path(organization, title) if title.present?
+      when :organization
+        edit_organization_company_preference_path(organization)
+      end
+
+    path.present? ? [{ label: "Click to Configure", path: path }] : []
+  end
+
+  def job_description_hr_source_edit_path(node, organization:, title: nil, seat: nil, teammate: nil, public_view: false)
+    job_description_hr_source_actions(
+      node,
+      organization: organization,
+      title: title,
+      seat: seat,
+      teammate: teammate,
+      public_view: public_view
+    ).first&.fetch(:path)
+  end
+
   # Format a list of milestone levels for display, e.g. [1, 2, 3] => "1, 2, & 3"
   def milestone_levels_sentence(levels)
     return '' if levels.blank?

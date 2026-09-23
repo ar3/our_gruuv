@@ -56,12 +56,18 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("No signatures yet.")
       expect(response.body).to include("Sign job description")
       expect(response.body).to include("Samantha Cartwright")
+      expect(response.body).to include(employee.government_first_then_last_display_name)
       expect(response.body).to include("Reports To:")
       expect(response.body).to include("Job Classification:")
       expect(response.body).to include("no seat defined… correct this in")
       expect(response.body).to include("Seat Management for Samantha C.")
       expect(response.body).to include(organization_teammate_position_path(organization, employee_teammate))
       expect(response.body).to include("Work environment:")
+      expect(response.body).to include("Current source for Job Description HR fields")
+      expect(response.body).to include("Seat can be configured for a teammate")
+      expect(response.body).to include("Click to modify Samantha C.&#39;s seat")
+      expect(response.body).to include('bi-chevron-down')
+      expect(response.body).to include('bi-chevron-up')
       expect(response.body).to include("Build Widget")
       expect(response.body).to include(organization_teammate_assignment_path(organization, employee_teammate, held_assignment))
       expect(response.body).to include("40% of your energy")
@@ -184,6 +190,8 @@ RSpec.describe "Job description acknowledgement", type: :request do
       get organization_company_teammate_job_description_acknowledgement_path(organization, employee_teammate, acknowledgement)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("True JD (signed)")
+      expect(response.body).to include("View all previously signed job descriptions, or sign this job description again")
+      expect(response.body).to include(organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate))
       expect(response.body).to include("Signature details")
       expect(response.body).to include("IP address:")
       expect(response.body).to include(acknowledgement.request_info["ip_address"])
@@ -202,15 +210,30 @@ RSpec.describe "Job description acknowledgement", type: :request do
     end
 
     it "rejects a name that does not match the account" do
+      employee.update!(preferred_name: "Sammy")
       sign_in_as_teammate_for_request(employee, organization)
 
       expect {
         post organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate),
-             params: { job_description_acknowledgement: { typed_name: "Sam" } }
+             params: { job_description_acknowledgement: { typed_name: "Sammy Cartwright" } }
       }.not_to change(JobDescriptionAcknowledgement, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("must match your full name")
+      expect(response.body).to include(employee.government_first_then_last_display_name)
+    end
+
+    it "accepts the government first-then-last display name when a preferred name differs" do
+      employee.update!(preferred_name: "Sammy")
+      signed_name = employee.government_first_then_last_display_name
+      sign_in_as_teammate_for_request(employee, organization)
+
+      expect {
+        post organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate),
+             params: { job_description_acknowledgement: { typed_name: signed_name } }
+      }.to change(JobDescriptionAcknowledgement, :count).by(1)
+
+      expect(JobDescriptionAcknowledgement.last.typed_name).to eq(signed_name)
     end
 
     it "does not let a manager sign for the employee" do

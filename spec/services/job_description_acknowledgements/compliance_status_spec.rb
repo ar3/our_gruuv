@@ -27,7 +27,7 @@ RSpec.describe JobDescriptionAcknowledgements::ComplianceStatus do
     acknowledgement = JobDescriptionAcknowledgement.new(
       company_teammate: teammate,
       organization: organization,
-      typed_name: teammate.person.full_name,
+      typed_name: teammate.person.government_first_then_last_display_name,
       signed_at: 5.days.ago,
       document_html: "<p>signed</p>",
       snapshot: { "position_name" => "Role" }

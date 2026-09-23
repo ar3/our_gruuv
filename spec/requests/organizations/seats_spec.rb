@@ -55,6 +55,9 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include('Build Widget')
       expect(response.body).to include('Also required directly by the position.')
       expect(response.body).to include('Additional Abilities required')
+      expect(response.body).to include('Current source for Job Description HR fields')
+      expect(response.body).to include('Click to Configure Seat')
+      expect(response.body).to include(edit_organization_seat_path(company, seat))
     end
   end
 

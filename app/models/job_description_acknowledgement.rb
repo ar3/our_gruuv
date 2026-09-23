@@ -11,7 +11,7 @@ class JobDescriptionAcknowledgement < ApplicationRecord
 
   validates :typed_name, :signed_at, :document_html, presence: true
   validates :snapshot, presence: true
-  validate :typed_name_matches_person_full_name
+  validate :typed_name_matches_person_government_name
   validate :tenure_belongs_to_teammate
 
   def self.normalize_name(value)
@@ -28,8 +28,8 @@ class JobDescriptionAcknowledgement < ApplicationRecord
 
   private
 
-  def typed_name_matches_person_full_name
-    expected = company_teammate&.person&.full_name
+  def typed_name_matches_person_government_name
+    expected = company_teammate&.person&.government_first_then_last_display_name
     return if self.class.normalize_name(typed_name) == self.class.normalize_name(expected) && expected.present?
 
     errors.add(:typed_name, "must match your full name")

@@ -38,6 +38,8 @@ class Organizations::CompanyTeammates::JobDescriptionAcknowledgementsController 
           snapshot: document.snapshot,
           organization: organization,
           teammate: @teammate,
+          title: document.position&.title,
+          seat: document.employment_tenure&.seat,
           typed_name: typed_name,
           signed_at: signed_at
         }

@@ -14,6 +14,11 @@
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: true_jd_signed_view_suffix, url: organization_company_teammate_job_description_acknowledgements_path(organization, @teammate) }, { label: signed_on, url: nil }])
 
+.mb-3
+  = link_to organization_company_teammate_job_description_acknowledgements_path(organization, @teammate), class: "btn btn-outline-secondary" do
+    %i.bi.bi-arrow-left.me-1{"aria-hidden" => "true"}
+    View all previously signed job descriptions, or sign this job description again
+
 %p.text-muted.small.mb-3
   This is the job description #{casual} signed on #{signed_on}. It is the wording from that moment, not the job description as it stands now.
 

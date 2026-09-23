@@ -57,7 +57,9 @@
 = render "organizations/company_teammates/job_description_acknowledgements/document",
          snapshot: @document.snapshot,
          organization: organization,
-         teammate: @teammate
+         teammate: @teammate,
+         title: @document.position&.title,
+         seat: @document.employment_tenure&.seat
 
 %div{ id: "sign-current-jd" }
   - if policy(@teammate).create_job_description_acknowledgement?
@@ -65,7 +67,7 @@
     %h3.mb-2 Sign this job description
     %p.mb-3
       Type your full name,
-      %strong= @teammate.person.full_name
+      %strong= @teammate.person.government_first_then_last_display_name
       , to acknowledge the job description above.
     = form_with model: @acknowledgement, url: organization_company_teammate_job_description_acknowledgements_path(organization, @teammate) do |form|
       - if @acknowledgement.errors[:typed_name].any?

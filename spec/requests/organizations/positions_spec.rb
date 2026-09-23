@@ -389,6 +389,15 @@ RSpec.describe 'Organizations::Positions', type: :request do
       get job_description_organization_position_path(organization, position)
       expect(response).to have_http_status(:success)
       expect(response.body).to include(position.display_name)
+      expect(response.body).to include('Current source for Job Description HR fields')
+      expect(response.body).to include('These fields use the first available source')
+      expect(response.body).to include('Use Seat if exists:')
+      expect(response.body).to include('N/A')
+      expect(response.body).to include('Seat can be configured for a teammate')
+      expect(response.body).to include('using this')
+      expect(response.body).to include('Click to Configure')
+      expect(response.body).to include(edit_organization_company_preference_path(organization))
+      expect(response.body).to include('Work environment:')
     end
 
     it 'shows Additional Abilities required section when position has direct milestone requirements' do

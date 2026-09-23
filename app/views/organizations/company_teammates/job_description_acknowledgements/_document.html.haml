@@ -84,11 +84,12 @@
                  organization: organization,
                  teammate: teammate
 
-  = render "organizations/company_teammates/job_description_acknowledgements/seat_footer",
-           seat: seat,
+  = render "organizations/positions/job_description_footer",
            organization: organization,
+           title: local_assigns[:title],
+           seat: local_assigns[:seat],
            teammate: teammate,
-           casual_name: casual_name
+           public_view: local_assigns.fetch(:public_view, false)
 
   - if local_assigns[:signed_at].present?
     %hr.mt-4
