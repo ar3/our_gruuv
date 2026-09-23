@@ -227,6 +227,7 @@ Rails.application.routes.draw do
     
     # Check-ins health dashboard
     get :check_ins_health, to: 'organizations/check_ins_health#index'
+    get :expectations_compliance, to: 'organizations/expectations_compliance#index'
     get :check_ins_acknowledgement_nudges, to: 'organizations/check_ins_acknowledgement_nudges#index'
     post 'check_ins_acknowledgement_nudges/nudge', to: 'organizations/check_ins_acknowledgement_nudges#create'
     get :check_ins_health_by_manager, to: 'organizations/check_ins_health#by_manager'

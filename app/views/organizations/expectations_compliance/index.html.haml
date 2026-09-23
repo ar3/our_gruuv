@@ -1,0 +1,105 @@
+- content_for :title, "Insights: Expectations Compliance"
+- page_help_id = "expectationsCompliancePageHelp"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-clipboard-check.me-2
+      Insights: Expectations Compliance
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "See who has signed their true job description and who is due. Click for details."
+
+.collapse.mb-4{id: page_help_id}
+  = render "page_help"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Insights", url: organization_insights_path(@organization) }, { label: "Expectations Compliance", url: nil }])
+
+.mb-3
+  %p.text-muted.mb-0
+    JD-sign hygiene for people in scope. One signature after the latest due trigger (manager-finalized position check-in or position change) counts as current for 30 days from that trigger.
+
+.mb-4
+  = form_tag organization_expectations_compliance_path(@organization), method: :get, class: "row g-2 align-items-end" do
+    .col-sm-auto
+      = label_tag :manager_id, "Who to show", class: "form-label small mb-0 d-block"
+      = select_tag :manager_id,
+                   options_for_select(@available_manager_filter_options, @current_manager_filter),
+                   class: "form-select form-select-sm",
+                   onchange: "this.form.submit()"
+
+.d-flex.flex-wrap.gap-2.mb-3
+  %span.badge.text-bg-success Signed: #{@compliant_count}
+  %span.badge.text-bg-warning Needs attention: #{@needs_attention_count}
+
+- if @rows.blank?
+  .alert.alert-info
+    %p.mb-0 No teammates in this view.
+- else
+  .table-responsive
+    %table.table.table-sm.align-middle
+      %thead
+        %tr
+          %th Teammate
+          %th Status
+          %th Due by
+          %th Last JD signature
+          %th Last finalized position check-in
+          %th Length of employment
+          %th Time since position change
+          %th Current position
+          %th Previous position
+          %th Manager
+          %th Direct reports
+          %th Hierarchical reports
+          %th
+      %tbody
+        - @rows.each do |row|
+          - teammate = row.teammate
+          - person = teammate.person
+          %tr
+            %td
+              = link_to person.casual_name,
+                        organization_company_teammate_job_description_acknowledgements_path(@organization, teammate),
+                        class: "text-decoration-none"
+            %td
+              %span.badge{class: expectations_compliance_status_badge_class(row)}
+                = expectations_compliance_status_label(row)
+            %td
+              - if row.due_by.present?
+                = format_time_in_user_timezone(row.due_by, format: "%b %-d, %Y")
+              - else
+                %span.text-muted —
+            %td
+              - if row.latest_signature_at.present?
+                = format_time_in_user_timezone(row.latest_signature_at, format: "%b %-d, %Y")
+              - else
+                %span.text-muted Never
+            %td
+              - if row.last_finalized_position_check_in_at.present?
+                = format_time_in_user_timezone(row.last_finalized_position_check_in_at, format: "%b %-d, %Y")
+              - else
+                %span.text-muted —
+            %td= employment_history_duration_label(row.employment_seconds)
+            %td
+              - if row.last_position_change_at.present?
+                = "#{time_ago_in_words(row.last_position_change_at)} ago"
+              - else
+                %span.text-muted —
+            %td= row.current_position_name.presence || "—"
+            %td= row.previous_position_name.presence || "—"
+            %td= row.manager_name.presence || "—"
+            %td= row.direct_report_count
+            %td= row.hierarchical_report_count
+            %td.text-nowrap
+              = link_to "Signed JD",
+                        organization_company_teammate_job_description_acknowledgements_path(@organization, teammate),
+                        class: "btn btn-sm btn-outline-primary"
+
+  - if @pagy && @pagy.pages > 1
+    .mt-3
+      != pagy_bootstrap_nav(@pagy)

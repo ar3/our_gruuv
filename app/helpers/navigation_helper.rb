@@ -389,6 +389,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Expectations Compliance',
+            icon: 'bi-clipboard-check',
+            path: organization_expectations_compliance_path(current_organization),
+            policy_check: -> { policy(current_organization).expectations_compliance? },
+            coming_soon: false
+          },
+          {
             label: 'Goals Health',
             icon: 'bi-heart-pulse',
             path: organization_goals_health_path(current_organization),

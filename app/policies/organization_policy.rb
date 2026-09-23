@@ -102,6 +102,9 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || organization_in_hierarchy?
   end
 
+  # Expectations Compliance roster — same audience as health dashboards.
+  alias_method :expectations_compliance?, :check_ins_health?
+
   # Validation Coach Inbox — same audience as health dashboards for now.
   def coach_inbox?
     check_ins_health?

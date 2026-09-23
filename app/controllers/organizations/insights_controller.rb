@@ -737,6 +737,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     links << { label: 'Prompts', path: organization_insights_prompts_path(organization) } if policy(company).view_prompts?
     links << { label: 'Huddles', path: huddles_review_organization_path(organization) } if policy(organization).show?
     links << { label: 'Check-ins Health', path: organization_check_ins_health_path(organization) } if policy(organization).check_ins_health?
+    links << { label: 'Expectations Compliance', path: organization_expectations_compliance_path(organization) } if policy(organization).expectations_compliance?
     links << { label: 'Check-ins Progress', path: organization_insights_check_ins_progress_path(organization) } if policy(organization).check_ins_health?
     links << { label: 'Acknowledgements', path: organization_insights_acknowledgements_path(organization) } if policy(company).show?
     links
