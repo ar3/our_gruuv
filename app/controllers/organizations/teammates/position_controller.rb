@@ -88,6 +88,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       # Set @person for view switcher
       @person = @teammate.person
       assign_viewable_teammates_context!(selected_teammate: @teammate)
+      flash.now[:alert] = position_save_error_message(@form.errors)
       render :show, status: :unprocessable_entity
     end
   end
@@ -208,6 +209,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @employment_tenure.errors.add(:position_id, "can't be blank") unless position_id.present?
       @employment_tenure.errors.add(:started_at, "can't be blank") unless started_at.present?
       assign_viewable_teammates_context!(selected_teammate: @teammate)
+      flash.now[:alert] = position_save_error_message(@employment_tenure.errors)
       render :show, status: :unprocessable_entity
       return
     end
@@ -227,6 +229,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @employment_tenure = EmploymentTenure.new
       @employment_tenure.errors.add(:position_id, "does not exist")
       assign_viewable_teammates_context!(selected_teammate: @teammate)
+      flash.now[:alert] = position_save_error_message(@employment_tenure.errors)
       render :show, status: :unprocessable_entity
       return
     end
@@ -277,11 +280,17 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @open_check_in = PositionCheckIn.where(company_teammate: @teammate).open.first
       load_form_data
       assign_viewable_teammates_context!(selected_teammate: @teammate)
+      flash.now[:alert] = position_save_error_message(@employment_tenure.errors)
       render :show, status: :unprocessable_entity
     end
   end
 
   private
+
+  def position_save_error_message(errors)
+    messages = errors.respond_to?(:full_messages) ? errors.full_messages : Array(errors)
+    messages.to_sentence.presence || 'Could not save employment changes.'
+  end
 
   def render_confirm_termination_with_error(alert_message, termination_date, reason)
     @person = @teammate.person
@@ -337,23 +346,13 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Keep flat array for backward compatibility
     @positions = positions
     
-    # Load seats: only seats NOT associated with active employment tenures, but include current tenure's seat
-    active_seat_ids = EmploymentTenure.active
-                                      .where(company: company)
-                                      .where.not(seat_id: nil)
-                                      .pluck(:seat_id)
-    
-    available_seats = company.seats
-                             .includes(:title)
-                             .where.not(id: active_seat_ids)
-                             .where(state: [:open, :filled])
-    
-    # Always include current tenure's seat if it exists
-    if @current_employment&.seat
-      @seats = (available_seats + [@current_employment.seat]).uniq
-    else
-      @seats = available_seats
-    end
+    # Load seats for the shared seat dropdown: every status except filled.
+    # The currently selected seat is still included by seats_grouped_options_for_select when filled.
+    @seats = company.seats
+                    .includes(title: :department)
+                    .where.not(state: :filled)
+                    .ordered
+                    .to_a
     
     # Initialize form for display (only if not already set in update action)
     unless @form

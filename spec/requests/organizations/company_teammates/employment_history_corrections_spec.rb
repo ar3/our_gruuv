@@ -50,6 +50,17 @@ RSpec.describe 'Organizations::CompanyTeammates::EmploymentHistoryCorrections', 
       before { sign_in_as_teammate_for_request(manager_person, organization) }
 
       it 'renders the correct history page with enabled save actions' do
+        department = create(:department, company: organization, name: 'Engineering')
+        seat_title = create(
+          :title,
+          company: organization,
+          department: department,
+          position_major_level: position.title.position_major_level,
+          external_title: 'Historical Engineer'
+        )
+        open_seat = create(:seat, :open, title: seat_title, seat_needed_by: Date.new(2024, 3, 1))
+        filled_seat = create(:seat, :filled, title: seat_title, seat_needed_by: Date.new(2024, 4, 1))
+
         get organization_company_teammate_employment_history_correction_path(organization, employee_teammate)
 
         expect(response).to have_http_status(:success)
@@ -59,6 +70,11 @@ RSpec.describe 'Organizations::CompanyTeammates::EmploymentHistoryCorrections', 
         expect(response.body).to include('Total employed')
         expect(response.body).to include(page_help_id_hint)
         expect(response.body).to include('Save tenure')
+        expect(response.body).to include('Seat')
+        expect(response.body).to include('No specific seat')
+        expect(response.body).to include('<optgroup label="Engineering">')
+        expect(response.body).to include("#{open_seat.display_name} (Open)")
+        expect(response.body).not_to include("#{filled_seat.display_name} (Filled)")
         expect(response.body).not_to include('You need employment management permission to correct employment history.')
       end
     end
@@ -140,6 +156,38 @@ RSpec.describe 'Organizations::CompanyTeammates::EmploymentHistoryCorrections', 
       expect(employment_tenure.reload.started_at.to_date).to eq(18.months.ago.to_date)
       expect(employee_teammate.reload.first_employed_at).to eq(18.months.ago.to_date)
     end
+
+    it 'updates seat_id on the tenure' do
+      seat = create(:seat, :open, title: position.title, seat_needed_by: Date.current + 6.months)
+
+      patch tenure_organization_company_teammate_employment_history_correction_path(organization, employee_teammate, employment_tenure),
+            params: {
+              employment_tenure: {
+                position_id: position.id,
+                seat_id: seat.id,
+                started_at: employment_tenure.started_at.to_date,
+                ended_at: ''
+              }
+            }
+
+      expect(response).to redirect_to(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
+      expect(employment_tenure.reload.seat_id).to eq(seat.id)
+    end
+
+    it 'redirects with a toast alert when validation fails' do
+      patch tenure_organization_company_teammate_employment_history_correction_path(organization, employee_teammate, employment_tenure),
+            params: {
+              employment_tenure: {
+                position_id: position.id,
+                started_at: employment_tenure.started_at.to_date,
+                ended_at: (employment_tenure.started_at - 1.day).to_date
+              }
+            }
+
+      expect(response).to redirect_to(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
+      expect(flash[:alert]).to be_present
+      expect(flash[:alert]).to match(/ended at|must be greater|greater than/i)
+    end
   end
 
   describe 'POST prepend' do
@@ -159,6 +207,39 @@ RSpec.describe 'Organizations::CompanyTeammates::EmploymentHistoryCorrections', 
 
       expect(response).to redirect_to(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
       expect(employee_teammate.reload.first_employed_at).to eq(3.years.ago.to_date)
+    end
+
+    it 'prepends with an optional seat' do
+      seat = create(:seat, :draft, title: position.title, seat_needed_by: Date.current + 8.months)
+
+      post prepend_organization_company_teammate_employment_history_correction_path(organization, employee_teammate),
+           params: {
+             employment_tenure: {
+               position_id: position.id,
+               seat_id: seat.id,
+               started_at: 3.years.ago.to_date,
+               ended_at: 1.year.ago.to_date
+             }
+           }
+
+      expect(response).to redirect_to(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
+      prepended = employee_teammate.employment_tenures.order(:started_at).first
+      expect(prepended.seat_id).to eq(seat.id)
+    end
+
+    it 'redirects with a toast alert when prepend validation fails' do
+      post prepend_organization_company_teammate_employment_history_correction_path(organization, employee_teammate),
+           params: {
+             employment_tenure: {
+               position_id: position.id,
+               started_at: 1.month.ago.to_date,
+               ended_at: 1.week.ago.to_date
+             }
+           }
+
+      expect(response).to redirect_to(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
+      expect(flash[:alert]).to be_present
+      expect(flash[:alert]).to match(/before the current earliest|start/i)
     end
   end
 

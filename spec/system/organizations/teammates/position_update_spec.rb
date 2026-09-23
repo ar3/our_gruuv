@@ -244,7 +244,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_teammate_id]'
       select new_position.display_name, from: 'employment_tenure_update[position_id]'
       select 'Part Time', from: 'employment_tenure_update[employment_type]'
-      select seat_for_new_position.display_name, from: 'employment_tenure_update[seat_id]'
+      select "#{seat_for_new_position.display_name} (Open)", from: 'employment_tenure_update[seat_id]'
       fill_in 'employment_tenure_update[reason]', with: 'Promotion and schedule change'
       
       click_button 'Update Position'

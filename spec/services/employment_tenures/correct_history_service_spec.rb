@@ -79,6 +79,52 @@ RSpec.describe EmploymentTenures::CorrectHistoryService, type: :service do
       expect(result.ok?).to be(true)
       expect(teammate.reload.first_employed_at).to eq(Date.new(2019, 6, 1))
     end
+
+    it 'sets and clears seat_id silently without creating moments or filling open seats' do
+      title = position_a.title
+      open_seat = create(:seat, :open, title: title, seat_needed_by: Date.current + 2.months)
+      other_seat = create(:seat, :draft, title: title, seat_needed_by: Date.current + 4.months)
+      tenure = create(
+        :employment_tenure,
+        teammate: teammate,
+        company: company,
+        position: position_a,
+        seat: open_seat,
+        started_at: Date.new(2020, 1, 1),
+        ended_at: nil
+      )
+      open_seat.update!(state: :open)
+
+      result = described_class.update_tenure(
+        teammate: teammate,
+        tenure: tenure,
+        attrs: {
+          position_id: position_a.id,
+          seat_id: other_seat.id,
+          started_at: Date.new(2020, 1, 1),
+          ended_at: nil
+        }
+      )
+
+      expect(result.ok?).to be(true)
+      expect(tenure.reload.seat_id).to eq(other_seat.id)
+      expect(other_seat.reload.state).to eq('draft')
+      expect(ObservableMoment.count).to eq(0)
+
+      clear_result = described_class.update_tenure(
+        teammate: teammate,
+        tenure: tenure,
+        attrs: {
+          position_id: position_a.id,
+          seat_id: '',
+          started_at: Date.new(2020, 1, 1),
+          ended_at: nil
+        }
+      )
+
+      expect(clear_result.ok?).to be(true)
+      expect(tenure.reload.seat_id).to be_nil
+    end
   end
 
   describe '.prepend' do
@@ -104,6 +150,34 @@ RSpec.describe EmploymentTenures::CorrectHistoryService, type: :service do
       expect(result.ok?).to be(true)
       expect(teammate.employment_tenures.count).to eq(2)
       expect(teammate.reload.first_employed_at).to eq(Date.new(2021, 1, 1))
+    end
+
+    it 'assigns seat without flipping an open seat to filled' do
+      create(
+        :employment_tenure,
+        teammate: teammate,
+        company: company,
+        position: position_b,
+        started_at: Date.new(2023, 1, 1),
+        ended_at: nil
+      )
+      open_seat = create(:seat, :open, title: position_a.title, seat_needed_by: Date.current + 5.months)
+
+      result = described_class.prepend(
+        teammate: teammate,
+        attrs: {
+          position_id: position_a.id,
+          seat_id: open_seat.id,
+          started_at: Date.new(2021, 1, 1),
+          ended_at: Date.new(2023, 1, 1)
+        }
+      )
+
+      expect(result.ok?).to be(true)
+      prepended = teammate.employment_tenures.order(:started_at).first
+      expect(prepended.seat_id).to eq(open_seat.id)
+      expect(open_seat.reload.state).to eq('open')
+      expect(ObservableMoment.count).to eq(0)
     end
   end
 

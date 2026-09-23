@@ -40,14 +40,20 @@
                 local: true,
                 scope: :employment_tenure do |f|
       .row.g-3
-        .col-md-4
+        .col-md-3
           = f.label :position_id, "Position", class: "form-label"
           = f.collection_select :position_id, @positions, :id, :display_name,
             { prompt: "Select position" }, { class: "form-select", required: true, disabled: !can_correct }
-        .col-md-4
+        .col-md-3
           = f.label :manager_teammate_id, "Manager", class: "form-label"
           = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
             { prompt: "No manager", include_blank: "No manager" }, { class: "form-select", disabled: !can_correct }
+        .col-md-2
+          = f.label :seat_id, "Seat", class: "form-label"
+          = f.select :seat_id,
+            seats_grouped_options_for_select(organization, seats: @correction_seats, selected_seat_id: @prepend_tenure.seat_id),
+            { include_blank: "No specific seat" },
+            { class: "form-select", disabled: !can_correct }
         .col-md-2
           = f.label :started_at, "Start", class: "form-label"
           = f.date_field :started_at, class: "form-control", required: true,
@@ -89,14 +95,20 @@
                       local: true,
                       scope: :employment_tenure do |f|
             .row.g-3
-              .col-md-4
+              .col-md-3
                 = f.label :position_id, "Position", class: "form-label"
                 = f.collection_select :position_id, @positions, :id, :display_name,
                   {}, { class: "form-select", required: true, disabled: !can_correct }
-              .col-md-4
+              .col-md-3
                 = f.label :manager_teammate_id, "Manager", class: "form-label"
                 = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
                   { selected: tenure.manager_teammate_id, include_blank: "No manager" }, { class: "form-select", disabled: !can_correct }
+              .col-md-2
+                = f.label :seat_id, "Seat", class: "form-label"
+                = f.select :seat_id,
+                  seats_grouped_options_for_select(organization, seats: @correction_seats, selected_seat_id: tenure.seat_id),
+                  { include_blank: "No specific seat" },
+                  { class: "form-select", disabled: !can_correct }
               .col-md-2
                 = f.label :started_at, "Start", class: "form-label"
                 = f.date_field :started_at, class: "form-control", required: true,

@@ -24,9 +24,8 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
       flash[:notice] = success_notice('Tenure updated.', result.value[:adjustments])
       redirect_to organization_company_teammate_employment_history_correction_path(@organization, @teammate)
     else
-      flash.now[:alert] = result.error
-      load_page_data
-      render :show, status: :unprocessable_entity
+      redirect_to organization_company_teammate_employment_history_correction_path(@organization, @teammate),
+                  alert: save_error_message(result.error)
     end
   end
 
@@ -42,10 +41,8 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
       flash[:notice] = success_notice('Earliest tenure added.', result.value[:adjustments])
       redirect_to organization_company_teammate_employment_history_correction_path(@organization, @teammate)
     else
-      flash.now[:alert] = result.error
-      load_page_data
-      @prepend_tenure = EmploymentTenure.new(tenure_params)
-      render :show, status: :unprocessable_entity
+      redirect_to organization_company_teammate_employment_history_correction_path(@organization, @teammate),
+                  alert: save_error_message(result.error)
     end
   end
 
@@ -64,9 +61,8 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
       flash[:notice] = success_notice('Tenures connected.', result.value[:adjustments])
       redirect_to organization_company_teammate_employment_history_correction_path(@organization, @teammate)
     else
-      flash.now[:alert] = result.error
-      load_page_data
-      render :show, status: :unprocessable_entity
+      redirect_to organization_company_teammate_employment_history_correction_path(@organization, @teammate),
+                  alert: save_error_message(result.error)
     end
   end
 
@@ -83,11 +79,16 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
   def load_page_data
     @employment_tenures = @teammate.employment_tenures
                                   .where(company: @organization)
-                                  .includes(:position, :manager_teammate)
+                                  .includes(:position, :manager_teammate, :seat)
                                   .order(:started_at)
     @metrics = EmploymentTenures::HistoryMetrics.call(tenures: @employment_tenures)
     @managers = @organization.teammates.includes(:person).order('people.last_name, people.first_name')
     @positions = @organization.positions.unarchived.includes(:title, :position_level)
+    @correction_seats = @organization.seats
+                                     .includes(title: :department)
+                                     .where.not(state: :filled)
+                                     .ordered
+                                     .to_a
     @prepend_tenure ||= EmploymentTenure.new(
       company: @organization,
       started_at: suggested_prepend_start,
@@ -109,6 +110,7 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
     params.require(:employment_tenure).permit(
       :position_id,
       :manager_teammate_id,
+      :seat_id,
       :started_at,
       :ended_at,
       :employment_change_notes
@@ -119,6 +121,10 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
     return prefix if adjustments.blank?
 
     "#{prefix} #{adjustments.join(' ')}"
+  end
+
+  def save_error_message(error)
+    error.to_s.presence || 'Could not save employment tenure.'
   end
 
   def require_authentication

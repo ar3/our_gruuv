@@ -192,7 +192,7 @@
                   = form.select :employment_type, options_for_select([['Full Time', 'full_time'], ['Part Time', 'part_time'], ['Contract', 'contract'], ['Contractor', 'contractor'], ['Intern', 'intern'], ['Temporary', 'temporary'], ['Consultant', 'consultant'], ['Freelance', 'freelance']], form.object.employment_type), { prompt: 'Select employment type' }, { class: "form-select", disabled: !can_manage }
               
               .col-md-6
-                = render 'shared/forms/seat_field', form: form, seats: @seats, disabled: !can_manage
+                = render 'shared/forms/seat_field', form: form, seats: @seats, organization: organization, disabled: !can_manage
             
             .row
               .col-md-12

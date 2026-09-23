@@ -85,34 +85,47 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       expect(response.body).to include(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
     end
 
-    it 'loads only available seats (not associated with active tenures)' do
-      # Create another seat that's filled
-      filled_seat = create(:seat, title: position.title, seat_needed_by: Date.current + 11.months)
+    it 'loads non-filled seats and keeps the current tenure seat selectable when filled' do
+      # Creating an active tenure on this seat marks it filled via after_create
+      occupied_seat = create(:seat, :open, title: position.title, seat_needed_by: Date.current + 11.months)
       other_teammate = create(:teammate, person: create(:person), organization: organization)
       EmploymentTenure.create!(
         teammate: other_teammate,
         company: organization,
         position: position,
-        seat: filled_seat,
+        seat: occupied_seat,
         started_at: 1.month.ago
       )
-      
-      # Create an available seat (ensure it's in open or filled state)
-      available_seat = create(:seat, title: position.title, seat_needed_by: Date.current + 12.months, state: :open)
-      
+      occupied_seat.reload
+      expect(occupied_seat.state).to eq('filled')
+
+      current_tenure.seat.update!(state: :filled)
+
+      open_seat = create(:seat, :open, title: position.title, seat_needed_by: Date.current + 12.months)
+      draft_seat = create(:seat, :draft, title: position.title, seat_needed_by: Date.current + 13.months)
+      archived_seat = create(:seat, :archived, title: position.title, seat_needed_by: Date.current + 14.months)
+
       get organization_teammate_position_path(organization, employee_teammate)
-      
-      expect(assigns(:seats)).to include(current_tenure.seat) # Current tenure's seat
-      expect(assigns(:seats)).to include(available_seat) # Available seat
-      expect(assigns(:seats)).not_to include(filled_seat) # Filled seat excluded
+
+      expect(assigns(:seats)).to include(open_seat, draft_seat, archived_seat)
+      expect(assigns(:seats)).not_to include(occupied_seat)
+      expect(assigns(:seats)).not_to include(current_tenure.seat)
+      expect(response.body).to include("#{open_seat.display_name} (Open)")
+      expect(response.body).to include("#{draft_seat.display_name} (Draft)")
+      expect(response.body).to include("#{archived_seat.display_name} (Archived)")
+      # Current tenure seat is filled but still shown as the selected option
+      expect(response.body).to include("#{current_tenure.seat.display_name} (Filled)")
+      expect(response.body).not_to include("#{occupied_seat.display_name} (Filled)")
     end
 
-    it 'includes current tenure seat even if it is the only one' do
-      get organization_teammate_position_path(organization, employee_teammate)
-      
-      expect(assigns(:seats)).to include(current_tenure.seat)
-    end
+    it 'includes current tenure seat in options even when filled' do
+      current_tenure.seat.update!(state: :filled)
 
+      get organization_teammate_position_path(organization, employee_teammate)
+
+      expect(assigns(:seats)).not_to include(current_tenure.seat)
+      expect(response.body).to include("#{current_tenure.seat.display_name} (Filled)")
+    end
     it 'sets @person for view switcher' do
       get organization_teammate_position_path(organization, employee_teammate)
       expect(assigns(:person)).to eq(employee_person)
@@ -354,6 +367,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response).to render_template(:show)
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).to match(/does not exist/i)
       end
 
       it 'redirects with success message on successful update' do

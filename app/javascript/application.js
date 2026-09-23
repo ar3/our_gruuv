@@ -125,37 +125,25 @@ function initializePopovers() {
   }
 }
 
-// Initialize Bootstrap toasts
+// Initialize Bootstrap toasts (skip ones already shown so turbo:render is safe)
 function initializeToasts() {
-  console.log('Initializing toasts...')
-  const toastElList = document.querySelectorAll('.toast')
-  console.log('Found toast elements:', toastElList.length)
-  
-  if (bootstrap.Toast) {
-    console.log('Found bootstrap.Toast')
-    const toastList = [...toastElList].map(toastEl => {
-      const toast = new bootstrap.Toast(toastEl, {
-        autohide: true,
-        delay: 5000
-      })
-      toast.show() // Show the toast immediately
-      return toast
+  const toastElList = document.querySelectorAll('.toast:not([data-toast-initialized])')
+  if (toastElList.length === 0) return
+
+  const ToastCtor = (typeof bootstrap !== 'undefined' && bootstrap.Toast)
+    ? bootstrap.Toast
+    : (window.bootstrap && window.bootstrap.Toast)
+
+  if (!ToastCtor) return
+
+  ;[...toastElList].forEach(toastEl => {
+    toastEl.setAttribute('data-toast-initialized', 'true')
+    const toast = new ToastCtor(toastEl, {
+      autohide: true,
+      delay: Number(toastEl.dataset.bsDelay) || 5000
     })
-    console.log('Initialized toasts:', toastList.length)
-  } else if (window.bootstrap && window.bootstrap.Toast) {
-    console.log('Found window.bootstrap.Toast')
-    const toastList = [...toastElList].map(toastEl => {
-      const toast = new window.bootstrap.Toast(toastEl, {
-        autohide: true,
-        delay: 5000
-      })
-      toast.show() // Show the toast immediately
-      return toast
-    })
-    console.log('Initialized toasts:', toastList.length)
-  } else {
-    console.log('Toast not found in bootstrap object')
-  }
+    toast.show()
+  })
 }
 
 // Energy total calculation functionality
@@ -443,6 +431,10 @@ document.addEventListener('turbo:load', () => {
   initializeEnergyUpdateListening()
   initializeAuditToggle()
   initializeCollapseSummaries()
+})
+// 422 form re-renders use turbo:render (not always turbo:load) — show flash toasts
+document.addEventListener('turbo:render', () => {
+  initializeToasts()
 })
 document.addEventListener('turbo:frame-load', () => {
   initializeTooltips()

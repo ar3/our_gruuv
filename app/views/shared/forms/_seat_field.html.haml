@@ -1,6 +1,11 @@
+- organization = local_assigns.fetch(:organization)
+- seats = local_assigns.fetch(:seats)
+- disabled = local_assigns.fetch(:disabled, false)
+- blank_label = local_assigns.fetch(:blank_label, 'No Seat')
+- label_text = local_assigns.fetch(:label, 'Seat (Optional)')
 .mb-3
-  = form.label :seat_id, "Seat (Optional)", class: "form-label"
-  = form.collection_select :seat_id, seats, :id, :display_name,
-    { prompt: 'Select a seat (optional)', include_blank: 'No Seat', selected: form.object.seat_id },
+  = form.label :seat_id, label_text, class: "form-label"
+  = form.select :seat_id,
+    seats_grouped_options_for_select(organization, seats: seats, selected_seat_id: form.object.seat_id),
+    { include_blank: blank_label },
     { class: "form-select", disabled: disabled }
-

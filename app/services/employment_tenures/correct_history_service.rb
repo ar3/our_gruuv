@@ -55,6 +55,10 @@ module EmploymentTenures
         end
       end
 
+      # Omit seat_id on create so after_create does not flip open→filled for historical rows.
+      seat_id = attrs.key?(:seat_id) ? blank_to_nil(attrs[:seat_id]) : :unset
+      validate_seat!(seat_id) unless seat_id == :unset
+
       tenure = teammate.employment_tenures.build(
         company: company,
         position_id: attrs[:position_id],
@@ -68,6 +72,7 @@ module EmploymentTenures
 
       ApplicationRecord.transaction do
         tenure.save!
+        tenure.update_column(:seat_id, seat_id) unless seat_id == :unset
         adjustments.concat(resolve_overlaps!(winner: tenure))
         sync_employment_state!
       end
@@ -116,6 +121,11 @@ module EmploymentTenures
       if attrs.key?(:manager_teammate_id)
         tenure.manager_teammate_id = blank_to_nil(attrs[:manager_teammate_id])
       end
+      if attrs.key?(:seat_id)
+        seat_id = blank_to_nil(attrs[:seat_id])
+        validate_seat!(seat_id)
+        tenure.seat_id = seat_id
+      end
       tenure.started_at = parse_time(attrs[:started_at]) if attrs.key?(:started_at) && attrs[:started_at].present?
       if attrs.key?(:ended_at)
         tenure.ended_at = attrs[:ended_at].present? ? parse_time(attrs[:ended_at]) : nil
@@ -123,6 +133,13 @@ module EmploymentTenures
       if attrs.key?(:employment_change_notes)
         tenure.employment_change_notes = attrs[:employment_change_notes]
       end
+    end
+
+    def validate_seat!(seat_id)
+      return if seat_id.blank?
+      return if company.seats.where(id: seat_id).exists?
+
+      raise StandardError, 'Seat not found for this organization'
     end
 
     def resolve_overlaps!(winner:)

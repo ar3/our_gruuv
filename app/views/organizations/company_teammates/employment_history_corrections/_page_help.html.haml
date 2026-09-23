@@ -5,14 +5,15 @@
 
   %h3.fw-semibold.mb-2 Context
   %p
-    Employment tenures are the timeline of position + manager + dates for a teammate at this company. Job-change flows create new tenures going forward; this page silently corrects history when those flows cannot express the fix.
+    Employment tenures are the timeline of position + manager + seat + dates for a teammate at this company. Job-change flows create new tenures going forward; this page silently corrects history when those flows cannot express the fix.
 
   %h3.fw-semibold.mb-2 Specifics of this page
   %ul.mb-2
     %li Anyone who can open Seat Management for this teammate can view this page.
     %li Only teammates with employment management can save corrections; others see disabled actions with an explanation on hover.
     %li Edits are silent: no observable moments, notifications, or job-change ceremony.
-    %li You can prepend a missing earliest tenure and edit dates, manager, and position on existing rows.
+    %li You can prepend a missing earliest tenure and edit dates, manager, position, and seat on existing rows.
+    %li Seat options exclude currently filled seats (historical picks are usually draft, open, or archived); the seat already on a tenure stays available even if filled. Clearing seat is allowed. Seat changes here do not fire seat-change events.
     %li If a saved tenure overlaps another, the saved tenure wins and neighbor dates are auto-adjusted — check the flash for what changed.
     %li Gaps are not auto-closed. When a gap exists, choose whether to connect the tenures or leave it as a leave-and-return (boomerang).
   %h5.fw-semibold.mb-2 Readouts
