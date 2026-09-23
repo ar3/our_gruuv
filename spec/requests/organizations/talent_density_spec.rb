@@ -191,6 +191,26 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(stance.comments.first.creator).to eq(manager_person)
     end
 
+    it "shows legacy notes on the current month as a comment-style entry" do
+      create(
+        :talent_density_stance,
+        company_teammate: ic,
+        company: company,
+        period_month: TalentDensityStance.current_period_month,
+        stance: :fine_either_way,
+        notes: "Pre-migration narrative"
+      )
+      sign_in_as_teammate_for_request(manager_person, company)
+
+      get organization_talent_density_path(company, manager_id: "CompanyTeammate_#{manager.id}")
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("Earlier notes")
+      expect(body).to include("Pre-migration narrative")
+      expect(body).not_to include("Legacy notes (read-only)")
+    end
+
     it "does not overwrite legacy notes from the form" do
       create(
         :talent_density_stance,

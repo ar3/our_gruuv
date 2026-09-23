@@ -71,13 +71,6 @@
         - if stance_record.stance_set_at.present?
           on #{format_date_in_user_timezone(stance_record.stance_set_at)}
 
-    - if stance_record.legacy_notes?
-      .mt-3
-        %label.form-label Legacy notes (read-only)
-        %p.small.text-muted.mb-1
-          From before Confidential Talent Reflections. Visible only to #{talent_density_visible_to_sentence(row[:viewers])}.
-        .form-control.bg-light{style: "min-height: 4.5rem; white-space: pre-wrap;"}= stance_record.notes
-
     .mt-3
       %p.small.text-muted.mb-2
         Narratives (separate voices) are only visible to #{talent_density_visible_to_sentence(row[:viewers])}.
@@ -90,7 +83,10 @@
         textarea_value: row[:pending_comment],
         textarea_placeholder: "Add a narrative note for this Confidential Talent Reflection…",
         hint: "Saved with Save reflections — stance optional. Each person keeps their own voice.",
-        empty_message: "No narrative notes yet for this Confidential Talent Reflection."
+        empty_message: "No narrative notes yet for this Confidential Talent Reflection.",
+        legacy_notes: stance_record.notes,
+        legacy_notes_at: stance_record.updated_at,
+        legacy_author_label: "Earlier notes"
 
     = render "organizations/talent_density/teammate_info_section",
       teammate: teammate,
