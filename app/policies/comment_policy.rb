@@ -10,10 +10,13 @@ class CommentPolicy < ApplicationPolicy
   end
 
   def update?
+    return false unless behavior.allows_comment_edits?
+
     admin_bypass? || is_creator?
   end
 
   def destroy?
+    return false unless behavior.allows_comment_edits?
     return true if admin_bypass?
 
     behavior.destroy?(record, viewing_teammate)

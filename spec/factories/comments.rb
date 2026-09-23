@@ -20,6 +20,11 @@ FactoryBot.define do
       commentable { association :observation, :published, company: organization }
     end
 
+    trait :on_talent_density_stance do
+      association :commentable, factory: :talent_density_stance
+      organization { commentable.company }
+    end
+
     trait :resolved do
       resolved_at { Time.current }
     end

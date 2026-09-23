@@ -29,4 +29,16 @@ RSpec.describe TalentDensityStancePolicy, type: :policy do
     expect(policy.show?).to be false
     expect(policy.update?).to be false
   end
+
+  it "does not allow updating a locked prior-month reflection" do
+    locked = create(
+      :talent_density_stance,
+      company_teammate: report,
+      company: organization,
+      period_month: TalentDensityStance.current_period_month - 1.month
+    )
+    policy = described_class.new(pundit_user_for(manager), locked)
+    expect(policy.show?).to be true
+    expect(policy.update?).to be false
+  end
 end

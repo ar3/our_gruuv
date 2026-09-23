@@ -10,6 +10,8 @@ class Comments::CommentableBehavior
     case root
     when ::Observation
       Comments::CommentableBehaviors::Observation.new(root)
+    when ::TalentDensityStance
+      Comments::CommentableBehaviors::TalentDensity.new(root)
     when *MAAP_TYPES
       Comments::CommentableBehaviors::Maap.new(root)
     else

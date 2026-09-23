@@ -27,6 +27,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     authorize @organization, :talent_density?
     params[:matrix] = "stances"
     load_shared_filter_context
+    @period_month = TalentDensityStance.current_period_month
 
     unless @access.manager_selectable?(@selected_manager)
       raise Pundit::NotAuthorizedError, "Not allowed to rate this manager's team"
@@ -41,19 +42,51 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
         next if teammate.id == current_company_teammate.id
         next unless @access.can_edit?(teammate)
 
-        stance = TalentDensityStance.find_or_initialize_by(company_teammate: teammate)
+        comment_body = attrs[:comment].to_s.strip
+        stance = TalentDensityStance.find_or_initialize_by(
+          company_teammate: teammate,
+          period_month: @period_month
+        )
         stance.company = company
         authorize stance, :update?
+
         stance.stance = attrs[:stance]
-        stance.notes = attrs[:notes]
+        if stance.stance_changed?
+          if stance.stance.present?
+            stance.record_stance_set_by!(current_person)
+          else
+            stance.stance_set_by = nil
+            stance.stance_set_at = nil
+          end
+        end
+
+        # Skip no-ops: don't create empty month shells unless there is a stance or a new comment.
+        next if stance.new_record? && stance.stance.blank? && comment_body.blank?
+        next if stance.persisted? && !stance.changed? && comment_body.blank?
+
+        # Legacy notes are read-only; do not overwrite from the form.
         stance.save!
+
+        next if comment_body.blank?
+
+        result = Comments::CreateService.call(
+          comment: Comment.new(body: comment_body),
+          commentable: stance,
+          organization: @organization,
+          creator: current_person
+        )
+        unless result.ok?
+          message = Array(result.error).join(", ").presence || "Could not save comment"
+          stance.errors.add(:base, message)
+          raise ActiveRecord::RecordInvalid, stance
+        end
       end
     end
 
     redirect_to organization_talent_density_path(@organization, talent_density_redirect_filter_params),
-                notice: "Talent Density saved."
+                notice: "Confidential Talent Reflections saved."
   rescue ActiveRecord::RecordInvalid
-    flash.now[:alert] = "Could not save Talent Density. Check the form and try again."
+    flash.now[:alert] = "Could not save Confidential Talent Reflections. Check the form and try again."
     load_working_page
     render :show, status: :unprocessable_entity
   end
@@ -106,9 +139,32 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
   end
 
   def load_working_page
+    @period_month = TalentDensityStance.current_period_month
     @reports = scoped_teammates_excluding
-    stance_by_teammate_id = TalentDensityStance.where(company_teammate_id: @reports.map(&:id)).index_by(&:company_teammate_id)
-    @rows = decorate_talent_density_rows(@reports, stance_by_teammate_id)
+    ids = @reports.map(&:id)
+    # Target position for the info section
+    ActiveRecord::Associations::Preloader.new(
+      records: @reports,
+      associations: [:next_goal_position, :person]
+    ).call
+    current_by_id = TalentDensityStance.for_period(@period_month)
+      .where(company_teammate_id: ids)
+      .includes(:stance_set_by, comments: :creator)
+      .index_by(&:company_teammate_id)
+    prior_by_id = TalentDensityStance.prior_by_teammate_id(ids, before_period: @period_month)
+    pending_comments = pending_comment_by_teammate_id
+    teammate_info_by_id = TalentDensity::TeammateInfoBuilder.call(
+      teammates: @reports,
+      company: company,
+      viewer_teammate: current_company_teammate
+    )
+    @rows = decorate_talent_density_rows(
+      @reports,
+      current_by_id,
+      prior_by_id,
+      pending_comments,
+      teammate_info_by_id
+    )
   end
 
   def load_shared_filter_context
@@ -246,11 +302,23 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
 
       stance = attrs["stance"].to_s
       stance = nil unless TalentDensityStance.stances.key?(stance)
-      acc[id] = { stance: stance, notes: attrs["notes"].to_s }
+      acc[id] = {
+        stance: stance,
+        comment: attrs["comment"].to_s
+      }
     end
   end
 
-  def decorate_talent_density_rows(teammates, stance_by_teammate_id)
+  def pending_comment_by_teammate_id
+    submitted_stance_attrs.each_with_object({}) do |(teammate_id, attrs), acc|
+      body = attrs[:comment].to_s
+      acc[teammate_id] = body if body.present?
+    end
+  rescue StandardError
+    {}
+  end
+
+  def decorate_talent_density_rows(teammates, current_by_id, prior_by_id, pending_comments = {}, teammate_info_by_id = {})
     ids = teammates.map(&:id)
     tenures_by_id = EmploymentTenure
       .where(company: company, ended_at: nil, teammate_id: ids)
@@ -270,9 +338,23 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
 
     teammates.map do |teammate|
       tenure = tenures_by_id[teammate.id]
+      current = current_by_id[teammate.id] || TalentDensityStance.new(
+        company_teammate: teammate,
+        company: company,
+        period_month: @period_month
+      )
+      root_comments = if current.persisted?
+        current.comments.reject { |c| c.position_suggestion_id.present? }.sort_by(&:created_at)
+      else
+        []
+      end
       {
         teammate: teammate,
-        stance: stance_by_teammate_id[teammate.id] || TalentDensityStance.new(company_teammate: teammate, company: company),
+        stance: current,
+        prior_reflection: prior_by_id[teammate.id],
+        root_comments: root_comments,
+        pending_comment: pending_comments[teammate.id],
+        teammate_info: teammate_info_by_id[teammate.id],
         tenure: tenure,
         latest_finalized: finalized_by_id[teammate.id],
         open_check_in: open_by_id[teammate.id],

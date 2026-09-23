@@ -18,10 +18,28 @@ export default class extends Controller {
   connect() {
     this.charts = []
     this.renderCharts()
+    this.boundReflow = () => this.reflowCharts()
+    this.collapseEl = this.element.closest(".collapse")
+    if (this.collapseEl) {
+      this.collapseEl.addEventListener("shown.bs.collapse", this.boundReflow)
+    }
   }
 
   disconnect() {
+    if (this.collapseEl && this.boundReflow) {
+      this.collapseEl.removeEventListener("shown.bs.collapse", this.boundReflow)
+    }
     this.destroyCharts()
+  }
+
+  reflowCharts() {
+    ;(this.charts || []).forEach((chart) => {
+      try {
+        chart.reflow()
+      } catch (_e) {
+        // Ignore charts already destroyed.
+      }
+    })
   }
 
   renderCharts() {

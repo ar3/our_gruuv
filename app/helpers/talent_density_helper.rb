@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module TalentDensityHelper
+  include EmployeesHelper
+
   def talent_density_choice_card_class(choice, selected:)
     tone = choice[:tone]
     selected_bg = selected ? "bg-#{tone}-subtle" : ""
@@ -207,15 +209,59 @@ module TalentDensityHelper
   end
 
   def talent_density_stance_actor_name(point)
+    if point.stance&.stance_set_by.present?
+      return point.stance.stance_set_by.casual_name.presence || point.stance.stance_set_by.display_name
+    end
     return "Unknown" unless point.stance_version
 
     paper_trail_whodunnit_casual_name(point.stance_version)
   end
 
   def talent_density_stance_recorded_on(point)
-    time = point.stance_version&.created_at || point.stance&.updated_at
+    time = point.stance&.stance_set_at || point.stance_version&.created_at || point.stance&.updated_at
     return "Unknown" unless time
 
     format_date_in_user_timezone(time)
+  end
+
+  def talent_density_info_employed_since(info)
+    return "Unknown" unless info&.employed_since_at
+
+    "#{format_date_in_user_timezone(info.employed_since_at)} (#{time_ago_in_words(info.employed_since_at)} ago)"
+  end
+
+  def talent_density_info_position_change(info)
+    return "No prior position change on record" unless info&.position_change_at && info.from_position && info.to_position
+
+    from_name = info.from_position.display_name
+    to_name = info.to_position.display_name
+    "On #{format_date_in_user_timezone(info.position_change_at)} (#{time_ago_in_words(info.position_change_at)} ago); from #{from_name} to #{to_name}"
+  end
+
+  def talent_density_info_position_check_in(info, teammate)
+    check_in = info&.latest_finalized_check_in
+    return "No finalized position check-in yet" unless check_in&.official_check_in_completed_at
+
+    casual = teammate.person&.casual_name.presence || teammate.person&.display_name || "they"
+    at = check_in.official_check_in_completed_at
+    header = "On #{format_date_in_user_timezone(at)} (#{time_ago_in_words(at)} ago)"
+    sentences = position_check_in_sentence_lines(check_in, casual).join(" ")
+    "#{header}; #{sentences}"
+  end
+
+  def talent_density_info_target_position(info)
+    info&.target_position&.display_name.presence || "None set"
+  end
+
+  def talent_density_info_active_goals(info)
+    count = info&.active_goals_count.to_i
+    return "0 goals" if count.zero?
+
+    date = info.active_goals_latest_completion_date
+    if date.present?
+      "#{pluralize(count, 'goal')}, the last one set to be completed by #{format_date_in_user_timezone(date)}"
+    else
+      "#{pluralize(count, 'goal')} (no completion dates set)"
+    end
   end
 end

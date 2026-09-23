@@ -11,6 +11,8 @@ class Comments::UpdateService
   end
 
   def call
+    return Result.err("Comments on this item can no longer be edited") unless @behavior.allows_comment_edits?
+
     ApplicationRecord.transaction do
       old_resolved_at = @comment.resolved_at
       old_body = @comment.body

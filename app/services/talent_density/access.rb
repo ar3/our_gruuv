@@ -51,7 +51,7 @@ module TalentDensity
         .where.not(first_employed_at: nil)
         .where(last_terminated_at: nil)
         .joins(:person)
-        .includes(:person, :talent_density_stance, employment_tenures: [:seat, { position: [:title, :position_level] }])
+        .includes(:person, employment_tenures: [:seat, { position: [:title, :position_level] }])
         .order("people.last_name ASC", "people.first_name ASC")
     end
 

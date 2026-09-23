@@ -11,7 +11,10 @@ class TalentDensityStancePolicy < ApplicationPolicy
   end
 
   def update?
-    show?
+    return false unless show?
+    return false if record.persisted? && record.locked?
+
+    true
   end
 
   private

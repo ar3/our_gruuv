@@ -1,0 +1,41 @@
+- teammate = local_assigns.fetch(:teammate)
+- organization = local_assigns.fetch(:organization)
+- info = local_assigns.fetch(:info)
+- casual = teammate.person&.casual_name.presence || teammate.person&.display_name || "teammate"
+- collapse_id = "td-teammate-info-#{teammate.id}"
+
+.mt-3.border-top.pt-3
+  %button.btn.btn-link.btn-sm.text-decoration-none.px-0.collapsed{type: "button",
+      "data-bs-toggle" => "collapse",
+      "data-bs-target" => "##{collapse_id}",
+      "aria-expanded" => "false",
+      "aria-controls" => collapse_id}
+    %i.bi.bi-chevron-down.me-1
+    Information about #{casual}
+
+  .collapse{id: collapse_id}
+    %ul.list-unstyled.small.mb-3.mt-2
+      %li.mb-2
+        %strong Employed since:
+        = talent_density_info_employed_since(info)
+      %li.mb-2
+        %strong Last position change:
+        = talent_density_info_position_change(info)
+      %li.mb-2
+        %strong Last position check-in:
+        = talent_density_info_position_check_in(info, teammate)
+      %li.mb-2
+        %strong Target position:
+        = talent_density_info_target_position(info)
+      %li.mb-2
+        %strong Active goals attached to Assignments, Values, or Abilities:
+        = talent_density_info_active_goals(info)
+
+    - if info&.experiences_summary
+      %h3.h6.mb-2 Assignment distribution
+      = render "organizations/company_teammates/my_growth/experiences_summary",
+        summary: info.experiences_summary,
+        teammate: teammate,
+        organization: organization,
+        chart_id_prefix: "td-experiences-#{teammate.id}",
+        show_divider: false

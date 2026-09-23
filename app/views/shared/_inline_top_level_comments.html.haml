@@ -1,0 +1,43 @@
+-# Reusable top-level-only comment list + optional composer (no replies).
+-# Locals:
+-#   comments:           enumerable of root Comment records (creator eager-loaded preferred)
+-#   organization:       Organization (unused for now; kept for future links)
+-#   composer:           truthy to show the textarea (default true)
+-#   textarea_name:      required when composer
+-#   textarea_id:        optional
+-#   textarea_value:     optional (re-render after failed save)
+-#   textarea_placeholder: optional
+-#   hint:               optional string under the textarea
+-#   empty_message:      optional when there are no comments yet
+- comments = Array(local_assigns[:comments])
+- composer = local_assigns.fetch(:composer, true)
+- textarea_name = local_assigns[:textarea_name]
+- textarea_id = local_assigns[:textarea_id]
+- textarea_value = local_assigns[:textarea_value].to_s
+- textarea_placeholder = local_assigns.fetch(:textarea_placeholder, "Add a note…")
+- hint = local_assigns[:hint]
+- empty_message = local_assigns.fetch(:empty_message, "No notes yet.")
+
+.inline-top-level-comments
+  - if comments.any?
+    %ul.list-unstyled.mb-3
+      - comments.each do |comment|
+        %li.border-bottom.py-2
+          .d-flex.justify-content-between.align-items-baseline.gap-2.mb-1
+            %strong.small= comment.creator&.casual_name.presence || comment.creator&.display_name || "Unknown"
+            %span.small.text-muted
+              = time_ago_in_words(comment.created_at)
+              ago
+          .small{style: "white-space: pre-wrap;"}= comment.body
+  - elsif !composer
+    %p.small.text-muted.mb-0= empty_message
+
+  - if composer && textarea_name.present?
+    = text_area_tag textarea_name,
+      textarea_value,
+      id: textarea_id,
+      class: "form-control",
+      rows: 2,
+      placeholder: textarea_placeholder
+    - if hint.present?
+      %p.small.text-muted.mt-1.mb-0= hint

@@ -3,8 +3,12 @@
     .card.border-0.shadow-sm
       .card-body
         %p.mb-3
-          Private to managers and people with manage-employment.
-          %strong Nobody sees their own stance.
+          Confidential Talent Reflections — only visible to managers and people with manage-employment.
+          %strong Nobody sees their own stance or narratives.
+        %p.small.text-muted.mb-3
+          Current period:
+          %strong= @period_month.strftime("%B %Y")
+          · Past months lock automatically. Select this month's stance again; last entry stays visible for reference.
         = render "organizations/talent_density/prompt"
         .mt-3.mb-0
           = render "organizations/talent_density/rubric_table"
@@ -28,8 +32,8 @@
       %h2.h5.mb-0
         = @scope == "hierarchy" ? "Hierarchy of" : "Direct reports of"
         = @selected_manager.person&.display_name
-      = submit_tag "Save stances", class: "btn btn-primary"
+      = submit_tag "Save reflections", class: "btn btn-primary"
     - @rows.each do |row|
       = render "organizations/talent_density/stance_row", row: row, organization: @organization
     .d-flex.justify-content-end.mt-3
-      = submit_tag "Save stances", class: "btn btn-primary"
+      = submit_tag "Save reflections", class: "btn btn-primary"

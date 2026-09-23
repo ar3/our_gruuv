@@ -29,6 +29,11 @@ module Comments
         false
       end
 
+      # Body edits / create path for comments on this root. Defaults to allows_comments?.
+      def allows_comment_edits?
+        allows_comments?
+      end
+
       def notify_after_create(comment)
         # no-op by default
       end

@@ -52,7 +52,18 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(response.body).to include("Whose team")
       expect(response.body).to include("Morgan")
       expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(company, manager))
-      expect(CGI.unescapeHTML(response.body)).to include("Notes (these notes and the values are only visible to")
+      expect(CGI.unescapeHTML(response.body)).to include("Narratives (separate voices) are only visible to")
+      expect(response.body).to include("Confidential Talent Reflection")
+      expect(response.body).to include("Save reflections")
+      expect(response.body).to include("Add a narrative note for this Confidential Talent Reflection")
+      expect(response.body).to include("Information about")
+      expect(response.body).to include("Employed since:")
+      expect(response.body).to include("Last position change:")
+      expect(response.body).to include("Last position check-in:")
+      expect(response.body).to include("Target position:")
+      expect(response.body).to include("Active goals attached to Assignments, Values, or Abilities:")
+      expect(response.body).to include("Assignment distribution")
+      expect(response.body).to include('data-bs-toggle="collapse"')
       expect(response.body).to include(vp_person.casual_name)
       expect(response.body).to include("with the title/position")
       expect(response.body).to include("Assignment Rating Alignment")
@@ -115,19 +126,19 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(response.body).to include("You will never see yours")
       expect(CGI.unescapeHTML(response.body)).to include("I'd take the swap")
       expect(response.body).not_to include("Whose directs")
-      expect(response.body).not_to include("Save stances")
+      expect(response.body).not_to include("Save reflections")
       expect(response.body).not_to include("Omar")
     end
   end
 
   describe "PATCH /organizations/:organization_id/talent_density" do
-    it "saves overwrite stance and notes for a direct report" do
+    it "saves overwrite stance for the current period and records who set it" do
       sign_in_as_teammate_for_request(manager_person, company)
 
       patch organization_talent_density_path(company), params: {
         manager_id: "CompanyTeammate_#{manager.id}",
         stances: {
-          ic.id.to_s => { stance: "fine_either_way", notes: "Solid contributor" }
+          ic.id.to_s => { stance: "fine_either_way" }
         }
       }
 
@@ -141,9 +152,90 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
           applied: 1
         )
       )
-      stance = TalentDensityStance.find_by!(company_teammate: ic)
+      stance = TalentDensityStance.find_by!(
+        company_teammate: ic,
+        period_month: TalentDensityStance.current_period_month
+      )
       expect(stance.stance).to eq("fine_either_way")
-      expect(stance.notes).to eq("Solid contributor")
+      expect(stance.stance_set_by).to eq(manager_person)
+      expect(stance.stance_set_at).to be_present
+    end
+
+    it "saves a narrative comment without requiring a stance" do
+      sign_in_as_teammate_for_request(manager_person, company)
+
+      patch organization_talent_density_path(company), params: {
+        manager_id: "CompanyTeammate_#{manager.id}",
+        stances: {
+          ic.id.to_s => { stance: "not_yet", comment: "HR and I both need space to write" }
+        }
+      }
+
+      expect(response).to redirect_to(
+        organization_talent_density_path(
+          company,
+          manager_id: "CompanyTeammate_#{manager.id}",
+          scope: "directs",
+          display: "dots",
+          matrix: "stances",
+          applied: 1
+        )
+      )
+      stance = TalentDensityStance.find_by!(
+        company_teammate: ic,
+        period_month: TalentDensityStance.current_period_month
+      )
+      expect(stance.stance).to be_nil
+      expect(stance.comments.count).to eq(1)
+      expect(stance.comments.first.body).to eq("HR and I both need space to write")
+      expect(stance.comments.first.creator).to eq(manager_person)
+    end
+
+    it "does not overwrite legacy notes from the form" do
+      create(
+        :talent_density_stance,
+        company_teammate: ic,
+        company: company,
+        period_month: TalentDensityStance.current_period_month,
+        stance: :take_the_swap,
+        notes: "Keep this"
+      )
+      sign_in_as_teammate_for_request(manager_person, company)
+
+      patch organization_talent_density_path(company), params: {
+        manager_id: "CompanyTeammate_#{manager.id}",
+        stances: {
+          ic.id.to_s => { stance: "fine_either_way", notes: "should be ignored" }
+        }
+      }
+
+      stance = TalentDensityStance.find_by!(
+        company_teammate: ic,
+        period_month: TalentDensityStance.current_period_month
+      )
+      expect(stance.stance).to eq("fine_either_way")
+      expect(stance.notes).to eq("Keep this")
+    end
+
+    it "shows the prior locked reflection when starting a new month" do
+      create(
+        :talent_density_stance,
+        company_teammate: ic,
+        company: company,
+        period_month: TalentDensityStance.current_period_month - 1.month,
+        stance: :try_to_avoid_the_swap,
+        notes: "From last cycle"
+      )
+      sign_in_as_teammate_for_request(manager_person, company)
+
+      get organization_talent_density_path(company, manager_id: "CompanyTeammate_#{manager.id}")
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("Last entry")
+      expect(body).to include("I'd work to avoid the swap")
+      expect(body).to include("From last cycle")
+      expect(body).to include("Not yet")
     end
 
     it "ignores submitted rows for people outside the selected manager's directs" do
@@ -152,7 +244,7 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       patch organization_talent_density_path(company), params: {
         manager_id: "CompanyTeammate_#{manager.id}",
         stances: {
-          outsider.id.to_s => { stance: "take_the_swap", notes: "should not save" }
+          outsider.id.to_s => { stance: "take_the_swap" }
         }
       }
 
@@ -165,11 +257,16 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       patch organization_talent_density_path(company), params: {
         manager_id: "CompanyTeammate_#{manager.id}",
         stances: {
-          ic.id.to_s => { stance: "try_to_avoid_the_swap", notes: "Uniquely right" }
+          ic.id.to_s => { stance: "try_to_avoid_the_swap" }
         }
       }
 
-      expect(TalentDensityStance.find_by!(company_teammate: ic).stance).to eq("try_to_avoid_the_swap")
+      expect(
+        TalentDensityStance.find_by!(
+          company_teammate: ic,
+          period_month: TalentDensityStance.current_period_month
+        ).stance
+      ).to eq("try_to_avoid_the_swap")
     end
   end
 
