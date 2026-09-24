@@ -1,10 +1,12 @@
 -# Job Description Footer/Boilerplate Section
--# Usage: = render 'job_description_footer', organization:, title: (optional), seat: (optional), teammate: (optional), public_view: false
+-# Usage: = render 'job_description_footer', organization:, title:, seat:, teammate:, public_view:, signature_name:, signature_signed_at:
 - organization = local_assigns[:organization] || local_assigns[:company]
 - title = local_assigns[:title]
 - seat = local_assigns[:seat]
 - teammate = local_assigns[:teammate]
 - public_view = local_assigns.fetch(:public_view, false)
+- signature_name = local_assigns[:signature_name].presence
+- signature_signed_at = local_assigns[:signature_signed_at]
 - hr = JobDescriptionHrText.for(organization: organization, title: title, seat: seat)
 - cascade = hr.source_cascade
 - collapse_id = "jd-hr-source-#{[organization.id, title&.id, seat&.id, teammate&.id].compact.join('-')}"
@@ -52,14 +54,20 @@
   %p.text-muted
     %em Employee signature below indicates the employee's understanding of the requirements, essential functions and duties of the position.
 
-  .row.mt-4
+  .row.mt-4.jd-signature-block
     .col-md-6
-      %p.text-muted
+      %p.text-muted.mb-1
         %strong Employee Signature:
-        %br
-        %small _____________________________
+      .jd-signature-line
+        - if signature_name.present?
+          %span.jd-signature-ink= signature_name
+        - else
+          %span.jd-signature-blank _____________________________
     .col-md-6
-      %p.text-muted
+      %p.text-muted.mb-1
         %strong Date:
-        %br
-        %small _____________________________
+      .jd-signature-line
+        - if signature_signed_at.present?
+          %span.jd-signature-ink= format_time_in_user_timezone(signature_signed_at, format: "%B %-d, %Y")
+        - else
+          %span.jd-signature-blank _____________________________

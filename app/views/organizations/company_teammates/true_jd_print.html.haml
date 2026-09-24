@@ -1,17 +1,21 @@
 - casual = @teammate.person.casual_name.strip
 - content_for :title, "#{casual}'s #{true_jd_print_view_suffix}"
+- content_for :body_class, "jd-print-ready"
 
 - content_for :header do
-  = render "shared/teammate_modality_header/switchers",
-           organization: @current_organization,
-           selected_teammate: @selected_teammate,
-           viewable_teammate_groups: @viewable_teammate_groups,
-           path_for_teammate: ->(tm) { true_jd_print_organization_company_teammate_path(@current_organization, tm) },
-           switch_aria_label: "Switch teammate for #{true_jd_print_view_suffix}"
+  .jd-print-screen-only
+    = render "shared/teammate_modality_header/switchers",
+             organization: @current_organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { true_jd_print_organization_company_teammate_path(@current_organization, tm) },
+             switch_aria_label: "Switch teammate for #{true_jd_print_view_suffix}"
 
 - content_for :go_back_link do
-  .d-print-none
+  .jd-print-screen-only
     = nav_hierarchy_with_previous(organization: @current_organization, crumbs: [{ label: "Teammates", url: organization_employees_path(@current_organization) }, { label: true_jd_print_view_suffix, url: nil }])
+
+= render "layouts/jd_print_letterhead", organization: @current_organization
 
 .d-flex.justify-content-between.align-items-baseline.gap-3.mb-3.w-100
   %p.text-muted.mb-0.small.true-jd-print-intro
@@ -22,7 +26,7 @@
       of the job description.
     - else
       This is #{casual}'s actual current job description. A position blueprint is unavailable.
-  .d-flex.gap-3.flex-shrink-0.ms-auto.d-print-none
+  .d-flex.gap-3.flex-shrink-0.ms-auto.jd-print-screen-only
     - if policy(@teammate).view_job_description_acknowledgements?
       = link_to "Acknowledge job description",
                 organization_company_teammate_job_description_acknowledgements_path(@current_organization, @teammate),

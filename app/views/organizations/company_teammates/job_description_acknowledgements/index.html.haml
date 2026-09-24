@@ -2,56 +2,62 @@
 - page_label = true_jd_signed_view_suffix
 - page_help_id = "jobDescriptionAcknowledgementHelp"
 - content_for :title, "#{casual}'s #{page_label}"
+- content_for :body_class, "jd-print-ready"
 
 - content_for :header do
-  - trailing = capture do
-    = render "shared/page_help/header_info_button",
-             collapse_id: page_help_id,
-             tooltip: "How the signed True Job Description works. Click for details."
-  = render "shared/teammate_modality_header/switchers",
-           organization: organization,
-           selected_teammate: @selected_teammate,
-           viewable_teammate_groups: @viewable_teammate_groups,
-           path_for_teammate: ->(tm) { organization_company_teammate_job_description_acknowledgements_path(organization, tm) },
-           switch_aria_label: "Switch teammate for #{true_jd_signed_view_label_for(@teammate)}",
-           trailing: trailing
+  .jd-print-screen-only
+    - trailing = capture do
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "How the signed True Job Description works. Click for details."
+    = render "shared/teammate_modality_header/switchers",
+             organization: organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { organization_company_teammate_job_description_acknowledgements_path(organization, tm) },
+             switch_aria_label: "Switch teammate for #{true_jd_signed_view_label_for(@teammate)}",
+             trailing: trailing
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: page_label, url: nil }])
+  .jd-print-screen-only
+    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: page_label, url: nil }])
 
-.collapse.mb-4{ id: page_help_id }
+= render "layouts/jd_print_letterhead", organization: organization
+
+.collapse.mb-4.jd-print-screen-only{ id: page_help_id }
   = render "page_help"
 
 - if @compliance_status.compliant?
-  .alert.alert-success.py-2.px-3.mb-3{ role: "alert" }
+  .alert.alert-success.py-2.px-3.mb-3.jd-print-screen-only{ role: "alert" }
     %i.bi.bi-check-circle.me-1
     This job description has been signed recently enough.
 - else
-  .alert.alert-warning.py-2.px-3.mb-3{ role: "alert" }
+  .alert.alert-warning.py-2.px-3.mb-3.jd-print-screen-only{ role: "alert" }
     %i.bi.bi-exclamation-triangle.me-1
     This job description needs to be signed.
 
 - if @acknowledgements.any?
-  %h3.mb-3 Signed job descriptions
-  %ul.list-unstyled.mb-3
-    - @acknowledgements.each do |acknowledgement|
-      %li.mb-2.d-flex.flex-wrap.align-items-baseline.gap-2
-        %span
-          = format_time_in_user_timezone(acknowledgement.signed_at, format: "%B %-d, %Y")
-          - if acknowledgement.position_name.present?
-            %span.text-muted
-              — #{acknowledgement.position_name}
-        = link_to "View signed JD",
-                  organization_company_teammate_job_description_acknowledgement_path(organization, @teammate, acknowledgement),
-                  class: "text-decoration-none small"
-  %p.mb-4
-    = link_to "Review and Sign the current JD below", "#sign-current-jd", class: "text-decoration-none"
+  .jd-print-screen-only
+    %h3.mb-3 Signed job descriptions
+    %ul.list-unstyled.mb-3
+      - @acknowledgements.each do |acknowledgement|
+        %li.mb-2.d-flex.flex-wrap.align-items-baseline.gap-2
+          %span
+            = format_time_in_user_timezone(acknowledgement.signed_at, format: "%B %-d, %Y")
+            - if acknowledgement.position_name.present?
+              %span.text-muted
+                — #{acknowledgement.position_name}
+          = link_to "View signed JD",
+                    organization_company_teammate_job_description_acknowledgement_path(organization, @teammate, acknowledgement),
+                    class: "text-decoration-none small"
+    %p.mb-4
+      = link_to "Review and Sign the current JD below", "#sign-current-jd", class: "text-decoration-none"
 - else
-  %p.mb-4
+  %p.mb-4.jd-print-screen-only
     No signatures yet.
     = link_to "Review and Sign the current JD below", "#sign-current-jd", class: "text-decoration-none"
 
-%p.text-muted.small.mb-4
+%p.text-muted.small.mb-4.jd-print-screen-only
   This is #{casual}'s true job description as it stands now. Signing stores this wording.
 
 = render "organizations/company_teammates/job_description_acknowledgements/document",
@@ -61,7 +67,7 @@
          title: @document.position&.title,
          seat: @document.employment_tenure&.seat
 
-%div{ id: "sign-current-jd" }
+%div.jd-print-screen-only{ id: "sign-current-jd" }
   - if policy(@teammate).create_job_description_acknowledgement?
     %hr.my-4
     %h3.mb-2 Sign this job description

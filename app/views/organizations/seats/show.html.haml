@@ -1,11 +1,14 @@
 - content_for :title, @seat.display_name
+- content_for :body_class, "jd-print-ready"
+
+= render "layouts/jd_print_letterhead", organization: @seat.title.company
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center
     %h1.mb-0= @seat.display_name
 
 - content_for :header_action do
-  .text-right
+  .text-right.jd-print-screen-only
     - if policy(@seat).update?
       = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-primary" do
         %i.bi.bi-pencil.me-2

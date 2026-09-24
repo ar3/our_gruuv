@@ -3,7 +3,7 @@
   %head
     = render partial: 'layouts/head_common', locals: { title_default: "OurGruuv" }
 
-  %body
+  %body{class: content_for?(:body_class) ? yield(:body_class) : nil}
     = render partial: 'layouts/toast_container'
     
     / Thin top bar with company name, search, and user menu

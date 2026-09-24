@@ -398,6 +398,9 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('Click to Configure')
       expect(response.body).to include(edit_organization_company_preference_path(organization))
       expect(response.body).to include('Work environment:')
+      expect(response.body).to include('jd-print-ready')
+      expect(response.body).to include("&#39;s Gruuv")
+      expect(response.body).to include('jd-print-letterhead')
     end
 
     it 'shows Additional Abilities required section when position has direct milestone requirements' do

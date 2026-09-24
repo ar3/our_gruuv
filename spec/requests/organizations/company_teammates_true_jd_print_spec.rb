@@ -60,6 +60,8 @@ RSpec.describe 'Company teammate True JD print view', type: :request do
         expect(response.body).not_to include('likely')
         expect(response.body).to include('Employee Signature')
         expect(response.body).to include('window.print()')
+        expect(response.body).to include('jd-print-ready')
+        expect(response.body).to include('jd-print-letterhead')
         expect(response.body).to include('Current source for Job Description HR fields')
         expect(response.body).to include("Click to modify Sam C.&#39;s seat")
         expect(response.body).to include(organization_teammate_position_path(organization, employee_teammate))

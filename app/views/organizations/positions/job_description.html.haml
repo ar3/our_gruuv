@@ -1,13 +1,18 @@
 - content_for :title, "Job Description - #{@position.display_name}"
+- content_for :body_class, "jd-print-ready"
 
 - content_for :header do
   %h1.mb-0= @position.display_name
 
 - content_for :header_action do
-  = render 'view_switcher'
+  .jd-print-screen-only
+    = render 'view_switcher'
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "#{@position.display_name} — job description", url: nil }])
+  .jd-print-screen-only
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "#{@position.display_name} — job description", url: nil }])
+
+= render "layouts/jd_print_letterhead", organization: @position.company
 
 = render 'job_description_summary', position: @position
 

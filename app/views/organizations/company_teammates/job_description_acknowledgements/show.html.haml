@@ -2,27 +2,32 @@
 - signed_on = format_time_in_user_timezone(@acknowledgement.signed_at, format: "%B %-d, %Y")
 - request_info = @acknowledgement.request_info_hash
 - content_for :title, "#{casual}'s #{true_jd_signed_view_suffix} — #{signed_on}"
+- content_for :body_class, "jd-print-ready"
 
 - content_for :header do
-  = render "shared/teammate_modality_header/switchers",
-           organization: organization,
-           selected_teammate: @selected_teammate,
-           viewable_teammate_groups: @viewable_teammate_groups,
-           path_for_teammate: ->(tm) { organization_company_teammate_job_description_acknowledgements_path(organization, tm) },
-           switch_aria_label: "Switch teammate for #{true_jd_signed_view_label_for(@teammate)}"
+  .jd-print-screen-only
+    = render "shared/teammate_modality_header/switchers",
+             organization: organization,
+             selected_teammate: @selected_teammate,
+             viewable_teammate_groups: @viewable_teammate_groups,
+             path_for_teammate: ->(tm) { organization_company_teammate_job_description_acknowledgements_path(organization, tm) },
+             switch_aria_label: "Switch teammate for #{true_jd_signed_view_label_for(@teammate)}"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: true_jd_signed_view_suffix, url: organization_company_teammate_job_description_acknowledgements_path(organization, @teammate) }, { label: signed_on, url: nil }])
+  .jd-print-screen-only
+    = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Teammates", url: organization_employees_path(organization) }, { label: true_jd_signed_view_suffix, url: organization_company_teammate_job_description_acknowledgements_path(organization, @teammate) }, { label: signed_on, url: nil }])
 
-.mb-3
+= render "layouts/jd_print_letterhead", organization: organization
+
+.mb-3.jd-print-screen-only
   = link_to organization_company_teammate_job_description_acknowledgements_path(organization, @teammate), class: "btn btn-outline-secondary" do
     %i.bi.bi-arrow-left.me-1{"aria-hidden" => "true"}
     View all previously signed job descriptions, or sign this job description again
 
-%p.text-muted.small.mb-3
+%p.text-muted.small.mb-3.jd-print-screen-only
   This is the job description #{casual} signed on #{signed_on}. It is the wording from that moment, not the job description as it stands now.
 
-.card.mb-4
+.card.mb-4.jd-signature-details
   .card-header
     %h5.mb-0 Signature details
   .card-body

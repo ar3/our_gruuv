@@ -1,0 +1,12 @@
+-# Print-only letterhead for job description documents.
+-# Locals: organization
+- organization = local_assigns[:organization] || local_assigns[:company]
+- return if organization.blank?
+
+.jd-print-letterhead{"aria-hidden" => "true"}
+  .jd-print-letterhead__inner
+    - if organization.logo.attached?
+      = image_tag url_for(organization.logo), class: "jd-print-letterhead__logo", alt: "#{organization.display_name} logo"
+    - else
+      %i.bi.bi-building.jd-print-letterhead__fallback{"aria-hidden" => "true"}
+    %span.jd-print-letterhead__text= "#{organization.display_name}'s Gruuv"

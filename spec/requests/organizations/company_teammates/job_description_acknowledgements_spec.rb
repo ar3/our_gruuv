@@ -201,7 +201,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("true_jd_signed_page")
       expect(response.body).to include("Build Widget")
       expect(response.body).not_to include("Assemble Gadget")
-      expect(response.body).to include("Signed by")
+      expect(response.body).to include("jd-signature-ink")
       expect(response.body).to include("Samantha Cartwright")
 
       get organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate)

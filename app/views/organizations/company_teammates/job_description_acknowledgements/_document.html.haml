@@ -89,12 +89,6 @@
            title: local_assigns[:title],
            seat: local_assigns[:seat],
            teammate: teammate,
-           public_view: local_assigns.fetch(:public_view, false)
-
-  - if local_assigns[:signed_at].present?
-    %hr.mt-4
-    %p.mb-0
-      %strong Signed by
-      = typed_name
-      on
-      = format_time_in_user_timezone(signed_at, format: "%B %-d, %Y at %-I:%M %p")
+           public_view: local_assigns.fetch(:public_view, false),
+           signature_name: local_assigns[:typed_name],
+           signature_signed_at: local_assigns[:signed_at]
