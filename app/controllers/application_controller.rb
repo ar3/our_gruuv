@@ -143,9 +143,50 @@ class ApplicationController < ActionController::Base
   
   def authenticate_person!
     unless current_company_teammate
-      flash[:error] = "You must be logged in to access this page"
-      redirect_to root_path
+      redirect_unauthenticated_to_login!
     end
+  end
+
+  # Store the intended destination, then send unauthenticated visitors to /login.
+  # After OAuth, AuthController consumes session[:return_to].
+  def redirect_unauthenticated_to_login!(message: "You must be logged in to access this page", flash_key: :error)
+    store_location_for_login
+    flash[flash_key] = message
+    redirect_to login_path
+  end
+
+  def store_location_for_login
+    return if request.path == login_path
+    return if request.path.start_with?("/auth/")
+
+    candidate = if request.get? || request.head?
+      request.fullpath
+    else
+      # Do not replay non-GET; send them to the resource's GET URL.
+      request.path
+    end
+
+    safe = safe_return_to_path(candidate)
+    session[:return_to] = safe if safe
+  end
+
+  def consume_return_to_path
+    path = safe_return_to_path(session.delete(:return_to))
+    path
+  end
+
+  # Only same-app relative paths (block open redirects).
+  def safe_return_to_path(path)
+    return nil if path.blank?
+
+    path = path.to_s
+    return nil unless path.start_with?("/")
+    return nil if path.start_with?("//")
+    return nil if path.include?("://")
+    return nil if path == login_path
+    return nil if path.start_with?("/auth/")
+
+    path
   end
   
   def user_not_authorized

@@ -180,7 +180,7 @@ RSpec.describe Organizations::GetShitDoneController, type: :controller do
     it 'requires authentication' do
       sign_out_teammate
       get :show, params: { organization_id: company.id }
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(login_path)
     end
   end
 end

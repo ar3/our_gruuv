@@ -109,7 +109,7 @@ RSpec.describe 'Teammate View Security', type: :request do
         # The controller redirects unauthenticated users
         get internal_organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 

@@ -60,7 +60,7 @@ RSpec.describe 'ChangeLogs#new', type: :request do
       it 'denies access and redirects' do
         get new_change_log_path
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
   end

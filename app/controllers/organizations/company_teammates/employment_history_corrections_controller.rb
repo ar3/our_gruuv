@@ -130,6 +130,6 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
   def require_authentication
     return if current_person
 
-    redirect_to root_path, alert: 'Please log in to correct employment history.'
+    redirect_unauthenticated_to_login!(message: 'Please log in to correct employment history.', flash_key: :alert)
   end
 end

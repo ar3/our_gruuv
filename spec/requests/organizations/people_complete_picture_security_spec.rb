@@ -34,7 +34,7 @@ RSpec.describe 'Active Job View (Complete Picture) Security', type: :request do
       it 'redirects to login' do
         get complete_picture_organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 

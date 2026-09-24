@@ -125,7 +125,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
 
       it 'redirects to root with alert' do
         get :new, params: { organization_id: organization.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -180,7 +180,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
           organization_id: organization.id,
           department: { name: 'New Department' }
         }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -223,7 +223,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
 
       it 'redirects to root with alert' do
         get :edit, params: { organization_id: organization.id, id: department.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -291,7 +291,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
           id: department.id,
           department: { name: 'Updated Name' }
         }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -325,7 +325,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
 
       it 'redirects to root with alert' do
         patch :archive, params: { organization_id: organization.id, id: department.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -373,7 +373,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
 
       it 'redirects to root with alert' do
         get :associate_abilities, params: { organization_id: organization.id, id: department.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -579,7 +579,7 @@ RSpec.describe Organizations::DepartmentsController, type: :controller do
 
       it 'redirects to root with alert' do
         get :associate_assignments, params: { organization_id: organization.id, id: department.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end

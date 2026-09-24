@@ -318,7 +318,7 @@ RSpec.describe OrganizationsController, type: :controller do
       it 'redirects to root with alert' do
         get :dashboard, params: { id: organization.id }
         
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to be_present
       end
     end
@@ -331,7 +331,7 @@ RSpec.describe OrganizationsController, type: :controller do
       it 'redirects to root' do
         get :dashboard, params: { id: organization.id }
         
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
   end

@@ -50,7 +50,7 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
   def require_authentication
     return if current_person
 
-    redirect_to root_path, alert: "Please log in to access Protect Flow."
+    redirect_unauthenticated_to_login!(message: "Please log in to access Protect Flow.", flash_key: :alert)
   end
 
   def set_manager_teammate

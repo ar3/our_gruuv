@@ -159,7 +159,7 @@ class Organizations::CompanyTeammates::GoogleMeet::OauthController < Application
   def require_authentication
     return if current_person
 
-    redirect_to root_path, alert: "Please log in to connect Google Meet."
+    redirect_unauthenticated_to_login!(message: "Please log in to connect Google Meet.", flash_key: :alert)
   end
 
   def oauth_fallback_path

@@ -31,8 +31,10 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
     raise "Organization Not Found: #{organization_param}" if organization.nil?
     
     if current_company_teammate.nil?
-      flash[:alert] = "Your session has expired. Please log in again."
-      redirect_to root_path
+      redirect_unauthenticated_to_login!(
+        message: "Your session has expired. Please log in again.",
+        flash_key: :alert
+      )
       return
     end
     

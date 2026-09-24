@@ -254,7 +254,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
           }
         }.not_to change(Goal, :count)
 
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to include('session has expired')
       end
     end

@@ -67,7 +67,7 @@ RSpec.describe 'Check-In Security', type: :request do
       it 'redirects to login' do
         get organization_company_teammate_check_ins_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 
@@ -79,7 +79,7 @@ RSpec.describe 'Check-In Security', type: :request do
       it 'denies access' do
         get organization_company_teammate_check_ins_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 

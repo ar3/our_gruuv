@@ -97,7 +97,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
       it 'redirects to root with session expired message' do
         get :show, params: { organization_id: organization.id, id: person_teammate.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
       end
@@ -383,7 +383,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
         it 'redirects to root (terminated teammate has no current session)' do
           get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-          expect(response).to redirect_to(root_path)
+          expect(response).to redirect_to(login_path)
           expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
         end
       end
@@ -444,7 +444,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
       it 'redirects to root with session expired message' do
         get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
     end
@@ -717,7 +717,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
       it 'redirects to root with session expired message' do
         patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
     end

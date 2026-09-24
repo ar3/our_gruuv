@@ -72,7 +72,7 @@ class PeopleController < ApplicationController
 
   def require_login
     unless current_person
-      redirect_to root_path, alert: 'Please log in to access your profile'
+      redirect_unauthenticated_to_login!(message: 'Please log in to access your profile', flash_key: :alert)
     end
   end
 end 

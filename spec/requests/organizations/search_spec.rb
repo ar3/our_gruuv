@@ -240,7 +240,7 @@ RSpec.describe 'Organizations::Search', type: :request do
       it 'redirects to login' do
         get organization_search_path(organization)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 

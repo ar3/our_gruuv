@@ -82,7 +82,7 @@ class UserPreferencesController < ApplicationController
   end
   
   def authenticate_user!
-    redirect_to login_path unless current_person
+    redirect_unauthenticated_to_login! unless current_person
   end
 end
 

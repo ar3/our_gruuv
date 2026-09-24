@@ -146,7 +146,7 @@ RSpec.describe 'Organizations::Teams (edit page)', type: :request do
       it 'redirects to root path' do
         get edit_path
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
   end

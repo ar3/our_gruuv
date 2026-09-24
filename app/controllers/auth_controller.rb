@@ -4,7 +4,10 @@ class AuthController < ApplicationController
   def login
     # Redirect if already logged in
     if current_company_teammate
-      redirect_to helpers.preferred_start_page_path(current_company_teammate.organization, current_company_teammate)
+      return_path = consume_return_to_path
+      redirect_to(
+        return_path || helpers.preferred_start_page_path(current_company_teammate.organization, current_company_teammate)
+      )
     end
   end
   
@@ -43,14 +46,11 @@ class AuthController < ApplicationController
         # Set session to use teammate
         session[:current_company_teammate_id] = teammate.id
         
-        # Check for return path
-        if session[:return_to].present?
-          return_path = session[:return_to]
-          session[:return_to] = nil
-          redirect_to return_path, notice: 'Successfully signed in with Google!'
-        else
-          redirect_to helpers.preferred_start_page_path(teammate.organization, teammate), notice: 'Successfully signed in with Google!'
-        end
+        return_path = consume_return_to_path
+        redirect_to(
+          return_path || helpers.preferred_start_page_path(teammate.organization, teammate),
+          notice: 'Successfully signed in with Google!'
+        )
       end
       
     rescue => e

@@ -109,7 +109,7 @@ class Organizations::AssignmentSurveysController < Organizations::OrganizationNa
   private
 
   def require_authentication
-    redirect_to root_path, alert: "Please log in to access this page." unless current_company_teammate
+    redirect_unauthenticated_to_login!(message: "Please log in to access this page.", flash_key: :alert) unless current_company_teammate
   end
 
   def ensure_response_workspace!

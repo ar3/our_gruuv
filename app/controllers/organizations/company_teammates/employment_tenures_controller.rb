@@ -204,7 +204,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
 
   def require_authentication
     unless current_person
-      redirect_to root_path, alert: 'Please log in to access employment tenures.'
+      redirect_unauthenticated_to_login!(message: 'Please log in to access employment tenures.', flash_key: :alert)
     end
   end
 

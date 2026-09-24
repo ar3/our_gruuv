@@ -161,7 +161,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
       end
 
       context 'when user is not authenticated' do
-        it 'redirects to login' do
+        it 'redirects to root (authorization failure on public-only permalink)' do
           get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
           expect(response).to redirect_to(root_path)
         end

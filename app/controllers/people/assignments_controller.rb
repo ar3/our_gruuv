@@ -62,7 +62,7 @@ class People::AssignmentsController < ApplicationController
 
   def require_authentication
     unless current_person
-      redirect_to root_path, alert: 'Please log in to access assignment details.'
+      redirect_unauthenticated_to_login!(message: 'Please log in to access assignment details.', flash_key: :alert)
     end
   end
 end

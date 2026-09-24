@@ -19,9 +19,9 @@ RSpec.describe HuddlesController, type: :controller do
         session[:current_company_teammate_id] = nil
       end
 
-      it 'redirects to root path' do
+      it 'redirects to login path' do
         get :new
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
 
       it 'sets an error flash message' do

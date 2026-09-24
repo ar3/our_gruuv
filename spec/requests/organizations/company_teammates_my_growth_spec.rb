@@ -728,7 +728,7 @@ RSpec.describe 'Company teammate My Growth', type: :request do
     context 'when unauthenticated' do
       it 'redirects to login' do
         get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
   end

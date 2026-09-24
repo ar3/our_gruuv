@@ -850,7 +850,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
 
   def require_authentication
     unless current_person
-      redirect_to root_path, alert: 'Please log in to access organizations.'
+      redirect_unauthenticated_to_login!(message: 'Please log in to access organizations.', flash_key: :alert)
     end
   end
 

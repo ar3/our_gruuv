@@ -41,6 +41,6 @@ class Organizations::DebugController < Organizations::OrganizationNamespaceBaseC
   def require_authentication
     return if current_person
 
-    redirect_to root_path, alert: "Please log in to access Debug."
+    redirect_unauthenticated_to_login!(message: "Please log in to access Debug.", flash_key: :alert)
   end
 end

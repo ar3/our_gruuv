@@ -57,7 +57,7 @@ class InterestSubmissionsController < ApplicationController
     else
       # For anonymous submissions, we'll need to handle this differently
       # For now, redirect to login
-      redirect_to root_path, alert: 'Please log in to submit your interest.'
+      redirect_unauthenticated_to_login!(message: 'Please log in to submit your interest.', flash_key: :alert)
       return
     end
     
@@ -78,7 +78,7 @@ class InterestSubmissionsController < ApplicationController
   
   def require_login
     unless current_person
-      redirect_to root_path, alert: 'Please log in to access this page.'
+      redirect_unauthenticated_to_login!(message: 'Please log in to access this page.', flash_key: :alert)
     end
   end
   

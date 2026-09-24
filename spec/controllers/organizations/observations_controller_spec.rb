@@ -583,7 +583,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         terminated_teammate = create(:teammate, person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         sign_in_as_teammate(terminated_person, company)
         get :show, params: { organization_id: company.id, id: public_company_observation.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
 
@@ -787,7 +787,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         terminated_teammate = create(:teammate, person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         sign_in_as_teammate(terminated_person, company)
         get :show, params: { organization_id: company.id, id: public_world_observation.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
 
