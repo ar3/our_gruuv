@@ -25,6 +25,41 @@ RSpec.describe MyGrowth::CurrentPositionMilestoneGaps do
     expect(row.required_level).to eq(2)
     expect(row.met).to be(false)
     expect(row.has_active_goal).to be(false)
+    expect(row.active_goals).to eq([])
+  end
+
+  it "includes active goal details when a started goal covers the gap" do
+    goal = create(
+      :goal,
+      owner: teammate,
+      creator: teammate,
+      company_id: company.id,
+      title: "Close the gap",
+      started_at: 1.week.ago
+    )
+    create(:goal_association, goal: goal, associable: ability)
+
+    row = described_class.call(teammate: teammate).rows.first
+    expect(row.has_active_goal).to be(true)
+    expect(row.active_goal_count).to eq(1)
+    expect(row.active_goals.map { |g| g[:title] }).to eq(["Close the gap"])
+  end
+
+  it "counts drafts separately and omits them from active_goals" do
+    draft = create(
+      :goal,
+      owner: teammate,
+      creator: teammate,
+      company_id: company.id,
+      title: "Draft only",
+      started_at: nil
+    )
+    create(:goal_association, goal: draft, associable: ability)
+
+    row = described_class.call(teammate: teammate).rows.first
+    expect(row.has_active_goal).to be(false)
+    expect(row.draft_goal_count).to eq(1)
+    expect(row.active_goals).to eq([])
   end
 
   it "marks rows met when the milestone is earned" do

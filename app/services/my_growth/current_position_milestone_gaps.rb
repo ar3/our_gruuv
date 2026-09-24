@@ -11,6 +11,7 @@ module MyGrowth
       :met,
       :has_active_goal,
       :active_goal_count,
+      :active_goals,
       :draft_goal_count
     )
 
@@ -38,6 +39,12 @@ module MyGrowth
         .group(:ability_id)
         .maximum(:milestone_level)
       goal_counts = goal_counts_for(ability_ids)
+      active_goals_by_ability = OpenAssociatedGoalsByAssociable.call(
+        teammate: teammate,
+        associable_type: "Ability",
+        associable_ids: ability_ids,
+        active_only: true
+      )
 
       rows = ability_ids.filter_map do |ability_id|
         ability = abilities[ability_id]
@@ -46,6 +53,7 @@ module MyGrowth
         required_level = requirements[ability_id][:minimum_milestone_level].to_i
         earned_level = earned[ability_id].to_i
         counts = goal_counts[ability_id] || { active: 0, draft: 0 }
+        active_goals = active_goals_by_ability.dig(ability_id, :open_associated_goals) || []
 
         Row.new(
           ability: ability,
@@ -54,6 +62,7 @@ module MyGrowth
           met: earned_level >= required_level,
           has_active_goal: counts[:active].positive?,
           active_goal_count: counts[:active],
+          active_goals: active_goals,
           draft_goal_count: counts[:draft]
         )
       end.sort_by { |row| [row.met ? 1 : 0, row.has_active_goal ? 1 : 0, row.ability.name.to_s.downcase] }

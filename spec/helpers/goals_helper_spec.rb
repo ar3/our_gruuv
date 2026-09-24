@@ -112,6 +112,31 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goal_show_breadcrumb_crumbs' do
+    it 'prepends Grow by Goals and uses casual name for teammate-owned goals' do
+      person.update!(preferred_name: 'Sam', first_name: 'Samantha', last_name: 'Jones')
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Ship it')
+      casual = person.reload.casual_name
+
+      crumbs = helper.goal_show_breadcrumb_crumbs(company, goal)
+
+      expect(crumbs.map { |c| c[:label] }).to eq(
+        ["#{casual} Grow by Goals", "#{casual} Goals", "Ship it"]
+      )
+      expect(crumbs[0][:url]).to eq(helper.my_growth_goals_organization_company_teammate_path(company, creator_teammate))
+      expect(crumbs[1][:url]).to include("owner_id=CompanyTeammate_#{creator_teammate.id}")
+      expect(crumbs[2][:url]).to be_nil
+    end
+
+    it 'does not add Grow by Goals for organization-owned goals' do
+      goal = create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company', title: 'Company OKR')
+
+      crumbs = helper.goal_show_breadcrumb_crumbs(company, goal)
+
+      expect(crumbs.map { |c| c[:label] }).to eq(["#{company.display_name} Goals", "Company OKR"])
+    end
+  end
+
   describe '#goal_prompt_association_display' do
     before { allow(helper).to receive(:company_label_for).with('reflection', 'Reflection').and_return('Reflection') }
 

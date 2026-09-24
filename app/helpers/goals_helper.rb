@@ -1029,6 +1029,36 @@ module GoalsHelper
     end
   end
 
+  # Goal show breadcrumbs: for teammate-owned goals, Grow by Goals → filtered Goals index → title.
+  def goal_show_breadcrumb_crumbs(organization, goal)
+    owner_type = goal.owner_type == "Organization" ? "Company" : goal.owner_type
+    owner_filter = owner_type.present? && goal.owner_id.present? ? "#{owner_type}_#{goal.owner_id}" : nil
+    goals_index_url =
+      if owner_filter.present?
+        organization_goals_path(organization, owner_id: owner_filter, view: "hierarchical-collapsible-hidden-checks")
+      else
+        organization_goals_path(organization, view: "hierarchical-collapsible-hidden-checks")
+      end
+
+    crumbs = []
+    if goal.owner.is_a?(CompanyTeammate)
+      casual = goal_teammate_casual_name(goal.owner)
+      if casual.present?
+        crumbs << {
+          label: "#{casual} Grow by Goals",
+          url: my_growth_goals_organization_company_teammate_path(organization, goal.owner)
+        }
+        crumbs << { label: "#{casual} Goals", url: goals_index_url }
+      else
+        crumbs << { label: "#{goal_owner_display_name(goal)} Goals", url: goals_index_url }
+      end
+    else
+      crumbs << { label: "#{goal_owner_display_name(goal)} Goals", url: goals_index_url }
+    end
+    crumbs << { label: goal.title, url: nil }
+    crumbs
+  end
+
   def goal_teammate_path(organization, teammate)
     return nil unless teammate
 

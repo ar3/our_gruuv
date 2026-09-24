@@ -90,6 +90,43 @@ module MyGrowthExperiencesHelper
     )
   end
 
+  # Grow by Goals → Missing Goals: "N active goal(s)" badge with hover popover of goal titles.
+  def missing_goals_active_goals_badge(associable:, active_goals:, count: nil)
+    goals = Array(active_goals)
+    count = (count.nil? ? goals.size : count).to_i
+    label = pluralize(count, "active goal")
+    return content_tag(:span, label, class: "badge text-bg-success") if goals.blank?
+
+    content_tag(
+      :span,
+      label,
+      class: "badge text-bg-success",
+      tabindex: 0,
+      role: "button",
+      "aria-label": label,
+      data: {
+        bs_toggle: "popover",
+        bs_trigger: "hover focus",
+        bs_placement: "top",
+        bs_html: true,
+        bs_custom_class: "text-start",
+        bs_title: "Active goals",
+        bs_content: my_growth_catalog_goals_popover_html(associable: associable, open_goals: goals)
+      }
+    )
+  end
+
+  def teammate_draft_goals_index_path(organization, teammate, return_url: nil, return_text: nil)
+    organization_goals_path(
+      organization,
+      owner_id: "CompanyTeammate_#{teammate.id}",
+      status: "draft",
+      view: "hierarchical-collapsible",
+      return_url: return_url,
+      return_text: return_text
+    )
+  end
+
   def my_growth_catalog_goals_popover_html(associable:, open_goals:, extra_footer: nil)
     return "".html_safe if open_goals.blank?
 

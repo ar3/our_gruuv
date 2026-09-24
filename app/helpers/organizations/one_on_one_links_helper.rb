@@ -186,11 +186,9 @@ module Organizations
     end
 
     def work_to_meet_draft_goals_path
-      organization_goals_path(
+      teammate_draft_goals_index_path(
         organization,
-        owner_id: "CompanyTeammate_#{@teammate.id}",
-        status: "draft",
-        view: "hierarchical-collapsible",
+        @teammate,
         return_url: work_to_meet_return_url,
         return_text: work_to_meet_return_text
       )

@@ -7,11 +7,7 @@
   = render 'mode_switcher', organization: @organization, goal: @goal, current_mode: :view
 
 - content_for :go_back_link do
-  - goals_owner_type = @goal.owner_type == 'Organization' ? 'Company' : @goal.owner_type
-  - goals_owner_filter = goals_owner_type.present? && @goal.owner_id.present? ? "#{goals_owner_type}_#{@goal.owner_id}" : nil
-  - goals_owner_label = "#{goal_owner_display_name(@goal)} Goals"
-  - goals_owner_url = goals_owner_filter.present? ? organization_goals_path(@organization, owner_id: goals_owner_filter, view: 'hierarchical-collapsible-hidden-checks') : organization_goals_path(@organization, view: 'hierarchical-collapsible-hidden-checks')
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: goals_owner_label, url: goals_owner_url }, { label: @goal.title, url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: goal_show_breadcrumb_crumbs(@organization, @goal))
 
 - if goal_is_completed?(@goal)
   = render "organizations/goals/goal_completion_banner", goal: @goal

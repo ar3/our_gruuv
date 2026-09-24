@@ -4,12 +4,7 @@
 - draft_goals_count = local_assigns.fetch(:draft_goals_count)
 - return_url = local_assigns.fetch(:return_url)
 - return_text = local_assigns.fetch(:return_text, "Back to Grow by Goals")
-- drafts_url = organization_goals_path(organization,
-    owner_id: "CompanyTeammate_#{teammate.id}",
-    status: "draft",
-    view: "hierarchical-collapsible",
-    return_url: return_url,
-    return_text: return_text)
+- drafts_url = teammate_draft_goals_index_path(organization, teammate, return_url: return_url, return_text: return_text)
 - other_draft_count = [draft_goals_count - recent_draft_goals.size, 0].max
 - start_goal_url = select_create_organization_goals_path(organization, for_company_teammate_id: teammate.id, return_url: return_url, return_text: return_text)
 

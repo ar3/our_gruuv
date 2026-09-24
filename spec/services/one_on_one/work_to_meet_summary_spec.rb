@@ -52,6 +52,7 @@ RSpec.describe OneOnOne::WorkToMeetSummary do
       expect(summary.tab_variant).to eq(:info)
       expect(summary.tab_count).to eq(1)
       expect(summary.essential_assignment_rows.first.has_active_goal).to be(true)
+      expect(summary.essential_assignment_rows.first.active_goals.map { |g| g[:title] }).to eq([goal.title])
     end
 
     it "does not count draft-only goals toward active coverage" do

@@ -4,6 +4,7 @@
 - return_url = local_assigns.fetch(:return_url)
 - return_text = local_assigns.fetch(:return_text, "Back to Grow by Goals")
 - position = milestone_gaps.position
+- drafts_url = teammate_draft_goals_index_path(organization, teammate, return_url: return_url, return_text: return_text)
 
 .card.mb-4
   .card-header.bg-light
@@ -39,7 +40,7 @@
                   - if row.met
                     %span.badge.text-bg-success No goal needed
                   - elsif row.has_active_goal
-                    %span.badge.text-bg-success= pluralize(row.active_goal_count, "active goal")
+                    = missing_goals_active_goals_badge(associable: row.ability, active_goals: row.active_goals, count: row.active_goal_count)
                   - else
                     %span.badge.text-bg-danger.me-2 Milestone gap
                     = link_to "Add goal",
@@ -47,4 +48,5 @@
                       class: "btn btn-sm btn-outline-primary"
                   - if !row.met && row.draft_goal_count.positive?
                     %p.text-warning.small.mb-0.mt-1
-                      = pluralize(row.draft_goal_count, "draft goal")
+                      %i.bi.bi-pencil-square.me-1
+                      = link_to pluralize(row.draft_goal_count, "draft goal"), drafts_url, class: "text-warning"

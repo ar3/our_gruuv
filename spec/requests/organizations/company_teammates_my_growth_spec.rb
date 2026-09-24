@@ -415,6 +415,67 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         expect(response.body).to include('draft goal')
       end
 
+      context 'Missing Goals active pills and draft links' do
+        let(:position) { employee_teammate.employment_tenures.active.first.position }
+        let(:ability) { create(:ability, company: organization, name: 'MilestoneGapAbility') }
+        let(:assignment) { create(:assignment, company: organization, title: 'Wtm Covered') }
+
+        before do
+          create(:position_ability, position: position, ability: ability, milestone_level: 2)
+          create(:assignment_tenure, teammate: employee_teammate, assignment: assignment)
+          create(:assignment_check_in, :finalized, :working_to_meet, teammate: employee_teammate, assignment: assignment)
+        end
+
+        it 'shows an active-goals popover on WTM and milestone rows' do
+          wtm_goal = create(
+            :goal,
+            owner: employee_teammate,
+            creator: employee_teammate,
+            company: organization,
+            title: 'WTM active goal',
+            started_at: 1.week.ago
+          )
+          create(:goal_association, goal: wtm_goal, associable: assignment)
+
+          milestone_goal = create(
+            :goal,
+            owner: employee_teammate,
+            creator: employee_teammate,
+            company: organization,
+            title: 'Milestone active goal',
+            started_at: 1.week.ago
+          )
+          create(:goal_association, goal: milestone_goal, associable: ability)
+
+          get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('1 active goal')
+          expect(response.body).to include('data-bs-toggle="popover"')
+          expect(response.body).to include('WTM active goal')
+          expect(response.body).to include('Milestone active goal')
+          expect(response.body).to include("to see all of the goals, click on the #{assignment.title} name link above")
+          expect(response.body).to include("to see all of the goals, click on the #{ability.name} name link above")
+        end
+
+        it 'links milestone draft goals to the goals index filtered by teammate and draft status' do
+          draft_goal = create(
+            :goal,
+            owner: employee_teammate,
+            creator: employee_teammate,
+            company: organization,
+            title: 'Milestone draft goal',
+            started_at: nil
+          )
+          create(:goal_association, goal: draft_goal, associable: ability)
+
+          get my_growth_goals_organization_company_teammate_path(organization, employee_teammate)
+
+          expect(response.body).to include('1 draft goal')
+          expect(response.body).to include("owner_id=CompanyTeammate_#{employee_teammate.id}")
+          expect(response.body).to include('status=draft')
+        end
+      end
+
       it 'renders goals hub sections with map, confidence, then history charts' do
         create(
           :goal,

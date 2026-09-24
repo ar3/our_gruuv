@@ -3,25 +3,34 @@
 module MyGrowth
   # Open (incomplete, unarchived) goals owned by a teammate and associated to Assignments or Abilities,
   # plus each goal's latest confidence check-in for catalog-card footers.
+  # Pass active_only: true to restrict to started (active) goals — used by Missing Goals pills.
   class OpenAssociatedGoalsByAssociable
-    def self.call(teammate:, associable_type:, associable_ids:)
-      new(teammate: teammate, associable_type: associable_type, associable_ids: associable_ids).call
+    def self.call(teammate:, associable_type:, associable_ids:, active_only: false)
+      new(
+        teammate: teammate,
+        associable_type: associable_type,
+        associable_ids: associable_ids,
+        active_only: active_only
+      ).call
     end
 
-    def initialize(teammate:, associable_type:, associable_ids:)
+    def initialize(teammate:, associable_type:, associable_ids:, active_only: false)
       @teammate = teammate
       @associable_type = associable_type
       @associable_ids = Array(associable_ids).compact.uniq
+      @active_only = active_only
     end
 
     def call
       return {} if @teammate.blank? || @associable_ids.empty?
 
+      goal_scope = @active_only ? Goal.active : Goal.incomplete_unarchived
+
       rows = GoalAssociation
         .joins(:goal)
         .where(associable_type: @associable_type, associable_id: @associable_ids)
         .where(goals: { owner_type: "CompanyTeammate", owner_id: @teammate.id })
-        .merge(Goal.incomplete_unarchived)
+        .merge(goal_scope)
         .pluck("goal_associations.associable_id", "goals.id", "goals.title")
 
       goals_by_associable = Hash.new { |h, k| h[k] = [] }

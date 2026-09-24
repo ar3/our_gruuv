@@ -9,6 +9,7 @@ module OneOnOne
       :associable,
       :check_in,
       :active_goal_count,
+      :active_goals,
       :draft_goal_count,
       :has_active_goal,
       :ogo_count
@@ -35,10 +36,15 @@ module OneOnOne
     def call
       essential_assignment_ids = essential_assignment_id_set
       goal_counts = goal_counts_by_associable
+      active_goals_by_associable = active_goals_lookup
 
-      essential_aspiration_rows = attach_ogo_counts(build_aspiration_rows(goal_counts))
-      essential_assignment_rows = attach_ogo_counts(build_essential_assignment_rows(essential_assignment_ids, goal_counts))
-      non_essential_assignment_rows = attach_ogo_counts(build_non_essential_assignment_rows(essential_assignment_ids, goal_counts))
+      essential_aspiration_rows = attach_ogo_counts(build_aspiration_rows(goal_counts, active_goals_by_associable))
+      essential_assignment_rows = attach_ogo_counts(
+        build_essential_assignment_rows(essential_assignment_ids, goal_counts, active_goals_by_associable)
+      )
+      non_essential_assignment_rows = attach_ogo_counts(
+        build_non_essential_assignment_rows(essential_assignment_ids, goal_counts, active_goals_by_associable)
+      )
 
       essential_wtm_rows = essential_aspiration_rows + essential_assignment_rows
       missing_goal_count = essential_wtm_rows.count { |row| !row.has_active_goal }
@@ -117,7 +123,33 @@ module OneOnOne
       { active: active_counts, draft: draft_counts }
     end
 
-    def row_for(associable, check_in, goal_counts, ogo_count: 0)
+    def active_goals_lookup
+      assignment_ids = assignments_by_id.keys
+      aspiration_ids = latest_aspiration_check_ins_by_id.keys
+      memo = {}
+
+      MyGrowth::OpenAssociatedGoalsByAssociable.call(
+        teammate: teammate,
+        associable_type: "Assignment",
+        associable_ids: assignment_ids,
+        active_only: true
+      ).each do |id, payload|
+        memo[["Assignment", id]] = payload[:open_associated_goals] || []
+      end
+
+      MyGrowth::OpenAssociatedGoalsByAssociable.call(
+        teammate: teammate,
+        associable_type: "Aspiration",
+        associable_ids: aspiration_ids,
+        active_only: true
+      ).each do |id, payload|
+        memo[["Aspiration", id]] = payload[:open_associated_goals] || []
+      end
+
+      memo
+    end
+
+    def row_for(associable, check_in, goal_counts, active_goals_by_associable, ogo_count: 0)
       key = [associable.class.name, associable.id]
       active_goal_count = goal_counts[:active][key] || 0
       draft_goal_count = goal_counts[:draft][key] || 0
@@ -126,6 +158,7 @@ module OneOnOne
         associable: associable,
         check_in: check_in,
         active_goal_count: active_goal_count,
+        active_goals: active_goals_by_associable[key] || [],
         draft_goal_count: draft_goal_count,
         has_active_goal: active_goal_count.positive?,
         ogo_count: ogo_count
@@ -177,7 +210,7 @@ module OneOnOne
         .where(observees: { teammate_id: teammate.id })
     end
 
-    def build_aspiration_rows(goal_counts)
+    def build_aspiration_rows(goal_counts, active_goals_by_associable)
       hierarchy_aspirations = Aspiration.within_hierarchy(organization).ordered.index_by(&:id)
 
       latest_aspiration_check_ins_by_id.filter_map do |aspiration_id, check_in|
@@ -185,11 +218,11 @@ module OneOnOne
         next if aspiration.blank?
         next unless check_in.official_rating == "working_to_meet"
 
-        row_for(aspiration, check_in, goal_counts)
+        row_for(aspiration, check_in, goal_counts, active_goals_by_associable)
       end
     end
 
-    def build_essential_assignment_rows(essential_assignment_ids, goal_counts)
+    def build_essential_assignment_rows(essential_assignment_ids, goal_counts, active_goals_by_associable)
       latest_by_assignment = latest_assignment_check_ins_by_id
 
       essential_assignment_ids.filter_map do |assignment_id|
@@ -199,11 +232,11 @@ module OneOnOne
         assignment = assignments_by_id[assignment_id]
         next if assignment.blank?
 
-        row_for(assignment, check_in, goal_counts)
+        row_for(assignment, check_in, goal_counts, active_goals_by_associable)
       end.sort_by { |row| row.associable.title.downcase }
     end
 
-    def build_non_essential_assignment_rows(essential_assignment_ids, goal_counts)
+    def build_non_essential_assignment_rows(essential_assignment_ids, goal_counts, active_goals_by_associable)
       latest_by_assignment = latest_assignment_check_ins_by_id
 
       latest_by_assignment.filter_map do |assignment_id, check_in|
@@ -213,7 +246,7 @@ module OneOnOne
         assignment = assignments_by_id[assignment_id]
         next if assignment.blank?
 
-        row_for(assignment, check_in, goal_counts)
+        row_for(assignment, check_in, goal_counts, active_goals_by_associable)
       end.sort_by { |row| row.associable.title.downcase }
     end
 

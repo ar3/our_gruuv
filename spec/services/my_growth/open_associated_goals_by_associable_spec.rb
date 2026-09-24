@@ -84,4 +84,19 @@ RSpec.describe MyGrowth::OpenAssociatedGoalsByAssociable do
 
     expect(result[assignment.id][:open_associated_goals].map { |g| g[:title] }).to eq(%w[Alpha Zebra])
   end
+
+  it "excludes draft goals when active_only is true" do
+    create_associated_goal(associable: assignment, title: "Active", started_at: 1.day.ago)
+    create_associated_goal(associable: assignment, title: "Draft", started_at: nil)
+
+    result = described_class.call(
+      teammate: teammate,
+      associable_type: "Assignment",
+      associable_ids: [assignment.id],
+      active_only: true
+    )
+
+    expect(result[assignment.id][:open_associated_goals_count]).to eq(1)
+    expect(result[assignment.id][:open_associated_goals].map { |g| g[:title] }).to eq(["Active"])
+  end
 end

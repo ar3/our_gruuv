@@ -10,6 +10,7 @@ module MyGrowth
       :object_type_label,
       :has_active_goal,
       :active_goal_count,
+      :active_goals,
       :draft_goal_count
     )
 
@@ -44,6 +45,7 @@ module MyGrowth
       end
 
       goal_counts = goal_counts_by_key
+      active_goals_by_key = active_goals_lookup(exceed_rows)
       rows = exceed_rows.map do |row|
         key = [row.record.class.name, row.record.id]
         counts = goal_counts[key] || { active: 0, draft: 0 }
@@ -53,6 +55,7 @@ module MyGrowth
           object_type_label: row.object_type_label,
           has_active_goal: counts[:active].positive?,
           active_goal_count: counts[:active],
+          active_goals: active_goals_by_key[key] || [],
           draft_goal_count: counts[:draft]
         )
       end.sort_by { |r| [r.has_active_goal ? 1 : 0, r.object_type_label, r.object_label.to_s.downcase] }
@@ -79,6 +82,32 @@ module MyGrowth
         details = check[:details] || {}
         details[:minimum_percentage_exceeding].present?
       end
+    end
+
+    def active_goals_lookup(exceed_rows)
+      assignment_ids = exceed_rows.filter_map { |r| r.record.id if r.record.is_a?(Assignment) }
+      aspiration_ids = exceed_rows.filter_map { |r| r.record.id if r.record.is_a?(Aspiration) }
+      memo = {}
+
+      OpenAssociatedGoalsByAssociable.call(
+        teammate: teammate,
+        associable_type: "Assignment",
+        associable_ids: assignment_ids,
+        active_only: true
+      ).each do |id, payload|
+        memo[["Assignment", id]] = payload[:open_associated_goals] || []
+      end
+
+      OpenAssociatedGoalsByAssociable.call(
+        teammate: teammate,
+        associable_type: "Aspiration",
+        associable_ids: aspiration_ids,
+        active_only: true
+      ).each do |id, payload|
+        memo[["Aspiration", id]] = payload[:open_associated_goals] || []
+      end
+
+      memo
     end
 
     def goal_counts_by_key

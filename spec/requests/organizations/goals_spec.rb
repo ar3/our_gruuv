@@ -379,6 +379,19 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('page-context-nav__breadcrumb')
     end
 
+    it 'breadcrumbs Grow by Goals then casual-name Goals index for teammate-owned goals' do
+      person.update!(preferred_name: 'Alex', first_name: 'Alexander', last_name: 'Smith')
+      casual = person.reload.casual_name
+
+      get organization_goal_path(organization, goal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("#{casual} Grow by Goals")
+      expect(response.body).to include("#{casual} Goals")
+      expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, teammate))
+      expect(response.body).not_to include("#{person.display_name} Goals")
+    end
+
     it 'displays prompt attachments when goal is attached to prompts' do
       company_teammate = teammate
       
