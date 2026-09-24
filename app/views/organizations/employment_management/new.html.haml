@@ -116,8 +116,9 @@
                   .col-md-6
                     .mb-3
                       = form.label "employment_tenure[position_id]", "Position", class: "form-label"
-                      = form.collection_select "employment_tenure[position_id]", @positions, :id, :display_name, 
-                        { prompt: 'Select a position' }, 
+                      = form.select "employment_tenure[position_id]",
+                        positions_grouped_options_for_select(@positions_by_department, @employment_tenure&.position_id),
+                        { prompt: 'Select a position' },
                         { class: "form-select", required: true }
                   
                   .col-md-6

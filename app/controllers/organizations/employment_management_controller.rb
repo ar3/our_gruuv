@@ -46,7 +46,8 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   private
   
   def set_wizard_data
-    @positions = @organization.positions.unarchived.includes(:title, :position_level)
+    @positions_by_department = Position.for_select_grouped_by_department(@organization)
+    @positions = @positions_by_department.values.flatten
     employee_person_ids = @organization.employees.select(:person_id)
     @managers = @organization.teammates
       .where(person_id: employee_person_ids)

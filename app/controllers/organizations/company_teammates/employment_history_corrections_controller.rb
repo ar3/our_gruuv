@@ -83,7 +83,8 @@ class Organizations::CompanyTeammates::EmploymentHistoryCorrectionsController < 
                                   .order(:started_at)
     @metrics = EmploymentTenures::HistoryMetrics.call(tenures: @employment_tenures)
     @managers = @organization.teammates.includes(:person).order('people.last_name, people.first_name')
-    @positions = @organization.positions.unarchived.includes(:title, :position_level)
+    @positions_by_department = Position.for_select_grouped_by_department(@organization)
+    @positions = @positions_by_department.values.flatten
     @correction_seats = @organization.seats
                                      .includes(title: :department)
                                      .where.not(state: :filled)

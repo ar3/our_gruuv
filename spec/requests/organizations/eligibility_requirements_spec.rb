@@ -20,6 +20,21 @@ RSpec.describe 'Organizations::EligibilityRequirements', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Eligibility Requirements')
     end
+
+    it 'groups position options by department' do
+      company_position = position
+      department = create(:department, company: organization, name: 'Engineering')
+      dept_title = create(:title, company: organization, department: department, position_major_level: title.position_major_level, external_title: 'Engineer')
+      dept_position = create(:position, title: dept_title, position_level: position_level)
+
+      get organization_eligibility_requirements_path(organization)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("optgroup label=\"#{organization.display_name}\"")
+      expect(response.body).to include('optgroup label="Engineering"')
+      expect(response.body).to include(company_position.display_name)
+      expect(response.body).to include(dept_position.display_name)
+    end
   end
 
   describe 'GET /organizations/:organization_id/eligibility_requirements/:id' do

@@ -54,7 +54,7 @@
                   .mb-3
                     = et_form.label :position_id, 'Position', class: 'form-label'
                     = et_form.select :position_id,
-                      @positions.map { |position| [position.display_name, position.id] },
+                      positions_grouped_options_for_select(@positions_by_department, et_form.object.position_id),
                       { prompt: 'Select a position' },
                       { class: 'form-select', required: true }
                   

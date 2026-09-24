@@ -42,8 +42,10 @@
       .row.g-3
         .col-md-3
           = f.label :position_id, "Position", class: "form-label"
-          = f.collection_select :position_id, @positions, :id, :display_name,
-            { prompt: "Select position" }, { class: "form-select", required: true, disabled: !can_correct }
+          = f.select :position_id,
+            positions_grouped_options_for_select(@positions_by_department, f.object.position_id),
+            { prompt: "Select position" },
+            { class: "form-select", required: true, disabled: !can_correct }
         .col-md-3
           = f.label :manager_teammate_id, "Manager", class: "form-label"
           = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },
@@ -97,8 +99,10 @@
             .row.g-3
               .col-md-3
                 = f.label :position_id, "Position", class: "form-label"
-                = f.collection_select :position_id, @positions, :id, :display_name,
-                  {}, { class: "form-select", required: true, disabled: !can_correct }
+                = f.select :position_id,
+                  positions_grouped_options_for_select(@positions_by_department, tenure.position_id),
+                  {},
+                  { class: "form-select", required: true, disabled: !can_correct }
               .col-md-3
                 = f.label :manager_teammate_id, "Manager", class: "form-label"
                 = f.collection_select :manager_teammate_id, @managers, :id, ->(m) { m.person.display_name },

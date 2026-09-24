@@ -35,12 +35,10 @@
               .col-md-6
                 .mb-3
                   = f.label :position_id, "Position", class: "form-label"
-                  = f.collection_select :position_id, 
-                                       @positions, 
-                                       :id, 
-                                       :display_name, 
-                                       { prompt: "Select a position..." }, 
-                                       { class: "form-select", required: true }
+                  = f.select :position_id,
+                    positions_grouped_options_for_select(@positions_by_department, f.object.position_id),
+                    { prompt: "Select a position..." },
+                    { class: "form-select", required: true }
 
             .row
               .col-md-6

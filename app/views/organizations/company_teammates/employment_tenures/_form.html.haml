@@ -18,9 +18,10 @@
     .col-md-6
       .mb-3
         = form.label :position_id, "Position", class: "form-label"
-        - positions = employment_tenure.company ? employment_tenure.company.positions.includes(:title, :position_level) : []
-        = form.collection_select :position_id, positions, :id, :display_name, 
-          { prompt: 'Select a position' }, { class: "form-select", required: true }
+        = form.select :position_id,
+          positions_grouped_options_for_select(@positions_by_department, form.object.position_id),
+          { prompt: 'Select a position' },
+          { class: "form-select", required: true }
 
   .row
     .col-md-6

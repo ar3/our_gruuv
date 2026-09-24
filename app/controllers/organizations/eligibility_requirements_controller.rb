@@ -100,7 +100,8 @@ class Organizations::EligibilityRequirementsController < Organizations::Organiza
   end
 
   def set_positions
-    @positions = Position.for_company(organization).ordered
+    @positions_by_department = Position.for_select_grouped_by_department(organization)
+    @positions = @positions_by_department.values.flatten
   end
 
   def set_position

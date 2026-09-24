@@ -16,9 +16,8 @@
 
           .mb-3
             = form.label :position_id, "Position", class: "form-label"
-            - position_options = @positions.map { |position| [position.display_name, position.id] }
             = form.select :position_id,
-              options_for_select(position_options, params[:position_id]),
+              positions_grouped_options_for_select(@positions_by_department, params[:position_id]),
               { include_blank: "Select position" },
               class: "form-select"
 

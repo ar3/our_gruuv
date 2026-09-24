@@ -73,6 +73,8 @@ RSpec.describe 'Organizations::CompanyTeammates::EmploymentHistoryCorrections', 
         expect(response.body).to include('Seat')
         expect(response.body).to include('No specific seat')
         expect(response.body).to include('<optgroup label="Engineering">')
+        expect(response.body).to include("optgroup label=\"#{organization.display_name}\"")
+        expect(response.body).to include(position.display_name)
         expect(response.body).to include("#{open_seat.display_name} (Open)")
         expect(response.body).not_to include("#{filled_seat.display_name} (Filled)")
         expect(response.body).not_to include('You need employment management permission to correct employment history.')

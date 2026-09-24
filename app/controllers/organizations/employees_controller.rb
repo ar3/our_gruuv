@@ -871,9 +871,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
 
   def load_new_employee_form_supporting_data
-    @positions = @organization.positions.unarchived.includes(:title, :position_level)
-                              .joins(:title)
-                              .order('titles.external_title')
+    @positions_by_department = Position.for_select_grouped_by_department(@organization)
+    @positions = @positions_by_department.values.flatten
     load_manager_data
   end
 

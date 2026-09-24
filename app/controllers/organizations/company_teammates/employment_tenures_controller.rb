@@ -34,9 +34,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     end
     
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
-    @managers = @company ? @company.teammates.includes(:person).order('people.last_name, people.first_name') : []
-    @positions = @company ? @company.positions.unarchived.includes(:title, :position_level) : []
-    @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
+    load_form_supporting_data(@company)
   end
 
   def create
@@ -107,18 +105,14 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company
-        @managers = @company ? @company.teammates.includes(:person).order('people.last_name, people.first_name') : []
-        @positions = @company ? @company.positions.unarchived.includes(:title, :position_level) : []
-        @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
+        load_form_supporting_data(@company)
         render :change, status: :unprocessable_entity
       end
     end
   rescue ActiveRecord::RecordInvalid
     # If save fails, we need to set up the form for re-rendering
     @company = @employment_tenure.company
-    @managers = @company ? @company.teammates.includes(:person).order('people.last_name, people.first_name') : []
-    @positions = @company ? @company.positions.unarchived.includes(:title, :position_level) : []
-    @seats = @company ? @company.seats.includes(:title).where(state: [:open, :filled]) : []
+    load_form_supporting_data(@company)
     render :change, status: :unprocessable_entity
   end
 
@@ -131,9 +125,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     authorize @employment_tenure
     # Don't allow changing company
     @company = @employment_tenure.company
-    @managers = @company.teammates.includes(:person).order('people.last_name, people.first_name')
-    @positions = @company.positions.unarchived.includes(:title, :position_level)
-    @seats = @company.seats.includes(:title).where(state: [:open, :filled])
+    load_form_supporting_data(@company)
   end
 
   def update
@@ -148,9 +140,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
       redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.company_teammate), notice: 'Employment tenure was successfully updated.'
     else
       @company = @employment_tenure.company
-      @managers = @company.teammates.includes(:person).order('people.last_name, people.first_name')
-      @positions = @company.positions.unarchived.includes(:title, :position_level)
-      @seats = @company.seats.includes(:title).where(state: [:open, :filled])
+      load_form_supporting_data(@company)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -212,7 +202,11 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     old_tenure.position_id == new_tenure.position_id &&
     old_tenure.manager_teammate_id == new_tenure.manager_teammate_id
   end
+
+  def load_form_supporting_data(company)
+    @managers = company ? company.teammates.includes(:person).order('people.last_name, people.first_name') : []
+    @positions_by_department = Position.for_select_grouped_by_department(company)
+    @positions = @positions_by_department.values.flatten
+    @seats = company ? company.seats.includes(:title).where(state: [:open, :filled]) : []
+  end
 end
-
-
-

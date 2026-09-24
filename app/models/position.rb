@@ -38,6 +38,25 @@ class Position < ApplicationRecord
   scope :ordered, -> { joins(:title, :position_level).order('titles.external_title, position_levels.level') }
   scope :for_company, ->(company) { joins(:title).where(titles: { company_id: company.id }) }
 
+  # Unarchived positions for company-wide <select>s: company/org group first, then
+  # departments by name; within groups title then level. Keys are Organization or Department.
+  def self.for_select_grouped_by_department(company)
+    return {} if company.blank?
+
+    positions = for_company(company).unarchived
+      .includes(:position_level, title: [:department, :position_major_level])
+      .left_joins(title: :department)
+      .order(
+        Arel.sql('CASE WHEN titles.department_id IS NULL THEN 0 ELSE 1 END'),
+        'departments.name',
+        'titles.external_title',
+        'position_levels.level'
+      )
+      .to_a
+
+    positions.group_by { |position| position.title.department || company }
+  end
+
   # Archive (soft delete) – block if position_assignments, position_abilities, or active employment_tenures exist
   def archived?
     deleted_at.present?

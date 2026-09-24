@@ -38,6 +38,20 @@ RSpec.describe "EmploymentTenures", type: :request do
       get change_organization_company_teammate_employment_tenures_path(organization, teammate, company_id: company.id)
       expect(response).to have_http_status(:success)
     end
+
+    it "groups position options by department" do
+      department = create(:department, company: company, name: 'Engineering')
+      pml = position.title.position_major_level
+      dept_title = create(:title, company: company, department: department, position_major_level: pml, external_title: 'Engineer')
+      dept_level = create(:position_level, position_major_level: pml, level: '2.0')
+      create(:position, title: dept_title, position_level: dept_level)
+
+      get change_organization_company_teammate_employment_tenures_path(organization, teammate, company_id: company.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("optgroup label=\"#{company.display_name}\"")
+      expect(response.body).to include('optgroup label="Engineering"')
+    end
   end
 
   describe "POST /people/:id/employment_tenures" do

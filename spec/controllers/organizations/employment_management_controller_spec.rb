@@ -70,10 +70,22 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       
       it 'sets up wizard data' do
         get :new, params: { organization_id: organization.id }
-        expect(assigns(:positions).pluck(:id)).to eq(organization.positions.pluck(:id))
+        expect(assigns(:positions).map(&:id).sort).to eq(organization.positions.pluck(:id).sort)
+        expect(assigns(:positions_by_department)).to be_present
         # Managers are teammates; compare by person_id to employees (company teammates' person_ids)
         expect(assigns(:managers).map(&:person_id).sort).to eq(organization.employees.pluck(:person_id).sort)
         expect(assigns(:employment_tenure)).to be_a(EmploymentTenure)
+      end
+
+      it 'renders positions grouped by department' do
+        department = create(:department, company: organization, name: 'Engineering')
+        dept_title = create(:title, company: organization, department: department, position_major_level: position_major_level, external_title: 'Engineer')
+        dept_position = create(:position, title: dept_title, position_level: position_level)
+
+        get :new, params: { organization_id: organization.id }
+
+        expect(assigns(:positions_by_department)[organization]).to include(position)
+        expect(assigns(:positions_by_department)[department]).to include(dept_position)
       end
     end
   end

@@ -324,6 +324,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(assigns(:employment_tenure)).to be_a(EmploymentTenure)
       expect(assigns(:employment_tenure)).to be_new_record
       expect(assigns(:positions)).to include(position)
+      expect(assigns(:positions_by_department)).to be_present
     end
 
     it 'loads managers and all_employees for the manager dropdown' do
@@ -344,8 +345,8 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(response).to render_template(:new_employee)
     end
 
-    it 'sorts positions alphabetically by title external_title' do
-      # Create multiple position types with different external titles
+    it 'sorts company-wide positions alphabetically by title external_title' do
+      # Create multiple position types with different external titles (no department)
       title_z = create(:title, company: company, position_major_level: position_major_level, external_title: 'Zebra Position')
       title_a = create(:title, company: company, position_major_level: position_major_level, external_title: 'Alpha Position')
       title_m = create(:title, company: company, position_major_level: position_major_level, external_title: 'Middle Position')
@@ -364,8 +365,9 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       test_positions = positions.select { |p| [position_a.id, position_m.id, position_z.id].include?(p.id) }
       external_titles = test_positions.map { |p| p.title.external_title }
       
-      # Verify positions are sorted alphabetically by external_title
+      # Verify positions are sorted alphabetically by external_title within company-wide group
       expect(external_titles).to eq(['Alpha Position', 'Middle Position', 'Zebra Position'])
+      expect(assigns(:positions_by_department)[company]).to include(position_a, position_m, position_z)
     end
   end
 

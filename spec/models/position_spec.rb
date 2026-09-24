@@ -301,4 +301,25 @@ RSpec.describe Position, type: :model do
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
   end
+
+  describe '.for_select_grouped_by_department' do
+    it 'returns empty hash when company is blank' do
+      expect(Position.for_select_grouped_by_department(nil)).to eq({})
+    end
+
+    it 'groups unarchived positions by department and excludes archived' do
+      department = create(:department, company: company, name: 'Engineering')
+      dept_title = create(:title, company: company, department: department, position_major_level: position_major_level, external_title: 'Engineer')
+      dept_position = create(:position, title: dept_title, position_level: position_level)
+      company_position = position
+      archived = create(:position, title: title, position_level: create(:position_level, position_major_level: position_major_level, level: '9.0'))
+      archived.archive!
+
+      grouped = Position.for_select_grouped_by_department(company)
+
+      expect(grouped[company]).to include(company_position)
+      expect(grouped[department]).to include(dept_position)
+      expect(grouped.values.flatten).not_to include(archived)
+    end
+  end
 end 
