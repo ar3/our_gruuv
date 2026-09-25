@@ -43,5 +43,16 @@ module TalentDensity
     def do_label(key)
       choice_for(key)&.fetch(:id_do)
     end
+
+    # Ordinal for charts: take swap (low) → avoid swap (high).
+    def stance_rank(key)
+      case key.to_s
+      when "take_the_swap" then 0
+      when "fine_either_way" then 1
+      when "try_to_avoid_the_swap" then 2
+      else
+        nil
+      end
+    end
   end
 end

@@ -1,0 +1,54 @@
+-# Locked-history carousel for Confidential Talent Reflections (newest prior first).
+- teammate = local_assigns.fetch(:teammate)
+- organization = local_assigns.fetch(:organization)
+- history = Array(local_assigns[:history_reflections])
+- current = local_assigns[:current_reflection]
+- through_period = current&.period_month || TalentDensityStance.current_period_month
+- chart_points = history.present? ? talent_density_stance_history_chart_points(current: current, history: history, through_period: through_period) : []
+
+- if history.present?
+  .talent-density-history.mb-3{data: {controller: "talent-density-history", talent_density_history_index_value: 0, talent_density_history_chart_points_value: chart_points.to_json}}
+    - if chart_points.any?
+      %p.small.text-muted.mb-1 Stance over the last 24 months (click a past point to open that entry)
+      .mb-2{data: {talent_density_history_target: "chart"}, style: "min-height: 180px;"}
+
+    .d-flex.align-items-center.justify-content-between.mb-1
+      %span.small.text-muted Past entries
+      %span.small.text-muted{data: {talent_density_history_target: "positionLabel"}}= "1 of #{history.size}"
+
+    .d-flex.align-items-stretch.gap-2
+      %button.btn.btn-outline-secondary.px-2{type: "button", disabled: history.size <= 1, "aria-label": "Older reflection", data: {action: "talent-density-history#older", talent_density_history_target: "olderButton"}}
+        %i.bi.bi-chevron-left
+
+      .flex-grow-1.min-w-0
+        - history.each_with_index do |reflection, index|
+          - choice = TalentDensity::Rubric.choice_for(reflection.stance)
+          - tone = choice&.fetch(:tone, "secondary") || "secondary"
+          - comments = talent_density_history_root_comments(reflection)
+          - slide_classes = ["rounded", "border", "p-3", "border-#{tone}", "bg-#{tone}-subtle"]
+          - slide_classes << "d-none" unless index.zero?
+          %div{class: slide_classes.join(" "), data: {talent_density_history_target: "slide", period: reflection.period_month.iso8601}}
+            %div.small.fw-semibold.mb-1
+              Past entry
+              %span.text-muted.fw-normal= "(#{reflection.period_month.strftime('%B %Y')}, locked)"
+            .small
+              Stance:
+              %strong{class: "text-#{tone}"}= TalentDensity::Rubric.do_label(reflection.stance) || "Not yet"
+              - if reflection.stance_set_by.present?
+                %span.text-muted
+                  \... set by #{reflection.stance_set_by.casual_name}
+                  - if reflection.stance_set_at.present?
+                    on #{format_date_in_user_timezone(reflection.stance_set_at)}
+            - if reflection.legacy_notes? || comments.any?
+              .mt-2
+                = render "shared/inline_top_level_comments",
+                  comments: comments,
+                  organization: organization,
+                  composer: false,
+                  legacy_notes: reflection.notes,
+                  legacy_notes_at: reflection.updated_at,
+                  legacy_author_label: "Earlier notes",
+                  empty_message: "No narrative notes for this entry."
+
+      %button.btn.btn-outline-secondary.px-2{type: "button", disabled: true, "aria-label": "Newer reflection", data: {action: "talent-density-history#newer", talent_density_history_target: "newerButton"}}
+        %i.bi.bi-chevron-right

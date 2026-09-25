@@ -255,12 +255,41 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
 
       body = CGI.unescapeHTML(response.body)
       expect(response).to have_http_status(:success)
-      expect(body).to include("Last entry")
+      expect(body).to include("Past entry")
       expect(body).to include("I'd work to avoid the swap")
       expect(body).to include("From last cycle")
       expect(body).to include("Not yet")
       expect(response.body).to include("bg-success-subtle")
       expect(response.body).to include("border-success")
+      expect(response.body).to include("talent-density-history")
+      expect(response.body).to include("bi-chevron-left")
+      expect(response.body).to include("bi-chevron-right")
+    end
+
+    it "shows a stance history chart when there are three or more rated reflections" do
+      current = TalentDensityStance.current_period_month
+      [
+        [current - 3.months, :take_the_swap],
+        [current - 2.months, :fine_either_way],
+        [current - 1.month, :try_to_avoid_the_swap]
+      ].each do |period, stance|
+        create(
+          :talent_density_stance,
+          company_teammate: ic,
+          company: company,
+          period_month: period,
+          stance: stance
+        )
+      end
+      sign_in_as_teammate_for_request(manager_person, company)
+
+      get organization_talent_density_path(company, manager_id: "CompanyTeammate_#{manager.id}")
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("Stance over the last 24 months")
+      expect(body).to include("1 of 3")
+      expect(response.body).to include('data-controller="talent-density-history"')
     end
 
     it "ignores submitted rows for people outside the selected manager's directs" do

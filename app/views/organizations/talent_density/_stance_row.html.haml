@@ -1,6 +1,6 @@
 - teammate = row[:teammate]
 - stance_record = row[:stance]
-- prior = row[:prior_reflection]
+- history = Array(row[:history_reflections])
 - selected = stance_record.stance
 - check_ins_path = review_most_recent_organization_company_teammate_check_ins_path(organization, teammate)
 
@@ -22,25 +22,11 @@
           %i.bi.bi-clock-history.me-1
           Change history
 
-    - if prior.present?
-      - prior_choice = TalentDensity::Rubric.choice_for(prior.stance)
-      - prior_tone = prior_choice&.fetch(:tone, "secondary") || "secondary"
-      .rounded.border.p-3.mb-3{class: "border-#{prior_tone} bg-#{prior_tone}-subtle"}
-        %div.small.fw-semibold.mb-1
-          Last entry
-          %span.text-muted.fw-normal= "(#{prior.period_month.strftime('%B %Y')}, locked)"
-        %div.small
-          Stance:
-          %strong{class: "text-#{prior_tone}"}= TalentDensity::Rubric.do_label(prior.stance) || "Not yet"
-          - if prior.stance_set_by.present?
-            %span.text-muted
-              — set by #{prior.stance_set_by.casual_name}
-              - if prior.stance_set_at.present?
-                on #{format_date_in_user_timezone(prior.stance_set_at)}
-        - if prior.legacy_notes?
-          %div.small.text-muted.mt-1
-            Legacy notes:
-          %div.small{style: "white-space: pre-wrap;"}= prior.notes
+    = render "organizations/talent_density/history_carousel",
+      teammate: teammate,
+      organization: organization,
+      history_reflections: history,
+      current_reflection: stance_record
 
     .row.g-3
       - TalentDensity::Rubric::CHOICES.each do |choice|
@@ -80,7 +66,7 @@
         textarea_id: "stance_comment_#{teammate.id}",
         textarea_value: row[:pending_comment],
         textarea_placeholder: "Add a narrative note for this Confidential Talent Reflection…",
-        hint: "Saved with Save reflections — stance optional. Each person keeps their own voice.",
+        hint: "Saved with Save reflections... stance optional. Each person keeps their own voice.",
         empty_message: "No narrative notes yet for this Confidential Talent Reflection.",
         legacy_notes: stance_record.notes,
         legacy_notes_at: stance_record.updated_at,

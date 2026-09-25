@@ -270,4 +270,44 @@ module TalentDensityHelper
       "#{pluralize(count, 'goal')} (no completion dates set)"
     end
   end
+
+  # Points for the optional 24-month stance history chart (newest period last for left→right time).
+  # Includes current month when it has a stance. Returns [] unless ≥3 rated reflections in window.
+  def talent_density_stance_history_chart_points(current:, history:, through_period: TalentDensityStance.current_period_month)
+    through = through_period.to_date.beginning_of_month
+    window_start = through - 23.months
+    rated = (Array(history) + [current]).compact.select do |reflection|
+      reflection.stance.present? &&
+        reflection.period_month.present? &&
+        reflection.period_month >= window_start &&
+        reflection.period_month <= through
+    end
+    return [] if rated.size < 3
+
+    rated
+      .uniq(&:period_month)
+      .sort_by(&:period_month)
+      .filter_map do |reflection|
+        rank = TalentDensity::Rubric.stance_rank(reflection.stance)
+        next if rank.nil?
+
+        choice = TalentDensity::Rubric.choice_for(reflection.stance)
+        {
+          period: reflection.period_month.iso8601,
+          label: reflection.period_month.strftime("%b %Y"),
+          y: rank,
+          stanceKey: reflection.stance,
+          stanceLabel: TalentDensity::Rubric.do_label(reflection.stance),
+          tone: choice&.dig(:tone) || "secondary",
+          locked: reflection.locked?,
+          current: reflection.period_month == through
+        }
+      end
+  end
+
+  def talent_density_history_root_comments(reflection)
+    return [] unless reflection&.persisted?
+
+    reflection.comments.reject { |c| c.position_suggestion_id.present? }.sort_by(&:created_at)
+  end
 end

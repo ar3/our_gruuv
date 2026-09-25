@@ -151,7 +151,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
       .where(company_teammate_id: ids)
       .includes(:stance_set_by, comments: :creator)
       .index_by(&:company_teammate_id)
-    prior_by_id = TalentDensityStance.prior_by_teammate_id(ids, before_period: @period_month)
+    history_by_id = TalentDensityStance.history_by_teammate_id(ids, before_period: @period_month)
     pending_comments = pending_comment_by_teammate_id
     teammate_info_by_id = TalentDensity::TeammateInfoBuilder.call(
       teammates: @reports,
@@ -161,7 +161,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     @rows = decorate_talent_density_rows(
       @reports,
       current_by_id,
-      prior_by_id,
+      history_by_id,
       pending_comments,
       teammate_info_by_id
     )
@@ -318,7 +318,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
     {}
   end
 
-  def decorate_talent_density_rows(teammates, current_by_id, prior_by_id, pending_comments = {}, teammate_info_by_id = {})
+  def decorate_talent_density_rows(teammates, current_by_id, history_by_id, pending_comments = {}, teammate_info_by_id = {})
     ids = teammates.map(&:id)
     tenures_by_id = EmploymentTenure
       .where(company: company, ended_at: nil, teammate_id: ids)
@@ -343,6 +343,7 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
         company: company,
         period_month: @period_month
       )
+      history = Array(history_by_id[teammate.id])
       root_comments = if current.persisted?
         current.comments.reject { |c| c.position_suggestion_id.present? }.sort_by(&:created_at)
       else
@@ -351,7 +352,8 @@ class Organizations::TalentDensityController < Organizations::OrganizationNamesp
       {
         teammate: teammate,
         stance: current,
-        prior_reflection: prior_by_id[teammate.id],
+        history_reflections: history,
+        prior_reflection: history.first,
         root_comments: root_comments,
         pending_comment: pending_comments[teammate.id],
         teammate_info: teammate_info_by_id[teammate.id],

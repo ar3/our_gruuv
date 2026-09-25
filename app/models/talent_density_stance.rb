@@ -48,19 +48,23 @@ class TalentDensityStance < ApplicationRecord
       .index_by(&:company_teammate_id)
   end
 
-  # Most recent reflection strictly before period_month, per teammate.
-  def self.prior_by_teammate_id(teammate_ids, before_period:)
+  # Locked reflections before period_month, newest first. Hash[teammate_id => Array].
+  def self.history_by_teammate_id(teammate_ids, before_period:)
     ids = Array(teammate_ids).map(&:to_i).uniq
     return {} if ids.empty?
 
     before = before_period.to_date.beginning_of_month
     where(company_teammate_id: ids)
       .where("period_month < ?", before)
-      .includes(:stance_set_by)
+      .includes(:stance_set_by, comments: :creator)
       .newest_first
-      .to_a
-      .uniq(&:company_teammate_id)
-      .index_by(&:company_teammate_id)
+      .group_by(&:company_teammate_id)
+  end
+
+  # Most recent reflection strictly before period_month, per teammate.
+  def self.prior_by_teammate_id(teammate_ids, before_period:)
+    history_by_teammate_id(teammate_ids, before_period: before_period)
+      .transform_values(&:first)
   end
 
   def locked?
