@@ -58,7 +58,9 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
         "#{item.ability.display_name}: rating saved."
       end
 
-    redirect_to ability_milestone_calibration_organization_company_teammate_path(organization, @teammate),
+    redirect_to ability_milestone_calibration_organization_company_teammate_path(
+                  organization, @teammate, anchor: "calibration-item-#{item.id}"
+                ),
                 notice: notice
   rescue ArgumentError, ActiveRecord::RecordNotFound => e
     redirect_to ability_milestone_calibration_organization_company_teammate_path(organization, @teammate),
@@ -86,10 +88,14 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
 
     if result.ok?
       AbilityMilestoneCalibrationEnsureService.call(teammate: @teammate, organization: organization)
-      redirect_to ability_milestone_calibration_organization_company_teammate_path(organization, @teammate),
+      redirect_to ability_milestone_calibration_organization_company_teammate_path(
+                    organization, @teammate, anchor: "calibration-history-#{item.id}"
+                  ),
                   notice: award_notice(item.ability, level.to_i)
     else
-      redirect_to ability_milestone_calibration_organization_company_teammate_path(organization, @teammate),
+      redirect_to ability_milestone_calibration_organization_company_teammate_path(
+                    organization, @teammate, anchor: "calibration-item-#{item.id}"
+                  ),
                   alert: result.error.to_s
     end
   end

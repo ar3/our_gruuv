@@ -63,9 +63,15 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       calibration = employee_teammate.reload.ability_milestone_calibration
       item = calibration.items.find_by!(ability: ability)
       other_item = calibration.items.find_by!(ability: other_ability)
+      expect(response.body).to include("id=\"calibration-item-#{item.id}\"")
 
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
             params: { item_id: item.id, rating: '2' }
+      expect(response).to redirect_to(
+        ability_milestone_calibration_organization_company_teammate_path(
+          organization, employee_teammate, anchor: "calibration-item-#{item.id}"
+        )
+      )
       expect(item.reload.employee_rating).to eq(2)
       expect(item.employee_first_rating).to eq(2)
       expect(item.employee_first_rated_at).to be_present
@@ -75,6 +81,11 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       first_at = item.employee_first_rated_at
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
             params: { item_id: item.id, rating: '4' }
+      expect(response).to redirect_to(
+        ability_milestone_calibration_organization_company_teammate_path(
+          organization, employee_teammate, anchor: "calibration-item-#{item.id}"
+        )
+      )
       expect(item.reload.employee_rating).to eq(4)
       expect(item.employee_first_rating).to eq(2)
       expect(item.employee_first_rated_at).to be_within(1.second).of(first_at)
@@ -90,6 +101,11 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       sign_in_as_teammate_for_request(manager, organization)
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
             params: { item_id: item.id, rating: '3' }
+      expect(response).to redirect_to(
+        ability_milestone_calibration_organization_company_teammate_path(
+          organization, employee_teammate, anchor: "calibration-item-#{item.id}"
+        )
+      )
       follow_redirect!
       expect(response.body).to include('Ready to recognize and certify')
       expect(response.body).to include('Employee proposal')
@@ -104,6 +120,12 @@ RSpec.describe 'Ability milestone calibration', type: :request do
         post award_ability_milestone_calibration_item_organization_company_teammate_path(organization, employee_teammate, item),
              params: { official_milestone_level: '2', certification_note: 'Baseline from calibration talk' }
       end.to change { employee_teammate.teammate_milestones.where(ability: ability).count }.by(2)
+
+      expect(response).to redirect_to(
+        ability_milestone_calibration_organization_company_teammate_path(
+          organization, employee_teammate, anchor: "calibration-history-#{item.id}"
+        )
+      )
 
       expect(employee_teammate.teammate_milestones.where(ability: ability, milestone_level: 2).pick(:certification_note))
         .to eq('Baseline from calibration talk')
