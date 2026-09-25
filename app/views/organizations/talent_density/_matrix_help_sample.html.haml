@@ -1,0 +1,47 @@
+-# Static sample of the MgrStance+Rating Matrix for page help (not live data).
+.border.rounded.p-3.bg-white
+  %p.small.fw-semibold.mb-2 Example: MgrStance+Rating Matrix
+  %p.small.text-muted.mb-3
+    Each person plots once: keeper stance (rows) × last finalized position rating (columns). Clusters tell a story... protective keepers who are already exceptional, solid fits across the middle, or “take the swap” next to weak overall ratings that deserve a candid conversation.
+
+  .table-responsive.mb-0
+    %table.table.table-bordered.mb-0.small
+      %thead
+        %tr
+          %th.align-middle.text-muted Worst ↑ / Best →
+          %th.text-center Developing
+          %th.text-center Accomplished
+          %th.text-center Exceptional
+      %tbody
+        %tr
+          %th.align-middle.text-success I'd work to avoid the swap
+          %td.text-center.text-muted ...
+          %td.text-center
+            %span.badge.rounded-pill.text-bg-success Sofia
+          %td.text-center
+            %span.badge.rounded-pill.text-bg-success Maya
+            %span.badge.rounded-pill.text-bg-success Priya
+        %tr
+          %th.align-middle.text-info I'd do nothing
+          %td.text-center
+            %span.badge.rounded-pill.text-bg-info Riley
+          %td.text-center
+            %span.badge.rounded-pill.text-bg-info Casey
+            %span.badge.rounded-pill.text-bg-info Morgan
+          %td.text-center
+            %span.badge.rounded-pill.text-bg-info Avery
+        %tr
+          %th.align-middle.text-warning I'd take the swap
+          %td.text-center
+            %span.badge.rounded-pill.text-bg-warning Quinn
+          %td.text-center.text-muted ...
+          %td.text-center.text-muted ...
+
+  %ul.small.mb-0.mt-3
+    %li
+      %strong Top-right
+      (avoid the swap + exceptional) is the density you want to protect and grow from.
+    %li
+      %strong Bottom-left
+      (take the swap + developing) is often the kindest place to act... for the teammate and the seat.
+    %li Guidance+Rating and Assignment Rating Alignment add assignment-energy and emp/mgr agreement so the conversation stays specific, not vibes.

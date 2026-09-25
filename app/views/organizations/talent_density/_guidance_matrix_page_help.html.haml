@@ -1,15 +1,67 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    See how last finalized overall ratings line up with the assignment-energy rule of thumb — a calibration view, not a verdict on managers.
+    See how last finalized overall ratings line up with the assignment-energy rule of thumb... a calibration view, not a verdict on managers.
 
   %h3.fw-semibold.mb-2 Context
+  %p.mb-2
+    With MAAP, a huge advantage is that we encourage
+    %strong specificity.
+    Specificity leads to more alignment on what is important, and therefore better coaching, and therefore a workforce that is continuously improving in the most impactful ways. Not to mention it vastly increases fairness.
   %p.mb-3
-    Guidance uses the same in-flight / official energy mix as the position check-in tip. Values and non-assignment work are not in the formula, so divergence can be intentional and healthy. Nobody ever sees their own marker.
+    Guidance on this matrix uses the same in-flight / official energy mix as the position check-in tip. Values and non-assignment work are not in the formula, so divergence can be intentional and healthy. Nobody ever sees their own marker.
 
   %h3.fw-semibold.mb-2 Specifics of this page
-  %ul.mb-0
+  %ul.mb-3
     %li X-axis is the actual last finalized overall rating (six statuses, worst on the left).
     %li Y-axis is guidance only: Developing, Accomplished, or Exceptional (best at the top).
     %li More than 20% working-to-meet energy → Developing. More than 50% exceeding with none working-to-meet → Exceptional. Otherwise Accomplished.
     %li Filters are shared with MgrStance+Rating Matrix. People missing an actual rating or computable guidance are listed under the grid.
+
+  %h5.fw-semibold.mb-2 What a cell might mean
+  %p.small.text-muted.mb-2
+    These are conversation starters, not labels to put on people. Use them to ask better questions. Example names match the sample matrix below.
+  .table-responsive.mb-3
+    %table.table.table-bordered.table-sm.mb-0.small
+      %thead
+        %tr
+          %th Pattern
+          %th Example
+          %th Guidance (Y)
+          %th Actual overall (X)
+          %th What to explore
+      %tbody
+        %tr
+          %td
+            %strong High impact, hard to coach
+          %td Blake
+          %td Exceptional
+          %td Developing or below
+          %td
+            Assignment energy says they are exceeding where it counts, but the overall rating is low. Often strong outcomes paired with trust, collaboration, or consistency gaps... or a rating that is lagging the work.
+        %tr
+          %td
+            %strong Likely under-credited
+          %td Nina
+          %td Exceptional
+          %td Accomplished
+          %td
+            Guidance says Exceptional and the overall landed Accomplished. They may have been "robbed" of the top box... or a critical assignment is missing from the energy picture.
+        %tr
+          %td
+            %strong Quiet over-delivery
+          %td Elena, Quinn
+          %td Developing or Accomplished
+          %td Exceptional
+          %td
+            Overall is Exceptional while assignment-energy guidance is lower. They may be exceeding on the right assignments even when those are not "big" by energy... or the manager is being too easy.
+        %tr
+          %td
+            %strong Aligned
+          %td Maya, Casey, Riley
+          %td Same band as actual
+          %td Same band as guidance
+          %td
+            Energy mix and overall rating tell a consistent story. Still coach... but you are not fighting a mismatch first.
+
+  = render "organizations/talent_density/guidance_matrix_help_sample"

@@ -33,7 +33,7 @@
 
   - if query.unplaced.any?
     %h2.h5 People not yet plotted
-    %p.small.text-muted Need both a keeper stance for the current month and a last finalized position rating. Prior months never count as the current selection.
+    %p.small.text-muted Need both a keeper stance (most recent Confidential Talent Reflection) and a last finalized position rating.
     %ul.list-unstyled.mb-0
       - query.unplaced.each do |point|
         %li.mb-2
@@ -44,8 +44,6 @@
             choice: TalentDensity::Rubric.choice_for(point.stance&.stance)
           %span.small.text-muted.ms-2
             - unless point.stance&.stance.present?
-              no keeper stance this month
-              - if point.last_entry&.stance.present?
-                · last entry #{point.last_entry.period_month.strftime('%b %Y')}: #{TalentDensity::Rubric.do_label(point.last_entry.stance)}
+              no keeper stance
             - unless TalentDensity::VisualizationQuery::X_RATINGS.include?(point.finalized&.official_rating)
               · no finalized position rating

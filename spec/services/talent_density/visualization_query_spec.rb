@@ -21,8 +21,15 @@ RSpec.describe TalentDensity::VisualizationQuery do
     expect(query.unplaced.map { |point| point.teammate.id }).to include(manager.id)
   end
 
-  it "does not place a teammate whose only stance is from a prior month" do
+  it "places a teammate using the most recent stance even when it is from a prior month" do
     tenure = ic.employment_tenures.find_by!(ended_at: nil)
+    create(
+      :talent_density_stance,
+      company_teammate: ic,
+      company: company,
+      period_month: TalentDensityStance.current_period_month - 2.months,
+      stance: :fine_either_way
+    )
     prior = create(
       :talent_density_stance,
       company_teammate: ic,
@@ -33,9 +40,8 @@ RSpec.describe TalentDensity::VisualizationQuery do
     create(:position_check_in, :closed, teammate: ic, employment_tenure: tenure, official_rating: 3)
 
     query = described_class.new(teammates: [ic])
-    expect(query.placed).to be_empty
-    point = query.unplaced.find { |p| p.teammate.id == ic.id }
-    expect(point.stance).to be_nil
-    expect(point.last_entry).to eq(prior)
+    point = query.cell("try_to_avoid_the_swap", 3).find { |p| p.teammate.id == ic.id }
+    expect(point).to be_present
+    expect(point.stance).to eq(prior)
   end
 end

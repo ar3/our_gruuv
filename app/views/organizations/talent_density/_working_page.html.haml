@@ -1,17 +1,18 @@
-.row.justify-content-center.mb-4
-  .col-lg-12
-    .card.border-0.shadow-sm
-      .card-body
-        %p.mb-3
-          Confidential Talent Reflections — only visible to managers and people with manage-employment.
-          %strong Nobody sees their own stance or narratives.
-        %p.small.text-muted.mb-3
-          Current period:
-          %strong= @period_month.strftime("%B %Y")
-          · Past months lock automatically. Select this month's stance again; last entry stays visible for reference.
-        = render "organizations/talent_density/prompt"
-        .mt-3.mb-0
-          = render "organizations/talent_density/rubric_table"
+= render "shared/context_callout", margin_class: "mb-3" do
+  %p.mb-0
+    What is Talent Density?
+    %button.btn.btn-link.btn-sm.p-0.align-baseline{type: "button",
+        "data-bs-toggle" => "collapse",
+        "data-bs-target" => "#talentDensityPageHelp",
+        "aria-expanded" => "false",
+        "aria-controls" => "talentDensityPageHelp"}
+      Click here for a run down.
+
+%p.small.text-muted.mb-4
+  Confidential Talent Reflections — only visible to managers and people with manage-employment.
+  %strong Nobody sees their own stance or narratives.
+  · Current period:
+  %strong= @period_month.strftime("%B %Y")
 
 - if @selected_manager.nil?
   .alert.alert-info

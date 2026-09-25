@@ -6,11 +6,10 @@ module TalentDensity
     Y_STANCES_BOTTOM_TO_TOP = %w[take_the_swap fine_either_way try_to_avoid_the_swap].freeze
     Y_STANCES_TOP_TO_BOTTOM = Y_STANCES_BOTTOM_TO_TOP.reverse.freeze
 
-    Point = Struct.new(:teammate, :stance, :last_entry, :stance_version, :finalized, keyword_init: true)
+    Point = Struct.new(:teammate, :stance, :stance_version, :finalized, keyword_init: true)
 
-    def initialize(teammates:, period_month: TalentDensityStance.current_period_month)
+    def initialize(teammates:)
       @teammates = Array(teammates)
-      @period_month = period_month.to_date.beginning_of_month
     end
 
     def placed
@@ -30,13 +29,9 @@ module TalentDensity
     def points
       @points ||= begin
         ids = @teammates.map(&:id)
-        # Viz selection uses only the current period — never falls back to a prior month.
-        current_by_id = TalentDensityStance.for_period(@period_month)
-          .where(company_teammate_id: ids)
-          .includes(:stance_set_by)
-          .index_by(&:company_teammate_id)
-        last_by_id = TalentDensityStance.latest_by_teammate_id(ids)
-        versions_by_stance_id = latest_versions_by_stance_id(current_by_id.values.map(&:id))
+        # Plot the most recent Confidential Talent Reflection for each person, any month.
+        latest_by_id = TalentDensityStance.latest_by_teammate_id(ids)
+        versions_by_stance_id = latest_versions_by_stance_id(latest_by_id.values.map(&:id))
         finalized_by_id = PositionCheckIn
           .where(teammate_id: ids)
           .closed
@@ -46,11 +41,10 @@ module TalentDensity
           .transform_values(&:first)
 
         @teammates.map do |teammate|
-          stance = current_by_id[teammate.id]
+          stance = latest_by_id[teammate.id]
           Point.new(
             teammate: teammate,
             stance: stance,
-            last_entry: last_by_id[teammate.id],
             stance_version: stance && versions_by_stance_id[stance.id],
             finalized: finalized_by_id[teammate.id]
           )

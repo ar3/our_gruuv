@@ -6,10 +6,6 @@
         - TalentDensity::Rubric::CHOICES.each do |choice|
           %th{class: "text-bg-#{choice[:tone]}"}
             = choice[:id_do]
-            - if choice[:most_people]
-              %div.small.fw-normal most people
-            - if choice[:rare]
-              %div.small.fw-normal rare
     %tbody
       %tr
         %th.text-nowrap I'd do

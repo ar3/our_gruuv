@@ -45,11 +45,14 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(CGI.unescapeHTML(response.body)).to include("I'd take the swap")
       expect(CGI.unescapeHTML(response.body)).to include("I'd work to avoid the swap")
       expect(CGI.unescapeHTML(response.body)).to include("I'd do nothing")
-      expect(response.body).to include("someone else/new in magically ramped")
+      expect(response.body).to include("What is Talent Density?")
+      expect(response.body).to include("Click here for a run down")
       expect(response.body).to include("border-warning")
       expect(response.body).to include("border-info")
       expect(response.body).to include("border-success")
       expect(response.body).to include("Whose team")
+      expect(response.body).not_to include(">rare<")
+      expect(response.body).not_to include(">most people<")
       expect(response.body).to include("Morgan")
       expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(company, manager))
       expect(CGI.unescapeHTML(response.body)).to include("Narratives (separate voices) are only visible to")
@@ -256,6 +259,8 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(body).to include("I'd work to avoid the swap")
       expect(body).to include("From last cycle")
       expect(body).to include("Not yet")
+      expect(response.body).to include("bg-success-subtle")
+      expect(response.body).to include("border-success")
     end
 
     it "ignores submitted rows for people outside the selected manager's directs" do
@@ -340,9 +345,35 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       expect(body).to include("talent-density-viz-dot")
       expect(body).to include("Ivy")
       expect(body).to include("Keeper:")
+      expect(body).to include("Reflection:")
       expect(response.body).to include('data-bs-toggle="popover"')
       expect(response.body).to include("talent-density-viz-popover")
       expect(response.body).to include("text-start")
+    end
+
+    it "plots the most recent stance even when it is from a prior month and shows the reflection period" do
+      TalentDensityStance.where(company_teammate: ic).delete_all
+      prior_month = TalentDensityStance.current_period_month - 1.month
+      create(
+        :talent_density_stance,
+        company_teammate: ic,
+        company: company,
+        period_month: prior_month,
+        stance: :fine_either_way
+      )
+      sign_in_as_teammate_for_request(vp_person, company)
+
+      get visualization_organization_talent_density_path(
+        company,
+        manager_id: "CompanyTeammate_#{vp.id}",
+        scope: "hierarchy",
+        applied: 1
+      )
+
+      body = CGI.unescapeHTML(response.body)
+      expect(response).to have_http_status(:success)
+      expect(body).to include("I'd do nothing")
+      expect(body).to include("Reflection: #{prior_month.strftime('%B %Y')}")
     end
 
     it "hides excluded teammates and lists their casual names" do
@@ -429,6 +460,13 @@ RSpec.describe "Organizations::TalentDensity", type: :request do
       body = CGI.unescapeHTML(response.body)
       expect(response).to have_http_status(:success)
       expect(body).to include("Guidance+Rating Matrix")
+      expect(body).to include("we encourage")
+      expect(body).to include("specificity")
+      expect(body).to include("High impact, hard to coach")
+      expect(body).to include("Likely under-credited")
+      expect(body).to include("Quiet over-delivery")
+      expect(body).to include("Blake")
+      expect(body).to include("Nina")
       expect(body).to include("MgrStance+Rating Matrix")
       expect(body).to include("Guidance ↑ / Actual →")
       expect(body).to include("(guidance)")

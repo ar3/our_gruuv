@@ -1,13 +1,13 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    During the HR-led talent-planning ritual (about every couple of months), record a keeper-test stance for each person on a manager's team — so the question is seat fit, not how painful hiring would be.
+    During the HR-led talent-planning ritual (about every couple of months), record a keeper-test stance for each person on a manager's team... so the question is seat fit, not how painful hiring would be.
 
   %h3.fw-semibold.mb-2 Context
   %p.mb-2
     OurGruuv is built for transparency. Talent Density is a deliberate exception: employees are told this ritual exists, and
     %strong nobody ever sees their own stance
-    — not even with manage-employment permission.
+    \... not even with manage-employment permission.
   %p.mb-3
     Magically ramped is the one cheat: ignore hiring, coverage, and ramp pain. The seat stays filled either way. I'd do nothing should be most people. I'd take the swap and I'd work to avoid the swap are both rare. Taking the swap is often the kind thing (good person, better seat elsewhere).
 
@@ -20,7 +20,7 @@
 
   %h5.fw-semibold.mb-2 Who you see
   %ul.mb-3
-    %li Pick a manager — yourself, or any manager in your hierarchy (same idea as health pages).
+    %li Pick a manager... yourself, or any manager in your hierarchy (same idea as health pages).
     %li
       The list is that manager's
       %strong current direct reports
@@ -28,12 +28,8 @@
     %li People with manage-employment can pick any manager in the company.
     %li Your own row is never shown, including when you open your manager's team.
 
-  %h5.fw-semibold.mb-2 Matrices
-  %p.mb-3
-    MgrStance+Rating Matrix plots keeper stance against last finalized position. Guidance+Rating Matrix plots actual overall against assignment-energy guidance. Assignment Rating Alignment shows emp/mgr/final agreement on last finalized assignment check-ins. Filters above the tabs are shared across Stances and every matrix.
-
   %h5.fw-semibold.mb-2 Saving and history
-  %ul.mb-0
+  %ul.mb-3
     %li
       Each calendar month is a
       %strong Confidential Talent Reflection
@@ -42,3 +38,15 @@
     %li You must select this month's stance again; the last entry stays visible for reference and is not treated as the current selection.
     %li Narratives use comments so HR and managers keep separate voices. Legacy notes (if any) stay read-only on that month's reflection.
     %li Change history (PaperTrail) remains available per reflection.
+
+  %h5.fw-semibold.mb-2 Matrices
+  %p.mb-2
+    After stances are in, the matrix tabs turn Confidential Talent Reflections into something a People partner can put in front of an exec team: where keeper energy and performance signals line up, and where they don't.
+  %p.mb-3
+    Filters above the tabs are shared across Stances and every matrix. Nobody ever sees their own marker.
+
+  = render "organizations/talent_density/matrix_help_sample"
+
+  %p.small.text-muted.mb-0.mt-3
+    %strong Why it matters:
+    without a shared picture like this, talent planning slides into politicking... people judged by gossip and outdated anecdotes instead of their actual performance. The matrices make density visible: who you'd fight to keep in seat, who is solid, and where a kind swap might serve both the person and the team... without asking the CEO to read another form.

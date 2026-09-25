@@ -99,6 +99,11 @@ module TalentDensityHelper
     keeper = ERB::Util.html_escape(TalentDensity::Rubric.do_label(point.stance&.stance) || "Not yet")
     keeper_who = ERB::Util.html_escape(talent_density_stance_actor_name(point))
     keeper_when = ERB::Util.html_escape(talent_density_stance_recorded_on(point))
+    reflection_period = if point.stance&.period_month.present?
+      ERB::Util.html_escape(point.stance.period_month.strftime("%B %Y"))
+    else
+      "Unknown"
+    end
     rating = ERB::Util.html_escape(point.finalized ? position_rating_display(point.finalized.official_rating) : "Not yet finalized")
     rating_who = ERB::Util.html_escape(point.finalized&.finalized_by_teammate&.person&.casual_name.presence || "Unknown")
     rating_when = if point.finalized&.official_check_in_completed_at
@@ -111,6 +116,7 @@ module TalentDensityHelper
       <div class="text-start">
         #{name}<br>
         Keeper: #{keeper}<br>
+        Reflection: #{reflection_period}<br>
         Recorded by #{keeper_who} on #{keeper_when}<br>
         Last finalized position: #{rating}<br>
         Finalized by #{rating_who} on #{rating_when}

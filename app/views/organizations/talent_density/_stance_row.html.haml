@@ -23,13 +23,15 @@
           Change history
 
     - if prior.present?
-      .alert.alert-secondary.py-2.mb-3
+      - prior_choice = TalentDensity::Rubric.choice_for(prior.stance)
+      - prior_tone = prior_choice&.fetch(:tone, "secondary") || "secondary"
+      .rounded.border.p-3.mb-3{class: "border-#{prior_tone} bg-#{prior_tone}-subtle"}
         %div.small.fw-semibold.mb-1
           Last entry
           %span.text-muted.fw-normal= "(#{prior.period_month.strftime('%B %Y')}, locked)"
         %div.small
           Stance:
-          %strong= TalentDensity::Rubric.do_label(prior.stance) || "Not yet"
+          %strong{class: "text-#{prior_tone}"}= TalentDensity::Rubric.do_label(prior.stance) || "Not yet"
           - if prior.stance_set_by.present?
             %span.text-muted
               — set by #{prior.stance_set_by.casual_name}
@@ -51,10 +53,6 @@
               class: "form-check-input"
             %label.form-check-label{for: "stance_#{teammate.id}_#{choice[:key]}"}
               %span{class: talent_density_choice_title_class(choice)}= choice[:id_do]
-              - if choice[:rare]
-                %span.d-block.small.text-muted rare
-              - if choice[:most_people]
-                %span.d-block.small.text-muted most people
               %span.d-block.small.text-muted.mt-1 I'd feel: #{choice[:id_feel]}
               %span.d-block.small.mt-1 It means: #{choice[:it_means]}
     .form-check.mt-2
