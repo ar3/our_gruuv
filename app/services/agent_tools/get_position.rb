@@ -25,13 +25,23 @@ module AgentTools
 
       position = Position.includes(
         :position_level,
+        :position_abilities,
         { title: :department },
-        { position_assignments: :assignment }
+        { position_assignments: { assignment: { assignment_abilities: :ability } } }
       ).find(position.id)
 
       ok(
-        position: MaapSerializers.position(context, position, detail: Detail::DEFAULT, include_assignments: true),
-        note: "Positions carry Assignments (required/suggested + energy). Titles do not."
+        position: MaapSerializers.position(
+          context,
+          position,
+          detail: Detail::DEFAULT,
+          include_assignments: true,
+          include_ability_requirements: true
+        ),
+        note:
+          "Positions carry Assignments (required/suggested + energy). Titles do not. " \
+          "required_abilities is the position skill bar (direct + required Assignments). " \
+          "Milestone prose: use get_ability."
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")

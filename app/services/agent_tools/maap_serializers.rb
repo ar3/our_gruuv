@@ -41,9 +41,9 @@ module AgentTools
       )
     end
 
-    def position_assignment_link(context, position_assignment)
+    def position_assignment_link(context, position_assignment, include_abilities: false)
       assignment = position_assignment.assignment
-      {
+      base = {
         title: assignment&.title,
         path: assignment ? RecordPaths.assignment_path(context, assignment) : nil,
         assignment_type: position_assignment.assignment_type,
@@ -52,9 +52,57 @@ module AgentTools
         anticipated_energy_percentage: position_assignment.anticipated_energy_percentage,
         energy_range_display: position_assignment.energy_range_display
       }
+      return base unless include_abilities && assignment
+
+      base.merge(abilities: assignment_ability_links(context, assignment))
     end
 
-    def position(context, position, detail: Detail::DEFAULT, include_assignments: nil)
+    def assignment_ability_links(context, assignment)
+      assignment.assignment_abilities.includes(:ability).by_milestone_level.filter_map do |aa|
+        next unless aa.ability
+
+        ability_milestone_link(context, aa.ability, aa.milestone_level)
+      end
+    end
+
+    def ability_milestone_link(context, ability, milestone_level)
+      {
+        name: ability.name,
+        path: RecordPaths.ability_path(context, ability),
+        milestone_level: milestone_level.to_i
+      }
+    end
+
+    # Position rollup: direct PositionAbility ∪ abilities on required Assignments (My Growth truth).
+    def position_required_abilities(context, position)
+      requirements = MyGrowthAbilityMilestoneRows.structured_requirements_by_ability_id(position)
+      return [] if requirements.empty?
+
+      abilities = Ability.where(id: requirements.keys).index_by(&:id)
+      requirements.filter_map do |ability_id, data|
+        ability = abilities[ability_id]
+        next unless ability
+
+        {
+          name: ability.name,
+          path: RecordPaths.ability_path(context, ability),
+          minimum_milestone_level: data[:minimum_milestone_level],
+          sources: data[:sources].map { |source| ability_requirement_source(context, source) }
+        }
+      end.sort_by { |row| row[:name].to_s.downcase }
+    end
+
+    def ability_requirement_source(context, source)
+      assignment = source[:assignment]
+      {
+        kind: source[:kind].to_s,
+        milestone_level: source[:level].to_i,
+        assignment_title: assignment&.title,
+        assignment_path: assignment ? RecordPaths.assignment_path(context, assignment) : nil
+      }
+    end
+
+    def position(context, position, detail: Detail::DEFAULT, include_assignments: nil, include_ability_requirements: false)
       include_assignments = Detail.expensive?(detail) if include_assignments.nil?
       title = position.title
       base = {
@@ -69,9 +117,27 @@ module AgentTools
       }
       return base unless include_assignments
 
-      pas = position.position_assignments.includes(:assignment).ordered_by_max_energy_then_title
-      base.merge(
-        assignments: pas.map { |pa| position_assignment_link(context, pa) }
+      pas =
+        if include_ability_requirements
+          position.position_assignments
+            .includes(assignment: { assignment_abilities: :ability })
+            .ordered_by_max_energy_then_title
+        else
+          position.position_assignments.includes(:assignment).ordered_by_max_energy_then_title
+        end
+
+      payload = base.merge(
+        assignments: pas.map { |pa|
+          position_assignment_link(context, pa, include_abilities: include_ability_requirements)
+        }
+      )
+      return payload unless include_ability_requirements
+
+      payload.merge(
+        required_abilities: position_required_abilities(context, position),
+        required_abilities_note:
+          "Union of direct PositionAbility rows and abilities on required Assignments only. " \
+          "Milestone prose: use get_ability."
       )
     end
 

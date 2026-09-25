@@ -15,7 +15,10 @@ module Mcp
       use detail=minimal for titles/names only. Positions carry Assignments
       (required/suggested + energy); Titles do not — title search hits include
       carries_assignments: false. Title path_clarity is clear if end_cap or has outbound
-      TitlePath (inbound-only is missing). create_draft_observation never publishes.
+      TitlePath (inbound-only is missing). get_position includes per-Assignment ability
+      levels and required_abilities rollup (direct + required Assignments); nested ability
+      rows are level+path only — use get_ability for milestone prose. get_assignment /
+      get_ability load one record by path. create_draft_observation never publishes.
       set_current_week_goal_confidence only updates the current Monday week; 0% or 100%
       requires learnings.
     TEXT

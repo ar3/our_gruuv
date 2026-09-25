@@ -79,6 +79,28 @@ module AgentTools
       nil
     end
 
+    def resolve_assignment(context, path: nil, assignment_path: nil, assignment_id: nil)
+      path = path.presence || assignment_path.presence
+      if path.present?
+        id = extract_id(path, resource: "assignments")
+        return Assignment.find_by(id: id) if id
+      end
+      return Assignment.find_by(id: assignment_id) if assignment_id.present?
+
+      nil
+    end
+
+    def resolve_ability(context, path: nil, ability_path: nil, ability_id: nil)
+      path = path.presence || ability_path.presence
+      if path.present?
+        id = extract_id(path, resource: "abilities")
+        return Ability.find_by(id: id) if id
+      end
+      return Ability.find_by(id: ability_id) if ability_id.present?
+
+      nil
+    end
+
     def resolve_teammate(context, path: nil, observee_path: nil, observee_teammate_id: nil)
       path = path.presence || observee_path.presence
       if path.present?

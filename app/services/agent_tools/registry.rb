@@ -11,6 +11,8 @@ module AgentTools
       "list_abilities" => "AgentTools::ListAbilities",
       "list_positions" => "AgentTools::ListPositions",
       "get_position" => "AgentTools::GetPosition",
+      "get_assignment" => "AgentTools::GetAssignment",
+      "get_ability" => "AgentTools::GetAbility",
       "list_titles" => "AgentTools::ListTitles",
       "get_title" => "AgentTools::GetTitle",
       "list_observations" => "AgentTools::ListObservations",
@@ -133,6 +135,24 @@ module AgentTools
         },
         additionalProperties: false
       },
+      "get_assignment" => {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Assignment path from tool results (preferred)" },
+          assignment_path: { type: "string", description: "Alias for path" },
+          assignment_id: { type: "integer", description: "Id when path unavailable" }
+        },
+        additionalProperties: false
+      },
+      "get_ability" => {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Ability path from tool results (preferred)" },
+          ability_path: { type: "string", description: "Alias for path" },
+          ability_id: { type: "integer", description: "Id when path unavailable" }
+        },
+        additionalProperties: false
+      },
       "list_titles" => {
         type: "object",
         properties: {
@@ -230,7 +250,9 @@ module AgentTools
       "list_assignments" => "List non-archived assignments. Default detail=expensive includes tagline, required_activities, handbook, and outcome description strings.",
       "list_abilities" => "List non-archived abilities. Default detail=expensive includes description and milestone_1–5_description (null when empty).",
       "list_positions" => "List non-archived positions (Assignment carriers). Expensive detail includes required/suggested Assignments with energy %. Titles do not carry Assignments — use positions. Optional title_path filters to level variants under one title.",
-      "get_position" => "Get one position by path (preferred). Always includes nested Assignments with assignment_type (required|suggested) and energy fields. Positions carry Assignments; Titles do not.",
+      "get_position" => "Get one position by path (preferred). Includes Assignments with energy, each Assignment's ability table (milestone_level + ability path/name only), and required_abilities rollup (direct PositionAbility ∪ required Assignment abilities, with sources). Milestone prose: use get_ability. Titles do not carry Assignments.",
+      "get_assignment" => "Get one assignment by path (preferred). Includes body fields plus AssignmentAbility rows (milestone_level + ability path/name only). Milestone prose: use get_ability.",
+      "get_ability" => "Get one ability by path (preferred). Full body including description and milestone_1–5_description.",
       "list_titles" => "List non-archived titles. Titles are NOT Assignment carriers — use list_positions/get_position for Assignments. Includes end_cap, path_clarity (clear if end_cap or has outbound TitlePath; inbound-only is missing), department, and (expensive) child positions + path edges. Filter with department_path for department health questions.",
       "get_title" => "Get one title by path (preferred). Includes end_cap, path_clarity, department, child positions (level variants), and TitlePath edges. Titles do not carry Assignments.",
       "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
@@ -247,6 +269,8 @@ module AgentTools
       "list_abilities" => "List abilities",
       "list_positions" => "List positions",
       "get_position" => "Get position",
+      "get_assignment" => "Get assignment",
+      "get_ability" => "Get ability",
       "list_titles" => "List titles",
       "get_title" => "Get title",
       "list_sitemap" => "List sitemap",

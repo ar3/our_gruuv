@@ -51,6 +51,8 @@ RSpec.describe "MCP HTTP endpoint", type: :request do
       "list_abilities",
       "list_positions",
       "get_position",
+      "get_assignment",
+      "get_ability",
       "list_titles",
       "get_title",
       "list_sitemap",
