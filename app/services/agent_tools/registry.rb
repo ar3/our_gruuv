@@ -9,6 +9,10 @@ module AgentTools
       "list_goals" => "AgentTools::ListGoals",
       "list_assignments" => "AgentTools::ListAssignments",
       "list_abilities" => "AgentTools::ListAbilities",
+      "list_positions" => "AgentTools::ListPositions",
+      "get_position" => "AgentTools::GetPosition",
+      "list_titles" => "AgentTools::ListTitles",
+      "get_title" => "AgentTools::GetTitle",
       "list_observations" => "AgentTools::ListObservations",
       "list_sitemap" => "AgentTools::ListSitemap",
       "search_organization" => "AgentTools::SearchOrganization",
@@ -102,6 +106,60 @@ module AgentTools
         },
         additionalProperties: false
       },
+      "list_positions" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Optional display name / title / level filter" },
+          title_path: {
+            type: "string",
+            description: "Optional title path — only positions under that title (level variants)"
+          },
+          title_id: { type: "integer", description: "Optional title id when title_path unavailable" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          detail: {
+            type: "string",
+            enum: %w[expensive minimal],
+            description: "expensive (default): nested Assignments with assignment_type + energy. minimal: identity + title link only."
+          }
+        },
+        additionalProperties: false
+      },
+      "get_position" => {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Position path from tool results (preferred)" },
+          position_path: { type: "string", description: "Alias for path" },
+          position_id: { type: "integer", description: "Id when path unavailable" }
+        },
+        additionalProperties: false
+      },
+      "list_titles" => {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Optional external_title filter" },
+          department_path: {
+            type: "string",
+            description: "Optional department path — titles in that department and descendants"
+          },
+          department_id: { type: "integer", description: "Optional department id when path unavailable" },
+          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          detail: {
+            type: "string",
+            enum: %w[expensive minimal],
+            description: "expensive (default): child positions + inbound/outbound TitlePath edges. minimal: identity + end_cap/path_clarity/department."
+          }
+        },
+        additionalProperties: false
+      },
+      "get_title" => {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Title path from tool results (preferred)" },
+          title_path: { type: "string", description: "Alias for path" },
+          title_id: { type: "integer", description: "Id when path unavailable" }
+        },
+        additionalProperties: false
+      },
       "list_observations" => {
         type: "object",
         properties: {
@@ -171,9 +229,13 @@ module AgentTools
       "list_goals" => "List goals visible to you. Each goal includes owned_by_me, created_by_me, owner (type/name/path), and creator. Optional filters AND together; omit filters for the full labeled list.",
       "list_assignments" => "List non-archived assignments. Default detail=expensive includes tagline, required_activities, handbook, and outcome description strings.",
       "list_abilities" => "List non-archived abilities. Default detail=expensive includes description and milestone_1–5_description (null when empty).",
+      "list_positions" => "List non-archived positions (Assignment carriers). Expensive detail includes required/suggested Assignments with energy %. Titles do not carry Assignments — use positions. Optional title_path filters to level variants under one title.",
+      "get_position" => "Get one position by path (preferred). Always includes nested Assignments with assignment_type (required|suggested) and energy fields. Positions carry Assignments; Titles do not.",
+      "list_titles" => "List non-archived titles. Titles are NOT Assignment carriers — use list_positions/get_position for Assignments. Includes end_cap, path_clarity (clear if end_cap or has outbound TitlePath; inbound-only is missing), department, and (expensive) child positions + path edges. Filter with department_path for department health questions.",
+      "get_title" => "Get one title by path (preferred). Includes end_cap, path_clarity, department, child positions (level variants), and TitlePath edges. Titles do not carry Assignments.",
       "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
       "list_observations" => "List published observations (OGOs) visible to you.",
-      "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Assignment/ability hits respect detail (default expensive full body fields).",
+      "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
     }.freeze
@@ -183,6 +245,10 @@ module AgentTools
       "list_goals" => "List goals",
       "list_assignments" => "List assignments",
       "list_abilities" => "List abilities",
+      "list_positions" => "List positions",
+      "get_position" => "Get position",
+      "list_titles" => "List titles",
+      "get_title" => "Get title",
       "list_sitemap" => "List sitemap",
       "list_observations" => "List observations",
       "search_organization" => "Search organization",

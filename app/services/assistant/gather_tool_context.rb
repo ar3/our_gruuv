@@ -22,6 +22,8 @@ module Assistant
         goals_created_by_me: invoke_data("list_goals", created_by_me: true, limit: 15),
         assignments: invoke_data("list_assignments", query: @query, limit: 15, detail: "expensive"),
         abilities: invoke_data("list_abilities", query: @query, limit: 15, detail: "expensive"),
+        positions: invoke_data("list_positions", query: @query, limit: 15, detail: "expensive"),
+        titles: invoke_data("list_titles", query: @query, limit: 15, detail: "expensive"),
         sitemap: invoke_data("list_sitemap"),
         observations: invoke_data("list_observations", query: @query, limit: 10)
       }

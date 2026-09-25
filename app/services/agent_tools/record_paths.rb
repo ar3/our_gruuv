@@ -34,8 +34,49 @@ module AgentTools
       helpers.organization_title_path(context.organization, title)
     end
 
+    def position_path(context, position)
+      helpers.organization_position_path(context.organization, position)
+    end
+
+    def department_path(context, department)
+      helpers.organization_department_path(context.organization, department)
+    end
+
     def aspiration_path(context, aspiration)
       helpers.organization_aspiration_path(context.organization, aspiration)
+    end
+
+    def resolve_position(context, path: nil, position_path: nil, position_id: nil)
+      path = path.presence || position_path.presence
+      if path.present?
+        id = extract_id(path, resource: "positions")
+        return Position.find_by(id: id) if id
+      end
+      return Position.find_by(id: position_id) if position_id.present?
+
+      nil
+    end
+
+    def resolve_title(context, path: nil, title_path: nil, title_id: nil)
+      path = path.presence || title_path.presence
+      if path.present?
+        id = extract_id(path, resource: "titles")
+        return Title.find_by(id: id) if id
+      end
+      return Title.find_by(id: title_id) if title_id.present?
+
+      nil
+    end
+
+    def resolve_department(context, path: nil, department_path: nil, department_id: nil)
+      path = path.presence || department_path.presence
+      if path.present?
+        id = extract_id(path, resource: "departments")
+        return Department.find_by(id: id) if id
+      end
+      return Department.find_by(id: department_id) if department_id.present?
+
+      nil
     end
 
     def resolve_teammate(context, path: nil, observee_path: nil, observee_teammate_id: nil)
@@ -109,7 +150,8 @@ module AgentTools
     def extract_id(path_or_url, resource:)
       path = path_or_url.to_s
       path = URI.parse(path).path if path.match?(%r{\Ahttps?://}i)
-      match = path.match(%r{/#{Regexp.escape(resource)}/(\d+)(?:/|\z|\?)})
+      # Supports numeric ids and friendly to_param slugs ("12-software-engineer").
+      match = path.match(%r{/#{Regexp.escape(resource)}/(\d+)(?:-|/|\z|\?)})
       match && match[1].to_i
     rescue URI::InvalidURIError
       nil

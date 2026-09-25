@@ -40,7 +40,12 @@ module AgentTools
           MaapSerializers.ability(context, a, detail: detail_level)
         },
         titles: Array(results[:titles]).first(10).map { |t|
-          { title: t.external_title, path: RecordPaths.title_path(context, t) }
+          clarity, reason = MaapSerializers.title_path_clarity(t)
+          MaapSerializers.title_summary(context, t).merge(
+            end_cap: t.end_cap?,
+            path_clarity: clarity,
+            path_clarity_reason: reason
+          )
         },
         values: Array(results[:aspirations]).first(10).map { |aspiration|
           {
