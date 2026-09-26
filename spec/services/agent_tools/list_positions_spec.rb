@@ -80,4 +80,41 @@ RSpec.describe AgentTools::ListPositions, type: :service do
     expect(result.data[:positions].first.keys).to include(:display_name, :path, :level, :title)
     expect(result.data[:positions].first).not_to have_key(:assignments)
   end
+
+  it "filters by assignment_path with assignment_link defaulting to required" do
+    other_major = create(:position_major_level, major_level: 3, set_name: "Base-#{SecureRandom.hex(4)}")
+    other_level = create(:position_level, position_major_level: other_major, level: "3.1")
+    other_title = create(:title, company: organization, position_major_level: other_major, external_title: "Staff")
+    suggested_only = create(:position, title: other_title, position_level: other_level)
+    create(
+      :position_assignment,
+      :suggested,
+      position: suggested_only,
+      assignment: assignment,
+      max_estimated_energy: 5
+    )
+
+    assignment_path = AgentTools::RecordPaths.assignment_path(context, assignment)
+    required_only = described_class.call(
+      context: context,
+      assignment_path: assignment_path,
+      detail: "minimal",
+      limit: 50
+    )
+    expect(required_only.ok?).to be(true)
+    expect(required_only.data[:assignment_link]).to eq("required")
+    names = required_only.data[:positions].map { |p| p[:display_name] }
+    expect(names).to include(position.display_name)
+    expect(names).not_to include(suggested_only.display_name)
+
+    all_links = described_class.call(
+      context: context,
+      assignment_path: assignment_path,
+      assignment_link: "all",
+      detail: "minimal",
+      limit: 50
+    )
+    all_names = all_links.data[:positions].map { |p| p[:display_name] }
+    expect(all_names).to include(position.display_name, suggested_only.display_name)
+  end
 end

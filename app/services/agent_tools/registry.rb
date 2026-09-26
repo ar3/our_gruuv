@@ -33,7 +33,8 @@ module AgentTools
         type: "object",
         properties: {
           query: { type: "string", description: "Optional name/email filter" },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 }
         },
         additionalProperties: false
       },
@@ -73,7 +74,8 @@ module AgentTools
             type: "integer",
             description: "Owner id when owner_path is unavailable; requires owner_type"
           },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 }
         },
         additionalProperties: false
       },
@@ -86,11 +88,17 @@ module AgentTools
         type: "object",
         properties: {
           query: { type: "string", description: "Optional title/body text filter" },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          ability_path: {
+            type: "string",
+            description: "Optional ability path — only assignments that require this ability (reverse lookup)"
+          },
+          ability_id: { type: "integer", description: "Optional ability id when ability_path unavailable" },
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 },
           detail: {
             type: "string",
             enum: %w[expensive minimal],
-            description: "Field depth. expensive (default): tagline, required_activities, handbook, outcomes. minimal: title+path only."
+            description: "Field depth. expensive (default): tagline, required_activities, handbook, outcomes. minimal: title+path only — use to save tokens on large pages."
           }
         },
         additionalProperties: false
@@ -99,11 +107,12 @@ module AgentTools
         type: "object",
         properties: {
           query: { type: "string", description: "Optional name/description/milestone text filter" },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 },
           detail: {
             type: "string",
             enum: %w[expensive minimal],
-            description: "Field depth. expensive (default): description + milestone_1–5 (null if empty). minimal: name+path only."
+            description: "Field depth. expensive (default): description + milestone_1–5 (null if empty). minimal: name+path only — use to save tokens on large pages."
           }
         },
         additionalProperties: false
@@ -117,11 +126,22 @@ module AgentTools
             description: "Optional title path — only positions under that title (level variants)"
           },
           title_id: { type: "integer", description: "Optional title id when title_path unavailable" },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          assignment_path: {
+            type: "string",
+            description: "Optional assignment path — positions that hold this assignment (reverse lookup)"
+          },
+          assignment_id: { type: "integer", description: "Optional assignment id when assignment_path unavailable" },
+          assignment_link: {
+            type: "string",
+            enum: %w[required suggested all],
+            description: "With assignment_path/id: required (default), suggested, or all"
+          },
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 },
           detail: {
             type: "string",
             enum: %w[expensive minimal],
-            description: "expensive (default): nested Assignments with assignment_type + energy. minimal: identity + title link only."
+            description: "expensive (default): nested Assignments with assignment_type + energy. minimal: identity + title link only — use to save tokens."
           }
         },
         additionalProperties: false
@@ -162,11 +182,12 @@ module AgentTools
             description: "Optional department path — titles in that department and descendants"
           },
           department_id: { type: "integer", description: "Optional department id when path unavailable" },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 },
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 },
           detail: {
             type: "string",
             enum: %w[expensive minimal],
-            description: "expensive (default): child positions + inbound/outbound TitlePath edges. minimal: identity + end_cap/path_clarity/department."
+            description: "expensive (default): child positions + inbound/outbound TitlePath edges. minimal: identity + end_cap/path_clarity/department — use to save tokens."
           }
         },
         additionalProperties: false
@@ -184,7 +205,8 @@ module AgentTools
         type: "object",
         properties: {
           query: { type: "string", description: "Optional story text filter" },
-          limit: { type: "integer", description: "Max results (1–50)", minimum: 1, maximum: 50 }
+          limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
+          offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 }
         },
         additionalProperties: false
       },
@@ -245,19 +267,19 @@ module AgentTools
     }.freeze
 
     DESCRIPTIONS = {
-      "list_teammates" => "List teammates in the organization (directory). Prefer paths from results over numeric ids.",
-      "list_goals" => "List goals visible to you. Each goal includes owned_by_me, created_by_me, owner (type/name/path), and creator. Optional filters AND together; omit filters for the full labeled list.",
-      "list_assignments" => "List non-archived assignments. Default detail=expensive includes tagline, required_activities, handbook, and outcome description strings.",
-      "list_abilities" => "List non-archived abilities. Default detail=expensive includes description and milestone_1–5_description (null when empty).",
-      "list_positions" => "List non-archived positions (Assignment carriers). Expensive detail includes required/suggested Assignments with energy %. Titles do not carry Assignments — use positions. Optional title_path filters to level variants under one title.",
+      "list_teammates" => "List teammates in the organization (directory). Prefer paths from results over numeric ids. Paginate with limit (1–50) + offset; response includes total_count, has_more, next_offset.",
+      "list_goals" => "List goals visible to you. Each goal includes owned_by_me, created_by_me, owner (type/name/path), and creator. Optional filters AND together; omit filters for the full labeled list. Paginate with limit + offset (total_count, has_more, next_offset).",
+      "list_assignments" => "List non-archived assignments. Default detail=expensive includes tagline, required_activities, handbook, and outcome description strings; pass detail=minimal (title+path only) to save tokens. Filter with ability_path for reverse lookup (adds ability_milestone_level). Paginate with limit + offset (total_count, has_more, next_offset). Compact reverse summary also on get_ability.",
+      "list_abilities" => "List non-archived abilities. Default detail=expensive includes description and milestone_1–5_description (null when empty); pass detail=minimal (name+path only) to save tokens. Paginate with limit + offset (total_count, has_more, next_offset).",
+      "list_positions" => "List non-archived positions (Assignment carriers). Expensive detail includes required/suggested Assignments with energy %. Pass detail=minimal to save tokens. Titles do not carry Assignments — use positions. Optional title_path filters to level variants. Filter with assignment_path for reverse lookup; assignment_link=required|suggested|all (default required). Paginate with limit + offset. Compact reverse summary also on get_assignment.",
       "get_position" => "Get one position by path (preferred). Includes Assignments with energy, each Assignment's ability table (milestone_level + ability path/name only), and required_abilities rollup (direct PositionAbility ∪ required Assignment abilities, with sources). Milestone prose: use get_ability. Titles do not carry Assignments.",
-      "get_assignment" => "Get one assignment by path (preferred). Includes body fields plus AssignmentAbility rows (milestone_level + ability path/name only). Milestone prose: use get_ability.",
-      "get_ability" => "Get one ability by path (preferred). Full body including description and milestone_1–5_description.",
-      "list_titles" => "List non-archived titles. Titles are NOT Assignment carriers — use list_positions/get_position for Assignments. Includes end_cap, path_clarity (clear if end_cap or has outbound TitlePath; inbound-only is missing), department, and (expensive) child positions + path edges. Filter with department_path for department health questions.",
+      "get_assignment" => "Get one assignment by path (preferred). Includes body fields, AssignmentAbility rows (milestone_level + path/name only), and compact positions[] reverse lookup (type + energy). For paginated browse of holding positions: list_positions(assignment_path=..., assignment_link=...). Milestone prose: use get_ability.",
+      "get_ability" => "Get one ability by path (preferred). Full body including description and milestone_1–5_description, plus compact reverse assignments[] (with milestone_level) and positions[] that require it (direct ∪ required Assignments, with sources). For paginated assignment browse: list_assignments(ability_path=...).",
+      "list_titles" => "List non-archived titles. Titles are NOT Assignment carriers — use list_positions/get_position for Assignments. Includes end_cap, path_clarity (clear if end_cap or has outbound TitlePath; inbound-only is missing), department, and (expensive) child positions + path edges. Pass detail=minimal to save tokens. Filter with department_path. Paginate with limit + offset.",
       "get_title" => "Get one title by path (preferred). Includes end_cap, path_clarity, department, child positions (level variants), and TitlePath edges. Titles do not carry Assignments.",
       "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
-      "list_observations" => "List published observations (OGOs) visible to you.",
-      "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields).",
+      "list_observations" => "List published observations (OGOs) visible to you. Paginate with limit + offset (total_count, has_more, next_offset).",
+      "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
     }.freeze

@@ -5,7 +5,7 @@ module AgentTools
   class ListObservations < Base
     DEFAULT_LIMIT = 20
 
-    def call(context:, query: nil, limit: DEFAULT_LIMIT, **_ignored)
+    def call(context:, query: nil, limit: DEFAULT_LIMIT, offset: 0, **_ignored)
       context.authorize!(context.organization, :show?)
 
       relation = ObservationsQuery.new(
@@ -14,7 +14,7 @@ module AgentTools
         current_person: context.person
       ).call
 
-      observations = relation.limit(limit.to_i.clamp(1, 100)).to_a
+      observations, = ListPagination.scan_relation(relation)
       needle = query.to_s.strip.downcase
       if needle.present?
         observations = observations.select { |o| o.story.to_s.downcase.include?(needle) }
@@ -22,11 +22,11 @@ module AgentTools
 
       visible = observations.select do |observation|
         Pundit.policy(context.pundit_user, observation).show?
-      end.first(limit.to_i.clamp(1, 50))
+      end
+      page = ListPagination.slice(visible, limit: limit, offset: offset)
 
       ok(
-        observations: visible.map { |o| serialize(context, o) },
-        count: visible.size
+        { observations: page[:items].map { |o| serialize(context, o) } }.merge(page[:meta])
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")

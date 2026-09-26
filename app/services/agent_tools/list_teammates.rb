@@ -4,9 +4,9 @@ module AgentTools
   # Directory list via CompanyTeammatesQuery + per-row CompanyTeammatePolicy#show?.
   # Does not use CompanyTeammatePolicy::Scope.
   class ListTeammates < Base
-    DEFAULT_LIMIT = 25
+    DEFAULT_LIMIT = ListPagination::DEFAULT_LIMIT
 
-    def call(context:, query: nil, limit: DEFAULT_LIMIT, **_ignored)
+    def call(context:, query: nil, limit: DEFAULT_LIMIT, offset: 0, **_ignored)
       context.authorize!(context.organization, :show?)
 
       relation = CompanyTeammatesQuery.new(
@@ -15,7 +15,7 @@ module AgentTools
         current_person: context.person
       ).call.includes(:person)
 
-      teammates = relation.limit(200).to_a
+      teammates, = ListPagination.scan_relation(relation)
       needle = query.to_s.strip.downcase
       if needle.present?
         teammates = teammates.select do |teammate|
@@ -27,11 +27,11 @@ module AgentTools
 
       visible = teammates.select do |teammate|
         Pundit.policy(context.pundit_user, teammate).show?
-      end.first(limit.to_i.clamp(1, 50))
+      end
+      page = ListPagination.slice(visible, limit: limit, offset: offset)
 
       ok(
-        teammates: visible.map { |t| serialize(context, t) },
-        count: visible.size
+        { teammates: page[:items].map { |t| serialize(context, t) } }.merge(page[:meta])
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")

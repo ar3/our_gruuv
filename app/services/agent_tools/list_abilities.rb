@@ -3,16 +3,16 @@
 module AgentTools
   # Non-archived abilities visible via AbilityPolicy::Scope + show?.
   class ListAbilities < Base
-    DEFAULT_LIMIT = 25
+    DEFAULT_LIMIT = ListPagination::DEFAULT_LIMIT
 
-    def call(context:, query: nil, limit: DEFAULT_LIMIT, detail: Detail::DEFAULT, **_ignored)
+    def call(context:, query: nil, limit: DEFAULT_LIMIT, offset: 0, detail: Detail::DEFAULT, **_ignored)
       context.authorize!(context.organization, :show?)
       detail_level = Detail.normalize(detail)
 
       company = context.organization.root_company || context.organization
       relation = context.policy_scope(Ability).unarchived.where(company_id: company.id).ordered
 
-      abilities = relation.limit(200).to_a
+      abilities, = ListPagination.scan_relation(relation)
       needle = query.to_s.strip.downcase
       if needle.present?
         abilities = abilities.select { |ability| ability_matches?(ability, needle) }
@@ -20,12 +20,15 @@ module AgentTools
 
       visible = abilities.select { |ability|
         Pundit.policy(context.pundit_user, ability).show?
-      }.first(limit.to_i.clamp(1, 50))
+      }
+      page = ListPagination.slice(visible, limit: limit, offset: offset)
 
       ok(
-        abilities: visible.map { |a| MaapSerializers.ability(context, a, detail: detail_level) },
-        count: visible.size,
-        detail: detail_level
+        {
+          abilities: page[:items].map { |a| MaapSerializers.ability(context, a, detail: detail_level) },
+          detail: detail_level,
+          detail_hint: ListPagination::DETAIL_TOKEN_HINT
+        }.merge(page[:meta])
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")

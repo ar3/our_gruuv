@@ -11,14 +11,20 @@ module Mcp
       Prefer path values from tool results over numeric ids. Use list_sitemap for
       navigation / where-to-go answers; do not invent pages. list_goals rows include
       owned_by_me, created_by_me, and owner details; optional filters AND together.
-      list_assignments and list_abilities default to detail=expensive (full body fields);
-      use detail=minimal for titles/names only. Positions carry Assignments
-      (required/suggested + energy); Titles do not — title search hits include
-      carries_assignments: false. Title path_clarity is clear if end_cap or has outbound
-      TitlePath (inbound-only is missing). get_position includes per-Assignment ability
-      levels and required_abilities rollup (direct + required Assignments); nested ability
-      rows are level+path only — use get_ability for milestone prose. get_assignment /
-      get_ability load one record by path. create_draft_observation never publishes.
+      List tools paginate with limit (1–50) + offset; responses include count, limit,
+      offset, total_count, has_more, and next_offset — pass next_offset as offset to
+      continue. list_assignments / list_abilities / list_positions / list_titles default
+      to detail=expensive (full body fields); pass detail=minimal (name/title+path only)
+      to save tokens on large pages. Positions carry Assignments (required/suggested +
+      energy); Titles do not — title search hits include carries_assignments: false.
+      Title path_clarity is clear if end_cap or has outbound TitlePath (inbound-only is
+      missing). get_position includes per-Assignment ability levels and required_abilities
+      rollup (direct + required Assignments); nested ability rows are level+path only —
+      use get_ability for milestone prose. get_assignment / get_ability load one record
+      by path and include compact reverse usage (positions for an assignment; assignments
+      + requiring positions for an ability). For paginated reverse browse use
+      list_positions(assignment_path=..., assignment_link=required|suggested|all) or
+      list_assignments(ability_path=...). create_draft_observation never publishes.
       set_current_week_goal_confidence only updates the current Monday week; 0% or 100%
       requires learnings.
     TEXT

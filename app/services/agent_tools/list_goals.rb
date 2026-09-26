@@ -4,7 +4,7 @@ module AgentTools
   # Goals visible to the caller: policy_scope → FilterQuery → optional filters → can_be_viewed_by?.
   # Every row includes ownership/creator context; filters are optional and AND together.
   class ListGoals < Base
-    DEFAULT_LIMIT = 25
+    DEFAULT_LIMIT = ListPagination::DEFAULT_LIMIT
     OWNER_TYPES = %w[CompanyTeammate Organization Department Team].freeze
 
     def call(
@@ -18,6 +18,7 @@ module AgentTools
       owner_path: nil,
       owner_id: nil,
       limit: DEFAULT_LIMIT,
+      offset: 0,
       **_ignored
     )
       context.authorize!(context.organization, :show?)
@@ -53,21 +54,22 @@ module AgentTools
         visible = visible.select { |goal| needing_ids.include?(goal.id) }
       end
 
-      limited = visible.first(limit.to_i.clamp(1, 50))
+      page = ListPagination.slice(visible, limit: limit, offset: offset)
 
       ok(
-        goals: limited.map { |g| serialize(context, g) },
-        count: limited.size,
-        filters: {
-          needing_check_in: needing,
-          owned_by_me: filter_owned_by_me,
-          created_by_me: filter_created_by_me,
-          everyone_in_company: filter_everyone,
-          my_relevant_goals: filter_relevant,
-          owner_type: normalize_owner_type(owner_type),
-          owner_path: owner_path.presence,
-          owner_id: owner_id.presence
-        }
+        {
+          goals: page[:items].map { |g| serialize(context, g) },
+          filters: {
+            needing_check_in: needing,
+            owned_by_me: filter_owned_by_me,
+            created_by_me: filter_created_by_me,
+            everyone_in_company: filter_everyone,
+            my_relevant_goals: filter_relevant,
+            owner_type: normalize_owner_type(owner_type),
+            owner_path: owner_path.presence,
+            owner_id: owner_id.presence
+          }
+        }.merge(page[:meta])
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")

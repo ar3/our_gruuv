@@ -4,7 +4,7 @@ module AgentTools
   # Non-archived titles. Titles are not Assignment-carriers; use child positions for that.
   # path_clarity (definition B): clear if end_cap OR has outbound TitlePath.
   class ListTitles < Base
-    DEFAULT_LIMIT = 25
+    DEFAULT_LIMIT = ListPagination::DEFAULT_LIMIT
 
     def call(
       context:,
@@ -12,6 +12,7 @@ module AgentTools
       department_path: nil,
       department_id: nil,
       limit: DEFAULT_LIMIT,
+      offset: 0,
       detail: Detail::DEFAULT,
       **_ignored
     )
@@ -39,7 +40,7 @@ module AgentTools
         relation = relation.includes(positions: :position_level, inbound_title_paths: :from_title, outbound_title_paths: :to_title)
       end
 
-      titles = relation.limit(200).to_a
+      titles, = ListPagination.scan_relation(relation)
       needle = query.to_s.strip.downcase
       if needle.present?
         titles = titles.select { |title| title.external_title.to_s.downcase.include?(needle) }
@@ -47,14 +48,17 @@ module AgentTools
 
       visible = titles.select { |title|
         Pundit.policy(context.pundit_user, title).show?
-      }.first(limit.to_i.clamp(1, 50))
+      }
+      page = ListPagination.slice(visible, limit: limit, offset: offset)
 
       ok(
-        titles: visible.map { |t| MaapSerializers.title(context, t, detail: detail_level) },
-        count: visible.size,
-        detail: detail_level,
-        note: MaapSerializers::TITLE_NOT_ASSIGNMENT_CARRIER,
-        path_clarity_definition: "clear if end_cap or has outbound TitlePath; inbound-only is missing"
+        {
+          titles: page[:items].map { |t| MaapSerializers.title(context, t, detail: detail_level) },
+          detail: detail_level,
+          detail_hint: ListPagination::DETAIL_TOKEN_HINT,
+          note: MaapSerializers::TITLE_NOT_ASSIGNMENT_CARRIER,
+          path_clarity_definition: "clear if end_cap or has outbound TitlePath; inbound-only is missing"
+        }.merge(page[:meta])
       )
     rescue AgentTools::NotAuthorized => e
       err(e.message, code: "not_authorized")

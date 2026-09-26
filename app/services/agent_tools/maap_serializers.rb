@@ -102,6 +102,97 @@ module AgentTools
       }
     end
 
+    # Reverse: positions that link this assignment (compact).
+    def assignment_positions(context, assignment)
+      pas = assignment.position_assignments
+        .includes(position: [:position_level, :title])
+        .select { |pa| pa.position && !pa.position.archived? }
+        .sort_by { |pa|
+          [pa.position.display_name.to_s.downcase, pa.assignment_type.to_s]
+        }
+
+      pas.map { |pa|
+        position = pa.position
+        {
+          display_name: position.display_name,
+          path: RecordPaths.position_path(context, position),
+          level: position.position_level&.level,
+          assignment_type: pa.assignment_type,
+          min_estimated_energy: pa.min_estimated_energy,
+          max_estimated_energy: pa.max_estimated_energy,
+          anticipated_energy_percentage: pa.anticipated_energy_percentage,
+          energy_range_display: pa.energy_range_display
+        }
+      }
+    end
+
+    # Reverse: assignments that require this ability (compact).
+    def ability_assignments(context, ability)
+      ability.assignment_abilities.includes(:assignment).filter_map do |aa|
+        assignment = aa.assignment
+        next if assignment.nil? || assignment.archived?
+
+        {
+          title: assignment.title,
+          path: RecordPaths.assignment_path(context, assignment),
+          milestone_level: aa.milestone_level.to_i
+        }
+      end.sort_by { |row| row[:title].to_s.downcase }
+    end
+
+    # Reverse: positions that require this ability via direct PositionAbility or required Assignments.
+    def ability_requiring_positions(context, ability)
+      grouped = Hash.new { |h, k| h[k] = { levels: [], sources: [] } }
+
+      PositionAbility.where(ability_id: ability.id)
+        .includes(position: [:position_level, :title])
+        .find_each do |pa|
+          position = pa.position
+          next if position.nil? || position.archived?
+
+          level = pa.milestone_level.to_i
+          grouped[position.id][:position] ||= position
+          grouped[position.id][:levels] << level
+          grouped[position.id][:sources] << { kind: :direct, level: level, assignment: nil }
+        end
+
+      aa_by_assignment_id = ability.assignment_abilities.index_by(&:assignment_id)
+      if aa_by_assignment_id.any?
+        PositionAssignment.required
+          .where(assignment_id: aa_by_assignment_id.keys)
+          .includes(:assignment, position: [:position_level, :title])
+          .find_each do |pa|
+            position = pa.position
+            next if position.nil? || position.archived?
+
+            aa = aa_by_assignment_id[pa.assignment_id]
+            next unless aa
+
+            level = aa.milestone_level.to_i
+            grouped[position.id][:position] ||= position
+            grouped[position.id][:levels] << level
+            grouped[position.id][:sources] << {
+              kind: :assignment,
+              level: level,
+              assignment: pa.assignment
+            }
+          end
+      end
+
+      grouped.values.filter_map do |data|
+        position = data[:position]
+        next unless position
+
+        {
+          display_name: position.display_name,
+          path: RecordPaths.position_path(context, position),
+          level: position.position_level&.level,
+          minimum_milestone_level: data[:levels].max,
+          sources: data[:sources].map { |source| ability_requirement_source(context, source) }
+        }
+      end.sort_by { |row| row[:display_name].to_s.downcase }
+    end
+
     def position(context, position, detail: Detail::DEFAULT, include_assignments: nil, include_ability_requirements: false)
       include_assignments = Detail.expensive?(detail) if include_assignments.nil?
       title = position.title
