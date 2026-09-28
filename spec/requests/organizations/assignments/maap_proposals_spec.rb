@@ -1,0 +1,187 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
+  let(:organization) { create(:organization) }
+  let(:assignment) { create(:assignment, company: organization, title: "Ops Cadence", tagline: "Keep ops smooth") }
+  let(:person) { create(:person) }
+  let(:manager) { create(:person) }
+  let!(:person_teammate) { create(:teammate, :unassigned_employee, person: person, organization: organization) }
+  let!(:manager_teammate) do
+    create(:teammate, :unassigned_employee, :maap_manager, person: manager, organization: organization)
+  end
+
+  before { PaperTrail.enabled = false }
+  after { PaperTrail.enabled = true }
+
+  describe "GET index" do
+    before { sign_in_as_teammate_for_request(person, organization) }
+
+    it "lists proposals for the assignment" do
+      get organization_assignment_maap_proposals_path(organization, assignment)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(assignment.title)
+      expect(response.body).to include("Propose edit")
+      expect(response.body).to include("aria-label=\"Propose edit\"")
+      expect(response.body).to include("Switch assignment for proposed edits")
+      expect(response.body).to include("All proposed edits (0)")
+      expect(response.body).to include("Download markdown template")
+      expect(response.body).to include("Upload markdown")
+      expect(response.body).to include("assignmentMaapProposalsPageHelp")
+      expect(response.body).to include("Goal of this page")
+      expect(response.body).to include("keep it relevant")
+      expect(response.body).to include("How proposals move")
+      expect(response.body).to include("Submitted")
+      expect(response.body).to include("Applied")
+    end
+
+    it "downloads a markdown template for the live assignment" do
+      get markdown_template_organization_assignment_maap_proposals_path(organization, assignment)
+      expect(response).to have_http_status(:success)
+      expect(response.headers["Content-Disposition"]).to include("assignment-#{assignment.id}-proposal-template.md")
+      expect(response.body).to include("proposable_id: #{assignment.id}")
+      expect(response.body).to include(assignment.title)
+    end
+  end
+
+  describe "proposal lifecycle via requests" do
+    it "lets a teammate draft and submit, and a MAAP manager apply" do
+      sign_in_as_teammate_for_request(person, organization)
+
+      expect do
+        get new_organization_assignment_maap_proposal_path(organization, assignment)
+      end.to change(MaapProposal, :count).by(1)
+
+      proposal = MaapProposal.last
+      expect(response).to redirect_to(edit_organization_assignment_maap_proposal_path(organization, assignment, proposal))
+
+      patch organization_assignment_maap_proposal_path(organization, assignment, proposal), params: {
+        maap_proposal: {
+          title: "Ops Cadence Improved",
+          tagline: "Keep ops smoother",
+          required_activities: assignment.required_activities,
+          handbook: assignment.handbook,
+          outcomes: [
+            { description: "Fewer surprises", outcome_type: "sentiment" }
+          ]
+        }
+      }
+      expect(response).to redirect_to(organization_assignment_maap_proposal_path(organization, assignment, proposal))
+
+      post submit_organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to redirect_to(organization_assignment_maap_proposal_path(organization, assignment, proposal))
+      expect(proposal.reload).to be_submitted
+
+      sign_in_as_teammate_for_request(manager, organization)
+      post apply_organization_assignment_maap_proposal_path(organization, assignment, proposal), params: {
+        version_type: "clarifying"
+      }
+      expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+      expect(assignment.reload.title).to eq("Ops Cadence Improved")
+      expect(proposal.reload).to be_applied
+    end
+  end
+
+  describe "markdown download and upload" do
+    before { sign_in_as_teammate_for_request(person, organization) }
+
+    it "downloads markdown and creates a draft from upload" do
+      proposal = MaapProposals::CreateAssignmentEditDraft.call(
+        assignment: assignment,
+        proposer: person_teammate
+      ).value
+      MaapProposals::UpdateAssignmentEditDraft.call(
+        proposal: proposal,
+        attributes: { "title" => "From MD", "tagline" => assignment.tagline }
+      )
+
+      get markdown_organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("proposable_id: #{assignment.id}")
+      expect(response.body).to include("From MD")
+
+      expect do
+        post upload_markdown_organization_assignment_maap_proposals_path(organization, assignment), params: {
+          markdown_body: response.body.sub("From MD", "From Upload")
+        }
+      end.to change(MaapProposal, :count).by(1)
+
+      uploaded = MaapProposal.order(:id).last
+      expect(uploaded.proposed_payload["title"]).to eq("From Upload")
+      expect(uploaded.source).to eq("markdown")
+    end
+  end
+
+  describe "assignment show links" do
+    before { sign_in_as_teammate_for_request(person, organization) }
+
+    it "surfaces proposed edits entry points" do
+      get organization_assignment_path(organization, assignment)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("All proposed edits (0)")
+      expect(response.body).to include("Propose edit")
+    end
+  end
+
+  describe "GET show with diffs" do
+    before { sign_in_as_teammate_for_request(person, organization) }
+
+    it "renders field diffs against the live assignment" do
+      proposal = MaapProposals::CreateAssignmentEditDraft.call(
+        assignment: assignment,
+        proposer: person_teammate
+      ).value
+      MaapProposals::UpdateAssignmentEditDraft.call(
+        proposal: proposal,
+        attributes: { "title" => "Diffed Title", "tagline" => assignment.tagline }
+      )
+
+      get organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Changes vs current assignment")
+      expect(response.body).to include("Title")
+      expect(response.body).to include("Diffed Title")
+      expect(response.body).to include('class="diff"')
+      expect(response.body).to include("assignmentMaapProposalShowPageHelp")
+      expect(response.body).to include("How proposals move")
+    end
+  end
+
+  describe "editing outcomes" do
+    before { sign_in_as_teammate_for_request(person, organization) }
+
+    it "adds and removes outcomes on draft save" do
+      create(:assignment_outcome, assignment: assignment, description: "Keep me", outcome_type: "quantitative")
+      create(:assignment_outcome, assignment: assignment, description: "Drop me", outcome_type: "sentiment")
+
+      proposal = MaapProposals::CreateAssignmentEditDraft.call(
+        assignment: assignment,
+        proposer: person_teammate
+      ).value
+
+      get edit_organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Add outcome")
+      expect(response.body).not_to include("Published source URL")
+      expect(response.body).not_to include("Progress report URL")
+
+      patch organization_assignment_maap_proposal_path(organization, assignment, proposal), params: {
+        maap_proposal: {
+          title: assignment.title,
+          tagline: assignment.tagline,
+          required_activities: assignment.required_activities,
+          handbook: assignment.handbook,
+          outcomes: [
+            { description: "Keep me", outcome_type: "quantitative" },
+            { description: "Brand new outcome", outcome_type: "sentiment" }
+          ]
+        }
+      }
+
+      expect(response).to redirect_to(organization_assignment_maap_proposal_path(organization, assignment, proposal))
+      outcomes = proposal.reload.proposed_payload["outcomes"]
+      expect(outcomes.map { |o| o["description"] }).to eq(["Keep me", "Brand new outcome"])
+    end
+  end
+end

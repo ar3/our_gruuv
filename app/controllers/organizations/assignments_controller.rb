@@ -218,6 +218,10 @@ class Organizations::AssignmentsController < ApplicationController
       rateable_display_name: @assignment.title
     )
 
+    @assignments_by_department_for_switcher = AssignmentsByDepartmentForSwitcher.call(
+      scope: policy_scope(Assignment).where(company: @organization)
+    )
+
     render layout: determine_layout
   end
 

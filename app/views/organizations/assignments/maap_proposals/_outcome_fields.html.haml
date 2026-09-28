@@ -1,0 +1,15 @@
+.card.mb-3{"data-maap-proposal-outcomes-target" => "row"}
+  .card-body
+    .d-flex.justify-content-between.align-items-start.gap-2.mb-2
+      %h6.mb-0 Outcome
+      %button.btn.btn-sm.btn-outline-danger{type: "button", "data-action" => "maap-proposal-outcomes#remove"}
+        %i.bi.bi-trash
+        Remove
+    - if outcome["id"].present?
+      = hidden_field_tag "maap_proposal[outcomes][][id]", outcome["id"]
+    .mb-2
+      %label.form-label Name / description
+      = text_area_tag "maap_proposal[outcomes][][description]", outcome["description"], class: "form-control", rows: 3
+    .mb-0
+      %label.form-label Type
+      = select_tag "maap_proposal[outcomes][][outcome_type]", options_for_select(AssignmentOutcome::TYPES, outcome["outcome_type"].presence || "quantitative"), class: "form-select"

@@ -143,6 +143,9 @@ gem "csv", "~> 3.2"
 # Markdown rendering
 gem "redcarpet", "~> 3.6"
 
+# Text diffs for MAAP proposal review
+gem "diffy", "~> 3.4"
+
 # OAuth authentication
 gem "omniauth-google-oauth2", "~> 1.1"
 gem "omniauth-rails_csrf_protection", "~> 1.0"

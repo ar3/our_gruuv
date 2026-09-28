@@ -4,8 +4,9 @@
 - is_ability_milestones_view = request.path.include?('/ability_milestones')
 - is_consumer_assignments_view = request.path.include?('/consumer_assignments')
 - is_maap_clarity_view = controller_path == 'organizations/assignments/maap_clarity'
+- is_maap_proposals_view = controller_path == 'organizations/assignments/maap_proposals'
 - is_edit_view = action_name == 'edit' && controller_name == 'assignments'
-- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && !is_maap_clarity_view && (@organization.present? || (@assignment && @assignment.company.present?))
+- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && !is_maap_clarity_view && !is_maap_proposals_view && (@organization.present? || (@assignment && @assignment.company.present?))
 - assignment_org = @organization || (@assignment&.company)
 
 .dropdown
@@ -139,6 +140,22 @@
             %i.bi.bi-stars.me-2
             Consult OG
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions to consult OG"}
+
+      %li
+        - if is_maap_proposals_view
+          .dropdown-item.text-muted
+            %i.bi.bi-lightbulb.me-2
+            = "#{all_proposed_edits_label(@assignment)} (Active)"
+            %i.bi.bi-check-circle.text-success.ms-2
+        - elsif @assignment && assignment_org && policy(MaapProposal).index?
+          = link_to organization_assignment_maap_proposals_path(assignment_org, @assignment), class: 'dropdown-item' do
+            %i.bi.bi-lightbulb.me-2
+            = all_proposed_edits_label(@assignment)
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-lightbulb.me-2
+            All proposed edits
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in the organization to view proposed edits"}
 
       - if @assignment && assignment_org
         %li

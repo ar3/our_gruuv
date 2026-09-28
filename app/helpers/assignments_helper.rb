@@ -5,6 +5,10 @@ module AssignmentsHelper
     if controller_path == 'organizations/assignments/maap_clarity'
       return 'Consult OG'
     end
+
+    if controller_path == 'organizations/assignments/maap_proposals'
+      return all_proposed_edits_label(@assignment)
+    end
     
     # Check if we're in public view
     if request.path.include?('/public_maap/assignments/')
@@ -104,5 +108,23 @@ module AssignmentsHelper
       first_version = assignment.versions.order(:created_at).first
       [paper_trail_whodunnit_casual_name(first_version), assignment.updated_at]
     end
+  end
+
+  def proposal_status_badge_class(status)
+    case status.to_s
+    when "draft" then "bg-secondary"
+    when "submitted" then "bg-primary"
+    when "applied" then "bg-success"
+    when "rejected" then "bg-danger"
+    else "bg-secondary"
+    end
+  end
+
+  def open_maap_proposals_count(assignment)
+    assignment.maap_proposals.open_proposals.count
+  end
+
+  def all_proposed_edits_label(assignment)
+    "All proposed edits (#{open_maap_proposals_count(assignment)})"
   end
 end

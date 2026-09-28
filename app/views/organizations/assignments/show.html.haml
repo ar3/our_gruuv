@@ -1,13 +1,30 @@
 - content_for :title, @assignment.title
+- page_help_id = "assignmentShowPageHelp"
 
 - content_for :header do
-  %h1.mb-0= @assignment.title
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "organizations/assignments/assignment_switcher",
+               organization: @organization,
+               assignment: @assignment,
+               assignments_by_department: @assignments_by_department_for_switcher,
+               path_for: ->(asg) { organization_assignment_path(@organization, asg) },
+               switch_aria_label: "Switch assignment"
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Assignment expectations and how to keep them fresh. Click for details."
+      = render "organizations/assignments/header_edit_dropdown",
+               organization: @organization,
+               assignment: @assignment
 
 - content_for :header_action do
   = render 'assignments/view_switcher'
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: @assignment.title, url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/assignments/page_help_show"
 
 - if @assignment.archived?
   .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
@@ -20,112 +37,125 @@
   .col-12
     .row.g-4.mb-4.align-items-start
       .col-lg-8
-        .card
-          .card-header
-            %h5.mb-0
-              %i.bi.bi-info-circle.me-2
-              Assignment Details
-          .card-body
-            .row
-              .col-12
-                - if @assignment.department.present?
-                  .mb-3
-                    %h6.text-muted Department
-                    - if policy(@organization).show?
-                      = link_to @organization.name, organization_path(@organization), class: "text-decoration-none"
-                    - else
-                      %span= @organization.name
-                    - if @assignment.department.present?
-                      %span.text-muted.mx-1
-                        %i.bi.bi-chevron-right
-                      - if policy(@assignment.department).show?
-                        = link_to @assignment.department.name, organization_department_path(@organization, @assignment.department), class: "text-decoration-none"
-                      - else
-                        %span= @assignment.department.name
+        - if @assignment.department.present?
+          .mb-3
+            %h6.text-muted Department
+            - if policy(@organization).show?
+              = link_to @organization.name, organization_path(@organization), class: "text-decoration-none"
+            - else
+              %span= @organization.name
+            - if @assignment.department.present?
+              %span.text-muted.mx-1
+                %i.bi.bi-chevron-right
+              - if policy(@assignment.department).show?
+                = link_to @assignment.department.name, organization_department_path(@organization, @assignment.department), class: "text-decoration-none"
+              - else
+                %span= @assignment.department.name
 
-                - if @assignment.tagline.present?
-                  .mb-3
-                    %h6.text-muted Tagline
-                    %p.mb-0= @assignment.tagline
+        - if @assignment.tagline.present?
+          .mb-3
+            %h6.text-muted Tagline
+            .markdown-content.markdown-content--bordered
+              %p.mb-0= @assignment.tagline
 
-                - if @assignment.assignment_outcomes.any?
-                  .mb-3
-                    %h6.text-muted
-                      = link_to "Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
-                    - @assignment.assignment_outcomes.ordered.each do |outcome|
-                      .card.mb-2
-                        .card-body.py-2
-                          .d-flex.justify-content-between.align-items-start
-                            .flex-grow-1
-                              .markdown-content
-                                = render_markdown(outcome.description)
-                              - if outcome.progress_report_url.present? || outcome.management_relationship_filter.present? || outcome.team_relationship_filter.present? || outcome.consumer_assignment_filter.present?
-                                .mt-2.pt-2.border-top
-                                  - if outcome.progress_report_url.present?
-                                    .mb-1
-                                      %small.text-muted
-                                        %strong Progress Report:
-                                      %br
-                                      = link_to outcome.progress_report_url, outcome.progress_report_url, target: "_blank", class: "text-decoration-none"
+        - if @assignment.assignment_outcomes.any?
+          .mb-3
+            %h6.text-muted
+              = link_to "Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
+            - @assignment.assignment_outcomes.ordered.each do |outcome|
+              .markdown-content.markdown-content--bordered.mb-3
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    .markdown-content
+                      = render_markdown(outcome.description)
+                    - if outcome.progress_report_url.present? || outcome.management_relationship_filter.present? || outcome.team_relationship_filter.present? || outcome.consumer_assignment_filter.present?
+                      .mt-2.pt-2.border-top
+                        - if outcome.progress_report_url.present?
+                          .mb-1
+                            %small.text-muted
+                              %strong Progress Report:
+                            %br
+                            = link_to outcome.progress_report_url, outcome.progress_report_url, target: "_blank", class: "text-decoration-none"
 
-                                  - if outcome.management_relationship_filter.present?
-                                    .mb-1
-                                      %small.text-muted
-                                        %strong Who to Ask (Management):
-                                      %br
-                                      %small= assignment_outcome_management_relationship_label(outcome.management_relationship_filter)
+                        - if outcome.management_relationship_filter.present?
+                          .mb-1
+                            %small.text-muted
+                              %strong Who to Ask (Management):
+                            %br
+                            %small= assignment_outcome_management_relationship_label(outcome.management_relationship_filter)
 
-                                  - if outcome.team_relationship_filter.present?
-                                    .mb-1
-                                      %small.text-muted
-                                        %strong Who to Ask (Team):
-                                      %br
-                                      %small= assignment_outcome_team_relationship_label(outcome.team_relationship_filter)
+                        - if outcome.team_relationship_filter.present?
+                          .mb-1
+                            %small.text-muted
+                              %strong Who to Ask (Team):
+                            %br
+                            %small= assignment_outcome_team_relationship_label(outcome.team_relationship_filter)
 
-                                  - if outcome.consumer_assignment_filter.present?
-                                    .mb-1
-                                      %small.text-muted
-                                        %strong Who to Ask (Consumer Assignment):
-                                      %br
-                                      %small= assignment_outcome_consumer_assignment_label(outcome.consumer_assignment_filter, @assignment)
-                            .d-flex.flex-column.align-items-end.gap-1
-                              %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
-                                = outcome.outcome_type.titleize
-                              - if policy(outcome).edit?
-                                = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "badge text-decoration-none #{outcome.has_additional_configuration? ? 'bg-info' : 'bg-secondary'}" do
-                                  = outcome.additional_configuration_badge_label
-                - else
-                  .mb-3
-                    .alert.alert-warning
-                      %h6.mb-2
-                        %i.bi.bi-exclamation-triangle.me-2
-                        No Outcomes Defined
-                      %p.mb-2 Outcomes help clarify what success looks like for this assignment.
-                      = link_to "Add Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "btn btn-warning btn-sm"
+                        - if outcome.consumer_assignment_filter.present?
+                          .mb-1
+                            %small.text-muted
+                              %strong Who to Ask (Consumer Assignment):
+                            %br
+                            %small= assignment_outcome_consumer_assignment_label(outcome.consumer_assignment_filter, @assignment)
+                  .d-flex.flex-column.align-items-end.gap-1
+                    %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                      = outcome.outcome_type.titleize
+                    - if policy(outcome).edit?
+                      = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "badge text-decoration-none #{outcome.has_additional_configuration? ? 'bg-info' : 'bg-secondary'}" do
+                        = outcome.additional_configuration_badge_label
+        - else
+          .mb-3
+            .alert.alert-warning
+              %h6.mb-2
+                %i.bi.bi-exclamation-triangle.me-2
+                No Outcomes Defined
+              %p.mb-2 Outcomes help clarify what success looks like for this assignment.
+              = link_to "Add Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "btn btn-warning btn-sm"
 
-                - if @assignment.required_activities.present?
-                  .mb-3
-                    %h6.text-muted Required Activities
-                    = render "shared/assignments/required_activities", content: @assignment.required_activities, bordered: true
+        - if @assignment.required_activities.present?
+          .mb-3
+            %h6.text-muted Required Activities
+            = render "shared/assignments/required_activities", content: @assignment.required_activities, bordered: true
 
-                - if @assignment.published_url.present? || @assignment.draft_url.present?
-                  .mb-3
-                    %h6.text-muted Source Documents
-                    - if @assignment.published_url.present?
-                      .mb-2
-                        = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm w-100" do
-                          %i.bi.bi-file-earmark-text.me-1
-                          Published Version
-                    - if @assignment.draft_url.present?
-                      .mb-2
-                        = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm w-100" do
-                          %i.bi.bi-file-earmark-text.me-1
-                          Draft Version
+        - if @assignment.has_ability_requirements?
+          .mb-3{ role: "region", "aria-labelledby": "abilities" }
+            %h6.text-muted.d-flex.align-items-center.flex-wrap.gap-2.mb-2{ id: "abilities" }
+              %span
+                Ability Milestones required to be qualified to take on
+                = @assignment.title
+              - if policy(@assignment).update?
+                = link_to organization_assignment_ability_milestones_path(@organization, @assignment),
+                          class: "btn btn-outline-primary btn-sm",
+                          title: "Manage Ability Milestones",
+                          "aria-label" => "Manage Ability Milestones",
+                          data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+                  %i.bi.bi-pencil
+              - else
+                %span.d-inline-flex.align-items-center.gap-1
+                  %button.btn.btn-outline-secondary.btn-sm{type: "button", disabled: true, "aria-label" => "Manage Ability Milestones"}
+                    %i.bi.bi-pencil
+                  %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "You need employment management permissions or admin access to manage ability milestones", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                    %i.bi.bi-exclamation-triangle
+            .markdown-content.markdown-content--bordered
+              %ul.mb-0
+                - @assignment.required_abilities.each do |aa|
+                  %li
+                    = link_to organization_ability_path(aa.ability.company, aa.ability), class: "text-decoration-none" do
+                      = "#{milestone_level_display(aa.milestone_level).downcase} #{aa.ability.name} (M#{aa.milestone_level})"
 
-                = render "shared/object_maintainers",
-                  maintainable: @assignment,
-                  organization: @organization,
-                  manage_path: organization_assignment_maintainers_path(@organization, @assignment)
+        - if @assignment.published_url.present? || @assignment.draft_url.present?
+          .mb-3
+            %h6.text-muted Source Documents
+            - if @assignment.published_url.present?
+              .mb-2
+                = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm w-100" do
+                  %i.bi.bi-file-earmark-text.me-1
+                  Published Version
+            - if @assignment.draft_url.present?
+              .mb-2
+                = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm w-100" do
+                  %i.bi.bi-file-earmark-text.me-1
+                  Draft Version
 
       .col-lg-4.d-flex.flex-column.gap-4
         = render "organizations/assignments/actions_card"
@@ -141,19 +171,18 @@
           .markdown-content.markdown-content--bordered
             = render_markdown(@assignment.handbook)
 
-    - if @assignment.has_ability_requirements?
-      .card.mb-4{ role: "region", "aria-labelledby": "abilities" }
-        .card-header
-          %h5.mb-0{ id: "abilities" }
-            %i.bi.bi-lightning.me-2
-            Abilities Required for This Assignment
-        .card-body
-          %p.mb-0.text-muted
-            = render 'shared/abilities_sentence', 
-                     assignment_abilities: @assignment.required_abilities,
-                     public_view: false,
-                     show_milestone_parentheticals: true,
-                     include_prefix: true
+    = render "shared/public_kudos_for_rateable_card",
+      organization: @organization,
+      public_kudos: @public_kudos_for_rateable,
+      rateable_display_name: @public_kudos_rateable_display_name,
+      all_kudos_url: @public_kudos_all_kudos_observations_url,
+      all_types_url: @public_kudos_all_types_observations_url
+
+    = render "shared/section_header",
+             title: "#{@assignment.title} - Connected",
+             icon: "bi-diagram-3",
+             description: "How this assignment links to positions, people, and other assignments",
+             include_top_header_margin: false
 
     - if policy(@assignment).show?
       .card.mb-4{ role: "region", "aria-labelledby": "assignment-accountability-flow" }
@@ -231,6 +260,33 @@
                         (#{@holder_energy_percentages[teammate.id]}%)
         - else
           %p.text-muted.mb-0 No current holders
+
+    = render "shared/section_header",
+             title: "#{@assignment.title} continuously more clear",
+             icon: "bi-brightness-high",
+             description: "Maintainers, proposed edits, and lived clarity signals"
+
+    = render "shared/object_maintainers",
+      maintainable: @assignment,
+      organization: @organization,
+      manage_path: organization_assignment_maintainers_path(@organization, @assignment)
+
+    - if policy(MaapProposal).index?
+      .card.mb-4{ role: "region", "aria-labelledby": "proposed-edits" }
+        .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+          %h5.mb-0{ id: "proposed-edits" }
+            %i.bi.bi-pencil-square.me-2
+            Proposed edits
+          = link_to "View all", organization_assignment_maap_proposals_path(@organization, @assignment), class: "btn btn-sm btn-outline-secondary"
+        .card-body
+          %p.mb-2
+            = link_to all_proposed_edits_label(@assignment),
+                      organization_assignment_maap_proposals_path(@organization, @assignment),
+                      class: "text-decoration-none"
+          - if policy(MaapProposal).create?
+            = link_to new_organization_assignment_maap_proposal_path(@organization, @assignment), class: "btn btn-outline-primary btn-sm" do
+              %i.bi.bi-plus-lg.me-1
+              Propose edit
 
     = render "organizations/assignments/expectation_alignment_score",
       score: @expectation_alignment_score,
@@ -317,15 +373,6 @@
 
     / Comments Section
     = render 'shared/comment_summary', commentable: @assignment, organization: @organization
-
-    .row
-      .col-12
-        = render "shared/public_kudos_for_rateable_card",
-          organization: @organization,
-          public_kudos: @public_kudos_for_rateable,
-          rateable_display_name: @public_kudos_rateable_display_name,
-          all_kudos_url: @public_kudos_all_kudos_observations_url,
-          all_types_url: @public_kudos_all_types_observations_url
 
     = render "organizations/shared/teammate_lens_catalog_cta",
         organization: @organization,

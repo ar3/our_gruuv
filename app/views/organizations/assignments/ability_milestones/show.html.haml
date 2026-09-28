@@ -4,12 +4,20 @@
 
 - content_for :header do
   .d-flex.flex-wrap.align-items-center.gap-2
-    %h1.mb-0
-      %i.bi.bi-link-45deg.me-2
-      #{@assignment.title} - Ability Milestones
-    = render "shared/page_help/header_info_button",
-             collapse_id: page_help_id,
-             tooltip: "Set which Abilities and Milestone levels this assignment requires. Click for details."
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span
+        %i.bi.bi-link-45deg.me-2
+        #{@assignment.title} - Ability Milestones
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Set which Abilities and Milestone levels this assignment requires. Click for details."
+      - if policy(@assignment).update?
+        = link_to edit_organization_assignment_path(@organization, @assignment),
+                  class: "btn btn-primary",
+                  title: "Edit Assignment",
+                  "aria-label" => "Edit Assignment",
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+          %i.bi.bi-pencil
 
 - content_for :header_action do
   = render 'assignments/view_switcher'

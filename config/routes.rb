@@ -446,6 +446,18 @@ Rails.application.routes.draw do
       resource :consumer_assignments, only: [:show, :update], module: :assignments
       resource :maintainers, only: [:show, :update], module: :assignments
       resources :goal_associations, module: :assignments, only: [:create, :destroy]
+      resources :maap_proposals, module: :assignments do
+        member do
+          post :submit
+          post :apply
+          post :reject
+          get :markdown
+        end
+        collection do
+          post :upload_markdown
+          get :markdown_template
+        end
+      end
       resource :cytoscape_graph_layout,
                only: %i[show update destroy],
                controller: "cytoscape_graph_layouts",

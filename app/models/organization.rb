@@ -22,6 +22,7 @@ class Organization < ApplicationRecord
   has_many :teams, foreign_key: :company_id, dependent: :destroy
   has_many :departments, foreign_key: :company_id, dependent: :destroy
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
+  has_many :maap_proposals, dependent: :destroy
   has_many :abilities, foreign_key: 'company_id', dependent: :destroy
   has_many :aspirations, foreign_key: 'company_id', dependent: :destroy
   has_many :prompt_templates, foreign_key: 'company_id', dependent: :destroy

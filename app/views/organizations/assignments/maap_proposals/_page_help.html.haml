@@ -1,0 +1,71 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Keep this assignment’s expectations fresh by letting anyone in the org propose apply-ready edits — while only people who can already edit the assignment publish changes. MAAP is strongest when the people closest to the work help keep it relevant, not when updates sit only with a small admin group.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+  %p.mb-3
+    Stale job docs and locked-down MAAP erode trust. Democratized proposals are how OG fights that: broad contribution, clear review, careful publish.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 How proposals move
+  %p.mb-2.small.text-muted
+    Anyone can draft and submit. Only teammates with MAAP update permission on this assignment can apply or reject. The whole proposal is accepted or rejected together.
+  .maap-proposal-flow.border.rounded.p-3.mb-3.bg-white
+    .d-flex.flex-column.flex-md-row.flex-wrap.align-items-stretch.justify-content-center.gap-2
+      .maap-proposal-flow__step.text-center.px-2.py-2
+        %span.badge.bg-secondary.mb-1 Draft
+        .small Anyone edits (form or markdown)
+      .maap-proposal-flow__arrow.d-none.d-md-flex.align-items-center.text-muted
+        %i.bi.bi-arrow-right
+      .maap-proposal-flow__arrow.d-flex.d-md-none.justify-content-center.text-muted
+        %i.bi.bi-arrow-down
+      .maap-proposal-flow__step.text-center.px-2.py-2
+        %span.badge.bg-primary.mb-1 Submitted
+        .small Ready for review — org-visible
+      .maap-proposal-flow__arrow.d-none.d-md-flex.align-items-center.text-muted
+        %i.bi.bi-arrow-right
+      .maap-proposal-flow__arrow.d-flex.d-md-none.justify-content-center.text-muted
+        %i.bi.bi-arrow-down
+      .maap-proposal-flow__branch.d-flex.flex-column.gap-2
+        .maap-proposal-flow__step.text-center.px-2.py-2.border.border-success.rounded
+          %span.badge.bg-success.mb-1 Applied
+          .small Editor publishes + version bump
+        .maap-proposal-flow__step.text-center.px-2.py-2.border.border-danger.rounded
+          %span.badge.bg-danger.mb-1 Rejected
+          .small Editor declines (optional note)
+  %ul.mb-3.small
+    %li
+      %span.badge.bg-secondary.me-1 Draft
+      and
+      %span.badge.bg-primary.me-1 Submitted
+      are open proposals. The proposer can delete their own open proposal (download markdown first if you want to keep a copy). The header count in
+      %strong All proposed edits (N)
+      is the number of those open proposals.
+    %li
+      %span.badge.bg-success.me-1 Applied
+      and
+      %span.badge.bg-danger.me-1 Rejected
+      stay for history; they cannot be edited further.
+
+  %h5.fw-semibold.mb-2 What you can do here
+  %ul.mb-3
+    %li
+      %strong Propose edit
+      starts a draft from the live assignment (or upload a
+      %code .md
+      file with the stable assignment id).
+    %li
+      Edit the draft, compare diffs on the proposal page, then
+      %strong Submit
+      when it is apply-ready.
+    %li
+      Editors review the field diffs, choose a version bump (fundamental / clarifying / insignificant), then
+      %strong Apply
+      or
+      %strong Reject.
+
+  %h5.fw-semibold.mb-2 Example
+  %p.mb-0.small.text-muted
+    A manager without MAAP admin rights notices outcomes that no longer match the work. They propose an edit, submit it, and HR (or another MAAP editor) applies it after review — the assignment stays trustworthy without unlocking free-form rewrites for everyone.

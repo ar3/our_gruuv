@@ -1,0 +1,151 @@
+# frozen_string_literal: true
+
+require "yaml"
+
+module MaapProposals
+  class AssignmentMarkdownDeserializer
+    SECTION_HEADERS = {
+      "title" => :title,
+      "tagline" => :tagline,
+      "required activities" => :required_activities,
+      "handbook" => :handbook,
+      "outcomes" => :outcomes
+    }.freeze
+
+    def self.call(markdown:, assignment:)
+      new(markdown: markdown, assignment: assignment).call
+    end
+
+    def initialize(markdown:, assignment:)
+      @markdown = markdown.to_s
+      @assignment = assignment
+    end
+
+    def call
+      front_matter, body = split_front_matter(@markdown)
+      meta = parse_front_matter(front_matter)
+      identity_error = validate_identity(meta)
+      return Result.err(identity_error) if identity_error
+
+      sections = parse_sections(body)
+      outcomes_result = parse_outcomes(sections[:outcomes].to_s)
+      return outcomes_result unless outcomes_result.ok?
+
+      payload = AssignmentPayload.from_hash(
+        {
+          "schema_version" => meta["maap_proposal_schema_version"] || AssignmentPayload::SCHEMA_VERSION,
+          "title" => sections[:title],
+          "tagline" => sections[:tagline],
+          "required_activities" => sections[:required_activities],
+          "handbook" => sections[:handbook],
+          "department_id" => meta["department_id"],
+          "outcomes" => outcomes_result.value
+        }
+      )
+
+      errors = payload.validate!(company: @assignment.company)
+      return Result.err(errors) if errors.any?
+
+      Result.ok(
+        payload: payload,
+        based_on_semantic_version: meta["based_on_semantic_version"].presence || @assignment.semantic_version
+      )
+    rescue Psych::SyntaxError => e
+      Result.err("Invalid YAML front matter: #{e.message}")
+    end
+
+    private
+
+    def split_front_matter(text)
+      if text.start_with?("---")
+        parts = text.split(/^---\s*$/, 3)
+        return [parts[1].to_s, parts[2].to_s] if parts.length >= 3
+      end
+
+      ["", text]
+    end
+
+    def parse_front_matter(raw)
+      return {} if raw.strip.empty?
+
+      parsed = YAML.safe_load(raw, permitted_classes: [Date, Time], aliases: false)
+      (parsed || {}).deep_stringify_keys
+    end
+
+    def validate_identity(meta)
+      type = meta["proposable_type"].to_s
+      id = meta["proposable_id"].to_i
+
+      return "proposable_type must be Assignment" if type.present? && type != "Assignment"
+      return "proposable_id does not match this assignment" if id.positive? && id != @assignment.id
+
+      nil
+    end
+
+    def parse_sections(body)
+      sections = {
+        title: nil,
+        tagline: nil,
+        required_activities: nil,
+        handbook: nil,
+        outcomes: nil
+      }
+      current = nil
+      buffer = []
+
+      flush = lambda do
+        return if current.nil?
+
+        sections[current] = buffer.join("\n").strip
+        buffer = []
+      end
+
+      body.each_line do |line|
+        header = line.strip.sub(/\A\#{1,3}\s+/, "").downcase
+        if line.strip.match?(/\A\#{1,3}\s+/) && SECTION_HEADERS.key?(header)
+          flush.call
+          current = SECTION_HEADERS[header]
+          next
+        end
+
+        buffer << line.rstrip if current
+      end
+      flush.call
+
+      sections
+    end
+
+    # Each outcome is an H3 (name), then id / outcome_type, then optional body.
+    def parse_outcomes(raw)
+      return Result.ok([]) if raw.strip.empty?
+
+      blocks = raw.split(/^###\s+/).drop(1)
+      outcomes = blocks.filter_map do |block|
+        lines = block.lines.map(&:rstrip)
+        heading = lines.shift.to_s.strip
+        next if heading.blank?
+
+        meta = { "id" => nil, "outcome_type" => "quantitative" }
+        body_lines = []
+        lines.each do |line|
+          if body_lines.empty? && line.match?(/\A(id|outcome_type):\s*/)
+            key, value = line.split(":", 2)
+            meta[key.strip] = value.to_s.strip.presence
+          elsif line.strip.present? || body_lines.any?
+            body_lines << line
+          end
+        end
+
+        description = [heading, body_lines.join("\n").strip.presence].compact.join("\n").strip
+
+        {
+          "id" => meta["id"],
+          "description" => description,
+          "outcome_type" => meta["outcome_type"] || "quantitative"
+        }
+      end
+
+      Result.ok(outcomes)
+    end
+  end
+end

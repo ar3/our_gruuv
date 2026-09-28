@@ -1,0 +1,47 @@
+- content_for :title, "Edit proposal · #{@assignment.title}"
+
+- content_for :header do
+  %h1.mb-0 Edit draft proposal
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "Proposal", url: organization_assignment_maap_proposal_path(@organization, @assignment, @proposal) }, { label: "Edit", url: nil }])
+
+.row.justify-content-center
+  .col-lg-8
+    = form_with model: @proposal, url: organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :patch, local: true, scope: :maap_proposal do |f|
+      .mb-3
+        = f.label :title, class: "form-label"
+        = f.text_field :title, value: @payload.title, class: "form-control", required: true
+      .mb-3
+        = f.label :department_id, "Department", class: "form-label"
+        = f.collection_select :department_id, @organization.departments.order(:name), :id, :name, { include_blank: "No department", selected: @payload.department_id }, class: "form-select"
+      .mb-3
+        = f.label :tagline, class: "form-label"
+        = f.text_area :tagline, value: @payload.tagline, class: "form-control", rows: 2, required: true
+      .mb-3
+        = f.label :required_activities, class: "form-label"
+        = f.text_area :required_activities, value: @payload.required_activities, class: "form-control", rows: 6
+      .mb-3
+        = f.label :handbook, class: "form-label"
+        = f.text_area :handbook, value: @payload.handbook, class: "form-control", rows: 8
+
+      %div{"data-controller" => "maap-proposal-outcomes"}
+        .d-flex.justify-content-between.align-items-center.mt-4.mb-3
+          %h5.mb-0 Outcomes
+          %button.btn.btn-sm.btn-outline-primary{type: "button", "data-action" => "maap-proposal-outcomes#add"}
+            %i.bi.bi-plus-lg.me-1
+            Add outcome
+
+        %div{"data-maap-proposal-outcomes-target" => "list"}
+          - Array(@payload.outcomes).each do |outcome|
+            = render "organizations/assignments/maap_proposals/outcome_fields", outcome: outcome
+
+        %template{"data-maap-proposal-outcomes-target" => "template"}
+          = render "organizations/assignments/maap_proposals/outcome_fields", outcome: { "description" => "", "outcome_type" => "quantitative" }
+
+        %p.text-muted.small.mt-2.mb-0
+          Add outcomes with the button, or remove ones that should not remain. Saving with no outcome cards clears all outcomes. You can also edit via downloaded markdown.
+
+      .d-flex.flex-wrap.gap-2.mt-4
+        = f.submit "Save draft", class: "btn btn-primary"
+        = link_to "Cancel", organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), class: "btn btn-outline-secondary"

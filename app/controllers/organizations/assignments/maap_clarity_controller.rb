@@ -90,14 +90,9 @@ module Organizations
       end
 
       def assign_assignments_for_maap_clarity_switcher
-        scope = policy_scope(Assignment).where(company: @organization).unarchived.includes(:department)
-        assignments_array = scope.left_joins(:department).order(
-          Arel.sql("COALESCE(departments.name, '')"),
-          'assignments.title'
-        ).to_a
-        grouped = assignments_array.group_by(&:department)
-        @assignments_by_department_for_maap_switcher = grouped.sort_by { |dept, _| dept ? [1, dept.display_name] : [0, ''] }.to_h
-        @assignments_by_department_for_maap_switcher.transform_values! { |list| list.sort_by { |a| a.title.to_s.downcase } }
+        @assignments_by_department_for_maap_switcher = AssignmentsByDepartmentForSwitcher.call(
+          scope: policy_scope(Assignment).where(company: @organization)
+        )
       end
 
       def sanitized_consult_focus_param

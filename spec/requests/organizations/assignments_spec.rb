@@ -123,6 +123,35 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include(assignment.title)
       end
 
+      it 'uses an assignment switcher header with page help and an edit dropdown' do
+        other = create(:assignment, company: organization, title: 'Zebra Duty')
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Switch assignment')
+        expect(response.body).to include('assignmentShowPageHelp')
+        expect(response.body).to include('Goal of this page')
+        expect(response.body).to include(organization_assignment_path(organization, other))
+        expect(response.body).to include('All proposed edits (0)')
+        expect(response.body).to include('aria-label="Edit or suggest edit"')
+        expect(response.body).to include('Suggest Edit')
+        expect(response.body).to include(new_organization_assignment_maap_proposal_path(organization, assignment))
+        expect(response.body).to include('You need employment management permissions or admin access to edit assignments')
+        expect(response.body).to include('dropdown-item text-muted disabled')
+      end
+
+      it 'shows a disabled manage-ability-milestones edit control next to the abilities header' do
+        ability = create(:ability, company: organization, name: 'Communication')
+        create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Ability Milestones required to be qualified to take on')
+        expect(response.body).to include('aria-label="Manage Ability Milestones"')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('You need employment management permissions or admin access to manage ability milestones')
+        expect(response.body).not_to include("href=\"#{organization_assignment_ability_milestones_path(organization, assignment)}\"")
+      end
+
       it 'renders the assignment accountability flow section' do
         downstream = create(:assignment, company: organization, title: 'Downstream Role')
         create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: downstream, company: organization)
@@ -566,6 +595,27 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         get organization_assignment_path(organization, assignment)
         expect(response.body).to include('Edit Assignment')
         expect(response.body).to include('Manage Ability Milestones')
+      end
+
+      it 'clusters an edit dropdown in the show header next to page help' do
+        get organization_assignment_path(organization, assignment)
+        expect(response.body).to include('aria-label="Edit or suggest edit"')
+        expect(response.body).to include('Suggest Edit')
+        expect(response.body).to include('Edit')
+        expect(response.body).to include(edit_organization_assignment_path(organization, assignment))
+        expect(response.body).to include(new_organization_assignment_maap_proposal_path(organization, assignment))
+        expect(response.body).to include('assignmentShowPageHelp')
+      end
+
+      it 'links the abilities header edit control to manage ability milestones' do
+        ability = create(:ability, company: organization, name: 'Communication')
+        create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Ability Milestones required to be qualified to take on')
+        expect(response.body).to include(organization_assignment_ability_milestones_path(organization, assignment))
+        expect(response.body).to include('aria-label="Manage Ability Milestones"')
       end
     end
   end

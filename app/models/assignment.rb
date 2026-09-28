@@ -36,6 +36,7 @@ class Assignment < ApplicationRecord
   has_many :goals, through: :goal_associations
 
   has_many :og_consultations, as: :subject, dependent: :destroy
+  has_many :maap_proposals, as: :proposable, dependent: :destroy
 
   def latest_assignment_clarity_consultation
     og_consultations.for_kind(OgConsultation::KIND_ASSIGNMENT_CLARITY).latest_first.first

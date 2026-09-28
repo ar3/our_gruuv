@@ -1,0 +1,99 @@
+- content_for :title, "Proposal · #{@assignment.title}"
+- page_help_id = "assignmentMaapProposalShowPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span Assignment edit proposal
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Everyone can help keep MAAP relevant. Click for how proposals work."
+      - if policy(@proposal).edit?
+        = link_to edit_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
+                  class: "btn btn-primary",
+                  title: "Edit draft",
+                  "aria-label" => "Edit draft",
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+          %i.bi.bi-pencil
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "MAAP proposals", url: organization_assignment_maap_proposals_path(@organization, @assignment) }, { label: "Proposal", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/assignments/maap_proposals/page_help"
+
+.row.justify-content-center
+  .col-lg-8
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-3
+      %div
+        %span.badge.me-2{class: proposal_status_badge_class(@proposal.status)}= @proposal.status
+        %span.text-muted
+          Proposed by #{@proposal.proposer.person.display_name}
+          · based on v#{@proposal.based_on_semantic_version}
+      .d-flex.flex-wrap.gap-2
+        = link_to markdown_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), class: "btn btn-outline-secondary btn-sm" do
+          %i.bi.bi-download.me-1
+          Download .md
+        - if policy(@proposal).edit?
+          = link_to "Edit draft", edit_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), class: "btn btn-outline-primary btn-sm"
+        - if policy(@proposal).submit?
+          = button_to "Submit", submit_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, class: "btn btn-primary btn-sm"
+        - if policy(@proposal).destroy?
+          = button_to "Delete", organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :delete, class: "btn btn-outline-danger btn-sm", data: { turbo_confirm: "Delete this proposal?" }
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Changes vs current assignment
+      .card-body
+        - if @field_diffs.any?
+          - @field_diffs.each do |field_diff|
+            = render_maap_proposal_field_diff(field_diff)
+        - else
+          %p.text-muted.mb-0 No differences from the current assignment.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Proposed content
+      .card-body
+        %h6.text-muted Title
+        %p= @payload.title
+        %h6.text-muted Tagline
+        %p= @payload.tagline
+        - if @payload.department_id.present?
+          %h6.text-muted Department
+          %p= Department.find_by(id: @payload.department_id)&.name || @payload.department_id
+        %h6.text-muted Required activities
+        .markdown-content.mb-3= simple_format(@payload.required_activities.to_s)
+        %h6.text-muted Handbook
+        .markdown-content.mb-3= render_markdown(@payload.handbook.to_s)
+        %h6.text-muted Outcomes
+        - if @payload.outcomes.any?
+          - @payload.outcomes.each do |outcome|
+            .border.rounded.p-2.mb-2
+              %strong.d-block.mb-1= outcome["description"]
+              .d-flex.flex-wrap.gap-2.align-items-center
+                %span.badge.bg-secondary= outcome["outcome_type"]
+                - if outcome["id"].present?
+                  %small.text-muted id #{outcome["id"]}
+        - else
+          %p.text-muted.mb-0 None
+
+    - if policy(@proposal).apply?
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Review
+        .card-body
+          = form_with url: apply_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true do
+            .mb-3
+              = label_tag :version_type, "Version bump", class: "form-label"
+              = select_tag :version_type, options_for_select([["Fundamental", "fundamental"], ["Clarifying", "clarifying"], ["Insignificant", "insignificant"]], "clarifying"), class: "form-select", required: true
+            .mb-3
+              = label_tag :decision_note, "Note (optional)", class: "form-label"
+              = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+            .d-flex.flex-wrap.gap-2
+              = submit_tag "Apply proposal", class: "btn btn-success"
+          = form_with url: reject_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true, class: "mt-3" do
+            .mb-3
+              = label_tag :decision_note, "Rejection note (optional)", class: "form-label"
+              = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+            = submit_tag "Reject proposal", class: "btn btn-outline-danger", data: { turbo_confirm: "Reject this proposal?" }
