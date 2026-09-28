@@ -174,7 +174,7 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
   end
 
   def set_proposal
-    @proposal = MaapProposal.for_proposable(@assignment).find(params[:id])
+    @proposal = MaapProposal.for_proposable(@assignment).includes(decided_by: :person).find(params[:id])
   end
 
   def proposal_attributes

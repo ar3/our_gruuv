@@ -143,6 +143,12 @@
                     = link_to organization_ability_path(aa.ability.company, aa.ability), class: "text-decoration-none" do
                       = "#{milestone_level_display(aa.milestone_level).downcase} #{aa.ability.name} (M#{aa.milestone_level})"
 
+        - if @assignment.handbook.present?
+          .mb-3
+            %h6.text-muted Handbook
+            .markdown-content.markdown-content--bordered
+              = render_markdown(@assignment.handbook)
+
         - if @assignment.published_url.present? || @assignment.draft_url.present?
           .mb-3
             %h6.text-muted Source Documents
@@ -160,16 +166,6 @@
       .col-lg-4.d-flex.flex-column.gap-4
         = render "organizations/assignments/actions_card"
         = render "organizations/assignments/maap_clarity_spotlight"
-
-    - if @assignment.handbook.present?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-book.me-2
-            Handbook
-        .card-body
-          .markdown-content.markdown-content--bordered
-            = render_markdown(@assignment.handbook)
 
     = render "shared/public_kudos_for_rateable_card",
       organization: @organization,

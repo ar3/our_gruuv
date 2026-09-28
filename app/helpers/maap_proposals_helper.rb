@@ -13,4 +13,28 @@ module MaapProposalsHelper
       )
     end
   end
+
+  # Nil when the viewer can apply/reject now; otherwise a hover explanation.
+  def maap_proposal_decision_disabled_reason(proposal)
+    unless proposal.decidable?
+      return case proposal.status
+      when "draft"
+        "Only submitted proposals can be applied or rejected. Submit this draft first."
+      when "applied"
+        "This proposal has already been applied."
+      when "rejected"
+        "This proposal has already been rejected."
+      else
+        "Only submitted proposals can be applied or rejected."
+      end
+    end
+
+    return if policy(proposal).apply?
+
+    "You need MAAP management permissions to apply or reject this proposal."
+  end
+
+  def maap_proposal_decision_enabled?(proposal)
+    maap_proposal_decision_disabled_reason(proposal).nil?
+  end
 end

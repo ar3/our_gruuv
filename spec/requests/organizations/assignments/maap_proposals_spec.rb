@@ -74,6 +74,12 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(proposal.reload).to be_submitted
 
       sign_in_as_teammate_for_request(manager, organization)
+      get organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Apply proposal")
+      expect(response.body).to include(apply_organization_assignment_maap_proposal_path(organization, assignment, proposal))
+      expect(response.body).not_to include("You need MAAP management permissions to apply or reject this proposal.")
+
       post apply_organization_assignment_maap_proposal_path(organization, assignment, proposal), params: {
         version_type: "clarifying"
       }
@@ -146,6 +152,28 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(response.body).to include('class="diff"')
       expect(response.body).to include("assignmentMaapProposalShowPageHelp")
       expect(response.body).to include("How proposals move")
+      expect(response.body).to include("Apply proposal")
+      expect(response.body).to include("Reject proposal")
+      expect(response.body).to include("Only submitted proposals can be applied or rejected")
+    end
+
+    it "disables apply/reject for teammates without MAAP permission even when submitted" do
+      proposal = MaapProposals::CreateAssignmentEditDraft.call(
+        assignment: assignment,
+        proposer: person_teammate
+      ).value
+      MaapProposals::UpdateAssignmentEditDraft.call(
+        proposal: proposal,
+        attributes: { "title" => "Needs Review", "tagline" => assignment.tagline }
+      )
+      MaapProposals::SubmitAssignmentEdit.call(proposal: proposal.reload)
+
+      get organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Apply proposal")
+      expect(response.body).to include("Reject proposal")
+      expect(response.body).to include("You need MAAP management permissions to apply or reject this proposal.")
+      expect(response.body).not_to include(apply_organization_assignment_maap_proposal_path(organization, assignment, proposal))
     end
 
     it "renders decided proposals against the stored baseline, not a later live assignment" do
@@ -158,7 +186,11 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
         attributes: { "title" => "Proposed At Decision", "tagline" => assignment.tagline }
       )
       MaapProposals::SubmitAssignmentEdit.call(proposal: proposal.reload)
-      MaapProposals::RejectAssignmentEdit.call(proposal: proposal.reload, decided_by: manager_teammate)
+      MaapProposals::RejectAssignmentEdit.call(
+        proposal: proposal.reload,
+        decided_by: manager_teammate,
+        decision_note: "Not the right timing"
+      )
 
       assignment.update!(handbook: "Later handbook that must not appear in decided diffs")
 
@@ -168,6 +200,11 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(response.body).to include("Proposed At Decision")
       expect(response.body).to include("Ops Cadence")
       expect(response.body).not_to include("Later handbook that must not appear in decided diffs")
+      expect(response.body).to include("Proposal rejected")
+      expect(response.body).to include(manager.display_name)
+      expect(response.body).to include("rejected this proposal")
+      expect(response.body).to include("Not the right timing")
+      expect(response.body).not_to include("Apply proposal")
     end
   end
 

@@ -86,22 +86,53 @@
         - else
           %p.text-muted.mb-0 None
 
-    - if policy(@proposal).apply?
-      .card.mb-4
+    - if @proposal.applied? || @proposal.rejected?
+      - decision_verb = @proposal.applied? ? "accepted" : "rejected"
+      - decision_alert_class = @proposal.applied? ? "alert-success" : "alert-danger"
+      - decider_name = @proposal.decided_by&.person&.display_name || "Someone"
+      .alert{class: "#{decision_alert_class} mb-4", role: "region", "aria-labelledby": "proposal-decision"}
+        %h5.alert-heading.mb-2{ id: "proposal-decision" }
+          %i.bi{class: "#{@proposal.applied? ? 'bi-check-circle' : 'bi-x-circle'} me-2"}
+          Proposal #{decision_verb}
+        %p.mb-2
+          #{decider_name} #{decision_verb} this proposal
+          - if @proposal.decided_at.present?
+            on #{l(@proposal.decided_at, format: :long)}
+          - if @proposal.applied? && @proposal.applied_version_type.present?
+            %span.text-muted
+              · #{@proposal.applied_version_type} version bump
+        - if @proposal.decision_note.present?
+          %p.mb-0
+            %strong Note:
+            = @proposal.decision_note
+        - else
+          %p.mb-0.text-muted No note was left with this decision.
+    - else
+      - decision_disabled_reason = maap_proposal_decision_disabled_reason(@proposal)
+      .card.mb-4{ role: "region", "aria-labelledby": "proposal-review" }
         .card-header
-          %h5.mb-0 Review
+          %h5.mb-0{ id: "proposal-review" } Review
         .card-body
-          = form_with url: apply_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true do
-            .mb-3
-              = label_tag :version_type, "Version bump", class: "form-label"
-              = select_tag :version_type, options_for_select([["Fundamental", "fundamental"], ["Clarifying", "clarifying"], ["Insignificant", "insignificant"]], "clarifying"), class: "form-select", required: true
-            .mb-3
-              = label_tag :decision_note, "Note (optional)", class: "form-label"
-              = text_area_tag :decision_note, nil, class: "form-control", rows: 2
-            .d-flex.flex-wrap.gap-2
-              = submit_tag "Apply proposal", class: "btn btn-success"
-          = form_with url: reject_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true, class: "mt-3" do
-            .mb-3
-              = label_tag :decision_note, "Rejection note (optional)", class: "form-label"
-              = text_area_tag :decision_note, nil, class: "form-control", rows: 2
-            = submit_tag "Reject proposal", class: "btn btn-outline-danger", data: { turbo_confirm: "Reject this proposal?" }
+          - if decision_disabled_reason.blank?
+            = form_with url: apply_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true do
+              .mb-3
+                = label_tag :version_type, "Version bump", class: "form-label"
+                = select_tag :version_type, options_for_select([["Fundamental", "fundamental"], ["Clarifying", "clarifying"], ["Insignificant", "insignificant"]], "clarifying"), class: "form-select", required: true
+              .mb-3
+                = label_tag :decision_note, "Note (optional)", class: "form-label"
+                = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+              .d-flex.flex-wrap.gap-2
+                = submit_tag "Apply proposal", class: "btn btn-success"
+            = form_with url: reject_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true, class: "mt-3" do
+              .mb-3
+                = label_tag :decision_note, "Rejection note (optional)", class: "form-label"
+                = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+              = submit_tag "Reject proposal", class: "btn btn-outline-danger", data: { turbo_confirm: "Reject this proposal?" }
+          - else
+            .d-flex.flex-wrap.align-items-center.gap-2
+              %button.btn.btn-success{type: "button", disabled: true, "aria-label" => "Apply proposal"} Apply proposal
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => decision_disabled_reason, tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                %i.bi.bi-exclamation-triangle
+              %button.btn.btn-outline-danger{type: "button", disabled: true, "aria-label" => "Reject proposal"} Reject proposal
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => decision_disabled_reason, tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                %i.bi.bi-exclamation-triangle
