@@ -43,25 +43,25 @@ class PeopleController < ApplicationController
   end
 
   def disconnect_identity
-    authorize person, policy_class: PersonPolicy
-    identity = person.person_identities.find(params[:id])
-    
-    unless person.can_disconnect_identity?(identity)
-      redirect_to organization_person_path(current_organization, person), alert: 'Cannot disconnect this account. Please add another Google account first.'
+    authorize current_person, policy_class: PersonPolicy
+    identity = current_person.person_identities.find(params[:id])
+
+    unless current_person.can_disconnect_identity?(identity)
+      redirect_to identities_redirect_path, alert: 'Cannot disconnect this account. Please add another Google account first.'
       return
     end
-    
+
     if identity.destroy
-      redirect_to organization_person_path(current_organization, person), notice: 'Account disconnected successfully!'
+      redirect_to identities_redirect_path, notice: 'Account disconnected successfully!'
     else
-      redirect_to organization_person_path(current_organization, person), alert: 'Failed to disconnect account. Please try again.'
+      redirect_to identities_redirect_path, alert: 'Failed to disconnect account. Please try again.'
     end
   rescue ActiveRecord::RecordNotFound
-    redirect_to organization_person_path(current_organization, person), alert: 'Account not found.'
+    redirect_to identities_redirect_path, alert: 'Account not found.'
   end
 
   def person
-    @person ||= if params[:id].present?
+    @person ||= if action_name == 'public' && params[:id].present?
                   Person.find(params[:id])
                 else
                   current_person
@@ -69,6 +69,10 @@ class PeopleController < ApplicationController
   end
 
   private
+
+  def identities_redirect_path
+    organization_company_teammate_path(current_organization, current_company_teammate)
+  end
 
   def require_login
     unless current_person
