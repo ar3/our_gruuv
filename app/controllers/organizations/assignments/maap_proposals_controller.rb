@@ -28,9 +28,14 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
   def show
     authorize @proposal
     @payload = MaapProposals::AssignmentPayload.from_hash(@proposal.proposed_payload)
+    @diff_baseline = if @proposal.baseline_payload.present?
+      MaapProposals::AssignmentPayload.from_hash(@proposal.baseline_payload)
+    else
+      MaapProposals::AssignmentPayload.from_assignment(@assignment)
+    end
     @field_diffs = MaapProposals::AssignmentDiffBuilder.call(
-      assignment: @assignment,
-      payload: @payload
+      before: @diff_baseline,
+      after: @payload
     )
   end
 

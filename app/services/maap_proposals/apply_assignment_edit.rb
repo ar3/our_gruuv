@@ -30,6 +30,8 @@ module MaapProposals
       errors = payload.validate!(company: assignment.company)
       return Result.err(errors) if errors.any?
 
+      baseline_payload = AssignmentPayload.from_assignment(assignment).to_h
+
       form = AssignmentForm.new(assignment)
       form.current_person = @decided_by.person
       form_attrs = {
@@ -54,7 +56,8 @@ module MaapProposals
           decided_by: @decided_by,
           decided_at: Time.current,
           decision_note: @decision_note.presence,
-          applied_version_type: @version_type
+          applied_version_type: @version_type,
+          baseline_payload: baseline_payload
         )
       end
 

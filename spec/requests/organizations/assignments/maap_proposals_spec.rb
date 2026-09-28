@@ -80,6 +80,7 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(response).to redirect_to(organization_assignment_path(organization, assignment))
       expect(assignment.reload.title).to eq("Ops Cadence Improved")
       expect(proposal.reload).to be_applied
+      expect(proposal.baseline_payload["title"]).to eq("Ops Cadence")
     end
   end
 
@@ -145,6 +146,28 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(response.body).to include('class="diff"')
       expect(response.body).to include("assignmentMaapProposalShowPageHelp")
       expect(response.body).to include("How proposals move")
+    end
+
+    it "renders decided proposals against the stored baseline, not a later live assignment" do
+      proposal = MaapProposals::CreateAssignmentEditDraft.call(
+        assignment: assignment,
+        proposer: person_teammate
+      ).value
+      MaapProposals::UpdateAssignmentEditDraft.call(
+        proposal: proposal,
+        attributes: { "title" => "Proposed At Decision", "tagline" => assignment.tagline }
+      )
+      MaapProposals::SubmitAssignmentEdit.call(proposal: proposal.reload)
+      MaapProposals::RejectAssignmentEdit.call(proposal: proposal.reload, decided_by: manager_teammate)
+
+      assignment.update!(handbook: "Later handbook that must not appear in decided diffs")
+
+      get organization_assignment_maap_proposal_path(organization, assignment, proposal)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Changes vs assignment at decision")
+      expect(response.body).to include("Proposed At Decision")
+      expect(response.body).to include("Ops Cadence")
+      expect(response.body).not_to include("Later handbook that must not appear in decided diffs")
     end
   end
 

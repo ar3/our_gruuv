@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module MaapProposals
-  # Field-level diffs between live Assignment and a proposal payload (for Diffy HTML).
+  # Field-level diffs between a before/after AssignmentPayload (for Diffy HTML).
+  # Open proposals: before = live assignment. Decided: before = stored baseline_payload.
   class AssignmentDiffBuilder
     FieldDiff = Data.define(:key, :label, :before, :after, :html)
 
@@ -12,35 +13,54 @@ module MaapProposals
       [:handbook, "Handbook"]
     ].freeze
 
-    def self.call(assignment:, payload:)
-      new(assignment: assignment, payload: payload).call
+    def self.call(before: nil, after: nil, assignment: nil, payload: nil)
+      before_payload = coerce_before(before: before, assignment: assignment)
+      after_payload = coerce_after(after: after, payload: payload)
+      new(before: before_payload, after: after_payload).call
     end
 
-    def initialize(assignment:, payload:)
-      @assignment = assignment
-      @payload = payload.is_a?(AssignmentPayload) ? payload : AssignmentPayload.from_hash(payload)
-      @live = AssignmentPayload.from_assignment(assignment)
+    def self.coerce_before(before:, assignment:)
+      return AssignmentPayload.from_assignment(assignment) if before.nil? && assignment
+      return before if before.is_a?(AssignmentPayload)
+      return AssignmentPayload.from_hash(before) if before.present?
+
+      raise ArgumentError, "before or assignment is required"
+    end
+    private_class_method :coerce_before
+
+    def self.coerce_after(after:, payload:)
+      source = after || payload
+      raise ArgumentError, "after or payload is required" if source.nil?
+      return source if source.is_a?(AssignmentPayload)
+
+      AssignmentPayload.from_hash(source)
+    end
+    private_class_method :coerce_after
+
+    def initialize(before:, after:)
+      @before = before
+      @after = after
     end
 
     def call
       diffs = []
 
       SCALAR_FIELDS.each do |key, label|
-        before = normalize(@live.public_send(key))
-        after = normalize(@payload.public_send(key))
-        next if before == after
+        before_value = normalize(@before.public_send(key))
+        after_value = normalize(@after.public_send(key))
+        next if before_value == after_value
 
-        diffs << build_field(key, label, before, after)
+        diffs << build_field(key, label, before_value, after_value)
       end
 
-      before_dept = department_label(@live.department_id)
-      after_dept = department_label(@payload.department_id)
+      before_dept = department_label(@before.department_id)
+      after_dept = department_label(@after.department_id)
       if before_dept != after_dept
         diffs << build_field(:department, "Department", before_dept, after_dept)
       end
 
-      before_outcomes = outcomes_text(@live.outcomes)
-      after_outcomes = outcomes_text(@payload.outcomes)
+      before_outcomes = outcomes_text(@before.outcomes)
+      after_outcomes = outcomes_text(@after.outcomes)
       if before_outcomes != after_outcomes
         diffs << build_field(:outcomes, "Outcomes", before_outcomes, after_outcomes)
       end

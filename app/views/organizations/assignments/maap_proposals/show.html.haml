@@ -43,13 +43,21 @@
 
     .card.mb-4
       .card-header
-        %h5.mb-0 Changes vs current assignment
+        %h5.mb-0
+          - if @proposal.baseline_payload.present?
+            Changes vs assignment at decision
+          - else
+            Changes vs current assignment
       .card-body
         - if @field_diffs.any?
           - @field_diffs.each do |field_diff|
             = render_maap_proposal_field_diff(field_diff)
         - else
-          %p.text-muted.mb-0 No differences from the current assignment.
+          %p.text-muted.mb-0
+            - if @proposal.baseline_payload.present?
+              No differences from the assignment at decision.
+            - else
+              No differences from the current assignment.
 
     .card.mb-4
       .card-header

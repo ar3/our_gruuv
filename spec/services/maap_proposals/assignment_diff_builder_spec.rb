@@ -36,4 +36,18 @@ RSpec.describe MaapProposals::AssignmentDiffBuilder do
     payload = MaapProposals::AssignmentPayload.from_assignment(assignment)
     expect(described_class.call(assignment: assignment, payload: payload)).to eq([])
   end
+
+  it "can diff against a frozen baseline instead of the live assignment" do
+    baseline = MaapProposals::AssignmentPayload.from_assignment(assignment)
+    assignment.update!(title: "Later Title", handbook: "Later handbook")
+    proposed = MaapProposals::AssignmentPayload.from_hash(
+      baseline.to_h.merge("title" => "Proposed Title")
+    )
+
+    diffs = described_class.call(before: baseline, after: proposed)
+
+    expect(diffs.map(&:key)).to eq([:title])
+    expect(diffs.first.before).to eq("Live Title")
+    expect(diffs.first.after).to eq("Proposed Title")
+  end
 end

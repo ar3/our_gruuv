@@ -15,11 +15,16 @@ module MaapProposals
     def call
       return Result.err("Only submitted proposals can be rejected") unless @proposal.decidable?
 
+      baseline_payload = if @proposal.proposable_type == "Assignment"
+        AssignmentPayload.from_assignment(@proposal.proposable).to_h
+      end
+
       if @proposal.update(
         status: "rejected",
         decided_by: @decided_by,
         decided_at: Time.current,
-        decision_note: @decision_note.presence
+        decision_note: @decision_note.presence,
+        baseline_payload: baseline_payload
       )
         Result.ok(@proposal)
       else

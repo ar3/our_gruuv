@@ -123,6 +123,8 @@ RSpec.describe MaapProposals::ApplyAssignmentEdit do
     expect(assignment.assignment_outcomes.map(&:description)).to eq(["Ship clarity"])
     expect(result.value).to be_applied
     expect(result.value.applied_version_type).to eq("clarifying")
+    expect(result.value.baseline_payload["title"]).to eq("Live Title")
+    expect(result.value.baseline_payload["tagline"]).to eq("Live tagline")
   end
 
   it "updates existing outcomes by id so renames preserve side fields" do
@@ -156,5 +158,29 @@ RSpec.describe MaapProposals::ApplyAssignmentEdit do
     expect(outcome.outcome_type).to eq("sentiment")
     expect(outcome.progress_report_url).to eq("https://example.com/report")
     expect(outcome.management_relationship_filter).to eq("direct_employee")
+  end
+end
+
+RSpec.describe MaapProposals::RejectAssignmentEdit do
+  let(:organization) { create(:organization) }
+  let(:assignment) { create(:assignment, company: organization, title: "Live Title", tagline: "Live tagline") }
+  let(:proposer) { create(:teammate, :unassigned_employee, organization: organization) }
+  let(:editor) { create(:teammate, :unassigned_employee, :maap_manager, organization: organization) }
+
+  it "rejects a submitted proposal and stores the live assignment baseline" do
+    draft = MaapProposals::CreateAssignmentEditDraft.call(assignment: assignment, proposer: proposer).value
+    MaapProposals::UpdateAssignmentEditDraft.call(
+      proposal: draft,
+      attributes: { "title" => "Rejected Title", "tagline" => assignment.tagline }
+    )
+    MaapProposals::SubmitAssignmentEdit.call(proposal: draft.reload)
+
+    result = described_class.call(proposal: draft.reload, decided_by: editor, decision_note: "Not yet")
+
+    expect(result).to be_ok
+    expect(result.value).to be_rejected
+    expect(result.value.decision_note).to eq("Not yet")
+    expect(result.value.baseline_payload["title"]).to eq("Live Title")
+    expect(assignment.reload.title).to eq("Live Title")
   end
 end
