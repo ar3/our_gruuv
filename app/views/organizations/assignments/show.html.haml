@@ -101,7 +101,7 @@
                     %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
                       = outcome.outcome_type.titleize
                     - if policy(outcome).edit?
-                      = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "badge text-decoration-none #{outcome.has_additional_configuration? ? 'bg-info' : 'bg-secondary'}" do
+                      = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "small text-decoration-none" do
                         = outcome.additional_configuration_badge_label
         - else
           .mb-3

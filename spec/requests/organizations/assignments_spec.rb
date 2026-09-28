@@ -553,18 +553,18 @@ RSpec.describe 'Organizations::Assignments', type: :request do
             progress_report_url: 'https://example.com/report')
         end
 
-        it 'shows "Add add\'l config" badge (grey) when outcome has no additional config' do
+        it 'shows "Add add\'l config" link when outcome has no additional config' do
           get organization_assignment_path(organization, assignment)
           expect(response).to have_http_status(:success)
           expect(response.body).to include("Add add&#39;l config")
-          expect(response.body).to include('bg-secondary')
+          expect(response.body).to include(edit_organization_assignment_assignment_outcome_path(organization, assignment, outcome_no_config))
         end
 
-        it 'shows "Modify/View add\'l config" badge (info) when outcome has additional config' do
+        it 'shows "Modify/View add\'l config" link when outcome has additional config' do
           get organization_assignment_path(organization, assignment)
           expect(response).to have_http_status(:success)
           expect(response.body).to include("Modify/View add&#39;l config")
-          expect(response.body).to include('bg-info')
+          expect(response.body).to include(edit_organization_assignment_assignment_outcome_path(organization, assignment, outcome_with_config))
         end
 
         it 'links the additional configuration badge to the outcome edit page' do
