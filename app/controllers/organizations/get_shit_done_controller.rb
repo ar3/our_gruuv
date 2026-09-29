@@ -22,7 +22,9 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
       teammate: @teammate,
       since: something_interesting_baseline
     ).total_count
+    @open_gsd_section = GetShitDoneHelper.sanitize_open_section(params[:open])
   end
+
 
   def something_interesting
     authorize @teammate, :view_check_ins?

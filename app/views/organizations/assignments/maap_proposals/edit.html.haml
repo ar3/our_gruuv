@@ -57,10 +57,16 @@
 
         %div{"data-maap-proposal-rows-target" => "list"}
           - Array(@payload.ability_milestones).each do |row|
-            = render "organizations/assignments/maap_proposals/ability_milestone_fields", row: row, abilities: @abilities
+            = render "organizations/assignments/maap_proposals/ability_milestone_fields",
+                     row: row,
+                     abilities: @abilities,
+                     assignment_name: @assignment.title
 
         %template{"data-maap-proposal-rows-target" => "template"}
-          = render "organizations/assignments/maap_proposals/ability_milestone_fields", row: { "ability_id" => nil, "milestone_level" => 2 }, abilities: @abilities
+          = render "organizations/assignments/maap_proposals/ability_milestone_fields",
+                   row: { "ability_id" => nil, "milestone_level" => 2 },
+                   abilities: @abilities,
+                   assignment_name: @assignment.title
 
       %div{"data-controller" => "maap-proposal-rows"}
         .d-flex.justify-content-between.align-items-center.mt-4.mb-2

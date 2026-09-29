@@ -1,20 +1,23 @@
+- assignment_name = local_assigns.fetch(:assignment_name)
+- milestone_options = (1..5).map { |level| ["M#{level} – #{milestone_level_display(level)}", level] }
+- selected_level = row["milestone_level"].presence || 2
+
 .card.mb-3{"data-maap-proposal-rows-target" => "row"}
   .card-body
-    .d-flex.justify-content-between.align-items-start.gap-2.mb-2
-      %h6.mb-0 Ability milestone
+    .d-flex.justify-content-end.mb-2
       %button.btn.btn-sm.btn-outline-danger{type: "button", "data-action" => "maap-proposal-rows#remove"}
         %i.bi.bi-trash
         Remove
-    .mb-2
-      %label.form-label Ability
-      = select_tag "maap_proposal[ability_milestones][][ability_id]",
-                   abilities_grouped_options_for_select(abilities, row["ability_id"]),
-                   include_blank: "Select ability",
-                   class: "form-select"
-    .mb-0
-      %label.form-label Milestone level (1–5)
-      = number_field_tag "maap_proposal[ability_milestones][][milestone_level]",
-                         row["milestone_level"].presence || 2,
-                         class: "form-control",
-                         min: 1,
-                         max: 5
+    .row.g-3.align-items-end
+      .col-md-4
+        %label.form-label Milestone
+        = select_tag "maap_proposal[ability_milestones][][milestone_level]",
+                     options_for_select(milestone_options, selected_level),
+                     class: "form-select"
+      .col-md-8
+        %label.form-label
+          To be qualified for #{assignment_name}, you must have the following Ability (skill, knowledge, competency, or demonstrated behavior)
+        = select_tag "maap_proposal[ability_milestones][][ability_id]",
+                     abilities_grouped_options_for_select(abilities, row["ability_id"]),
+                     include_blank: "Select ability",
+                     class: "form-select"

@@ -1,23 +1,33 @@
 - moments_count = @observable_moments.count
-= render 'shared/section_header', 
-         title: 'Observable Moments', 
-         icon: 'bi-star', 
+- section_id = 'observableMomentsSection'
+- section_open = gsd_open_section?(section_id)
+= render 'shared/section_header',
+         title: 'Observable Moments',
+         icon: 'bi-star',
          description: 'Celebratory moments ready to observe',
          collapsible: true,
-         collapse_target: 'observableMomentsSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
 -# Summary view (shown when collapsed) — warning alert style
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#observableMomentsSection", "aria-expanded" => "false", "aria-controls" => "observableMomentsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = pluralize(moments_count, 'observable moment') + ' ready to celebrate'
 
 -# Collapsible content
-.collapse#observableMomentsSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if @observable_moments.any?
+        .d-flex.justify-content-end.mb-3
+          = button_to "Ignore all",
+            ignore_all_organization_observable_moments_path(organization),
+            method: :patch,
+            class: "btn btn-outline-warning btn-sm",
+            data: { confirm: "Ignore all #{moments_count} observable #{'moment'.pluralize(moments_count)}? They will be marked as processed.", turbo: false },
+            form: { data: { turbo: false } }
         .table-responsive
           %table.table.table-hover
             %thead
@@ -36,14 +46,14 @@
                     %small= moment.occurred_at.strftime('%b %d, %Y')
                   %td
                     .btn-group.btn-group-sm{role: "group"}
-                      = button_to "Create Observation", 
+                      = button_to "Create Observation",
                         create_observation_organization_observable_moment_path(organization, moment),
                         method: :post,
                         class: "btn btn-primary btn-sm"
-                      = link_to "Reassign", 
+                      = link_to "Reassign",
                         reassign_organization_observable_moment_path(organization, moment),
                         class: "btn btn-outline-secondary btn-sm"
-                      = button_to "Ignore", 
+                      = button_to "Ignore",
                         ignore_organization_observable_moment_path(organization, moment),
                         method: :patch,
                         class: "btn btn-outline-warning btn-sm",
@@ -51,4 +61,3 @@
                         form: { style: "display: inline-block;", data: { turbo: false } }
       - else
         %p.text-muted.mb-0 No observable moments pending.
-

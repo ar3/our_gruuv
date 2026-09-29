@@ -70,3 +70,26 @@
             status_indicator: :success,
             include_top_header_margin: index.zero?
 
+- if @open_gsd_section.present?
+  :javascript
+    (function() {
+      function scrollToOpenGsdSection() {
+        var id = #{@open_gsd_section.to_json};
+        var el = document.getElementById(id);
+        if (!el) return;
+        var scrollEl = el;
+        var summary = el.previousElementSibling;
+        if (summary && summary.classList.contains('collapse-summary')) {
+          var header = summary.previousElementSibling;
+          if (header) scrollEl = header;
+        }
+        scrollEl.scrollIntoView({ block: 'start', behavior: 'auto' });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scrollToOpenGsdSection);
+      } else {
+        scrollToOpenGsdSection();
+      }
+      document.addEventListener('turbo:load', scrollToOpenGsdSection, { once: true });
+    })();
+

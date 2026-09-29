@@ -1,20 +1,24 @@
 - drafts_count = @observation_drafts.count
-= render 'shared/section_header', 
-         title: 'Observation Drafts', 
-         icon: 'bi-file-earmark-text', 
+- section_id = 'observationDraftsSection'
+- section_open = gsd_open_section?(section_id)
+- gsd_return = organization_gsd_path(organization, open: section_id)
+= render 'shared/section_header',
+         title: 'Observation Drafts',
+         icon: 'bi-file-earmark-text',
          description: 'Draft observations needing action',
          collapsible: true,
-         collapse_target: 'observationDraftsSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
 -# Summary view (shown when collapsed) — warning alert style
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#observationDraftsSection", "aria-expanded" => "false", "aria-controls" => "observationDraftsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = pluralize(drafts_count, 'draft observation') + ' needing action'
 
 -# Collapsible content
-.collapse#observationDraftsSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if @observation_drafts.any?
@@ -40,23 +44,23 @@
                     %small= draft.created_at.strftime('%b %d, %Y')
                   %td
                     .btn-group.btn-group-sm{role: "group"}
-                      = link_to "Edit", 
+                      = link_to "Edit",
                                 edit_organization_observation_path(organization, draft),
                                 class: "btn btn-primary btn-sm"
                       - if draft.story.present? && draft.observees.any?
-                        = button_to "Publish", 
+                        = button_to "Publish",
                                     publish_organization_observation_path(organization, draft),
                                     method: :post,
                                     class: "btn btn-success btn-sm",
                                     data: { confirm: "Publish this observation?" }
-                      = button_to "Make Journal", 
+                      = button_to "Make Journal",
                                   update_draft_organization_observation_path(organization, draft),
                                   method: :patch,
-                                  params: { observation: { privacy_level: 'observer_only' }, return_url: organization_get_shit_done_path(organization) },
+                                  params: { observation: { privacy_level: 'observer_only' }, return_url: gsd_return },
                                   class: "btn btn-outline-secondary btn-sm",
                                   data: { confirm: "Mark this as a private journal entry?" }
                       - if policy(draft).destroy?
-                        = button_to "Archive", 
+                        = button_to "Archive",
                                     organization_observation_path(organization, draft),
                                     method: :delete,
                                     class: "btn btn-outline-warning btn-sm",

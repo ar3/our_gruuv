@@ -1009,22 +1009,48 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     authorize @observation, :skip_gsd_notification?
 
     unless @observation.company_id == organization.id
-      redirect_to organization_get_shit_done_path(organization), alert: 'Observation not found.'
+      redirect_to organization_get_shit_done_path(organization, open: 'silentObservationsSection'), alert: 'Observation not found.'
       return
     end
 
     unless @observation.published? &&
            @observation.privacy_level != 'observer_only' &&
            @observation.notifications.none?
-      redirect_to organization_get_shit_done_path(organization),
+      redirect_to organization_get_shit_done_path(organization, open: 'silentObservationsSection'),
                   alert: 'This observation cannot be removed from Silent Observations.'
       return
     end
 
     @observation.update!(gsd_notification_skipped_at: Time.current)
 
-    redirect_to organization_get_shit_done_path(organization),
+    redirect_to organization_get_shit_done_path(organization, open: 'silentObservationsSection'),
                 notice: 'This observation will no longer appear under Silent Observations on your list. You can still send notifications from the observation page.'
+  end
+
+  def skip_all_gsd_notifications
+    authorize current_company_teammate, :view_check_ins?
+
+    silent = GetShitDoneQueryService.new(teammate: current_company_teammate).silent_observations
+    count = 0
+    silent.find_each do |observation|
+      next unless policy(observation).skip_gsd_notification?
+      next unless observation.published? &&
+                  observation.privacy_level != 'observer_only' &&
+                  observation.notifications.none?
+
+      observation.update!(gsd_notification_skipped_at: Time.current)
+      count += 1
+    end
+
+    notice =
+      if count.zero?
+        'No silent observations to skip.'
+      else
+        "Skipped notifications for #{count} #{'observation'.pluralize(count)}."
+      end
+
+    redirect_to organization_get_shit_done_path(organization, open: 'silentObservationsSection'),
+                notice: notice
   end
 
   def award_kudos

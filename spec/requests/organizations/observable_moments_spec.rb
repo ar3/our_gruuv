@@ -32,7 +32,7 @@ RSpec.describe 'Organizations::ObservableMoments', type: :request do
       
       post "/organizations/#{company.id}/observable_moments/#{observable_moment.id}/create_observation"
       
-      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done")
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
       expect(flash[:alert]).to be_present
     end
   end
@@ -56,7 +56,7 @@ RSpec.describe 'Organizations::ObservableMoments', type: :request do
       
       get "/organizations/#{company.id}/observable_moments/#{observable_moment.id}/reassign"
       
-      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done")
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
     end
   end
 
@@ -67,7 +67,7 @@ RSpec.describe 'Organizations::ObservableMoments', type: :request do
       patch "/organizations/#{company.id}/observable_moments/#{observable_moment.id}/reassign",
             params: { teammate_id: other_company_teammate.id }
       
-      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done")
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
       expect(flash[:notice]).to include('reassigned successfully')
       expect(observable_moment.reload.primary_potential_observer).to eq(other_company_teammate)
     end
@@ -90,7 +90,7 @@ RSpec.describe 'Organizations::ObservableMoments', type: :request do
       patch "/organizations/#{company.to_param}/observable_moments/#{observable_moment.id}/reassign",
             params: { teammate_id: other_company_teammate.id }
       
-      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done")
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
       expect(observable_moment.reload.primary_potential_observer).to eq(company_teammate)
     end
   end
@@ -104,7 +104,7 @@ RSpec.describe 'Organizations::ObservableMoments', type: :request do
       
       patch "/organizations/#{company.id}/observable_moments/#{observable_moment.id}/ignore"
       
-      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done")
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
       expect(flash[:notice]).to include('ignored')
       expect(observable_moment.reload.processed?).to be true
       expect(observable_moment.processed_by_teammate).to eq(company_teammate)
@@ -116,8 +116,26 @@ RSpec.describe 'Organizations::ObservableMoments', type: :request do
       
       patch "/organizations/#{company.id}/observable_moments/#{observable_moment.id}/ignore"
       
-      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done")
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
       expect(observable_moment.reload.processed?).to be false
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/observable_moments/ignore_all' do
+    it 'ignores all pending moments for the current observer' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      moment1 = create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
+      moment2 = create(:observable_moment, :seat_change, company: company, primary_observer_person: person)
+      other_moment = create(:observable_moment, :new_hire, company: company, primary_observer_person: other_person)
+
+      patch "/organizations/#{company.to_param}/observable_moments/ignore_all"
+
+      expect(response).to redirect_to("/organizations/#{company.to_param}/get_shit_done?open=observableMomentsSection")
+      expect(flash[:notice]).to include('Ignored 2')
+      expect(moment1.reload.processed?).to be true
+      expect(moment2.reload.processed?).to be true
+      expect(moment1.processed_by_teammate).to eq(company_teammate)
+      expect(other_moment.reload.processed?).to be false
     end
   end
 end

@@ -1,21 +1,24 @@
 - pending_items = Array(@pending_acknowledgement_queue&.items)
 - pending_count = pending_items.size
+- section_id = 'checkInAcknowledgementsSection'
+- section_open = gsd_open_section?(section_id)
 = render 'shared/section_header',
          title: clarity_check_ins_awaiting_acknowledgement_label,
          icon: 'bi-clipboard-check',
          description: clarity_check_ins_awaiting_acknowledgement_description,
          collapsible: true,
-         collapse_target: 'checkInAcknowledgementsSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
 -# Summary view (shown when collapsed) — warning alert style
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#checkInAcknowledgementsSection", "aria-expanded" => "false", "aria-controls" => "checkInAcknowledgementsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = clarity_check_ins_awaiting_acknowledgement_summary(count: pending_count)
 
 -# Collapsible content
-.collapse#checkInAcknowledgementsSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if pending_items.any?

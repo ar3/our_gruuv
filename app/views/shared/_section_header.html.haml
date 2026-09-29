@@ -2,6 +2,7 @@
 -collapsible = local_assigns[:collapsible] || false
 -collapse_target = local_assigns[:collapse_target]
 -status_indicator = local_assigns[:status_indicator]
+-aria_expanded = local_assigns.fetch(:aria_expanded, 'false')
 -# Section Header (Dashboard Style)
 .row.mb-4{class: include_top_header_margin ? 'mt-5' : ''}
   .col-12{class: include_top_header_margin ? 'mt-5' : ''}
@@ -16,7 +17,7 @@
           %i{class: "#{action_link[:icon]} #{action_link[:text].present? ? 'me-1' : ''}"}
           = action_link[:text]
       - if collapsible && collapse_target
-        %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_target}", "aria-expanded" => "false", "aria-controls" => collapse_target, style: "cursor: pointer;"}
+        %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_target}", "aria-expanded" => aria_expanded, "aria-controls" => collapse_target, style: "cursor: pointer;"}
           %span.not-collapsed
             %i.bi.bi-chevron-up.me-2
             %small.text-muted (Hide details)

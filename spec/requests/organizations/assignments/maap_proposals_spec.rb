@@ -294,6 +294,9 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(response.body).to include("Supplier assignments")
       expect(response.body).to include("rely on this one")
       expect(response.body).to include("this one relies on")
+      expect(response.body).to include("To be qualified for #{assignment.title}")
+      expect(response.body).to include("M1 – Demonstrated")
+      expect(response.body).to include("M2 – Advanced")
       expect(response.body).not_to include("Published source URL")
       expect(response.body).not_to include("Progress report URL")
 

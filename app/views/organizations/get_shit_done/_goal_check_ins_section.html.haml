@@ -1,20 +1,23 @@
 - goals_count = @goals_needing_check_in.count
-= render 'shared/section_header', 
+- section_id = 'goalCheckInsSection'
+- section_open = gsd_open_section?(section_id)
+= render 'shared/section_header',
          title: goal_confidence_checks_label,
          icon: 'bi-bullseye',
          description: goal_confidence_checks_description,
          collapsible: true,
-         collapse_target: 'goalCheckInsSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
 -# Summary view (shown when collapsed) — warning alert style
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalCheckInsSection", "aria-expanded" => "false", "aria-controls" => "goalCheckInsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = goals_needing_confidence_check_summary(count: goals_count)
 
 -# Collapsible content
-.collapse#goalCheckInsSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if @goals_needing_check_in.any?

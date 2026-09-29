@@ -488,6 +488,44 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('Configure notifications')
     end
 
+    it 'opens the requested section when open param is present' do
+      create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
+
+      get "/organizations/#{company.to_param}/get_shit_done", params: { open: 'observableMomentsSection' }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="observableMomentsSection"')
+      expect(response.body).to match(/class="[^"]*collapse show[^"]*" id="observableMomentsSection"|id="observableMomentsSection" class="[^"]*collapse show/)
+      expect(response.body).to include('Ignore all')
+    end
+
+    it 'ignores invalid open section params' do
+      create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
+
+      get "/organizations/#{company.to_param}/get_shit_done", params: { open: 'notARealSection' }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to match(/id="observableMomentsSection"[^>]*class="[^"]*show|class="[^"]*collapse show[^"]*" id="observableMomentsSection"/)
+    end
+
+    it 'shows Ignore all and Skip all controls for pending dismissable sections' do
+      create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
+      create(:observation,
+             observer: person,
+             company: company,
+             published_at: Time.current,
+             privacy_level: :observed_only,
+             story: "Silent for bulk #{SecureRandom.hex(4)}")
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Ignore all')
+      expect(response.body).to include('Skip all notifications')
+      expect(response.body).to include(ignore_all_organization_observable_moments_path(company))
+      expect(response.body).to include(skip_all_gsd_notifications_organization_observations_path(company))
+    end
+
     it 'requires authentication' do
       sign_out_teammate_for_request
       
@@ -508,7 +546,7 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
       post "/organizations/#{company.to_param}/observations/#{silent.id}/skip_gsd_notification"
 
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'silentObservationsSection'))
       expect(silent.reload.gsd_notification_skipped_at).to be_present
     end
 
@@ -523,8 +561,39 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
 
       post "/organizations/#{company.to_param}/observations/#{silent.id}/skip_gsd_notification"
 
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'silentObservationsSection'))
       expect(flash[:alert]).to eq('Observation not found.')
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/observations/skip_all_gsd_notifications' do
+    it 'skips all silent observations for the current teammate' do
+      silent1 = create(:observation,
+                       observer: person,
+                       company: company,
+                       published_at: Time.current,
+                       privacy_level: :observed_only,
+                       story: "Skip all 1 #{SecureRandom.hex(4)}")
+      silent2 = create(:observation,
+                       observer: person,
+                       company: company,
+                       published_at: Time.current,
+                       privacy_level: :observed_only,
+                       story: "Skip all 2 #{SecureRandom.hex(4)}")
+      other_silent = create(:observation,
+                            observer: other_person,
+                            company: company,
+                            published_at: Time.current,
+                            privacy_level: :observed_only,
+                            story: "Other silent #{SecureRandom.hex(4)}")
+
+      post "/organizations/#{company.to_param}/observations/skip_all_gsd_notifications"
+
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'silentObservationsSection'))
+      expect(flash[:notice]).to include('Skipped notifications for 2')
+      expect(silent1.reload.gsd_notification_skipped_at).to be_present
+      expect(silent2.reload.gsd_notification_skipped_at).to be_present
+      expect(other_silent.reload.gsd_notification_skipped_at).to be_nil
     end
   end
 end

@@ -1,18 +1,22 @@
 - mismatch_count = @feedback_expectation_mismatches.count
+- section_id = 'feedbackExpectationMismatchesSection'
+- section_open = gsd_open_section?(section_id)
+- gsd_return = organization_gsd_path(organization, open: section_id)
 = render 'shared/section_header',
          title: 'Feedback to clean up',
          icon: 'bi-chat-left-text',
          description: 'Published Feedback OGOs that still need a constructive rating — or should be recategorized as Kudos or Generic',
          collapsible: true,
-         collapse_target: 'feedbackExpectationMismatchesSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#feedbackExpectationMismatchesSection", "aria-expanded" => "false", "aria-controls" => "feedbackExpectationMismatchesSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = pluralize(mismatch_count, 'Feedback OGO') + ' without a constructive rating'
 
-.collapse#feedbackExpectationMismatchesSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if @feedback_expectation_mismatches.any?
@@ -24,7 +28,6 @@
                 %th Published
                 %th{style: "min-width: 380px;"} Actions
             %tbody
-              - gsd_return = organization_get_shit_done_path(organization)
               - @feedback_expectation_mismatches.each do |observation|
                 %tr
                   %td

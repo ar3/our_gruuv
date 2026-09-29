@@ -1,21 +1,31 @@
 - silent_count = @silent_observations.count
+- section_id = 'silentObservationsSection'
+- section_open = gsd_open_section?(section_id)
 = render 'shared/section_header',
          title: 'Silent Observations',
          icon: 'bi-bell-slash',
          description: 'Published observations (not journal-only) that have not been shared via Slack or DM yet',
          collapsible: true,
-         collapse_target: 'silentObservationsSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#silentObservationsSection", "aria-expanded" => "false", "aria-controls" => "silentObservationsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = pluralize(silent_count, 'silent observation') + ' — publish is done; notifications are not'
 
-.collapse#silentObservationsSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if @silent_observations.any?
+        .d-flex.justify-content-end.mb-3
+          = button_to "Skip all notifications",
+            skip_all_gsd_notifications_organization_observations_path(organization),
+            method: :post,
+            class: "btn btn-outline-secondary btn-sm",
+            data: { confirm: "Skip notifications for all #{silent_count} silent #{'observation'.pluralize(silent_count)}? They will leave this list without notifying anyone.", turbo: false },
+            form: { data: { turbo: false } }
         .table-responsive
           %table.table.table-hover
             %thead

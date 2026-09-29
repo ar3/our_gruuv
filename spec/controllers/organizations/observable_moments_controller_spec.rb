@@ -28,7 +28,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       post :create_observation, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'observableMomentsSection'))
       expect(flash[:alert]).to be_present
     end
   end
@@ -47,7 +47,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       get :reassign, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'observableMomentsSection'))
     end
   end
   
@@ -59,7 +59,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
         teammate_id: other_teammate.id
       }
       
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'observableMomentsSection'))
       expect(flash[:notice]).to include('reassigned successfully')
       expect(observable_moment.reload.primary_potential_observer_id).to eq(other_teammate.id)
     end
@@ -84,7 +84,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
         teammate_id: other_teammate.id
       }
       
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'observableMomentsSection'))
     end
   end
   
@@ -94,7 +94,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       patch :ignore, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'observableMomentsSection'))
       expect(flash[:notice]).to include('ignored')
       expect(observable_moment.reload.processed?).to be true
       expect(observable_moment.processed_by_teammate).to eq(teammate)
@@ -106,7 +106,7 @@ RSpec.describe Organizations::ObservableMomentsController, type: :controller do
       
       patch :ignore, params: { organization_id: company.id, id: observable_moment.id }
       
-      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(response).to redirect_to(organization_get_shit_done_path(company, open: 'observableMomentsSection'))
       expect(observable_moment.reload.processed?).to be false
     end
   end

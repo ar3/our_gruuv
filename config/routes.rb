@@ -152,6 +152,9 @@ Rails.application.routes.draw do
 
     # Observable Moments
     resources :observable_moments, only: [], module: :organizations do
+      collection do
+        patch :ignore_all
+      end
       member do
         post :create_observation
         get :reassign
@@ -159,6 +162,7 @@ Rails.application.routes.draw do
         patch :ignore
       end
     end
+
     
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do
       collection do
@@ -767,6 +771,7 @@ Rails.application.routes.draw do
         get :filtered_observations  # Filtered observations page (overlay) for check-ins
         get :customize_view
         patch :update_view
+        post :skip_all_gsd_notifications
       end
       member do
         patch :convert_to_generic

@@ -1,20 +1,23 @@
 - requests_count = @feedback_requests_awaiting_response.count
+- section_id = 'feedbackRequestsSection'
+- section_open = gsd_open_section?(section_id)
 = render 'shared/section_header',
          title: 'Feedback Requests',
          icon: 'bi-chat-dots',
          description: 'Open feedback requests waiting for your response',
          collapsible: true,
-         collapse_target: 'feedbackRequestsSection',
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
          status_indicator: :warning
 
 -# Summary view (shown when collapsed) — warning alert style
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#feedbackRequestsSection", "aria-expanded" => "false", "aria-controls" => "feedbackRequestsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
     = pluralize(requests_count, 'feedback request') + ' waiting for your response'
 
 -# Collapsible content
-.collapse#feedbackRequestsSection
+%div{class: gsd_collapse_class(section_id), id: section_id}
   .card.mb-4
     .card-body
       - if @feedback_requests_awaiting_response.any?
