@@ -7,7 +7,17 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
 
   def index
     authorize MaapProposal
-    @proposals = policy_scope(MaapProposal).for_proposable(@assignment).recent_first
+    @filterable_statuses = %w[draft submitted applied rejected]
+    @selected_statuses = if params.key?(:statuses)
+      Array(params[:statuses]).map(&:to_s) & @filterable_statuses
+    else
+      @filterable_statuses.dup
+    end
+    @proposals = policy_scope(MaapProposal)
+      .for_proposable(@assignment)
+      .with_statuses(@selected_statuses)
+      .created_first
+      .includes(proposer: :person)
     @assignments_by_department_for_switcher = AssignmentsByDepartmentForSwitcher.call(
       scope: policy_scope(Assignment).where(company: @organization)
     )
@@ -57,6 +67,7 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
   def edit
     authorize @proposal
     @payload = MaapProposals::AssignmentPayload.from_hash(@proposal.proposed_payload)
+    load_edit_collections
   end
 
   def update
@@ -64,7 +75,10 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     result = MaapProposals::UpdateAssignmentEditDraft.call(
       proposal: @proposal,
       attributes: proposal_attributes,
-      outcomes: outcomes_from_params
+      outcomes: outcomes_from_params,
+      ability_milestones: ability_milestones_from_params,
+      consumer_assignment_ids: id_list_from_params(:consumer_assignment_ids),
+      supplier_assignment_ids: id_list_from_params(:supplier_assignment_ids)
     )
 
     if result.ok?
@@ -74,6 +88,7 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
       @payload = MaapProposals::AssignmentPayload.from_hash(
         @proposal.proposed_payload.merge(proposal_attributes.stringify_keys)
       )
+      load_edit_collections
       flash.now[:alert] = Array(result.error).join(", ")
       render :edit, status: :unprocessable_entity
     end
@@ -195,6 +210,30 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     Array(raw).map do |row|
       row.permit(:id, :description, :outcome_type).to_h
     end
+  end
+
+  def ability_milestones_from_params
+    raw = params.dig(:maap_proposal, :ability_milestones)
+    return [] if raw.blank?
+
+    Array(raw).map do |row|
+      row.permit(:ability_id, :milestone_level).to_h
+    end
+  end
+
+  def id_list_from_params(key)
+    raw = params.dig(:maap_proposal, key)
+    return [] if raw.blank?
+
+    Array(raw).reject(&:blank?)
+  end
+
+  def load_edit_collections
+    @abilities = Ability.for_company(@organization).includes(:department).order(:name)
+    @assignments_for_reliance = Assignment.where(company: @organization)
+                                          .where.not(id: @assignment.id)
+                                          .includes(:department)
+                                          .order(:title)
   end
 
   def read_uploaded_markdown

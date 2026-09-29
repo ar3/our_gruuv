@@ -2,19 +2,41 @@
 
 module MaapProposals
   class UpdateAssignmentEditDraft
-    def self.call(proposal:, attributes: {}, outcomes: nil, source_markdown: nil)
+    def self.call(
+      proposal:,
+      attributes: {},
+      outcomes: nil,
+      ability_milestones: nil,
+      consumer_assignment_ids: nil,
+      supplier_assignment_ids: nil,
+      source_markdown: nil
+    )
       new(
         proposal: proposal,
         attributes: attributes,
         outcomes: outcomes,
+        ability_milestones: ability_milestones,
+        consumer_assignment_ids: consumer_assignment_ids,
+        supplier_assignment_ids: supplier_assignment_ids,
         source_markdown: source_markdown
       ).call
     end
 
-    def initialize(proposal:, attributes:, outcomes:, source_markdown:)
+    def initialize(
+      proposal:,
+      attributes:,
+      outcomes:,
+      ability_milestones:,
+      consumer_assignment_ids:,
+      supplier_assignment_ids:,
+      source_markdown:
+    )
       @proposal = proposal
       @attributes = attributes
       @outcomes = outcomes
+      @ability_milestones = ability_milestones
+      @consumer_assignment_ids = consumer_assignment_ids
+      @supplier_assignment_ids = supplier_assignment_ids
       @source_markdown = source_markdown
     end
 
@@ -32,6 +54,17 @@ module MaapProposals
           hash
         end
       end
+      if @ability_milestones
+        merged["ability_milestones"] = Array(@ability_milestones).filter_map do |row|
+          hash = row.deep_stringify_keys
+          next if hash["ability_id"].to_s.strip.blank?
+
+          hash
+        end
+      end
+      merged["consumer_assignment_ids"] = Array(@consumer_assignment_ids) unless @consumer_assignment_ids.nil?
+      merged["supplier_assignment_ids"] = Array(@supplier_assignment_ids) unless @supplier_assignment_ids.nil?
+
       payload = AssignmentPayload.from_hash(merged)
 
       errors = payload.validate!(company: @proposal.organization)

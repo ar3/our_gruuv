@@ -9,7 +9,10 @@ module MaapProposals
       "tagline" => :tagline,
       "required activities" => :required_activities,
       "handbook" => :handbook,
-      "outcomes" => :outcomes
+      "outcomes" => :outcomes,
+      "ability milestones" => :ability_milestones,
+      "consumer assignments" => :consumer_assignments,
+      "supplier assignments" => :supplier_assignments
     }.freeze
 
     def self.call(markdown:, assignment:)
@@ -31,6 +34,9 @@ module MaapProposals
       outcomes_result = parse_outcomes(sections[:outcomes].to_s)
       return outcomes_result unless outcomes_result.ok?
 
+      abilities_result = parse_ability_milestones(sections[:ability_milestones].to_s)
+      return abilities_result unless abilities_result.ok?
+
       payload = AssignmentPayload.from_hash(
         {
           "schema_version" => meta["maap_proposal_schema_version"] || AssignmentPayload::SCHEMA_VERSION,
@@ -39,7 +45,10 @@ module MaapProposals
           "required_activities" => sections[:required_activities],
           "handbook" => sections[:handbook],
           "department_id" => meta["department_id"],
-          "outcomes" => outcomes_result.value
+          "outcomes" => outcomes_result.value,
+          "ability_milestones" => abilities_result.value,
+          "consumer_assignment_ids" => parse_assignment_id_list(sections[:consumer_assignments].to_s),
+          "supplier_assignment_ids" => parse_assignment_id_list(sections[:supplier_assignments].to_s)
         }
       )
 
@@ -83,13 +92,7 @@ module MaapProposals
     end
 
     def parse_sections(body)
-      sections = {
-        title: nil,
-        tagline: nil,
-        required_activities: nil,
-        handbook: nil,
-        outcomes: nil
-      }
+      sections = SECTION_HEADERS.values.index_with { nil }
       current = nil
       buffer = []
 
@@ -115,7 +118,6 @@ module MaapProposals
       sections
     end
 
-    # Each outcome is an H3 (name), then id / outcome_type, then optional body.
     def parse_outcomes(raw)
       return Result.ok([]) if raw.strip.empty?
 
@@ -146,6 +148,37 @@ module MaapProposals
       end
 
       Result.ok(outcomes)
+    end
+
+    def parse_ability_milestones(raw)
+      return Result.ok([]) if raw.strip.empty?
+
+      blocks = raw.split(/^###\s+/).drop(1)
+      milestones = blocks.filter_map do |block|
+        lines = block.lines.map(&:rstrip)
+        lines.shift # heading / name commentary
+        meta = { "ability_id" => nil, "milestone_level" => nil }
+        lines.each do |line|
+          next unless line.match?(/\A(ability_id|milestone_level):\s*/)
+
+          key, value = line.split(":", 2)
+          meta[key.strip] = value.to_s.strip.presence
+        end
+        next if meta["ability_id"].blank?
+
+        meta
+      end
+
+      Result.ok(milestones)
+    end
+
+    def parse_assignment_id_list(raw)
+      return [] if raw.strip.empty?
+
+      raw.each_line.filter_map do |line|
+        match = line.strip.match(/\A-?\s*assignment_id:\s*(\d+)\z/)
+        match && match[1].to_i
+      end.uniq
     end
   end
 end

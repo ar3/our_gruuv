@@ -34,6 +34,72 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       expect(response.body).to include("How proposals move")
       expect(response.body).to include("Submitted")
       expect(response.body).to include("Applied")
+      expect(response.body).to include("proposal_status_draft")
+      expect(response.body).to include("proposal_status_submitted")
+      expect(response.body).to include("proposal_status_applied")
+    end
+
+    it "sorts by creation date and filters by status checkboxes" do
+      older = create(
+        :maap_proposal,
+        :submitted,
+        assignment: assignment,
+        proposer: person_teammate,
+        created_at: 2.days.ago,
+        proposed_payload: {
+          "schema_version" => 1,
+          "title" => "Older Submitted",
+          "tagline" => "tag",
+          "outcomes" => [],
+          "ability_milestones" => [],
+          "consumer_assignment_ids" => [],
+          "supplier_assignment_ids" => []
+        }
+      )
+      newer = create(
+        :maap_proposal,
+        assignment: assignment,
+        proposer: person_teammate,
+        created_at: 1.hour.ago,
+        proposed_payload: {
+          "schema_version" => 1,
+          "title" => "Newer Draft",
+          "tagline" => "tag",
+          "outcomes" => [],
+          "ability_milestones" => [],
+          "consumer_assignment_ids" => [],
+          "supplier_assignment_ids" => []
+        }
+      )
+      applied = create(
+        :maap_proposal,
+        :applied,
+        assignment: assignment,
+        proposer: person_teammate,
+        decided_by: manager_teammate,
+        created_at: 3.days.ago,
+        proposed_payload: {
+          "schema_version" => 1,
+          "title" => "Applied Proposal",
+          "tagline" => "tag",
+          "outcomes" => [],
+          "ability_milestones" => [],
+          "consumer_assignment_ids" => [],
+          "supplier_assignment_ids" => []
+        }
+      )
+
+      get organization_assignment_maap_proposals_path(organization, assignment)
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body.index("Newer Draft")).to be < body.index("Older Submitted")
+      expect(body.index("Older Submitted")).to be < body.index("Applied Proposal")
+      expect(body).to include("proposal_status_rejected")
+
+      get organization_assignment_maap_proposals_path(organization, assignment, statuses: %w[draft])
+      expect(response.body).to include(organization_assignment_maap_proposal_path(organization, assignment, newer))
+      expect(response.body).not_to include(organization_assignment_maap_proposal_path(organization, assignment, older))
+      expect(response.body).not_to include(organization_assignment_maap_proposal_path(organization, assignment, applied))
     end
 
     it "downloads a markdown template for the live assignment" do
@@ -223,6 +289,11 @@ RSpec.describe "Organizations::Assignments::MaapProposals", type: :request do
       get edit_organization_assignment_maap_proposal_path(organization, assignment, proposal)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Add outcome")
+      expect(response.body).to include("Ability milestones")
+      expect(response.body).to include("Consumer assignments")
+      expect(response.body).to include("Supplier assignments")
+      expect(response.body).to include("rely on this one")
+      expect(response.body).to include("this one relies on")
       expect(response.body).not_to include("Published source URL")
       expect(response.body).not_to include("Progress report URL")
 

@@ -57,6 +57,19 @@
                 = text_area_tag :markdown_body, nil, rows: 8, class: "form-control font-monospace"
               = submit_tag "Create draft from markdown", class: "btn btn-primary"
 
+    = form_with url: organization_assignment_maap_proposals_path(@organization, @assignment), method: :get, local: true, class: "mb-3" do
+      .d-flex.flex-wrap.align-items-center.gap-3
+        %span.small.text-muted.fw-semibold Status
+        - @filterable_statuses.each do |status|
+          .form-check.form-check-inline.mb-0
+            = check_box_tag "statuses[]",
+                            status,
+                            @selected_statuses.include?(status),
+                            id: "proposal_status_#{status}",
+                            class: "form-check-input",
+                            onchange: "this.form.requestSubmit()"
+            = label_tag "proposal_status_#{status}", status.titleize, class: "form-check-label"
+
     - if @proposals.any?
       .list-group
         - @proposals.each do |proposal|
@@ -68,9 +81,15 @@
                   = proposal.proposer.person.display_name
                   ·
                   = proposal.status.titleize
+                  · created #{l(proposal.created_at, format: :short)}
                   - if proposal.submitted_at
                     · submitted #{l(proposal.submitted_at, format: :short)}
               %span.badge{class: proposal_status_badge_class(proposal.status)}= proposal.status
     - else
       .alert.alert-light.border
-        No proposals yet. Create one to suggest an apply-ready edit.
+        - if @selected_statuses.empty?
+          No statuses selected. Check a status above to see proposals.
+        - elsif params.key?(:statuses)
+          No proposals match the selected statuses.
+        - else
+          No proposals yet. Create one to suggest an apply-ready edit.

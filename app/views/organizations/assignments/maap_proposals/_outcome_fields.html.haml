@@ -1,8 +1,8 @@
-.card.mb-3{"data-maap-proposal-outcomes-target" => "row"}
+.card.mb-3{"data-maap-proposal-rows-target" => "row"}
   .card-body
     .d-flex.justify-content-between.align-items-start.gap-2.mb-2
       %h6.mb-0 Outcome
-      %button.btn.btn-sm.btn-outline-danger{type: "button", "data-action" => "maap-proposal-outcomes#remove"}
+      %button.btn.btn-sm.btn-outline-danger{type: "button", "data-action" => "maap-proposal-rows#remove"}
         %i.bi.bi-trash
         Remove
     - if outcome["id"].present?

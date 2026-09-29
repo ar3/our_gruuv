@@ -67,6 +67,36 @@ module MaapProposals
         parts << ""
       end
 
+      parts << "## Ability milestones"
+      parts << ""
+      @payload.ability_milestones.each do |row|
+        ability = Ability.find_by(id: row["ability_id"])
+        name = ability&.name.presence || "Ability #{row['ability_id']}"
+        parts << "### #{name}"
+        parts << ""
+        parts << "ability_id: #{yaml_scalar(row['ability_id'])}"
+        parts << "milestone_level: #{yaml_scalar(row['milestone_level'])}"
+        parts << ""
+      end
+
+      parts << "## Consumer assignments"
+      parts << ""
+      @payload.consumer_assignment_ids.each do |id|
+        asg = Assignment.find_by(id: id)
+        parts << "- assignment_id: #{id}"
+        parts << "  title: #{yaml_scalar(asg&.title)}"
+      end
+      parts << ""
+
+      parts << "## Supplier assignments"
+      parts << ""
+      @payload.supplier_assignment_ids.each do |id|
+        asg = Assignment.find_by(id: id)
+        parts << "- assignment_id: #{id}"
+        parts << "  title: #{yaml_scalar(asg&.title)}"
+      end
+      parts << ""
+
       parts.join("\n").rstrip + "\n"
     end
 

@@ -65,6 +65,24 @@ module MaapProposals
         diffs << build_field(:outcomes, "Outcomes", before_outcomes, after_outcomes)
       end
 
+      before_abilities = ability_milestones_text(@before.ability_milestones)
+      after_abilities = ability_milestones_text(@after.ability_milestones)
+      if before_abilities != after_abilities
+        diffs << build_field(:ability_milestones, "Ability milestones", before_abilities, after_abilities)
+      end
+
+      before_consumers = assignment_ids_text(@before.consumer_assignment_ids, "consumer")
+      after_consumers = assignment_ids_text(@after.consumer_assignment_ids, "consumer")
+      if before_consumers != after_consumers
+        diffs << build_field(:consumer_assignments, "Consumer assignments", before_consumers, after_consumers)
+      end
+
+      before_suppliers = assignment_ids_text(@before.supplier_assignment_ids, "supplier")
+      after_suppliers = assignment_ids_text(@after.supplier_assignment_ids, "supplier")
+      if before_suppliers != after_suppliers
+        diffs << build_field(:supplier_assignments, "Supplier assignments", before_suppliers, after_suppliers)
+      end
+
       diffs
     end
 
@@ -99,6 +117,22 @@ module MaapProposals
           "outcome_type: #{outcome['outcome_type']}"
         ].join("\n")
       end.join("\n\n")
+    end
+
+    def ability_milestones_text(rows)
+      Array(rows).map do |row|
+        ability = Ability.find_by(id: row["ability_id"])
+        name = ability&.name || "ability #{row['ability_id']}"
+        "ability_id: #{row['ability_id']} (#{name}) milestone_level: #{row['milestone_level']}"
+      end.join("\n")
+    end
+
+    def assignment_ids_text(ids, role)
+      Array(ids).map do |id|
+        asg = Assignment.find_by(id: id)
+        title = asg&.title || "missing"
+        "#{role}_assignment_id: #{id} (#{title})"
+      end.join("\n")
     end
   end
 end

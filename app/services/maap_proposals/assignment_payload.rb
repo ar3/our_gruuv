@@ -2,8 +2,9 @@
 
 module MaapProposals
   # Structured apply-ready document for Assignment edit proposals (jsonb SoT).
+  # Schema v2 adds ability milestones + consumer/supplier reliance.
   class AssignmentPayload
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
     ATTR_KEYS = %w[
       title
       tagline
@@ -16,6 +17,10 @@ module MaapProposals
       description
       outcome_type
     ].freeze
+    ABILITY_MILESTONE_KEYS = %w[
+      ability_id
+      milestone_level
+    ].freeze
 
     def self.from_assignment(assignment)
       new(
@@ -26,7 +31,12 @@ module MaapProposals
           "required_activities" => blank_to_nil(assignment.required_activities),
           "handbook" => blank_to_nil(assignment.handbook),
           "department_id" => assignment.department_id,
-          "outcomes" => assignment.assignment_outcomes.ordered.map { |outcome| outcome_hash(outcome) }
+          "outcomes" => assignment.assignment_outcomes.ordered.map { |outcome| outcome_hash(outcome) },
+          "ability_milestones" => assignment.assignment_abilities.includes(:ability).by_milestone_level.map { |aa|
+            ability_milestone_hash(aa)
+          },
+          "consumer_assignment_ids" => assignment.consumer_assignments.order(:title).pluck(:id),
+          "supplier_assignment_ids" => assignment.supplier_assignments.order(:title).pluck(:id)
         }
       )
     end
@@ -37,7 +47,6 @@ module MaapProposals
 
     def self.normalize(raw)
       hash = raw.deep_stringify_keys
-      outcomes = Array(hash["outcomes"]).map { |row| normalize_outcome(row) }
       {
         "schema_version" => (hash["schema_version"].presence || SCHEMA_VERSION).to_i,
         "title" => hash["title"].to_s.strip,
@@ -45,7 +54,10 @@ module MaapProposals
         "required_activities" => blank_to_nil(hash["required_activities"]),
         "handbook" => blank_to_nil(hash["handbook"]),
         "department_id" => blank_to_nil_id(hash["department_id"]),
-        "outcomes" => outcomes
+        "outcomes" => Array(hash["outcomes"]).map { |row| normalize_outcome(row) },
+        "ability_milestones" => Array(hash["ability_milestones"]).map { |row| normalize_ability_milestone(row) },
+        "consumer_assignment_ids" => normalize_id_list(hash["consumer_assignment_ids"]),
+        "supplier_assignment_ids" => normalize_id_list(hash["supplier_assignment_ids"])
       }
     end
 
@@ -57,6 +69,13 @@ module MaapProposals
       }
     end
 
+    def self.ability_milestone_hash(assignment_ability)
+      {
+        "ability_id" => assignment_ability.ability_id,
+        "milestone_level" => assignment_ability.milestone_level
+      }
+    end
+
     def self.normalize_outcome(row)
       hash = row.deep_stringify_keys
       {
@@ -64,6 +83,18 @@ module MaapProposals
         "description" => hash["description"].to_s.strip,
         "outcome_type" => hash["outcome_type"].to_s.presence || "quantitative"
       }
+    end
+
+    def self.normalize_ability_milestone(row)
+      hash = row.deep_stringify_keys
+      {
+        "ability_id" => blank_to_nil_id(hash["ability_id"]),
+        "milestone_level" => blank_to_nil_id(hash["milestone_level"])
+      }
+    end
+
+    def self.normalize_id_list(raw)
+      Array(raw).filter_map { |value| blank_to_nil_id(value) }.uniq
     end
 
     def self.blank_to_nil(value)
@@ -92,7 +123,10 @@ module MaapProposals
         "required_activities" => @payload["required_activities"],
         "handbook" => @payload["handbook"],
         "department_id" => @payload["department_id"],
-        "outcomes" => @payload["outcomes"]
+        "outcomes" => @payload["outcomes"],
+        "ability_milestones" => @payload["ability_milestones"],
+        "consumer_assignment_ids" => @payload["consumer_assignment_ids"],
+        "supplier_assignment_ids" => @payload["supplier_assignment_ids"]
       }
     end
 
@@ -124,6 +158,18 @@ module MaapProposals
       @payload["outcomes"]
     end
 
+    def ability_milestones
+      @payload["ability_milestones"]
+    end
+
+    def consumer_assignment_ids
+      @payload["consumer_assignment_ids"]
+    end
+
+    def supplier_assignment_ids
+      @payload["supplier_assignment_ids"]
+    end
+
     def validate!(company:)
       errors = []
       errors << "title is required" if title.blank?
@@ -143,6 +189,28 @@ module MaapProposals
         unless AssignmentOutcome::TYPES.include?(outcome["outcome_type"])
           errors << "outcome #{index + 1} type is invalid"
         end
+      end
+
+      seen_ability_ids = []
+      ability_milestones.each_with_index do |row, index|
+        if row["ability_id"].blank?
+          errors << "ability milestone #{index + 1} ability_id is required"
+        elsif seen_ability_ids.include?(row["ability_id"])
+          errors << "ability milestone #{index + 1} duplicates ability_id #{row['ability_id']}"
+        else
+          seen_ability_ids << row["ability_id"]
+        end
+
+        level = row["milestone_level"].to_i
+        unless (1..5).cover?(level)
+          errors << "ability milestone #{index + 1} milestone_level must be 1-5"
+        end
+      end
+
+      (consumer_assignment_ids + supplier_assignment_ids).each do |id|
+        next if Assignment.exists?(id: id)
+
+        # Soft: existence checked again on apply with skip+warn. Still flag obviously blank noise.
       end
 
       errors

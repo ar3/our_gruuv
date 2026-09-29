@@ -15,6 +15,20 @@ RSpec.describe MaapProposals::AssignmentPayload do
       expect(payload.outcomes.size).to eq(3)
       expect(payload.outcomes.map { |o| o["id"] }).to match_array(assignment.assignment_outcomes.pluck(:id))
     end
+
+    it "captures ability milestones and reliance ids" do
+      ability = create(:ability, company: organization, name: "Communication")
+      create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+      consumer = create(:assignment, company: organization, title: "Downstream")
+      supplier = create(:assignment, company: organization, title: "Upstream")
+      create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: consumer)
+      create(:assignment_supply_relationship, supplier_assignment: supplier, consumer_assignment: assignment)
+
+      payload = described_class.from_assignment(assignment.reload)
+      expect(payload.ability_milestones).to eq([{ "ability_id" => ability.id, "milestone_level" => 2 }])
+      expect(payload.consumer_assignment_ids).to eq([consumer.id])
+      expect(payload.supplier_assignment_ids).to eq([supplier.id])
+    end
   end
 
   describe "#same_as?" do
@@ -53,6 +67,29 @@ RSpec.describe MaapProposals::AssignmentMarkdownSerializer do
     expect(result).to be_ok
     expect(result.value[:payload]).to be_same_as(payload)
     expect(result.value[:payload].outcomes.first["id"]).to eq(outcome.id)
+  end
+
+  it "round-trips ability milestones and reliance ids" do
+    ability = create(:ability, company: organization, name: "Communication")
+    create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 3)
+    consumer = create(:assignment, company: organization, title: "Downstream")
+    create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: consumer)
+    full_payload = MaapProposals::AssignmentPayload.from_assignment(assignment.reload)
+
+    markdown = described_class.call(
+      assignment: assignment,
+      payload: full_payload,
+      based_on_semantic_version: assignment.semantic_version
+    )
+    expect(markdown).to include("## Ability milestones")
+    expect(markdown).to include("ability_id: #{ability.id}")
+    expect(markdown).to include("## Consumer assignments")
+    expect(markdown).to include("assignment_id: #{consumer.id}")
+
+    result = MaapProposals::AssignmentMarkdownDeserializer.call(markdown: markdown, assignment: assignment)
+    expect(result).to be_ok
+    expect(result.value[:payload].ability_milestones).to eq(full_payload.ability_milestones)
+    expect(result.value[:payload].consumer_assignment_ids).to eq([consumer.id])
   end
 end
 
@@ -158,6 +195,41 @@ RSpec.describe MaapProposals::ApplyAssignmentEdit do
     expect(outcome.outcome_type).to eq("sentiment")
     expect(outcome.progress_report_url).to eq("https://example.com/report")
     expect(outcome.management_relationship_filter).to eq("direct_employee")
+  end
+
+  it "applies ability milestones and reliance, skipping missing association targets with warnings" do
+    ability = create(:ability, company: organization, name: "Communication")
+    create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 1)
+    consumer = create(:assignment, company: organization, title: "Downstream")
+    create(:assignment_supply_relationship, supplier_assignment: assignment, consumer_assignment: consumer)
+
+    draft = MaapProposals::CreateAssignmentEditDraft.call(assignment: assignment, proposer: proposer).value
+    new_ability = create(:ability, company: organization, name: "Mentorship")
+    new_consumer = create(:assignment, company: organization, title: "New Downstream")
+    MaapProposals::UpdateAssignmentEditDraft.call(
+      proposal: draft,
+      attributes: { "title" => assignment.title, "tagline" => assignment.tagline },
+      ability_milestones: [
+        { "ability_id" => new_ability.id, "milestone_level" => 4 },
+        { "ability_id" => 9_999_999, "milestone_level" => 2 }
+      ],
+      consumer_assignment_ids: [new_consumer.id, 9_999_998],
+      supplier_assignment_ids: []
+    )
+    MaapProposals::SubmitAssignmentEdit.call(proposal: draft.reload)
+
+    result = described_class.call(
+      proposal: draft.reload,
+      decided_by: editor,
+      version_type: "insignificant"
+    )
+
+    expect(result).to be_ok
+    assignment.reload
+    expect(assignment.assignment_abilities.pluck(:ability_id, :milestone_level)).to eq([[new_ability.id, 4]])
+    expect(assignment.consumer_assignments.pluck(:id)).to eq([new_consumer.id])
+    expect(result.value.decision_warnings.join).to include("9999999")
+    expect(result.value.decision_warnings.join).to include("9999998")
   end
 end
 

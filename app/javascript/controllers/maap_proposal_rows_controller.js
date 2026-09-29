@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Add/remove outcome cards on MAAP assignment proposal edit.
+// Add/remove row cards on MAAP assignment proposal edit (outcomes, abilities, reliance).
 export default class extends Controller {
   static targets = ["list", "template"]
 
@@ -14,7 +14,7 @@ export default class extends Controller {
 
   remove(event) {
     event.preventDefault()
-    const card = event.currentTarget.closest("[data-maap-proposal-outcomes-target='row']")
+    const card = event.currentTarget.closest("[data-maap-proposal-rows-target='row']")
     if (card) card.remove()
   }
 }

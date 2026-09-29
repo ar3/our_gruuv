@@ -26,6 +26,11 @@ class MaapProposal < ApplicationRecord
   scope :open_proposals, -> { where(status: OPEN_STATUSES) }
   scope :decided, -> { where(status: %w[applied rejected]) }
   scope :recent_first, -> { order(updated_at: :desc) }
+  scope :created_first, -> { order(created_at: :desc) }
+  scope :with_statuses, ->(statuses) {
+    normalized = Array(statuses).map(&:to_s) & STATUSES
+    normalized.empty? ? none : where(status: normalized)
+  }
   scope :for_organization, ->(organization) { where(organization: organization) }
   scope :for_proposable, ->(proposable) {
     where(proposable_type: proposable.class.base_class.name, proposable_id: proposable.id)

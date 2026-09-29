@@ -25,22 +25,98 @@
         = f.label :handbook, class: "form-label"
         = f.text_area :handbook, value: @payload.handbook, class: "form-control", rows: 8
 
-      %div{"data-controller" => "maap-proposal-outcomes"}
+      %div{"data-controller" => "maap-proposal-rows"}
         .d-flex.justify-content-between.align-items-center.mt-4.mb-3
           %h5.mb-0 Outcomes
-          %button.btn.btn-sm.btn-outline-primary{type: "button", "data-action" => "maap-proposal-outcomes#add"}
+          %button.btn.btn-sm.btn-outline-primary{type: "button", "data-action" => "maap-proposal-rows#add"}
             %i.bi.bi-plus-lg.me-1
             Add outcome
 
-        %div{"data-maap-proposal-outcomes-target" => "list"}
+        %div{"data-maap-proposal-rows-target" => "list"}
           - Array(@payload.outcomes).each do |outcome|
             = render "organizations/assignments/maap_proposals/outcome_fields", outcome: outcome
 
-        %template{"data-maap-proposal-outcomes-target" => "template"}
+        %template{"data-maap-proposal-rows-target" => "template"}
           = render "organizations/assignments/maap_proposals/outcome_fields", outcome: { "description" => "", "outcome_type" => "quantitative" }
 
         %p.text-muted.small.mt-2.mb-0
-          Add outcomes with the button, or remove ones that should not remain. Saving with no outcome cards clears all outcomes. You can also edit via downloaded markdown.
+          Saving with no outcome cards clears all outcomes.
+
+      %div{"data-controller" => "maap-proposal-rows"}
+        .d-flex.justify-content-between.align-items-center.mt-4.mb-2
+          %h5.mb-0 Ability milestones
+          %button.btn.btn-sm.btn-outline-primary{type: "button", "data-action" => "maap-proposal-rows#add"}
+            %i.bi.bi-plus-lg.me-1
+            Add ability milestone
+
+        .alert.alert-light.border.small.mb-3
+          %p.mb-0
+            Ability milestones are the
+            %strong skill levels required to be qualified
+            for this assignment. On apply, this list fully replaces the assignment’s current required ability milestones. Missing or invalid abilities are skipped with a warning.
+
+        %div{"data-maap-proposal-rows-target" => "list"}
+          - Array(@payload.ability_milestones).each do |row|
+            = render "organizations/assignments/maap_proposals/ability_milestone_fields", row: row, abilities: @abilities
+
+        %template{"data-maap-proposal-rows-target" => "template"}
+          = render "organizations/assignments/maap_proposals/ability_milestone_fields", row: { "ability_id" => nil, "milestone_level" => 2 }, abilities: @abilities
+
+      %div{"data-controller" => "maap-proposal-rows"}
+        .d-flex.justify-content-between.align-items-center.mt-4.mb-2
+          %h5.mb-0 Consumer assignments
+          %button.btn.btn-sm.btn-outline-primary{type: "button", "data-action" => "maap-proposal-rows#add"}
+            %i.bi.bi-plus-lg.me-1
+            Add consumer
+
+        .alert.alert-light.border.small.mb-3
+          %p.mb-0
+            Consumers are assignments that
+            %strong rely on this one
+            — this assignment supplies them. On apply, the consumer list fully replaces the current reliance links for this direction. Missing or invalid targets are skipped with a warning.
+
+        %div{"data-maap-proposal-rows-target" => "list"}
+          - Array(@payload.consumer_assignment_ids).each do |id|
+            = render "organizations/assignments/maap_proposals/reliance_fields",
+                     label: "Consumer",
+                     param_key: "consumer_assignment_ids",
+                     selected_id: id,
+                     assignments: @assignments_for_reliance
+
+        %template{"data-maap-proposal-rows-target" => "template"}
+          = render "organizations/assignments/maap_proposals/reliance_fields",
+                   label: "Consumer",
+                   param_key: "consumer_assignment_ids",
+                   selected_id: nil,
+                   assignments: @assignments_for_reliance
+
+      %div{"data-controller" => "maap-proposal-rows"}
+        .d-flex.justify-content-between.align-items-center.mt-4.mb-2
+          %h5.mb-0 Supplier assignments
+          %button.btn.btn-sm.btn-outline-primary{type: "button", "data-action" => "maap-proposal-rows#add"}
+            %i.bi.bi-plus-lg.me-1
+            Add supplier
+
+        .alert.alert-light.border.small.mb-3
+          %p.mb-0
+            Suppliers are assignments
+            %strong this one relies on
+            — they supply this assignment. On apply, the supplier list fully replaces the current reliance links for this direction. Missing or invalid targets are skipped with a warning.
+
+        %div{"data-maap-proposal-rows-target" => "list"}
+          - Array(@payload.supplier_assignment_ids).each do |id|
+            = render "organizations/assignments/maap_proposals/reliance_fields",
+                     label: "Supplier",
+                     param_key: "supplier_assignment_ids",
+                     selected_id: id,
+                     assignments: @assignments_for_reliance
+
+        %template{"data-maap-proposal-rows-target" => "template"}
+          = render "organizations/assignments/maap_proposals/reliance_fields",
+                   label: "Supplier",
+                   param_key: "supplier_assignment_ids",
+                   selected_id: nil,
+                   assignments: @assignments_for_reliance
 
       .d-flex.flex-wrap.gap-2.mt-4
         = f.submit "Save draft", class: "btn btn-primary"

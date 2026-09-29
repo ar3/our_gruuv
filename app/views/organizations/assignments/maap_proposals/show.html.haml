@@ -84,6 +84,37 @@
                 - if outcome["id"].present?
                   %small.text-muted id #{outcome["id"]}
         - else
+          %p.text-muted.mb-3 None
+
+        %h6.text-muted Ability milestones
+        - if @payload.ability_milestones.any?
+          %ul.mb-3
+            - @payload.ability_milestones.each do |row|
+              - ability = Ability.find_by(id: row["ability_id"])
+              %li
+                = ability&.name || "Ability ##{row['ability_id']}"
+                %span.text-muted
+                  · M#{row['milestone_level']}
+                  · id #{row['ability_id']}
+        - else
+          %p.text-muted.mb-3 None
+
+        %h6.text-muted Consumer assignments
+        - if @payload.consumer_assignment_ids.any?
+          %ul.mb-3
+            - @payload.consumer_assignment_ids.each do |id|
+              - asg = Assignment.find_by(id: id)
+              %li= asg ? "#{asg.title} (##{id})" : "Missing assignment ##{id}"
+        - else
+          %p.text-muted.mb-3 None
+
+        %h6.text-muted Supplier assignments
+        - if @payload.supplier_assignment_ids.any?
+          %ul.mb-3
+            - @payload.supplier_assignment_ids.each do |id|
+              - asg = Assignment.find_by(id: id)
+              %li= asg ? "#{asg.title} (##{id})" : "Missing assignment ##{id}"
+        - else
           %p.text-muted.mb-0 None
 
     - if @proposal.applied? || @proposal.rejected?
@@ -102,11 +133,17 @@
             %span.text-muted
               · #{@proposal.applied_version_type} version bump
         - if @proposal.decision_note.present?
-          %p.mb-0
+          %p.mb-2
             %strong Note:
             = @proposal.decision_note
         - else
-          %p.mb-0.text-muted No note was left with this decision.
+          %p.mb-2.text-muted No note was left with this decision.
+        - if Array(@proposal.decision_warnings).any?
+          %p.mb-1
+            %strong Apply warnings:
+          %ul.mb-0
+            - Array(@proposal.decision_warnings).each do |warning|
+              %li= warning
     - else
       - decision_disabled_reason = maap_proposal_decision_disabled_reason(@proposal)
       .card.mb-4{ role: "region", "aria-labelledby": "proposal-review" }

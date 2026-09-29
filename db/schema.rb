@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_28_003000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_28_114000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1002,6 +1002,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_28_003000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "baseline_payload"
+    t.jsonb "decision_warnings", default: [], null: false
     t.index ["decided_by_id"], name: "index_maap_proposals_on_decided_by_id"
     t.index ["organization_id", "status"], name: "index_maap_proposals_on_organization_and_status"
     t.index ["organization_id"], name: "index_maap_proposals_on_organization_id"
