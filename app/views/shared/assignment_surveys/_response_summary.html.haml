@@ -3,10 +3,7 @@
 .mb-0
   %p.text-muted.small.mb-3
     Submitted #{l(response.submitted_at, format: :long)}
-  - if response.personal_alignment.present?
-    .mb-3
-      %h4.h6 Personal alignment
-      %p.mb-0= response.personal_alignment.humanize
+  = render "shared/assignment_surveys/personal_alignment_display", response: response
   .row.g-3
     - [["Understandable", response.understandable_rating], ["Possible", response.possible_rating], ["Relevant", response.relevant_rating]].each do |title, rating|
       .col-12.col-md-4

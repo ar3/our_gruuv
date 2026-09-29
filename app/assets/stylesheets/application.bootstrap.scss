@@ -2479,6 +2479,30 @@ $likert-colors: (
       background-color: $color;
     }
   }
+
+  .personal-alignment-display__option.btn-likert-#{$value}.is-selected {
+    color: #fff;
+    background-color: $color;
+    border-color: $color;
+    font-weight: 600;
+  }
+}
+
+// Read-only personal alignment: full-width button group; unselected options greyed out.
+.personal-alignment-display__group {
+  pointer-events: none;
+
+  .personal-alignment-display__option {
+    flex: 1 1 0;
+    cursor: default;
+  }
+
+  .personal-alignment-display__option.is-muted {
+    color: var(--bs-secondary-color, #6c757d);
+    background-color: var(--bs-secondary-bg, #e9ecef);
+    border-color: var(--bs-border-color, #dee2e6);
+    opacity: 0.7;
+  }
 }
 
 .ask-og-thread {

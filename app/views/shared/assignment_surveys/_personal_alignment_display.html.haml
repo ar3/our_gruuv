@@ -1,0 +1,11 @@
+-# locals: response (AssignmentSurveyResponse)
+.mb-3.personal-alignment-display
+  %h4.h6 Personal alignment
+  - if response.personal_alignment.present?
+    - selected_label = AssignmentSurveyResponse::PERSONAL_ALIGNMENT_BUTTONS.find { |_label, value, _tone| value == response.personal_alignment }&.first || response.personal_alignment.humanize
+    .btn-group.btn-group-sm.w-100.personal-alignment-display__group{role: "group", "aria-label": "Personal alignment: #{selected_label}"}
+      - AssignmentSurveyResponse::PERSONAL_ALIGNMENT_BUTTONS.each do |label, value, likert_tone|
+        - selected = response.personal_alignment == value
+        %span.btn.personal-alignment-display__option{class: (selected ? "btn-likert-#{likert_tone} is-selected" : "is-muted"), "aria-current": (selected ? "true" : nil)}= label
+  - else
+    %p.text-muted.mb-0 Personal Alignment was not filled out during this survey submission

@@ -537,6 +537,9 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       expect(response.body).to include("assignment experience feedback")
       expect(response.body).to include("Latest submission")
       expect(response.body).to include("Personal alignment")
+      expect(response.body).to include("personal-alignment-display__group")
+      expect(response.body).to include("btn-likert-4 is-selected")
+      expect(response.body).to include("Only If Necessary")
       expect(response.body).to include("Like")
       expect(response.body).to include("Give feedback")
       expect(response.body).to include("research-survey-feedback")
@@ -571,8 +574,27 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Latest submission")
       expect(response.body).to include("Earlier submission")
+      expect(response.body).to include("btn-likert-6 is-selected")
+      expect(response.body).to include("btn-likert-3 is-selected")
       expect(response.body).to include("Love")
       expect(response.body).to include("Neutral")
+    end
+
+    it "shows muted copy when personal alignment was not submitted" do
+      create(
+        :assignment_survey_response,
+        :complete,
+        company_teammate: employee_teammate,
+        assignment: assignment,
+        personal_alignment: nil,
+        submitted_at: 2.days.ago
+      )
+
+      get assignment_show_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Personal Alignment was not filled out during this survey submission")
+      expect(response.body).not_to include("personal-alignment-display__group")
     end
 
     it "shows the update control when no feedback exists yet" do

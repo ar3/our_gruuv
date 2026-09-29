@@ -236,6 +236,15 @@ RSpec.describe "Assignment Experience Survey", type: :request do
     expect(response.body).to include(results_organization_assignment_survey_path(organization, sort: "responses"))
     expect(response.body).to include(person.display_name)
 
+    get teammate_responses_organization_assignment_survey_path(organization, teammate_id: teammate.id)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include(person.display_name)
+    expect(response.body).to include("Personal alignment")
+    expect(response.body).to include("personal-alignment-display__group")
+    expect(response.body).to include("btn-likert-6 is-selected")
+    expect(response.body).to include("Love")
+
     get results_organization_assignment_survey_path(organization, sort: "average")
 
     expect(response).to have_http_status(:success)
