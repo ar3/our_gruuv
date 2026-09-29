@@ -96,6 +96,39 @@ module Organizations::OgAcademyHelper
     "#{count} active and healthy #{'goal'.pluralize(count)}"
   end
 
+  # Expand control under a Quick Start teammate: "show all of my links..." vs "show all of {casual}'s links..."
+  def og_academy_show_all_links_label(teammate, viewer: current_company_teammate)
+    if viewer.present? && viewer.id == teammate.id
+      "show all of my links..."
+    else
+      casual = teammate.person&.casual_name.to_s.presence || "their"
+      "show all of #{casual}'s links..."
+    end
+  end
+
+  # Explore row between Quick Start and OG Mastery: MAAP browse destinations.
+  def og_academy_explore_links(organization)
+    [
+      ["Milestones", celebrate_milestones_organization_path(organization)],
+      ["Abilities", organization_abilities_path(organization)],
+      ["Assignments", organization_assignments_path(organization)],
+      ["Positions", organization_positions_path(organization)]
+    ]
+  end
+
+  # First letter oversized (dropcap-style) for Explore button labels.
+  def og_academy_explore_dropcap_label(word)
+    word = word.to_s
+    return word if word.blank?
+
+    first = word[0]
+    rest = word[1..]
+    safe_join([
+      content_tag(:span, first, class: "fs-4 fw-semibold lh-1 align-middle"),
+      content_tag(:span, rest, class: "fs-6 align-middle")
+    ])
+  end
+
   def og_academy_criterion_completion_popover_html(criterion)
     return nil unless criterion.done
 

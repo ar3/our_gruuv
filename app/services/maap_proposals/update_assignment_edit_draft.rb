@@ -42,7 +42,9 @@ module MaapProposals
 
     def call
       return Result.err("Only draft proposals can be edited") unless @proposal.editable?
-      return Result.err("Only Assignment edit proposals are supported") unless @proposal.proposable_type == "Assignment"
+      unless @proposal.proposable_type == "Assignment" || @proposal.create_kind?
+        return Result.err("Only Assignment proposals are supported")
+      end
 
       current = AssignmentPayload.from_hash(@proposal.proposed_payload).to_h
       merged = current.merge(@attributes.deep_stringify_keys.slice(*AssignmentPayload::ATTR_KEYS))

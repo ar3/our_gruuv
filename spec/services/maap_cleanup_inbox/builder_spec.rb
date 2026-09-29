@@ -20,14 +20,21 @@ RSpec.describe MaapCleanupInbox::Builder do
     )
   end
 
-  it "returns the seat ↔ position section collapsed by default" do
+  def seat_section(sections)
+    sections.find { |section| section.key == :seat_position_alignment }
+  end
+
+  def proposals_section(sections)
+    sections.find { |section| section.key == :submitted_maap_proposals }
+  end
+
+  it "returns submitted proposals and seat ↔ position sections collapsed by default" do
     create_mismatched_tenure!
 
     sections = described_class.call(organization: organization)
-    section = sections.first
-    subtype = section.subtypes.first
+    subtype = seat_section(sections).subtypes.first
 
-    expect(sections.map(&:key)).to eq(%i[seat_position_alignment])
+    expect(sections.map(&:key)).to eq(%i[submitted_maap_proposals seat_position_alignment])
     expect(subtype.key).to eq(:mismatched_seat_position)
     expect(subtype.count).to eq(1)
     expect(subtype.expanded).to be(false)
@@ -41,7 +48,7 @@ RSpec.describe MaapCleanupInbox::Builder do
       organization: organization,
       expanded_subtype_keys: [:mismatched_seat_position]
     )
-    subtype = sections.first.subtypes.first
+    subtype = seat_section(sections).subtypes.first
     item = subtype.items.first
 
     expect(subtype.expanded).to be(true)
@@ -61,6 +68,51 @@ RSpec.describe MaapCleanupInbox::Builder do
       ),
       Rails.application.routes.url_helpers.manage_titles_organization_seat_path(organization, tenure.seat)
     ])
+  end
+
+  it "includes submitted create and edit proposals when expanded" do
+    assignment = create(:assignment, company: organization, title: "Live Assignment")
+    create(
+      :maap_proposal,
+      :submitted,
+      assignment: assignment,
+      proposer: teammate,
+      proposed_payload: {
+        "schema_version" => 2,
+        "title" => "Edited Title",
+        "tagline" => "tag",
+        "outcomes" => [],
+        "ability_milestones" => [],
+        "consumer_assignment_ids" => [],
+        "supplier_assignment_ids" => []
+      }
+    )
+    create(
+      :maap_proposal,
+      :create_kind,
+      :submitted,
+      organization: organization,
+      proposer: teammate,
+      proposed_payload: {
+        "schema_version" => 2,
+        "title" => "Brand New",
+        "tagline" => "tag",
+        "outcomes" => [],
+        "ability_milestones" => [],
+        "consumer_assignment_ids" => [],
+        "supplier_assignment_ids" => []
+      }
+    )
+
+    sections = described_class.call(
+      organization: organization,
+      expanded_subtype_keys: [:submitted_maap_proposals]
+    )
+    subtype = proposals_section(sections).subtypes.first
+
+    expect(subtype.count).to eq(2)
+    expect(subtype.items.map(&:title)).to include("Edit: Edited Title", "Create: Brand New")
+    expect(subtype.items.flat_map { |item| item.actions.map(&:label) }).to all(eq("Review proposal"))
   end
 
   it "ignores ended tenures and matching seat/position pairs" do
@@ -87,6 +139,6 @@ RSpec.describe MaapCleanupInbox::Builder do
     )
 
     sections = described_class.call(organization: organization)
-    expect(sections.first.subtypes.first.count).to eq(0)
+    expect(seat_section(sections).subtypes.first.count).to eq(0)
   end
 end

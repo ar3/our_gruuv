@@ -31,7 +31,11 @@ module MaapProposalsHelper
 
     return if policy(proposal).apply?
 
-    "You need MAAP management permissions to apply or reject this proposal."
+    if proposal.create_kind?
+      "You need permission to create Assignments to apply or reject this proposal."
+    else
+      "You need MAAP management permissions to apply or reject this proposal."
+    end
   end
 
   def maap_proposal_decision_enabled?(proposal)

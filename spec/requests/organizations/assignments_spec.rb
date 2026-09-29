@@ -34,16 +34,22 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Assignments')
       end
 
-      it 'shows object lens header with page help and new-assignment control clustered after List' do
+      it 'shows object lens header with page help and suggest-assignment control for non-creators' do
         get organization_assignments_path(organization)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Switch object')
         expect(response.body).to include('Switch page type')
         expect(response.body).to include('assignmentsListPageHelp')
         expect(response.body).to include('Goal of this page')
-        expect(response.body).to include('aria-label="Add new Assignment"')
-        expect(response.body).to include('title="Add new Assignment"')
-        expect(response.body).to include(new_organization_assignment_path(organization))
+        expect(response.body).to include('aria-label="Suggest New Assignment"')
+        expect(response.body).to include('title="Suggest New Assignment"')
+        expect(response.body).to include(new_organization_maap_assignment_create_path(organization))
+        expect(response.body).to include('Create New Assignment')
+        expect(response.body).to include('Suggest New Assignment')
+        expect(response.body).to include('View Suggested New Assignments')
+        expect(response.body).to include('dropdown-item disabled')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('You need permission to create Assignments.')
       end
 
       it 'shows action row with View Assignment Flows when user can view assignment flows' do

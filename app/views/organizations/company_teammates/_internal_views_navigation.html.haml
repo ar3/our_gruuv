@@ -1,10 +1,11 @@
--# locals: organization:, teammate:, for_one_on_one_hub: false, row_data: nil
+-# locals: organization:, teammate:, for_one_on_one_hub: false, row_data: nil, fully_expanded: false
 - for_one_on_one_hub = local_assigns.fetch(:for_one_on_one_hub, false)
+- fully_expanded = local_assigns.fetch(:fully_expanded, false)
 - row_data = local_assigns[:row_data]
 - row_data ||= (@managers_view_row_data_by_teammate_id || {})[teammate.id]
 - navigation_groups = internal_teammate_views_navigation_groups(organization, teammate, row_data: row_data, for_one_on_one_hub: for_one_on_one_hub)
-- visible_groups = navigation_groups.first(2)
-- collapsed_groups = navigation_groups.drop(2)
+- visible_groups = fully_expanded ? navigation_groups : navigation_groups.first(2)
+- collapsed_groups = fully_expanded ? [] : navigation_groups.drop(2)
 - more_views_collapse_id = "internalTeammateViewsMore#{teammate.id}"
 - expand_prompt_label = internal_teammate_views_more_expand_label(collapsed_groups, casual_name: teammate.person.casual_name)
 
@@ -21,12 +22,13 @@
     .collapse{id: more_views_collapse_id}
       = render "organizations/company_teammates/internal_views_navigation_group_list", groups: collapsed_groups
 
-:javascript
-  (function() {
-    document.querySelectorAll('.internal-teammate-views-nav__expand-prompt').forEach(function(button) {
-      button.addEventListener('click', function() {
-        var promptWrap = button.closest('.internal-teammate-views-nav__expand-prompt-wrap');
-        if (promptWrap) promptWrap.remove();
-      }, { once: true });
-    });
-  })();
+- unless fully_expanded
+  :javascript
+    (function() {
+      document.querySelectorAll('.internal-teammate-views-nav__expand-prompt').forEach(function(button) {
+        button.addEventListener('click', function() {
+          var promptWrap = button.closest('.internal-teammate-views-nav__expand-prompt-wrap');
+          if (promptWrap) promptWrap.remove();
+        }, { once: true });
+      });
+    })();

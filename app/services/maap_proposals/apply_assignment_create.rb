@@ -1,53 +1,55 @@
 # frozen_string_literal: true
 
 module MaapProposals
-  class ApplyAssignmentEdit
-    def self.call(proposal:, decided_by:, version_type:, decision_note: nil)
-      new(
-        proposal: proposal,
-        decided_by: decided_by,
-        version_type: version_type,
-        decision_note: decision_note
-      ).call
+  class ApplyAssignmentCreate
+    INITIAL_VERSION_TYPE = "early_draft"
+
+    def self.call(proposal:, decided_by:, decision_note: nil)
+      new(proposal: proposal, decided_by: decided_by, decision_note: decision_note).call
     end
 
-    def initialize(proposal:, decided_by:, version_type:, decision_note:)
+    def initialize(proposal:, decided_by:, decision_note:)
       @proposal = proposal
       @decided_by = decided_by
-      @version_type = version_type.to_s
       @decision_note = decision_note
       @warnings = []
     end
 
     def call
       return Result.err("Only submitted proposals can be applied") unless @proposal.decidable?
-      return Result.err("Only Assignment edit proposals are supported") unless @proposal.edit_kind? && @proposal.proposable_type == "Assignment"
-      unless MaapProposal::VERSION_TYPES.include?(@version_type)
-        return Result.err("version_type must be fundamental, clarifying, or insignificant")
-      end
+      return Result.err("Only Assignment create proposals are supported") unless @proposal.create_kind?
 
-      assignment = @proposal.proposable
       payload = AssignmentPayload.from_hash(@proposal.proposed_payload)
-      errors = payload.validate!(company: assignment.company)
+      errors = payload.validate!(company: @proposal.organization)
       return Result.err(errors) if errors.any?
 
-      baseline_payload = AssignmentPayload.from_assignment(assignment).to_h
+      uniqueness = TitleUniqueness.call(
+        organization: @proposal.organization,
+        proposed_title: payload.title,
+        mode: :create
+      )
+      title = uniqueness.apply_title
+      @warnings << uniqueness.message if uniqueness.taken?
 
+      baseline_payload = AssignmentPayload.empty.to_h
+
+      assignment = Assignment.new(company: @proposal.organization)
       form = AssignmentForm.new(assignment)
       form.current_person = @decided_by.person
       form_attrs = {
-        title: payload.title,
+        title: title,
         tagline: payload.tagline,
         required_activities: payload.required_activities,
         handbook: payload.handbook,
         department_id: payload.department_id,
-        version_type: @version_type
+        version_type: INITIAL_VERSION_TYPE
       }
+      form.instance_variable_set(:@form_data_empty, false)
       return Result.err(form.errors.full_messages) unless form.validate(form_attrs)
 
       ApplicationRecord.transaction do
         unless form.save
-          raise ApplyFailed.new(Array(form.errors.full_messages).presence || ["Failed to save assignment"])
+          raise ApplyFailed.new(Array(form.errors.full_messages).presence || ["Failed to create assignment"])
         end
 
         assignment = assignment.reload
@@ -60,9 +62,10 @@ module MaapProposals
           decided_by: @decided_by,
           decided_at: Time.current,
           decision_note: @decision_note.presence,
-          applied_version_type: @version_type,
+          applied_version_type: nil,
           baseline_payload: baseline_payload,
-          decision_warnings: @warnings
+          decision_warnings: @warnings.compact,
+          proposable: assignment
         )
       end
 

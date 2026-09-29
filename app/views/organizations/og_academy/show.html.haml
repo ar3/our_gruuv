@@ -37,6 +37,15 @@
                     data: { controller: "reload-turbo-frame" } do
     = render "organizations/og_academy/lazy_frame_placeholder", label: "Loading Quick Start…"
 
+-# ——— Explore MAAP ———
+%section.mb-4{role: "region", "aria-label": "Explore"}
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %span.fw-semibold.text-nowrap Explore:
+    .btn-group.flex-wrap{role: "group", "aria-label": "Explore Milestones, Abilities, Assignments, and Positions"}
+      - og_academy_explore_links(current_organization).each do |label, path|
+        = link_to path, class: "btn btn-outline-secondary d-inline-flex align-items-center px-3" do
+          = og_academy_explore_dropcap_label(label)
+
 -# ——— 2. Practice milestones ———
 = render "shared/section_header",
          title: "OG Mastery milestones",

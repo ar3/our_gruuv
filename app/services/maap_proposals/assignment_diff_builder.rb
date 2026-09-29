@@ -20,6 +20,7 @@ module MaapProposals
     end
 
     def self.coerce_before(before:, assignment:)
+      return AssignmentPayload.empty if before == :empty
       return AssignmentPayload.from_assignment(assignment) if before.nil? && assignment
       return before if before.is_a?(AssignmentPayload)
       return AssignmentPayload.from_hash(before) if before.present?

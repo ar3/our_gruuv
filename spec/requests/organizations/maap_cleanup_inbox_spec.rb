@@ -20,6 +20,7 @@ RSpec.describe "MAAP Cleanup Inbox", type: :request do
       expect(response.body).to include("MAAP Cleanup Inbox")
       expect(response.body).to include("Beta")
       expect(response.body).to include("Seat ↔ Position Alignment")
+      expect(response.body).to include("Submitted MAAP proposals")
       expect(response.body).to include("Active tenures where seat titles do not include the position title")
       expect(response.body).to include("Show")
       expect(response.body).to include("maapCleanupInboxPageHelp")

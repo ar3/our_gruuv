@@ -1,15 +1,15 @@
-- content_for :title, "Proposal · #{@assignment.title}"
-- page_help_id = "assignmentMaapProposalShowPageHelp"
+- content_for :title, "Create proposal · #{@payload.title}"
+- page_help_id = "maapAssignmentCreateShowPageHelp"
 
 - content_for :header do
   .d-flex.flex-wrap.align-items-center.gap-2
     %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
-      %span Assignment edit proposal
+      %span Assignment create proposal
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
-               tooltip: "Everyone can help keep MAAP relevant. Click for how proposals work."
+               tooltip: "Propose a new Assignment. Click for how create proposals work."
       - if policy(@proposal).edit?
-        = link_to edit_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
+        = link_to edit_organization_maap_assignment_create_path(@organization, @proposal),
                   class: "btn btn-primary",
                   title: "Edit draft",
                   "aria-label" => "Edit draft",
@@ -17,10 +17,10 @@
           %i.bi.bi-pencil
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: @assignment.title, url: organization_assignment_path(@organization, @assignment) }, { label: "MAAP proposals", url: organization_assignment_maap_proposals_path(@organization, @assignment) }, { label: "Proposal", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Assignments", url: organization_assignments_path(@organization) }, { label: "Proposed creates", url: organization_maap_assignment_creates_path(@organization) }, { label: "Proposal", url: nil }])
 
 .collapse.mb-4{id: page_help_id}
-  = render "organizations/assignments/maap_proposals/page_help"
+  = render "organizations/maap_assignment_creates/page_help"
 
 .row.justify-content-center
   .col-lg-8
@@ -29,17 +29,18 @@
         %span.badge.me-2{class: proposal_status_badge_class(@proposal.status)}= @proposal.status
         %span.text-muted
           Proposed by #{@proposal.proposer.person.display_name}
-          · based on v#{@proposal.based_on_semantic_version}
+          - if @proposal.create_key.present?
+            · create_key #{@proposal.create_key}
       .d-flex.flex-wrap.gap-2
-        = link_to markdown_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), class: "btn btn-outline-secondary btn-sm" do
+        = link_to markdown_organization_maap_assignment_create_path(@organization, @proposal), class: "btn btn-outline-secondary btn-sm" do
           %i.bi.bi-download.me-1
           Download .md
         - if policy(@proposal).edit?
-          = link_to "Edit draft", edit_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), class: "btn btn-outline-primary btn-sm"
+          = link_to "Edit draft", edit_organization_maap_assignment_create_path(@organization, @proposal), class: "btn btn-outline-primary btn-sm"
         - if policy(@proposal).submit?
-          = button_to "Submit", submit_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, class: "btn btn-primary btn-sm"
+          = button_to "Submit", submit_organization_maap_assignment_create_path(@organization, @proposal), method: :post, class: "btn btn-primary btn-sm"
         - if policy(@proposal).destroy?
-          = button_to "Delete", organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :delete, class: "btn btn-outline-danger btn-sm", data: { turbo_confirm: "Delete this proposal?" }
+          = button_to "Delete", organization_maap_assignment_create_path(@organization, @proposal), method: :delete, class: "btn btn-outline-danger btn-sm", data: { turbo_confirm: "Delete this proposal?" }
 
     - if @title_uniqueness&.taken?
       .alert.alert-warning.mb-4{role: "status"}
@@ -50,19 +51,15 @@
       .card-header
         %h5.mb-0
           - if @proposal.baseline_payload.present?
-            Changes vs assignment at decision
+            Changes vs empty baseline at decision
           - else
-            Changes vs current assignment
+            Proposed vs empty Assignment
       .card-body
         - if @field_diffs.any?
           - @field_diffs.each do |field_diff|
             = render_maap_proposal_field_diff(field_diff)
         - else
-          %p.text-muted.mb-0
-            - if @proposal.baseline_payload.present?
-              No differences from the assignment at decision.
-            - else
-              No differences from the current assignment.
+          %p.text-muted.mb-0 No proposed content yet.
 
     .card.mb-4
       .card-header
@@ -86,8 +83,6 @@
               %strong.d-block.mb-1= outcome["description"]
               .d-flex.flex-wrap.gap-2.align-items-center
                 %span.badge.bg-secondary= outcome["outcome_type"]
-                - if outcome["id"].present?
-                  %small.text-muted id #{outcome["id"]}
         - else
           %p.text-muted.mb-3 None
 
@@ -98,9 +93,7 @@
               - ability = Ability.find_by(id: row["ability_id"])
               %li
                 = ability&.name || "Ability ##{row['ability_id']}"
-                %span.text-muted
-                  · M#{row['milestone_level']}
-                  · id #{row['ability_id']}
+                %span.text-muted · M#{row['milestone_level']}
         - else
           %p.text-muted.mb-3 None
 
@@ -126,17 +119,18 @@
       - decision_verb = @proposal.applied? ? "accepted" : "rejected"
       - decision_alert_class = @proposal.applied? ? "alert-success" : "alert-danger"
       - decider_name = @proposal.decided_by&.person&.display_name || "Someone"
-      .alert{class: "#{decision_alert_class} mb-4", role: "region", "aria-labelledby": "proposal-decision"}
-        %h5.alert-heading.mb-2{ id: "proposal-decision" }
+      .alert{class: "#{decision_alert_class} mb-4", role: "region", "aria-labelledby": "create-proposal-decision"}
+        %h5.alert-heading.mb-2{ id: "create-proposal-decision" }
           %i.bi{class: "#{@proposal.applied? ? 'bi-check-circle' : 'bi-x-circle'} me-2"}
           Proposal #{decision_verb}
         %p.mb-2
-          #{decider_name} #{decision_verb} this proposal
+          #{decider_name} #{decision_verb} this create proposal
           - if @proposal.decided_at.present?
             on #{l(@proposal.decided_at, format: :long)}
-          - if @proposal.applied? && @proposal.applied_version_type.present?
-            %span.text-muted
-              · #{@proposal.applied_version_type} version bump
+          - if @proposal.applied? && @proposal.proposable
+            %span
+              · created
+              = link_to @proposal.proposable.title, organization_assignment_path(@organization, @proposal.proposable)
         - if @proposal.decision_note.present?
           %p.mb-2
             %strong Note:
@@ -151,21 +145,20 @@
               %li= warning
     - else
       - decision_disabled_reason = maap_proposal_decision_disabled_reason(@proposal)
-      .card.mb-4{ role: "region", "aria-labelledby": "proposal-review" }
+      .card.mb-4{ role: "region", "aria-labelledby": "create-proposal-review" }
         .card-header
-          %h5.mb-0{ id: "proposal-review" } Review
+          %h5.mb-0{ id: "create-proposal-review" } Review
         .card-body
           - if decision_disabled_reason.blank?
-            = form_with url: apply_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true do
-              .mb-3
-                = label_tag :version_type, "Version bump", class: "form-label"
-                = select_tag :version_type, options_for_select([["Fundamental", "fundamental"], ["Clarifying", "clarifying"], ["Insignificant", "insignificant"]], "clarifying"), class: "form-select", required: true
+            = form_with url: apply_organization_maap_assignment_create_path(@organization, @proposal), method: :post, local: true do
+              %p.text-muted.small
+                Applying creates a new Assignment at the initial early-draft version (0.0.1). No version bump picker.
               .mb-3
                 = label_tag :decision_note, "Note (optional)", class: "form-label"
                 = text_area_tag :decision_note, nil, class: "form-control", rows: 2
               .d-flex.flex-wrap.gap-2
                 = submit_tag "Apply proposal", class: "btn btn-success"
-            = form_with url: reject_organization_assignment_maap_proposal_path(@organization, @assignment, @proposal), method: :post, local: true, class: "mt-3" do
+            = form_with url: reject_organization_maap_assignment_create_path(@organization, @proposal), method: :post, local: true, class: "mt-3" do
               .mb-3
                 = label_tag :decision_note, "Rejection note (optional)", class: "form-label"
                 = text_area_tag :decision_note, nil, class: "form-control", rows: 2

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-class Organizations::Assignments::MaapProposalsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_assignment
+class Organizations::MaapAssignmentCreatesController < Organizations::OrganizationNamespaceBaseController
   before_action :set_proposal, only: %i[show edit update destroy submit apply reject markdown]
   after_action :verify_authorized
 
@@ -14,26 +13,41 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
       @filterable_statuses.dup
     end
     @proposals = policy_scope(MaapProposal)
-      .for_proposable(@assignment)
+      .creates
+      .for_organization(@organization)
       .with_statuses(@selected_statuses)
       .created_first
-      .includes(proposer: :person)
-    @assignments_by_department_for_switcher = AssignmentsByDepartmentForSwitcher.call(
-      scope: policy_scope(Assignment).where(company: @organization)
-    )
+      .includes(proposer: :person, proposable: [])
   end
 
   def markdown_template
     authorize MaapProposal, :markdown_template?
-    payload = MaapProposals::AssignmentPayload.from_assignment(@assignment)
+    create_key = SecureRandom.uuid
+    payload = MaapProposals::AssignmentPayload.blank_for_create
     body = MaapProposals::AssignmentMarkdownSerializer.call(
-      assignment: @assignment,
       payload: payload,
-      based_on_semantic_version: @assignment.semantic_version,
-      kind: "edit"
+      kind: "create",
+      create_key: create_key
     )
-    filename = "assignment-#{@assignment.id}-proposal-template.md"
-    send_data body, filename: filename, type: "text/markdown; charset=utf-8", disposition: "attachment"
+    send_data body,
+              filename: "assignment-create-proposal-template.md",
+              type: "text/markdown; charset=utf-8",
+              disposition: "attachment"
+  end
+
+  def new
+    authorize MaapProposal
+    result = MaapProposals::CreateAssignmentCreateDraft.call(
+      organization: @organization,
+      proposer: current_company_teammate
+    )
+    if result.ok?
+      redirect_to edit_organization_maap_assignment_create_path(@organization, result.value),
+                  notice: "Draft create proposal started. Edit and submit when ready."
+    else
+      redirect_to organization_maap_assignment_creates_path(@organization),
+                  alert: Array(result.error).join(", ")
+    end
   end
 
   def show
@@ -42,35 +56,13 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     @diff_baseline = if @proposal.baseline_payload.present?
       MaapProposals::AssignmentPayload.from_hash(@proposal.baseline_payload)
     else
-      MaapProposals::AssignmentPayload.from_assignment(@assignment)
+      MaapProposals::AssignmentPayload.empty
     end
     @field_diffs = MaapProposals::AssignmentDiffBuilder.call(
       before: @diff_baseline,
       after: @payload
     )
-    if @proposal.submitted?
-      @title_uniqueness = MaapProposals::TitleUniqueness.call(
-        organization: @organization,
-        proposed_title: @payload.title,
-        excluding_assignment: @assignment,
-        mode: :edit
-      )
-    end
-  end
-
-  def new
-    authorize MaapProposal
-    result = MaapProposals::CreateAssignmentEditDraft.call(
-      assignment: @assignment,
-      proposer: current_company_teammate
-    )
-    if result.ok?
-      redirect_to edit_organization_assignment_maap_proposal_path(@organization, @assignment, result.value),
-                  notice: "Draft proposal created. Edit and submit when ready."
-    else
-      redirect_to organization_assignment_path(@organization, @assignment),
-                  alert: Array(result.error).join(", ")
-    end
+    @title_uniqueness = title_uniqueness_for(@proposal, @payload) if @proposal.submitted?
   end
 
   def edit
@@ -91,8 +83,8 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     )
 
     if result.ok?
-      redirect_to organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
-                  notice: "Draft proposal updated."
+      redirect_to organization_maap_assignment_create_path(@organization, @proposal),
+                  notice: "Draft create proposal updated."
     else
       @payload = MaapProposals::AssignmentPayload.from_hash(
         @proposal.proposed_payload.merge(proposal_attributes.stringify_keys)
@@ -106,35 +98,35 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
   def destroy
     authorize @proposal
     @proposal.destroy!
-    redirect_to organization_assignment_maap_proposals_path(@organization, @assignment),
-                notice: "Proposal deleted."
+    redirect_to organization_maap_assignment_creates_path(@organization),
+                notice: "Create proposal deleted."
   end
 
   def submit
     authorize @proposal
     result = MaapProposals::SubmitAssignmentEdit.call(proposal: @proposal)
     if result.ok?
-      redirect_to organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
-                  notice: "Proposal submitted for review."
+      redirect_to organization_maap_assignment_create_path(@organization, @proposal),
+                  notice: "Create proposal submitted for review."
     else
-      redirect_to organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
+      redirect_to organization_maap_assignment_create_path(@organization, @proposal),
                   alert: Array(result.error).join(", ")
     end
   end
 
   def apply
     authorize @proposal
-    result = MaapProposals::ApplyAssignmentEdit.call(
+    result = MaapProposals::ApplyAssignmentCreate.call(
       proposal: @proposal,
       decided_by: current_company_teammate,
-      version_type: params[:version_type],
       decision_note: params[:decision_note]
     )
     if result.ok?
-      redirect_to organization_assignment_path(@organization, @assignment),
-                  notice: "Proposal applied to the assignment."
+      assignment = result.value.proposable
+      redirect_to organization_assignment_path(@organization, assignment),
+                  notice: "Assignment created from proposal."
     else
-      redirect_to organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
+      redirect_to organization_maap_assignment_create_path(@organization, @proposal),
                   alert: Array(result.error).join(", ")
     end
   end
@@ -147,10 +139,10 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
       decision_note: params[:decision_note]
     )
     if result.ok?
-      redirect_to organization_assignment_maap_proposals_path(@organization, @assignment),
-                  notice: "Proposal rejected."
+      redirect_to organization_maap_assignment_creates_path(@organization),
+                  notice: "Create proposal rejected."
     else
-      redirect_to organization_assignment_maap_proposal_path(@organization, @assignment, @proposal),
+      redirect_to organization_maap_assignment_create_path(@organization, @proposal),
                   alert: Array(result.error).join(", ")
     end
   end
@@ -159,12 +151,11 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     authorize @proposal
     payload = MaapProposals::AssignmentPayload.from_hash(@proposal.proposed_payload)
     body = MaapProposals::AssignmentMarkdownSerializer.call(
-      assignment: @assignment,
       payload: payload,
-      based_on_semantic_version: @proposal.based_on_semantic_version,
-      kind: "edit"
+      kind: "create",
+      create_key: @proposal.create_key
     )
-    filename = "assignment-#{@assignment.id}-proposal-#{@proposal.id}.md"
+    filename = "assignment-create-proposal-#{@proposal.id}.md"
     send_data body, filename: filename, type: "text/markdown; charset=utf-8", disposition: "attachment"
   end
 
@@ -172,34 +163,34 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     authorize MaapProposal, :upload_markdown?
     markdown = read_uploaded_markdown
     if markdown.blank?
-      redirect_to organization_assignment_maap_proposals_path(@organization, @assignment),
+      redirect_to organization_maap_assignment_creates_path(@organization),
                   alert: "Upload a markdown file."
       return
     end
 
-    result = MaapProposals::UploadAssignmentMarkdown.call(
-      assignment: @assignment,
+    result = MaapProposals::UploadAssignmentCreateMarkdown.call(
+      organization: @organization,
       proposer: current_company_teammate,
       markdown: markdown
     )
 
     if result.ok?
-      redirect_to edit_organization_assignment_maap_proposal_path(@organization, @assignment, result.value),
-                  notice: "Draft created from markdown upload."
+      redirect_to edit_organization_maap_assignment_create_path(@organization, result.value),
+                  notice: "Draft create proposal created from markdown upload."
     else
-      redirect_to organization_assignment_maap_proposals_path(@organization, @assignment),
+      redirect_to organization_maap_assignment_creates_path(@organization),
                   alert: Array(result.error).join(", ")
     end
   end
 
   private
 
-  def set_assignment
-    @assignment = Assignment.where(company: @organization).find(params[:assignment_id])
-  end
-
   def set_proposal
-    @proposal = MaapProposal.for_proposable(@assignment).includes(decided_by: :person).find(params[:id])
+    @proposal = policy_scope(MaapProposal)
+      .creates
+      .for_organization(@organization)
+      .includes(decided_by: :person, proposable: [])
+      .find(params[:id])
   end
 
   def proposal_attributes
@@ -213,7 +204,6 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
   end
 
   def outcomes_from_params
-    # Always replace outcomes when the edit form is submitted (supports full clear).
     raw = params.dig(:maap_proposal, :outcomes)
     return [] if raw.blank?
 
@@ -241,7 +231,6 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
   def load_edit_collections
     @abilities = Ability.for_company(@organization).includes(:department).order(:name)
     @assignments_for_reliance = Assignment.where(company: @organization)
-                                          .where.not(id: @assignment.id)
                                           .includes(:department)
                                           .order(:title)
   end
@@ -251,5 +240,13 @@ class Organizations::Assignments::MaapProposalsController < Organizations::Organ
     return params[:markdown_body].to_s if file.blank?
 
     file.read.to_s
+  end
+
+  def title_uniqueness_for(proposal, payload)
+    MaapProposals::TitleUniqueness.call(
+      organization: proposal.organization,
+      proposed_title: payload.title,
+      mode: :create
+    )
   end
 end

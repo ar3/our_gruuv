@@ -248,6 +248,19 @@ Rails.application.routes.draw do
     resource :maap_cleanup_inbox,
              only: [:show],
              controller: "organizations/maap_cleanup_inbox"
+    resources :maap_assignment_creates,
+              controller: "organizations/maap_assignment_creates" do
+      member do
+        post :submit
+        post :apply
+        post :reject
+        get :markdown
+      end
+      collection do
+        post :upload_markdown
+        get :markdown_template
+      end
+    end
 
     resource :talent_density,
              only: [:show, :update],

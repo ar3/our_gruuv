@@ -63,7 +63,11 @@ RSpec.describe MaapProposals::AssignmentMarkdownSerializer do
     )
     expect(markdown).to include("id: #{outcome.id}")
 
-    result = MaapProposals::AssignmentMarkdownDeserializer.call(markdown: markdown, assignment: assignment)
+    result = MaapProposals::AssignmentMarkdownDeserializer.call(
+      markdown: markdown,
+      organization: assignment.company,
+      assignment: assignment
+    )
     expect(result).to be_ok
     expect(result.value[:payload]).to be_same_as(payload)
     expect(result.value[:payload].outcomes.first["id"]).to eq(outcome.id)
@@ -86,7 +90,11 @@ RSpec.describe MaapProposals::AssignmentMarkdownSerializer do
     expect(markdown).to include("## Consumer assignments")
     expect(markdown).to include("assignment_id: #{consumer.id}")
 
-    result = MaapProposals::AssignmentMarkdownDeserializer.call(markdown: markdown, assignment: assignment)
+    result = MaapProposals::AssignmentMarkdownDeserializer.call(
+      markdown: markdown,
+      organization: assignment.company,
+      assignment: assignment
+    )
     expect(result).to be_ok
     expect(result.value[:payload].ability_milestones).to eq(full_payload.ability_milestones)
     expect(result.value[:payload].consumer_assignment_ids).to eq([consumer.id])

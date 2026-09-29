@@ -2,18 +2,28 @@
 
 module MaapProposals
   class AssignmentMarkdownSerializer
-    def self.call(assignment:, payload:, based_on_semantic_version:)
+    def self.call(
+      payload:,
+      based_on_semantic_version: nil,
+      assignment: nil,
+      kind: nil,
+      create_key: nil
+    )
       new(
-        assignment: assignment,
         payload: payload,
-        based_on_semantic_version: based_on_semantic_version
+        based_on_semantic_version: based_on_semantic_version,
+        assignment: assignment,
+        kind: kind,
+        create_key: create_key
       ).call
     end
 
-    def initialize(assignment:, payload:, based_on_semantic_version:)
+    def initialize(payload:, based_on_semantic_version:, assignment:, kind:, create_key:)
       @assignment = assignment
       @payload = payload.is_a?(AssignmentPayload) ? payload : AssignmentPayload.from_hash(payload)
       @based_on_semantic_version = based_on_semantic_version
+      @kind = (kind.presence || (@assignment ? "edit" : "create")).to_s
+      @create_key = create_key
     end
 
     def call
@@ -26,8 +36,13 @@ module MaapProposals
       lines = ["---"]
       lines << "maap_proposal_schema_version: #{AssignmentPayload::SCHEMA_VERSION}"
       lines << "proposable_type: Assignment"
-      lines << "proposable_id: #{@assignment.id}"
-      lines << "based_on_semantic_version: #{yaml_scalar(@based_on_semantic_version)}"
+      lines << "kind: #{@kind}"
+      if @kind == "create"
+        lines << "create_key: #{yaml_scalar(@create_key)}"
+      else
+        lines << "proposable_id: #{@assignment.id}"
+        lines << "based_on_semantic_version: #{yaml_scalar(@based_on_semantic_version)}"
+      end
       lines << "department_id: #{yaml_scalar(@payload.department_id)}"
       lines << "---"
       lines.join("\n")

@@ -18,6 +18,7 @@ module MaapCleanupInbox
     Section = Data.define(:key, :label, :subtypes)
 
     SECTION_DEFS = [
+      { key: :submitted_maap_proposals, label: "Submitted MAAP proposals" },
       { key: :seat_position_alignment, label: "Seat ↔ Position Alignment" }
     ].freeze
 
@@ -60,6 +61,64 @@ module MaapCleanupInbox
         count: count.nil? ? items.size : count,
         items: is_expanded ? items : [],
         expanded: is_expanded
+      )
+    end
+
+    def submitted_maap_proposals_subtypes
+      proposals = submitted_proposals
+      items = if expanded.include?("submitted_maap_proposals")
+        proposals.map { |proposal| submitted_proposal_item(proposal) }
+      else
+        []
+      end
+
+      [
+        subtype_summary(
+          :submitted_maap_proposals,
+          "Assignment create and edit proposals awaiting apply or reject",
+          items: items,
+          count: proposals.size
+        )
+      ]
+    end
+
+    def submitted_proposals
+      @submitted_proposals ||= MaapProposal
+        .submitted
+        .for_organization(organization)
+        .includes(:proposer, :proposable, proposer: :person)
+        .created_first
+        .to_a
+    end
+
+    def submitted_proposal_item(proposal)
+      proposer = proposal.proposer
+      title = proposal.proposed_title.presence || "Untitled proposal"
+      kind_label = proposal.create_kind? ? "Create" : "Edit"
+      target = if proposal.create_kind?
+        "new Assignment"
+      elsif proposal.proposable.respond_to?(:title)
+        proposal.proposable.title
+      else
+        proposal.proposable_type.to_s
+      end
+
+      review_url = if proposal.create_kind?
+        routes.organization_maap_assignment_create_path(organization, proposal)
+      elsif proposal.proposable_type == "Assignment" && proposal.proposable
+        routes.organization_assignment_maap_proposal_path(organization, proposal.proposable, proposal)
+      end
+
+      Item.new(
+        id: "submitted-maap-proposal-#{proposal.id}",
+        subtype_key: :submitted_maap_proposals,
+        teammate_id: proposer&.id,
+        person_name: person_name_for(proposer),
+        title: "#{kind_label}: #{title}",
+        subtitle: "Submitted proposal for #{target}",
+        actions: [
+          Action.new(label: "Review proposal", url: review_url)
+        ].select { |action| action.url.present? }
       )
     end
 

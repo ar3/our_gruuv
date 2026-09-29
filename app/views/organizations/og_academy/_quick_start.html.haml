@@ -2,7 +2,6 @@
   - @quick_start_people.each do |tm|
     - person = tm.person
     - is_self = tm.id == current_company_teammate.id
-    - one_thing_path = organization_company_teammate_one_on_one_link_path(current_organization, tm)
     - observe_path = ogos_organization_company_teammate_path(current_organization, tm)
     - goals_path = my_growth_goals_organization_company_teammate_path(current_organization, tm)
     - check_in_path = up_next_organization_company_teammate_check_ins_path(current_organization, tm)
@@ -15,18 +14,21 @@
     - ogos_received_count = row_data&.ogos_received_30d_count.to_i
     - healthy_goals_count = og_academy_healthy_goals_count(goals_eh_records)
     - clarity_caption = action_breakdown.present? && action_breakdown.total_slots.to_i.positive? ? "#{format_percent_clear(action_breakdown.ok_percentage)}% clear" : "No clarity data yet"
+    - links_collapse_id = "ogAcademyTeammateLinks#{tm.id}"
+    - show_all_links_label = og_academy_show_all_links_label(tm, viewer: current_company_teammate)
     .card.border-0.shadow-sm
       .card-body
         .row.g-3.align-items-center
           .col-12.col-lg-3
-            = link_to one_thing_path, class: "d-flex align-items-center gap-3 text-decoration-none" do
+            .d-flex.align-items-center.gap-3
               = teammate_profile_image(tm, size: 48)
               %div.min-w-0
                 .fs-4.fw-semibold.text-body
                   = person.casual_name
                   - if is_self
                     %span.badge.text-bg-secondary.ms-1 you
-                .small.text-muted= one_thing_label_for(tm, viewer: current_company_teammate)
+                %button.btn.btn-link.btn-sm.text-decoration-none.p-0.small.text-muted.text-start{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{links_collapse_id}", "aria-expanded" => "false", "aria-controls" => links_collapse_id}
+                  = show_all_links_label
           .col-12.col-lg-9
             .row.g-3
               .col-12.col-md-4
@@ -56,3 +58,13 @@
                         - else
                           %p.text-muted.mb-0.small= clarity_caption
                       %i.bi.bi-chat-square-text.display-4.text-info.flex-shrink-0
+
+        .collapse.mt-3{id: links_collapse_id}
+          %h5.mb-3
+            %i.bi.bi-grid-3x3-gap.me-2
+            Views for #{person.casual_name}
+          = render "organizations/company_teammates/internal_views_navigation",
+                   organization: current_organization,
+                   teammate: tm,
+                   row_data: row_data,
+                   fully_expanded: true

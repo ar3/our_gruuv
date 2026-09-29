@@ -45,6 +45,34 @@ module MaapProposals
       new(normalize(raw))
     end
 
+    def self.empty
+      from_hash(
+        "title" => "",
+        "tagline" => "",
+        "required_activities" => nil,
+        "handbook" => nil,
+        "department_id" => nil,
+        "outcomes" => [],
+        "ability_milestones" => [],
+        "consumer_assignment_ids" => [],
+        "supplier_assignment_ids" => []
+      )
+    end
+
+    def self.blank_for_create
+      from_hash(
+        "title" => "New Assignment",
+        "tagline" => "Describe this assignment",
+        "required_activities" => nil,
+        "handbook" => nil,
+        "department_id" => nil,
+        "outcomes" => [],
+        "ability_milestones" => [],
+        "consumer_assignment_ids" => [],
+        "supplier_assignment_ids" => []
+      )
+    end
+
     def self.normalize(raw)
       hash = raw.deep_stringify_keys
       {

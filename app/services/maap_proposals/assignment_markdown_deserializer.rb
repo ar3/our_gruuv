@@ -15,12 +15,13 @@ module MaapProposals
       "supplier assignments" => :supplier_assignments
     }.freeze
 
-    def self.call(markdown:, assignment:)
-      new(markdown: markdown, assignment: assignment).call
+    def self.call(markdown:, organization:, assignment: nil)
+      new(markdown: markdown, organization: organization, assignment: assignment).call
     end
 
-    def initialize(markdown:, assignment:)
+    def initialize(markdown:, organization:, assignment:)
       @markdown = markdown.to_s
+      @organization = organization
       @assignment = assignment
     end
 
@@ -52,12 +53,15 @@ module MaapProposals
         }
       )
 
-      errors = payload.validate!(company: @assignment.company)
+      errors = payload.validate!(company: @organization)
       return Result.err(errors) if errors.any?
 
+      kind = meta["kind"].presence || (@assignment ? "edit" : "create")
       Result.ok(
         payload: payload,
-        based_on_semantic_version: meta["based_on_semantic_version"].presence || @assignment.semantic_version
+        kind: kind,
+        create_key: meta["create_key"].presence,
+        based_on_semantic_version: meta["based_on_semantic_version"].presence || @assignment&.semantic_version
       )
     rescue Psych::SyntaxError => e
       Result.err("Invalid YAML front matter: #{e.message}")
@@ -83,9 +87,17 @@ module MaapProposals
 
     def validate_identity(meta)
       type = meta["proposable_type"].to_s
+      kind = meta["kind"].to_s.presence || (@assignment ? "edit" : "create")
       id = meta["proposable_id"].to_i
 
       return "proposable_type must be Assignment" if type.present? && type != "Assignment"
+
+      if kind == "create"
+        return "create markdown must not include proposable_id" if id.positive?
+        return nil
+      end
+
+      return "edit markdown requires an assignment context" unless @assignment
       return "proposable_id does not match this assignment" if id.positive? && id != @assignment.id
 
       nil

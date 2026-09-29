@@ -26,7 +26,13 @@ class MaapProposalPolicy < ApplicationPolicy
   end
 
   def apply?
-    admin_bypass? || (record_present? && same_organization? && can_update_proposable?)
+    return false unless record_present? && (admin_bypass? || same_organization?)
+
+    if record.create_kind?
+      can_create_assignment?
+    else
+      can_update_proposable?
+    end
   end
 
   def reject?
@@ -79,5 +85,11 @@ class MaapProposalPolicy < ApplicationPolicy
     return false unless record_present? && record.proposable
 
     Pundit.policy(pundit_user, record.proposable).update?
+  end
+
+  def can_create_assignment?
+    return false unless record_present?
+
+    Pundit.policy(pundit_user, Assignment.new(company: record.organization)).create?
   end
 end

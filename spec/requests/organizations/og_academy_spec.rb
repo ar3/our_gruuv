@@ -35,6 +35,26 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response.body).to include('target="_top"')
       expect(response.body).not_to include('turbo-cache-control')
     end
+
+    it 'renders the Explore button row between Quick Start and OG Mastery' do
+      get organization_og_academy_path(company)
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body).to include('Explore:')
+      expect(body).to include(celebrate_milestones_organization_path(company))
+      expect(body).to include(organization_abilities_path(company))
+      expect(body).to include(organization_assignments_path(company))
+      expect(body).to include(organization_positions_path(company))
+      expect(body).to include('>M</span>')
+      expect(body).to include('>ilestones</span>')
+      expect(body).to include('>A</span>')
+      expect(body).to include('>bilities</span>')
+      expect(body).to include('>ssignments</span>')
+      expect(body).to include('>P</span>')
+      expect(body).to include('>ositions</span>')
+      expect(body.index('Explore:')).to be > body.index('og_academy_quick_start')
+      expect(body.index('Explore:')).to be < body.index('og-academy-milestones')
+    end
   end
 
   describe 'GET /organizations/:organization_id/og_academy/quick_start' do
@@ -57,6 +77,31 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response.body.index(ogo_path)).to be < response.body.index(growth_path)
       expect(response.body.index(growth_path)).to be < response.body.index(up_next_path)
       expect(response.body).to include('target="_top"')
+    end
+
+    it 'replaces My One Thing with an expandable teammate views list' do
+      get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('show all of my links...')
+      expect(response.body).to include("Views for #{person.casual_name}")
+      expect(response.body).to include('ogAcademyTeammateLinks')
+      expect(response.body).to include('data-bs-toggle="collapse"')
+      expect(response.body).to include('internal-teammate-views-nav')
+      expect(response.body).to include('1:1, about &amp; growth')
+      expect(response.body).to include(organization_company_teammate_one_on_one_link_path(company, teammate))
+      expect(response.body).not_to include('internal-teammate-views-nav__expand-prompt')
+    end
+
+    it "labels a direct report expand control with their casual name" do
+      report_person = create(:person, first_name: 'Jamie', last_name: 'Report')
+      report = create(:teammate, person: report_person, organization: company)
+      create(:employment_tenure, teammate: report, company: company, manager_teammate: teammate)
+
+      get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
+      expect(response).to have_http_status(:success)
+      body = CGI.unescapeHTML(response.body)
+      expect(body).to include("show all of #{report_person.casual_name}'s links...")
+      expect(body).to include("Views for #{report_person.casual_name}")
     end
   end
 

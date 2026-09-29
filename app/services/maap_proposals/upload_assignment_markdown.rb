@@ -13,8 +13,16 @@ module MaapProposals
     end
 
     def call
-      result = AssignmentMarkdownDeserializer.call(markdown: @markdown, assignment: @assignment)
+      result = AssignmentMarkdownDeserializer.call(
+        markdown: @markdown,
+        organization: @assignment.company,
+        assignment: @assignment
+      )
       return result unless result.ok?
+
+      if result.value[:kind] == "create"
+        return Result.err("This markdown is a create proposal; upload it from Proposed creates")
+      end
 
       CreateAssignmentEditDraft.call(
         assignment: @assignment,

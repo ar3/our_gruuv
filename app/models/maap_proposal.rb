@@ -2,13 +2,13 @@
 
 class MaapProposal < ApplicationRecord
   STATUSES = %w[draft submitted applied rejected].freeze
-  KINDS = %w[edit].freeze
+  KINDS = %w[edit create].freeze
   SOURCES = %w[in_product markdown].freeze
   OPEN_STATUSES = %w[draft submitted].freeze
   VERSION_TYPES = %w[fundamental clarifying insignificant].freeze
 
   belongs_to :organization
-  belongs_to :proposable, polymorphic: true
+  belongs_to :proposable, polymorphic: true, optional: true
   belongs_to :proposer, class_name: "CompanyTeammate"
   belongs_to :decided_by, class_name: "CompanyTeammate", optional: true
 
@@ -18,13 +18,24 @@ class MaapProposal < ApplicationRecord
   validates :proposed_payload, presence: true
   validates :content_schema_version, presence: true
   validates :applied_version_type, inclusion: { in: VERSION_TYPES }, allow_nil: true
+  validates :create_key, presence: true, if: :create_kind?
+  validates :create_key,
+            uniqueness: {
+              scope: :organization_id,
+              conditions: -> { where(status: OPEN_STATUSES) }
+            },
+            allow_nil: true
+  validates :proposable, presence: true, if: :edit_kind?
   validate :proposer_belongs_to_organization
   validate :proposable_belongs_to_organization
+  validate :create_has_no_proposable_until_applied
 
   scope :drafts, -> { where(status: "draft") }
   scope :submitted, -> { where(status: "submitted") }
   scope :open_proposals, -> { where(status: OPEN_STATUSES) }
   scope :decided, -> { where(status: %w[applied rejected]) }
+  scope :edits, -> { where(kind: "edit") }
+  scope :creates, -> { where(kind: "create") }
   scope :recent_first, -> { order(updated_at: :desc) }
   scope :created_first, -> { order(created_at: :desc) }
   scope :with_statuses, ->(statuses) {
@@ -56,6 +67,14 @@ class MaapProposal < ApplicationRecord
     OPEN_STATUSES.include?(status)
   end
 
+  def edit_kind?
+    kind == "edit"
+  end
+
+  def create_kind?
+    kind == "create"
+  end
+
   def deletable?
     open?
   end
@@ -70,6 +89,10 @@ class MaapProposal < ApplicationRecord
 
   def decidable?
     submitted?
+  end
+
+  def proposed_title
+    proposed_payload.is_a?(Hash) ? proposed_payload["title"].to_s : ""
   end
 
   private
@@ -94,5 +117,13 @@ class MaapProposal < ApplicationRecord
     return if company_id == organization_id
 
     errors.add(:proposable, "must belong to the organization")
+  end
+
+  def create_has_no_proposable_until_applied
+    return unless create_kind?
+    return if applied?
+    return if proposable.blank?
+
+    errors.add(:proposable, "must be blank until a create proposal is applied")
   end
 end

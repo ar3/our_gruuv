@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_28_114000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_29_084500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -384,8 +384,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_28_114000) do
     t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
-    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying::text, 'like'::character varying::text, 'neutral'::character varying::text, 'prefer_not'::character varying::text, 'only_if_necessary'::character varying::text]))", name: "assignment_survey_responses_personal_alignment_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying, 'like'::character varying, 'neutral'::character varying, 'prefer_not'::character varying, 'only_if_necessary'::character varying]::text[]))", name: "assignment_survey_responses_personal_alignment_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -984,8 +984,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_28_114000) do
 
   create_table "maap_proposals", force: :cascade do |t|
     t.bigint "organization_id", null: false
-    t.string "proposable_type", null: false
-    t.bigint "proposable_id", null: false
+    t.string "proposable_type"
+    t.bigint "proposable_id"
     t.string "kind", default: "edit", null: false
     t.string "status", default: "draft", null: false
     t.bigint "proposer_id", null: false
@@ -1003,7 +1003,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_28_114000) do
     t.datetime "updated_at", null: false
     t.jsonb "baseline_payload"
     t.jsonb "decision_warnings", default: [], null: false
+    t.string "create_key"
     t.index ["decided_by_id"], name: "index_maap_proposals_on_decided_by_id"
+    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying])::text[])))"
+    t.index ["organization_id", "kind", "status"], name: "index_maap_proposals_on_organization_kind_and_status"
     t.index ["organization_id", "status"], name: "index_maap_proposals_on_organization_and_status"
     t.index ["organization_id"], name: "index_maap_proposals_on_organization_id"
     t.index ["proposable_type", "proposable_id", "status"], name: "index_maap_proposals_on_proposable_and_status"
