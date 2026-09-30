@@ -69,8 +69,8 @@ RSpec.describe TeammateModalityHeaderHelper, type: :helper do
 
     it "spells out JD as Job Description in the closed True JD label" do
       casual = teammate.person.casual_name
-      allow(helper).to receive(:people_current_view_name).and_return("#{casual}'s True JD (signed)")
-      expect(helper.teammate_modality_closed_label(teammate)).to eq("True Job Description (signed)")
+      allow(helper).to receive(:people_current_view_name).and_return("#{casual}'s True JD (print/sign)")
+      expect(helper.teammate_modality_closed_label(teammate)).to eq("True Job Description (print/sign)")
     end
   end
 

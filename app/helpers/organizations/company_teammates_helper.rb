@@ -211,18 +211,11 @@ module Organizations::CompanyTeammatesHelper
             tooltip: context[:hierarchy_complete_picture]
           ),
           internal_teammate_views_entry(
-            title: true_jd_print_view_label_for(teammate),
-            description: "Clean, browser-printable view of this teammate's actual current job description.",
-            path: true_jd_print_organization_company_teammate_path(organization, teammate),
-            enabled: policy(teammate).true_jd_print?,
-            tooltip: context[:internal_teammate_tooltip]
-          ),
-          internal_teammate_views_entry(
             title: true_jd_signed_view_label_for(teammate),
-            description: "Acknowledge the true job description and review past signatures.",
+            description: "Printable true job description, acknowledge it, and review past signatures when you have access.",
             path: organization_company_teammate_job_description_acknowledgements_path(organization, teammate),
             enabled: policy(teammate).view_job_description_acknowledgements?,
-            tooltip: context[:hierarchy_complete_picture]
+            tooltip: context[:internal_teammate_tooltip]
           ),
           internal_teammate_views_entry(
             title: set_assignments_view_label,

@@ -14,7 +14,7 @@ class Organizations::CompanyTeammates::JobDescriptionAcknowledgementsController 
   end
 
   def show
-    authorize @teammate, :view_job_description_acknowledgements?, policy_class: CompanyTeammatePolicy
+    authorize @teammate, :view_signed_job_description_history?, policy_class: CompanyTeammatePolicy
     assign_viewable_teammates_context!(selected_teammate: @teammate)
     @acknowledgement = @teammate.job_description_acknowledgements.find(params[:id])
   end
@@ -63,7 +63,7 @@ class Organizations::CompanyTeammates::JobDescriptionAcknowledgementsController 
   end
 
   def load_page
-    assign_viewable_teammates_context!(selected_teammate: @teammate)
+    assign_viewable_teammates_context!(selected_teammate: @teammate, all_active_in_organization: true)
     @document = JobDescriptionAcknowledgements::Document.call(teammate: @teammate, organization: organization)
     @acknowledgements = @teammate.job_description_acknowledgements.order(signed_at: :desc)
     @compliance_status = JobDescriptionAcknowledgements::ComplianceStatus.call(

@@ -57,8 +57,13 @@ class CompanyTeammatePolicy < ApplicationPolicy
 
   alias_method :my_growth?, :complete_picture?
 
-  # Job description acknowledgement: same audience as the manager true job description.
+  # Combined True JD print/sign page — same org-peer visibility as former print /internal.
   def view_job_description_acknowledgements?
+    internal?
+  end
+
+  # Past signatures list + individual signed JD show — manager True JD audience.
+  def view_signed_job_description_history?
     complete_picture?
   end
 
@@ -81,8 +86,8 @@ class CompanyTeammatePolicy < ApplicationPolicy
     record.organization == viewing_teammate.organization
   end
 
-  # True JD (print view) — same org-peer visibility as teammate /internal.
-  alias_method :true_jd_print?, :internal?
+  # Legacy print route redirects to print/sign; keep alias for callers.
+  alias_method :true_jd_print?, :view_job_description_acknowledgements?
 
   def view_check_ins?
     audit?

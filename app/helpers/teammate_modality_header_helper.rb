@@ -33,6 +33,7 @@ module TeammateModalityHeaderHelper
     return :kudos if controller_name == "company_teammates" && action_name == "kudos_points"
     return :goals if controller_name == "company_teammates" && action_name == "my_growth_goals"
     return :true_jd_signed if controller_name == "job_description_acknowledgements"
+    return :true_jd_signed if controller_name == "company_teammates" && action_name == "true_jd_print"
     if controller_name == "company_teammates" && %w[my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
       return :growth
     end
@@ -43,7 +44,6 @@ module TeammateModalityHeaderHelper
     case action_name.to_s.downcase
     when "teammate", "internal" then :teammate
     when "complete_picture" then :complete_picture
-    when "true_jd_print" then :true_jd_print
     when "public" then :public
     when "about_me" then :about_me
     when "show"
@@ -108,22 +108,13 @@ module TeammateModalityHeaderHelper
         disabled_tooltip: "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"
       ),
       teammate_modality_item(
-        key: :true_jd_print,
-        icon: "bi-printer",
-        label: true_jd_print_view_label_for(teammate),
-        active: action_name == "true_jd_print",
-        path: (true_jd_print_organization_company_teammate_path(organization, teammate_route_param(teammate)) if policy(teammate).true_jd_print?),
-        allowed: policy(teammate).true_jd_print?,
-        disabled_tooltip: "You must be an active employee in the same organization to view the print True Job Description (JD)"
-      ),
-      teammate_modality_item(
         key: :true_jd_signed,
-        icon: "bi-pen",
+        icon: "bi-printer",
         label: true_jd_signed_view_label_for(teammate),
-        active: controller_name == "job_description_acknowledgements",
+        active: controller_name == "job_description_acknowledgements" || action_name == "true_jd_print",
         path: (organization_company_teammate_job_description_acknowledgements_path(organization, teammate_route_param(teammate)) if policy(teammate).view_job_description_acknowledgements?),
         allowed: policy(teammate).view_job_description_acknowledgements?,
-        disabled_tooltip: "You need employment management permissions or to be in the managerial hierarchy to view the signed True Job Description (JD)"
+        disabled_tooltip: "You must be an active employee in the same organization to view the print/sign True Job Description (JD)"
       ),
       one_thing_modality_item(organization, teammate),
       teammate_modality_item(
@@ -193,7 +184,6 @@ module TeammateModalityHeaderHelper
     case modality_key.to_sym
     when :teammate then policy(teammate).internal?
     when :complete_picture then policy(teammate).complete_picture?
-    when :true_jd_print then policy(teammate).true_jd_print?
     when :true_jd_signed then policy(teammate).view_job_description_acknowledgements?
     when :one_thing
       policy(teammate.one_on_one_link || OneOnOneLink.new(teammate: teammate)).show?
@@ -219,7 +209,6 @@ module TeammateModalityHeaderHelper
     case modality_key.to_sym
     when :teammate then internal_organization_company_teammate_path(organization, tm)
     when :complete_picture then complete_picture_organization_company_teammate_path(organization, tm)
-    when :true_jd_print then true_jd_print_organization_company_teammate_path(organization, tm)
     when :true_jd_signed then organization_company_teammate_job_description_acknowledgements_path(organization, tm)
     when :one_thing then organization_company_teammate_one_on_one_link_path(organization, tm)
     when :growth then my_growth_experiences_organization_company_teammate_path(organization, tm)

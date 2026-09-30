@@ -47,15 +47,17 @@ RSpec.describe "Job description acknowledgement", type: :request do
       get organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("True JD (signed)")
-      expect(response.body).to include("True Job Description (signed)")
-      expect(response.body).to include("True Job Description (JD) (signed view)")
+      expect(response.body).to include("True JD (print/sign)")
+      expect(response.body).to include("True Job Description (print/sign)")
+      expect(response.body).to include("True Job Description (JD) (print/sign view)")
       expect(response.body).to include("Goal of this page")
       expect(response.body).to include("This job description needs to be signed.")
       expect(response.body).to include("Review and Sign the current JD below")
       expect(response.body).to include("#sign-current-jd")
       expect(response.body).to include("No signatures yet.")
       expect(response.body).to include("Sign job description")
+      expect(response.body).to include("window.print()")
+      expect(response.body).to include(">Print</a>")
       expect(response.body).to include("Samantha Cartwright")
       expect(response.body).to include(employee.government_first_then_last_display_name)
       expect(response.body).to include("Reports To:")
@@ -153,28 +155,67 @@ RSpec.describe "Job description acknowledgement", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Build Widget")
-      expect(response.body).to include("True JD (signed)")
+      expect(response.body).to include("True JD (print/sign)")
+      expect(response.body).to include("No signatures yet.")
+      expect(response.body).not_to include("Those with access will see the signed job descriptions here")
       expect(response.body).not_to include("Sign job description")
     end
 
-    it "does not let an unrelated teammate view the page" do
-      sign_in_as_teammate_for_request(peer, organization)
+    it "lets a peer view the printable JD without signed history" do
+      tenure = employee_teammate.employment_tenures.find_by!(ended_at: nil)
+      acknowledgement = JobDescriptionAcknowledgement.create!(
+        company_teammate: employee_teammate,
+        organization: organization,
+        employment_tenure: tenure,
+        position: tenure.position,
+        typed_name: "Samantha Cartwright",
+        signed_at: 5.days.ago,
+        document_html: "<p>Frozen JD</p>",
+        snapshot: { "position_name" => tenure.position.display_name }
+      )
 
+      sign_in_as_teammate_for_request(peer, organization)
       get organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Build Widget")
+      expect(response.body).to include("True JD (print/sign)")
+      expect(response.body).to include("Those with access will see the signed job descriptions here")
+      expect(response.body).not_to include("Signed job descriptions")
+      expect(response.body).not_to include("View signed JD")
+      expect(response.body).not_to include("This job description needs to be signed.")
+      expect(response.body).not_to include("This job description has been signed recently enough.")
+      expect(response.body).not_to include(
+        organization_company_teammate_job_description_acknowledgement_path(organization, employee_teammate, acknowledgement)
+      )
+      expect(response.body).to include("window.print()")
+      expect(response.body).not_to include("Sign job description")
+    end
+
+    it "does not let a peer open a past signed JD" do
+      tenure = employee_teammate.employment_tenures.find_by!(ended_at: nil)
+      acknowledgement = JobDescriptionAcknowledgement.create!(
+        company_teammate: employee_teammate,
+        organization: organization,
+        employment_tenure: tenure,
+        position: tenure.position,
+        typed_name: "Samantha Cartwright",
+        signed_at: 5.days.ago,
+        document_html: "<p>Frozen JD</p>",
+        snapshot: { "position_name" => tenure.position.display_name }
+      )
+
+      sign_in_as_teammate_for_request(peer, organization)
+      get organization_company_teammate_job_description_acknowledgement_path(organization, employee_teammate, acknowledgement)
 
       expect(response).to have_http_status(:redirect)
     end
 
-    it "links from the manager job description and hides that link from teammates who cannot open it" do
+    it "links Print / Sign from the manager job description" do
       sign_in_as_teammate_for_request(manager, organization)
       get complete_picture_organization_company_teammate_path(organization, employee_teammate)
-      expect(response.body).to include("Acknowledge job description")
+      expect(response.body).to include("Print / Sign")
       expect(response.body).to include(organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate))
-
-      sign_in_as_teammate_for_request(peer, organization)
-      get true_jd_print_organization_company_teammate_path(organization, employee_teammate)
-      expect(response).to have_http_status(:success)
-      expect(response.body).not_to include("Acknowledge job description")
     end
   end
 
@@ -209,7 +250,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
 
       get organization_company_teammate_job_description_acknowledgement_path(organization, employee_teammate, acknowledgement)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("True JD (signed)")
+      expect(response.body).to include("True JD (print/sign)")
       expect(response.body).to include("View all previously signed job descriptions, or sign this job description again")
       expect(response.body).to include(organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate))
       expect(response.body).to include("Signature details")
