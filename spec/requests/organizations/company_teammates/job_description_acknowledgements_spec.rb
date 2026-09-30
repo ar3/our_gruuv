@@ -94,6 +94,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("Own the widget line.")
       expect(response.body).to include("Summary:")
       expect(response.body).to include('title="Open position"')
+      expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
       expect(response.body).to include("No signatures yet.")
       expect(response.body).to include('bi-link-45deg')
     end
@@ -263,7 +264,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("Build Widget")
       expect(response.body).not_to include("Assemble Gadget")
       expect(response.body).to include('title="Open position"')
-      expect(response.body).to include(organization_teammate_position_path(organization, employee_teammate))
+      expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
       expect(response.body).to include("jd-signature-ink")
       expect(response.body).to include("Samantha Cartwright")
 

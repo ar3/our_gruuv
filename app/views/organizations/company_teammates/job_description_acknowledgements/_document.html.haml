@@ -14,7 +14,7 @@
   - if snapshot[:position_name].present?
     %h3.mb-3
       %strong= snapshot[:position_name]
-      = link_to organization_teammate_position_path(organization, teammate), target: "_blank", rel: "noopener", class: "ms-2 text-muted", title: "Open position", "aria-label" => "Open #{snapshot[:position_name]}" do
+      = link_to position_check_in_organization_teammate_path(organization, teammate), target: "_blank", rel: "noopener", class: "ms-2 text-muted", title: "Open position", "aria-label" => "Open #{snapshot[:position_name]}" do
         %i.bi.bi-link-45deg
 
   = render "organizations/company_teammates/job_description_acknowledgements/seat_header",
