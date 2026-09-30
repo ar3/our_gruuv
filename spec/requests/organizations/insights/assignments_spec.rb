@@ -24,6 +24,10 @@ RSpec.describe "Organizations::Insights assignments", type: :request do
       expect(response.body).to include(organization_assignments_path(organization))
       expect(response.body).to include(organization_assignments_health_path(organization))
       expect(response.body).to include("Distribution of outcomes per assignment")
+      expect(response.body).to include("Experience survey usage")
+      expect(response.body).to include("Field take rates among active teammates")
+      expect(response.body).to include("Experience survey submits (by week)")
+      expect(response.body).to include("all-time")
     end
   end
 end

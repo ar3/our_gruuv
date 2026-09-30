@@ -166,6 +166,10 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @assignments_updated_chart_data = assignments_updated_chart_data(company, chart_range)
     @finalized_check_ins_chart_data = assignments_finalized_check_ins_chart_data(company, chart_range)
     @observation_ratings_chart_data = assignments_observation_ratings_chart_data(company, chart_range)
+    @survey_insights = AssignmentSurveys::InsightsAnalytics.new(
+      organization: company,
+      chart_range: chart_range
+    ).call
   end
   
   def abilities

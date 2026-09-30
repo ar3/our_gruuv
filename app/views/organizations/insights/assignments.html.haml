@@ -74,6 +74,119 @@
       .card-body
         #observation-ratings-chart{style: "height: 320px;"}
 
+%hr.my-5
+%h5.mb-2 Experience survey usage
+%p.text-muted.mb-4
+  Snapshot cards and charts below are
+  %strong all-time
+  (not filtered by the timeframe selector). First vs re-submit trend uses the timeframe above.
+  Counts include only submitted responses with at least one of Understandable, Possible, Relevant, or Personal alignment filled.
+
+.row.g-3.mb-4
+  .col-12.col-md-4
+    .card.h-100.shadow-sm
+      .card-body
+        .text-muted Active teammates
+        .display-6= @survey_insights.active_teammate_count
+  .col-12.col-md-4
+    .card.h-100.shadow-sm.border-success
+      .card-body
+        .text-muted Ever submitted (all-time)
+        .display-6.text-success= @survey_insights.ever_submitted_teammate_count
+  .col-12.col-md-4
+    .card.h-100.shadow-sm.border-secondary
+      .card-body
+        .text-muted Never submitted (all-time)
+        .display-6.text-secondary= @survey_insights.never_submitted_teammate_count
+
+.row.g-3.mb-4
+  .col-12.col-md-4
+    .card.h-100.shadow-sm
+      .card-body
+        .text-muted Submitted responses (all-time)
+        .display-6= @survey_insights.comment_stats.submitted_response_count
+  .col-12.col-md-4
+    .card.h-100.shadow-sm
+      .card-body
+        .text-muted Responses with a comment
+        .display-6= @survey_insights.comment_stats.with_comment_count
+  .col-12.col-md-4
+    .card.h-100.shadow-sm
+      .card-body
+        .text-muted Comment rate
+        .display-6
+          = number_to_percentage(@survey_insights.comment_stats.comment_rate, precision: 1)
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-dark.text-white
+        %h5.mb-0
+          %i.bi.bi-ui-checks.me-2
+          Field take rates among active teammates (all-time)
+      .card-body
+        %p.text-muted.small.mb-3
+          How many active teammates have ever filled each field on a submitted response.
+        #survey-field-take-rates-chart{style: "height: 320px;"}
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-dark.text-white
+        %h5.mb-0
+          %i.bi.bi-heart.me-2
+          Personal alignment mix (all-time)
+      .card-body
+        %p.text-muted.small.mb-3
+          Among submitted responses that include personal alignment.
+        #survey-personal-alignment-mix-chart{style: "height: 320px;"}
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-dark.text-white
+        %h5.mb-0
+          %i.bi.bi-diagram-3.me-2
+          Survey-eligible assignment universe (all-time)
+      .card-body
+        %p.text-muted.small.mb-3
+          Active and/or required means held via an active tenure or required on a currently held position.
+        #survey-assignment-eligibility-chart{style: "height: 320px;"}
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-dark.text-white
+        %h5.mb-0
+          %i.bi.bi-collection.me-2
+          Coverage of survey-eligible assignments (all-time)
+      .card-body
+        #survey-assignment-coverage-chart{style: "height: 320px;"}
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-dark.text-white
+        %h5.mb-0
+          %i.bi.bi-people.me-2
+          Public aggregate readiness (all-time)
+      .card-body
+        %p.text-muted.small.mb-3
+          Same public-aggregate rule as assignment pages: more than #{AssignmentSurveys::AssignmentAnalytics::PUBLIC_THRESHOLD} distinct respondents.
+        #survey-public-aggregate-chart{style: "height: 320px;"}
+
+.row.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-header.bg-info.text-white
+        %h5.mb-0
+          %i.bi.bi-arrow-repeat.me-2
+          Experience survey submits (by week) — #{@chart_title_period}
+      .card-body
+        %p.text-muted.small.mb-3
+          First submit = first submitted response for that teammate × assignment. Later ones count as re-submits.
+        #survey-submits-by-week-chart{style: "height: 320px;"}
+
 :javascript
   (function() {
     var outcomesData = #{@outcomes_distribution_chart_data.to_json};
@@ -81,6 +194,12 @@
     var updatedData = #{@assignments_updated_chart_data.to_json};
     var checkInsData = #{@finalized_check_ins_chart_data.to_json};
     var obsRatingsData = #{@observation_ratings_chart_data.to_json};
+    var fieldTakeRatesData = #{@survey_insights.field_take_rates_chart_data.to_json};
+    var alignmentMixData = #{@survey_insights.personal_alignment_mix_chart_data.to_json};
+    var eligibilityData = #{@survey_insights.assignment_eligibility_chart_data.to_json};
+    var coverageData = #{@survey_insights.assignment_coverage_chart_data.to_json};
+    var publicAggregateData = #{@survey_insights.public_aggregate_chart_data.to_json};
+    var submitsByWeekData = #{@survey_insights.submits_by_week_chart_data.to_json};
 
     // Same as UI: Working to meet (warning), Meeting (primary), Exceeding (success)
     var finalizedCheckInColors = ['#fd7e14', '#1e40af', '#166534'];
@@ -88,11 +207,14 @@
     // Same as observation rating buttons: Exceptional (success), Strong (primary), Misaligned (warning), Concerning (danger)
     var observationRatingColors = ['#166534', '#1e40af', '#fd7e14', '#dc3545'];
 
-    function chart(elId, title, categories, series, stacked, seriesColors) {
+    var surveySubmitColors = ['#1e40af', '#fd7e14'];
+
+    function chart(elId, title, categories, series, stacked, seriesColors, xTitle, yTitle) {
       if (typeof Highcharts === 'undefined') return;
       var el = document.getElementById(elId);
       if (!el) return;
-      var xTitle = stacked ? 'Week of' : (elId === 'positions-distribution-chart' ? 'Number of positions' : 'Number of outcomes');
+      var resolvedXTitle = xTitle || (stacked ? 'Week of' : (elId === 'positions-distribution-chart' ? 'Number of positions' : 'Number of outcomes'));
+      var resolvedYTitle = yTitle || (stacked ? 'Count' : 'Number of assignments');
       var s = series;
       if (seriesColors && seriesColors.length) {
         s = series.map(function(ser, i) {
@@ -105,8 +227,8 @@
         chart: { type: 'column' },
         title: { text: title },
         accessibility: { enabled: false },
-        xAxis: { categories: categories, title: { text: xTitle } },
-        yAxis: { min: 0, title: { text: stacked ? 'Count' : 'Number of assignments' }, stackLabels: { enabled: !!stacked } },
+        xAxis: { categories: categories, title: { text: resolvedXTitle } },
+        yAxis: { min: 0, title: { text: resolvedYTitle }, stackLabels: { enabled: !!stacked } },
         plotOptions: { column: { stacking: stacked ? 'normal' : null, dataLabels: { enabled: false } } },
         series: s
       });
@@ -119,6 +241,12 @@
       chart('assignments-updated-chart', 'Assignments with updates', updatedData.categories, updatedData.series, false);
       chart('finalized-check-ins-chart', 'Finalized check-ins by rating', checkInsData.categories, checkInsData.series, true, finalizedCheckInColors);
       chart('observation-ratings-chart', 'Assignment ratings in published observations', obsRatingsData.categories, obsRatingsData.series, true, observationRatingColors);
+      chart('survey-field-take-rates-chart', 'Field take rates', fieldTakeRatesData.categories, fieldTakeRatesData.series, false, null, 'Field', 'Active teammates');
+      chart('survey-personal-alignment-mix-chart', 'Personal alignment mix', alignmentMixData.categories, alignmentMixData.series, false, null, 'Alignment', 'Submitted responses');
+      chart('survey-assignment-eligibility-chart', 'Survey-eligible universe', eligibilityData.categories, eligibilityData.series, false, null, null, 'Assignments');
+      chart('survey-assignment-coverage-chart', 'Coverage of eligible assignments', coverageData.categories, coverageData.series, false, null, null, 'Assignments');
+      chart('survey-public-aggregate-chart', 'Public aggregate readiness', publicAggregateData.categories, publicAggregateData.series, false, null, null, 'Assignments');
+      chart('survey-submits-by-week-chart', 'Experience survey submits', submitsByWeekData.categories, submitsByWeekData.series, true, surveySubmitColors, 'Week of', 'Submits');
     }
 
     var attempts = 0;
