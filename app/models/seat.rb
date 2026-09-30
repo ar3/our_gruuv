@@ -45,8 +45,12 @@ class Seat < ApplicationRecord
     display_name
   end
 
+  # Job description summary: title + earliest position on the primary title (same source as assignments).
   def summary
-    title.position_summary
+    position = job_description_position
+    return position.combined_summary if position
+
+    title&.position_summary
   end
 
   def title_label

@@ -1,4 +1,5 @@
--# Locals: snapshot (Hash), organization, teammate, typed_name (optional), signed_at (optional)
+-# Locals: snapshot (Hash), organization, teammate, typed_name (optional), signed_at (optional),
+-#          title (optional), position (optional), seat (optional for footer)
 - snapshot = snapshot.with_indifferent_access
 - seat = (snapshot[:seat] || {}).with_indifferent_access
 - casual_name = snapshot[:casual_name].presence || teammate.person.casual_name.to_s.strip
@@ -6,11 +7,15 @@
 - optional_assignments = snapshot[:optional_assignments] || []
 - required_abilities = snapshot[:required_abilities] || []
 - direct_milestones = snapshot[:direct_milestones] || []
+- summary_position = local_assigns[:position]
+- summary_title = local_assigns[:title].presence || summary_position&.title
 
 .jd-acknowledgement-document
   - if snapshot[:position_name].present?
     %h3.mb-3
       %strong= snapshot[:position_name]
+      = link_to organization_teammate_position_path(organization, teammate), target: "_blank", rel: "noopener", class: "ms-2 text-muted", title: "Open position", "aria-label" => "Open #{snapshot[:position_name]}" do
+        %i.bi.bi-link-45deg
 
   = render "organizations/company_teammates/job_description_acknowledgements/seat_header",
            seat: seat,
@@ -18,13 +23,19 @@
            teammate: teammate,
            casual_name: casual_name
 
-  - if snapshot[:summary].present?
+  - if snapshot[:position_name].present? || snapshot[:summary].present?
     .row.mb-4
       .col-12
         %h3
           %strong Summary:
-        .markdown-content= render_markdown(snapshot[:summary])
-  - elsif snapshot[:position_name].blank?
+        - if snapshot[:summary].present?
+          .markdown-content= render_markdown(snapshot[:summary])
+        - else
+          = render "organizations/positions/no_summary_provided",
+                   organization: organization,
+                   title: summary_title,
+                   position: summary_position
+  - else
     .row.mb-4
       .col-12
         %h3

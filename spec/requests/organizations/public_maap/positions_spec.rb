@@ -80,9 +80,14 @@ RSpec.describe 'Organizations::PublicMaap::Positions', type: :request do
       expect(response.body).to include(position_company.display_name)
     end
 
-    it 'displays position summary' do
+    it 'displays the combined title and position summary' do
+      position_company.title.update!(position_summary: 'Title-level public summary')
+      position_company.update!(position_summary: 'Position-level public summary')
+
       get organization_public_maap_position_path(company, position_company)
-      expect(response.body).to include('This is a company position')
+      expect(response.body).to include('Summary:')
+      expect(response.body).to include('Title-level public summary')
+      expect(response.body).to include('Position-level public summary')
     end
 
     it 'shows "Back to Positions" link' do

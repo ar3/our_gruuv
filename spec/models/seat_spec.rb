@@ -89,6 +89,22 @@ RSpec.describe Seat, type: :model do
     end
   end
 
+  describe '#summary' do
+    it 'returns the earliest position combined title + position summary' do
+      title.update!(position_summary: 'Title summary text')
+      position_level = create(:position_level, position_major_level: title.position_major_level, level: '1.1')
+      create(:position, title: title, position_level: position_level, position_summary: 'Position summary text')
+
+      expect(seat.summary).to eq("Title summary text\n\nPosition summary text")
+    end
+
+    it 'falls back to the title summary when the title has no positions' do
+      title.update!(position_summary: 'Title-only summary')
+
+      expect(seat.summary).to eq('Title-only summary')
+    end
+  end
+
   describe '#title_label' do
     it 'returns all associated titles as a comma-separated list' do
       second_title = create(:title, company: organization)

@@ -41,13 +41,20 @@ RSpec.describe 'Company teammate True JD print view', type: :request do
       end
 
       it 'renders the print True JD with exact energy and expanded optionals' do
+        position = employee_teammate.employment_tenures.find_by!(ended_at: nil).position
+        position.title.update!(position_summary: 'Title-level true JD summary')
+        position.update!(position_summary: 'Position-level true JD summary')
+
         get true_jd_print_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('True Job Description (JD) (print view)')
         expect(response.body).to include('Sam C.')
         expect(response.body).to include('actual current job description')
         expect(response.body).to include('blueprint')
-        expect(response.body).to include(job_description_organization_position_path(organization, employee_teammate.employment_tenures.find_by(ended_at: nil).position))
+        expect(response.body).to include(job_description_organization_position_path(organization, position))
+        expect(response.body).to include('Summary:')
+        expect(response.body).to include('Title-level true JD summary')
+        expect(response.body).to include('Position-level true JD summary')
         expect(response.body).to include('Required Assignments')
         expect(response.body).to include('Optional / Elective / Uniquely-You Assignments')
         expect(response.body).to include('Close Deals')
@@ -65,6 +72,19 @@ RSpec.describe 'Company teammate True JD print view', type: :request do
         expect(response.body).to include('Current source for Job Description HR fields')
         expect(response.body).to include("Click to modify Sam C.&#39;s seat")
         expect(response.body).to include(organization_teammate_position_path(organization, employee_teammate))
+      end
+
+      it 'links Title and Position when no combined summary is available' do
+        position = employee_teammate.employment_tenures.find_by!(ended_at: nil).position
+        position.title.update!(position_summary: nil)
+        position.update!(position_summary: nil)
+
+        get true_jd_print_organization_company_teammate_path(organization, employee_teammate)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to match(%r{No summary provided on the <a[^>]*>Title</a> or the specific <a[^>]*>Position</a>})
+        expect(response.body).to include(organization_title_path(organization, position.title))
+        expect(response.body).to include(organization_position_path(organization, position))
       end
 
       it 'includes Required Abilities when the position has ability milestone requirements' do

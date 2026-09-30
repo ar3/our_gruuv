@@ -148,7 +148,14 @@
 
     %h4.mb-3
       %strong Summary:
-    %p= @seat.summary.present? ? @seat.summary : "No summary provided"
+    - jd_summary_position = @seat.job_description_position
+    - if @seat.summary.present?
+      .markdown-content= render_markdown(@seat.summary)
+    - else
+      = render "organizations/positions/no_summary_provided",
+               organization: organization,
+               title: @seat.title,
+               position: jd_summary_position
 
     -# Required Assignments
     - if @seat.required_assignments.any?

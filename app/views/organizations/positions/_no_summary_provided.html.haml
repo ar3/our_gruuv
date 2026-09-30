@@ -1,0 +1,6 @@
+-# Locals: organization, title (optional), position (optional), css_class (optional)
+-# Usage: = render 'organizations/positions/no_summary_provided', organization:, title:, position:
+- title_label = title.present? ? link_to("Title", organization_title_path(organization, title), class: "text-decoration-none") : "Title"
+- position_label = position.present? ? link_to("Position", organization_position_path(organization, position), class: "text-decoration-none") : "Position"
+%p{ class: local_assigns[:css_class] }
+  = safe_join(["No summary provided on the ", title_label, " or the specific ", position_label])

@@ -8,5 +8,8 @@
     - if position.combined_summary.present?
       .markdown-content= render_markdown(position.combined_summary)
     - else
-      %p No summary provided
-    
+      = render "organizations/positions/no_summary_provided",
+               organization: position.company,
+               title: position.title,
+               position: position
+ 

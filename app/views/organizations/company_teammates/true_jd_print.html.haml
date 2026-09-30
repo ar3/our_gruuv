@@ -45,7 +45,10 @@
         - if @print_position.combined_summary.present?
           .markdown-content= render_markdown(@print_position.combined_summary)
         - else
-          %p No summary provided
+          = render "organizations/positions/no_summary_provided",
+                   organization: @current_organization,
+                   title: @print_position.title,
+                   position: @print_position
   - else
     .row.mb-4
       .col-12

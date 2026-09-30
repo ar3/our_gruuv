@@ -3,7 +3,11 @@
     - if @position.combined_summary.present?
       .markdown-content= render_markdown(@position.combined_summary)
     - else
-      %p.mb-0 No summary provided
+      = render "organizations/positions/no_summary_provided",
+               organization: @organization,
+               title: @position.title,
+               position: @position,
+               css_class: "mb-0"
 .row
   .col-md-8.col-12
     - if @position.required_assignments.any? || @position.suggested_assignments.any?

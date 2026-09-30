@@ -28,6 +28,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
     create(:employment_tenure, teammate: peer_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
     create(:employment_tenure, teammate: employee_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
     position = employee_teammate.employment_tenures.find_by!(ended_at: nil).position
+    position.title.update!(position_summary: "Title-level signed JD summary")
     position.update!(position_summary: "Own the widget line.")
     create(:position_assignment, :required, position: position, assignment: held_assignment)
     create(:position_assignment, :required, position: position, assignment: missing_assignment)
@@ -87,9 +88,28 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("Assignments that require at least this milestone:")
       expect(response.body).to include("Also required directly by the position.")
       expect(response.body).to include("Additional Abilities required")
+      expect(response.body).to include("Title-level signed JD summary")
       expect(response.body).to include("Own the widget line.")
+      expect(response.body).to include("Summary:")
+      expect(response.body).to include('title="Open position"')
       expect(response.body).to include("No signatures yet.")
       expect(response.body).to include('bi-link-45deg')
+    end
+
+    it "shows Summary even when title and position summaries are blank" do
+      position = employee_teammate.employment_tenures.find_by!(ended_at: nil).position
+      position.title.update!(position_summary: nil)
+      position.update!(position_summary: nil)
+
+      sign_in_as_teammate_for_request(employee, organization)
+      get organization_company_teammate_job_description_acknowledgements_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Summary:")
+      expect(response.body).to match(%r{No summary provided on the <a[^>]*>Title</a> or the specific <a[^>]*>Position</a>})
+      expect(response.body).to include(organization_title_path(organization, position.title))
+      expect(response.body).to include(organization_position_path(organization, position))
+      expect(response.body).not_to include("No current position — summary from a position blueprint is not available.")
     end
 
     it "lists prior signatures at the top with a green banner when recently signed enough" do
@@ -201,6 +221,8 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("true_jd_signed_page")
       expect(response.body).to include("Build Widget")
       expect(response.body).not_to include("Assemble Gadget")
+      expect(response.body).to include('title="Open position"')
+      expect(response.body).to include(organization_teammate_position_path(organization, employee_teammate))
       expect(response.body).to include("jd-signature-ink")
       expect(response.body).to include("Samantha Cartwright")
 

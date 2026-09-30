@@ -42,11 +42,17 @@ RSpec.describe 'Organizations::Seats', type: :request do
       create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
       create(:position_ability, position: position, ability: ability, milestone_level: 2)
 
+      title.update!(position_summary: 'Title-level summary for the seat JD.')
+      position.update!(position_summary: 'Position-level summary for the seat JD.')
+
       get organization_seat_path(company, seat)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(seat.display_name)
       expect(response.body).to include('Job Description')
+      expect(response.body).to include('Summary:')
+      expect(response.body).to include('Title-level summary for the seat JD.')
+      expect(response.body).to include('Position-level summary for the seat JD.')
       expect(response.body).to include('Required Abilities (skills, knowledge, and behaviors)')
       expect(response.body).to include('Widget Craft')
       expect(response.body).to include('Skill for making widgets.')
@@ -58,6 +64,18 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include('Current source for Job Description HR fields')
       expect(response.body).to include('Click to Configure Seat')
       expect(response.body).to include(edit_organization_seat_path(company, seat))
+    end
+
+    it 'links Title and Position when no combined summary is available' do
+      title.update!(position_summary: nil)
+      position.update!(position_summary: nil)
+
+      get organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(%r{No summary provided on the <a[^>]*>Title</a> or the specific <a[^>]*>Position</a>})
+      expect(response.body).to include(organization_title_path(company, title))
+      expect(response.body).to include(organization_position_path(company, position))
     end
   end
 

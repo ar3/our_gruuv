@@ -39,6 +39,7 @@ class Organizations::CompanyTeammates::JobDescriptionAcknowledgementsController 
           organization: organization,
           teammate: @teammate,
           title: document.position&.title,
+          position: document.position,
           seat: document.employment_tenure&.seat,
           typed_name: typed_name,
           signed_at: signed_at

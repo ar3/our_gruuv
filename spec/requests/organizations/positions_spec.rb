@@ -386,9 +386,15 @@ RSpec.describe 'Organizations::Positions', type: :request do
     let(:position) { create(:position, title: title, position_level: position_level) }
 
     it 'renders job description successfully' do
+      title.update!(position_summary: 'Title-level blueprint summary')
+      position.update!(position_summary: 'Position-level blueprint summary')
+
       get job_description_organization_position_path(organization, position)
       expect(response).to have_http_status(:success)
       expect(response.body).to include(position.display_name)
+      expect(response.body).to include('Summary:')
+      expect(response.body).to include('Title-level blueprint summary')
+      expect(response.body).to include('Position-level blueprint summary')
       expect(response.body).to include('Current source for Job Description HR fields')
       expect(response.body).to include('These fields use the first available source')
       expect(response.body).to include('Use Seat if exists:')
@@ -401,6 +407,18 @@ RSpec.describe 'Organizations::Positions', type: :request do
       expect(response.body).to include('jd-print-ready')
       expect(response.body).to include("&#39;s Gruuv")
       expect(response.body).to include('jd-print-letterhead')
+    end
+
+    it 'links Title and Position when no combined summary is available' do
+      title.update!(position_summary: nil)
+      position.update!(position_summary: nil)
+
+      get job_description_organization_position_path(organization, position)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(%r{No summary provided on the <a[^>]*>Title</a> or the specific <a[^>]*>Position</a>})
+      expect(response.body).to include(organization_title_path(organization, title))
+      expect(response.body).to include(organization_position_path(organization, position))
     end
 
     it 'shows Additional Abilities required section when position has direct milestone requirements' do
