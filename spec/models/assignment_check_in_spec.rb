@@ -228,6 +228,86 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
   end
 
+  describe '#force_close!' do
+    let(:closer) { teammate }
+
+    before { assignment_tenure.update!(ended_at: Date.current) }
+
+    it 'closes as non-rated, keeps draft fields, and appends the force-close note' do
+      check_in = create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment,
+        shared_notes: 'Existing notes',
+        employee_private_notes: 'Employee draft',
+        employee_rating: 'meeting',
+        actual_energy_percentage: 30,
+        official_check_in_completed_at: nil
+      )
+      closed_at = Time.zone.parse('2026-03-20 15:30:00')
+
+      expect(check_in.force_close!(closed_by_teammate: closer, closed_at: closed_at)).to be true
+
+      check_in.reload
+      expect(check_in).to be_closed
+      expect(check_in.official_rating).to be_nil
+      expect(check_in.employee_private_notes).to eq('Employee draft')
+      expect(check_in.employee_rating).to eq('meeting')
+      expect(check_in.actual_energy_percentage).to eq(30)
+      expect(check_in.finalized_by_teammate).to eq(closer)
+      expect(check_in.shared_notes).to include('Existing notes')
+      expect(check_in.shared_notes).to include("Check-in was force closed by #{closer.person.casual_name}")
+    end
+
+    it 'returns false when an active assignment tenure exists' do
+      assignment_tenure.update!(ended_at: nil)
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment)
+
+      expect(check_in.force_close!(closed_by_teammate: closer)).to be false
+      expect(check_in.reload).to be_open
+    end
+
+    it 'is a no-op for already closed check-ins' do
+      check_in = create(:assignment_check_in, :finalized, teammate: teammate, assignment: assignment)
+
+      expect(check_in.force_close!(closed_by_teammate: closer)).to be false
+    end
+  end
+
+  describe '#force_closeable_by_viewer_role?' do
+    before { assignment_tenure.update!(ended_at: Date.current) }
+
+    let(:check_in) do
+      create(
+        :assignment_check_in,
+        teammate: teammate,
+        assignment: assignment,
+        manager_rating: nil,
+        manager_private_notes: nil
+      )
+    end
+
+    it 'allows the manager even when the employee has content' do
+      check_in.update!(employee_private_notes: 'Employee notes', employee_rating: 'meeting')
+      expect(check_in.force_closeable_by_viewer_role?(:manager)).to be true
+    end
+
+    it 'allows the employee when the manager has no content' do
+      expect(check_in.force_closeable_by_viewer_role?(:employee)).to be true
+    end
+
+    it 'blocks the employee when the manager has content' do
+      check_in.update!(manager_private_notes: 'Manager notes')
+      expect(check_in.force_closeable_by_viewer_role?(:employee)).to be false
+    end
+
+    it 'blocks everyone when an active tenure exists' do
+      assignment_tenure.update!(ended_at: nil)
+      expect(check_in.force_closeable_by_viewer_role?(:manager)).to be false
+      expect(check_in.force_closeable_by_viewer_role?(:employee)).to be false
+    end
+  end
+
   describe 'assignment_tenure association' do
     before { assignment_tenure }
 

@@ -154,49 +154,40 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     redirect_to assignment_show_path(anchor: "check-in"), notice: "Check-in started."
   end
 
-  def destroy_open_check_in
+  def force_close_open_check_in
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
 
     open_check_in = AssignmentCheckIn.where(company_teammate: @teammate, assignment: @assignment).open.first
-    return redirect_to assignment_show_path, alert: "No open check-in found to delete." if open_check_in.blank?
+    return redirect_to assignment_show_path, alert: "No open check-in found to force close." if open_check_in.blank?
 
     viewer_role = current_person == @teammate.person ? :employee : :manager
-    if open_check_in.assignment.required_on_position_for_teammate?(@teammate, organization)
+    if open_check_in.active_assignment_tenure?
       return redirect_to assignment_show_path,
-        alert: "This check-in can't be deleted because it's a required assignment for this position."
+        alert: "Active assignments can't force close check-ins."
     end
-    unless open_check_in.deletable_by_viewer_role?(viewer_role)
+    unless open_check_in.force_closeable_by_viewer_role?(viewer_role)
       return redirect_to assignment_show_path,
-        alert: "This check-in cannot be deleted yet because the other person still has values entered."
+        alert: "This check-in can't be force closed because the manager still has values entered."
     end
 
-    deleted = false
-    ActiveRecord::Base.transaction do
-      orphan_tenure = orphan_placeholder_tenure_for(open_check_in)
-      raise ActiveRecord::Rollback unless open_check_in.destroy
-      raise ActiveRecord::Rollback if orphan_tenure && !orphan_tenure.destroy
-
-      deleted = true
+    closed_by = current_company_teammate
+    unless closed_by
+      return redirect_to assignment_show_path, alert: "Could not force close this check-in."
     end
 
-    if deleted
-      redirect_to assignment_show_path, notice: "That open check-in was deleted."
+    if open_check_in.force_close!(closed_by_teammate: closed_by)
+      CheckIns::NotifyForceCloseJob.perform_later(
+        check_in_id: open_check_in.id,
+        organization_id: organization.id,
+        closed_by_teammate_id: closed_by.id
+      )
+      redirect_to assignment_show_path, notice: "That check-in was force closed."
     else
-      redirect_to assignment_show_path,
-        alert: "Could not delete this check-in. Please clear any dependent records first."
+      redirect_to assignment_show_path, alert: "Could not force close this check-in."
     end
   end
 
   private
-
-  def orphan_placeholder_tenure_for(open_check_in)
-    tenure = @teammate.assignment_tenures.active.find_by(assignment: @assignment)
-    return nil unless tenure
-    return nil unless tenure.anticipated_energy_percentage == 0
-    return nil unless tenure.started_at == open_check_in.check_in_started_on
-
-    tenure
-  end
 
   def set_teammate
     @teammate = find_organization_teammate!(params[:teammate_id])

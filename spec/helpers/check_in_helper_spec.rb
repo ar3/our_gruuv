@@ -709,9 +709,26 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(helper.single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)).to eq(false)
     end
 
-    it "is false for assignment check-in when not required on position" do
+    it "is false for assignment check-ins (force close uses tenure gate instead)" do
       check_in = build(:assignment_check_in, teammate: teammate, assignment: assignment)
       expect(helper.single_item_check_in_mandatory_delete_blocked?(check_in, teammate, organization)).to eq(false)
+    end
+  end
+
+  describe "#single_item_check_in_force_close_blocked_by_active_tenure?" do
+    let(:organization) { create(:organization) }
+    let(:teammate) { create(:company_teammate, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization) }
+
+    it "is true when an active assignment tenure exists" do
+      create(:assignment_tenure, teammate: teammate, assignment: assignment)
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment)
+      expect(helper.single_item_check_in_force_close_blocked_by_active_tenure?(check_in)).to eq(true)
+    end
+
+    it "is false when there is no active tenure" do
+      check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment)
+      expect(helper.single_item_check_in_force_close_blocked_by_active_tenure?(check_in)).to eq(false)
     end
   end
 

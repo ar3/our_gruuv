@@ -664,7 +664,7 @@ Rails.application.routes.draw do
       end
       resources :assignments, only: [:show], controller: 'teammates/assignments' do
         post :start_check_in, on: :member
-        delete :destroy_open_check_in, on: :member
+        post :force_close_open_check_in, on: :member
       end
       resources :aspirations, only: [:show], controller: 'teammates/aspirations' do
         post :start_check_in, on: :member

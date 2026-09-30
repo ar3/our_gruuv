@@ -20,7 +20,15 @@
 
 - queue_body = capture do
   .px-3.pt-3.pb-2
-    %p.small.mb-1
+    .d-flex.align-items-stretch.mb-2
+      = link_to "View Full List",
+                up_next_url,
+                class: "flex-fill text-center small link-secondary text-decoration-none py-1"
+      .border-start.mx-1
+      = link_to "Bulk Check-In",
+                bulk_check_in_url,
+                class: "flex-fill text-center small link-secondary text-decoration-none py-1"
+    %p.small.mb-0
       %span{class: (your_turn_count.positive? ? "text-danger fw-semibold" : "text-muted")}
         = your_turn_count
         your turn
@@ -28,10 +36,7 @@
         ·
         = total_count
         #{"object".pluralize(total_count)}
-    .d-flex.flex-column.gap-1
-      = link_to "Full Up Next →", up_next_url, class: "small text-decoration-none"
-      = link_to "Bulk Check-in →", bulk_check_in_url, class: "small text-decoration-none"
-  %ul.list-group.list-group-flush.mb-0{aria: { label: "Objects to get clear on" }}
+  %ul.list-group.list-group-flush.mb-0{aria: { label: "Check-in todos" }}
     - visible_rows.each do |row|
       = render "shared/single_item_check_in/object_queue_row",
                row: row,
@@ -67,6 +72,6 @@
     .card-header
       %h5.mb-0
         %i.bi.bi-list-check.me-2{aria: { hidden: true }}
-        To get clear on
+        Check-in Todos
     .card-body.p-0
       = queue_body

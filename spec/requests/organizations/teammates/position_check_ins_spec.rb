@@ -75,10 +75,10 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       get position_check_in_organization_teammate_path(organization, teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("To get clear on")
+      expect(response.body).to include("Check-in Todos")
       expect(response.body).to include("your turn")
-      expect(response.body).to include("Full Up Next")
-      expect(response.body).to include("Bulk Check-in")
+      expect(response.body).to include("View Full List")
+      expect(response.body).to include("Bulk Check-In")
       expect(response.body).to include("Currently viewing")
       expect(response.body).not_to include("Checking-in on")
       expect(response.body).to include("1-by-1 clarity check-in")

@@ -420,10 +420,6 @@ module CheckInHelper
     return false if check_in.blank? || teammate.blank?
 
     case check_in
-    when AssignmentCheckIn
-      return false if organization.blank?
-
-      check_in.assignment.required_on_position_for_teammate?(teammate, organization)
     when AspirationCheckIn
       check_in.aspiration.company_level_aspirational_value?
     else
@@ -433,13 +429,36 @@ module CheckInHelper
 
   def single_item_check_in_delete_mandatory_tooltip(check_in)
     case check_in
-    when AssignmentCheckIn
-      "Can't delete this check-in — it's a required assignment for this position."
     when AspirationCheckIn
       "Can't delete this check-in — it's a company aspirational value."
     else
       "Can't delete this check-in."
     end
+  end
+
+  def single_item_check_in_force_close_blocked_by_active_tenure?(check_in)
+    check_in.is_a?(AssignmentCheckIn) && check_in.active_assignment_tenure?
+  end
+
+  def single_item_check_in_force_close_allowed?(check_in, teammate, current_person)
+    return false if check_in.blank? || teammate.blank? || current_person.blank?
+    return false unless check_in.is_a?(AssignmentCheckIn)
+
+    view_mode = single_item_check_in_view_mode(teammate, current_person)
+    check_in.force_closeable_by_viewer_role?(view_mode)
+  end
+
+  def single_item_check_in_force_close_mandatory_tooltip
+    "Active assignments can't force close check-ins."
+  end
+
+  def single_item_check_in_force_close_counterparty_tooltip
+    "Your manager has values in this check-in. Only they can force close it."
+  end
+
+  def single_item_check_in_force_close_confirm(check_in)
+    assignment_name = check_in.assignment.display_name
+    "Force close the #{assignment_name} check-in? It will be closed as non-rated (no data lost — find it under All check-ins). OG will Slack you and the other person that it was force closed."
   end
 
   def single_item_hide_fresh_open_check_in_form?(check_in, latest_finalized, teammate:, current_person:)

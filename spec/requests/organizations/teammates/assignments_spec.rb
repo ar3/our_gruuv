@@ -118,22 +118,44 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       it "shows the object queue and teammate modality switchers instead of the item dropdown" do
         get assignment_show_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("To get clear on")
+        expect(response.body).to include("Check-in Todos")
         expect(response.body).to include("your turn")
-        expect(response.body).to include("Full Up Next")
-        expect(response.body).to include("Bulk Check-in")
+        expect(response.body).to include("View Full List")
+        expect(response.body).to include("Bulk Check-In")
         expect(response.body).to include("Currently viewing")
         expect(response.body).not_to include("Checking-in on")
         expect(response.body).to include("1-by-1 clarity check-in")
         expect(response.body).to include("Switch teammate view")
       end
 
-      it "shows an enabled delete link when other side is empty and assignment is not required" do
+      it "shows an enabled force-close link when there is no active tenure and other side is empty" do
+        assignment_tenure.update!(ended_at: Date.current)
         get assignment_show_path
         expect(response.body).to include("... OR...")
-        expect(response.body).to include("[Delete this check-in]")
-        expect(response.body).not_to include("required assignment for this position")
-        expect(response.body).to include(destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
+        expect(response.body).to include("[Force close this unnecessary check-in]")
+        expect(response.body).not_to include("Active assignments can't force close check-ins")
+        expect(response.body).to include(force_close_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
+      end
+    end
+
+    context "when there is an open check-in and an active assignment tenure" do
+      before do
+        create(:assignment_check_in,
+          teammate: employee_teammate,
+          assignment: assignment,
+          check_in_started_on: Date.new(2026, 3, 15),
+          employee_completed_at: nil,
+          manager_completed_at: nil,
+          manager_rating: nil,
+          manager_private_notes: nil)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "shows disabled force close with active-assignment tooltip" do
+        get assignment_show_path
+        expect(response.body).to include("[Force close this unnecessary check-in]")
+        expect(response.body).to include("Active assignments can&#39;t force close check-ins")
+        expect(response.body).not_to include(force_close_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
       end
     end
 
@@ -155,13 +177,6 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
           manager_rating: nil,
           manager_private_notes: nil)
         sign_in_as_teammate_for_request(employee_person, organization)
-      end
-
-      it "shows disabled delete with required-assignment tooltip" do
-        get assignment_show_path
-        expect(response.body).to include("[Delete this check-in]")
-        expect(response.body).to include("required assignment for this position")
-        expect(response.body).not_to include(destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment))
       end
 
       it "renders position connection as narrative copy with blueprint energy" do
@@ -409,111 +424,119 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
     end
   end
 
-  describe "DELETE destroy_open_check_in" do
+  describe "POST force_close_open_check_in" do
     let!(:open_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
-    let(:delete_path) do
-      destroy_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment)
+    let(:force_close_path) do
+      force_close_open_check_in_organization_teammate_assignment_path(organization, employee_teammate, assignment)
     end
 
-    context "when the other side has no values" do
+    before do
+      assignment_tenure.update!(ended_at: Date.current)
+    end
+
+    context "when the employee force-closes and manager has no values" do
       before do
         open_check_in.update!(
           manager_rating: nil,
           manager_private_notes: nil,
-          actual_energy_percentage: 0
+          employee_private_notes: "I started this",
+          actual_energy_percentage: 25
         )
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
-      it "deletes the current open check-in and redirects back to the same page" do
-        deleted_id = open_check_in.id
+      it "closes the check-in as non-rated, keeps values, does not touch tenure, and stays on 1by1" do
+        ended_tenure_id = assignment_tenure.id
         expect do
-          delete delete_path
-        end.to change { AssignmentCheckIn.where(id: deleted_id).count }.from(1).to(0)
-        expect(response).to redirect_to(assignment_show_path)
-        expect(flash[:notice]).to eq("That open check-in was deleted.")
+          post force_close_path
+        end.to have_enqueued_job(CheckIns::NotifyForceCloseJob)
 
-        follow_redirect!
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to(assignment_show_path)
+        expect(flash[:notice]).to eq("That check-in was force closed.")
+
+        open_check_in.reload
+        expect(open_check_in).to be_closed
+        expect(open_check_in.official_rating).to be_nil
+        expect(open_check_in.employee_private_notes).to eq("I started this")
+        expect(open_check_in.actual_energy_percentage).to eq(25)
+        expect(open_check_in.shared_notes).to include("Check-in was force closed by")
+        expect(open_check_in.finalized_by_teammate).to eq(employee_teammate)
+        expect(AssignmentTenure.where(id: ended_tenure_id).count).to eq(1)
         expect(AssignmentCheckIn.where(company_teammate: employee_teammate, assignment: assignment).open.first).to be_nil
-      end
-
-      it "also destroys a same-day 0% active tenure created with the check-in" do
-        assignment_tenure.update!(
-          anticipated_energy_percentage: 0,
-          started_at: open_check_in.check_in_started_on
-        )
-
-        expect do
-          delete delete_path
-        end.to change { AssignmentCheckIn.where(id: open_check_in.id).count }.from(1).to(0)
-          .and change { AssignmentTenure.where(id: assignment_tenure.id).count }.from(1).to(0)
-
-        expect(response).to redirect_to(assignment_show_path)
-        expect(flash[:notice]).to eq("That open check-in was deleted.")
-        expect(employee_teammate.assignment_tenures.active.where(assignment: assignment)).to be_empty
-      end
-
-      it "does not destroy an active tenure that started on a different day" do
-        assignment_tenure.update!(
-          anticipated_energy_percentage: 0,
-          started_at: open_check_in.check_in_started_on - 1.day
-        )
-
-        expect do
-          delete delete_path
-        end.to change { AssignmentCheckIn.where(id: open_check_in.id).count }.from(1).to(0)
-
-        expect(AssignmentTenure.where(id: assignment_tenure.id).count).to eq(1)
-        expect(assignment_tenure.reload).to be_active
-      end
-
-      it "does not destroy an active tenure with non-zero energy" do
-        assignment_tenure.update!(started_at: open_check_in.check_in_started_on)
-
-        expect do
-          delete delete_path
-        end.to change { AssignmentCheckIn.where(id: open_check_in.id).count }.from(1).to(0)
-
-        expect(AssignmentTenure.where(id: assignment_tenure.id).count).to eq(1)
-        expect(assignment_tenure.reload).to be_active
       end
     end
 
-    context "when the assignment is required on the teammate's position" do
-      let(:position_major_level) { create(:position_major_level) }
-      let(:req_title) { create(:title, company: organization, position_major_level: position_major_level) }
-      let(:position_level) { create(:position_level, position_major_level: position_major_level) }
-      let(:req_position) { create(:position, title: req_title, position_level: position_level) }
-
+    context "when there is an active assignment tenure" do
       before do
-        EmploymentTenure.find_by!(company_teammate: employee_teammate, company: organization).update!(position: req_position)
-        create(:position_assignment, position: req_position, assignment: assignment, assignment_type: "required")
+        assignment_tenure.update!(ended_at: nil)
         open_check_in.update!(manager_rating: nil, manager_private_notes: nil, actual_energy_percentage: 0)
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
-      it "does not delete" do
+      it "does not force close" do
         expect do
-          delete delete_path
-        end.not_to change { AssignmentCheckIn.where(id: open_check_in.id).count }
+          post force_close_path
+        end.not_to have_enqueued_job(CheckIns::NotifyForceCloseJob)
+
+        expect(open_check_in.reload).to be_open
         expect(response).to redirect_to(assignment_show_path)
-        expect(flash[:alert]).to include("required assignment")
+        expect(flash[:alert]).to include("Active assignments can't force close")
       end
     end
 
-    context "when the other side has entered values" do
+    context "when the employee tries to force close and the manager has values" do
       before do
         open_check_in.update!(manager_private_notes: "Manager has input")
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
-      it "does not delete and shows a blocking alert" do
+      it "does not force close" do
         expect do
-          delete delete_path
-        end.not_to change { AssignmentCheckIn.where(id: open_check_in.id).count }
+          post force_close_path
+        end.not_to have_enqueued_job(CheckIns::NotifyForceCloseJob)
+
+        expect(open_check_in.reload).to be_open
         expect(response).to redirect_to(assignment_show_path)
-        expect(flash[:alert]).to include("cannot be deleted yet")
+        expect(flash[:alert]).to include("manager still has values")
+      end
+    end
+
+    context "when the manager force-closes and the employee has values" do
+      let(:manager_person) { create(:person) }
+      let!(:manager_teammate) do
+        create(:company_teammate, person: manager_person, organization: organization, can_manage_employment: true)
+      end
+
+      before do
+        create(:employment_tenure,
+          teammate: manager_teammate,
+          company: organization,
+          started_at: 1.year.ago,
+          ended_at: nil)
+        EmploymentTenure.find_by!(company_teammate: employee_teammate, company: organization).update!(manager_teammate: manager_teammate)
+        open_check_in.update!(
+          employee_private_notes: "Employee started",
+          employee_rating: "meeting",
+          actual_energy_percentage: 40
+        )
+        sign_in_as_teammate_for_request(manager_person, organization)
+      end
+
+      it "force closes and preserves employee content" do
+        expect do
+          post force_close_path
+        end.to have_enqueued_job(CheckIns::NotifyForceCloseJob)
+
+        expect(response).to redirect_to(assignment_show_path)
+        expect(flash[:notice]).to eq("That check-in was force closed.")
+
+        open_check_in.reload
+        expect(open_check_in).to be_closed
+        expect(open_check_in.official_rating).to be_nil
+        expect(open_check_in.employee_private_notes).to eq("Employee started")
+        expect(open_check_in.employee_rating).to eq("meeting")
+        expect(open_check_in.finalized_by_teammate).to eq(manager_teammate)
+        expect(open_check_in.shared_notes).to include(manager_person.casual_name)
       end
     end
   end

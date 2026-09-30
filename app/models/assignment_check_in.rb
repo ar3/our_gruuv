@@ -3,7 +3,7 @@ class AssignmentCheckIn < ApplicationRecord
 
   SYSTEM_CLOSE_DUE_TO_ARCHIVE_NOTE =
     "Assignment archived — system closed this check-in.".freeze
-  
+
   belongs_to :assignment
   belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :maap_snapshot, optional: true
@@ -162,6 +162,42 @@ class AssignmentCheckIn < ApplicationRecord
     true
   end
 
+  def active_assignment_tenure?
+    AssignmentTenure.where(company_teammate: teammate, assignment: assignment).active.exists?
+  end
+
+  # Manager can force-close whenever there is no active tenure (even if employee has content).
+  # Employee can force-close only when manager has no content (and no active tenure).
+  def force_closeable_by_viewer_role?(viewer_role)
+    return false if active_assignment_tenure?
+
+    case viewer_role.to_sym
+    when :manager
+      true
+    when :employee
+      !side_has_values?(:manager)
+    else
+      false
+    end
+  end
+
+  # Non-rated close that preserves draft fields. Used when an unnecessary open check-in
+  # should leave Up Next without destroying history.
+  def force_close!(closed_by_teammate:, closed_at: Time.current)
+    return false unless open?
+    return false if active_assignment_tenure?
+
+    note = force_close_shared_note(closed_by_teammate: closed_by_teammate, closed_at: closed_at)
+    notes = [shared_notes.to_s.strip.presence, note].compact.join("\n\n")
+    update!(
+      shared_notes: notes,
+      official_check_in_completed_at: closed_at,
+      official_rating: nil,
+      finalized_by_teammate: closed_by_teammate
+    )
+    true
+  end
+
   # Completion tracking methods
 
   def employee_started?
@@ -213,6 +249,13 @@ class AssignmentCheckIn < ApplicationRecord
   end
 
   private
+
+  def force_close_shared_note(closed_by_teammate:, closed_at: Time.current)
+    casual = closed_by_teammate&.person&.casual_name.presence || "someone"
+    timezone = closed_by_teammate&.person&.timezone_or_default || "Eastern Time (US & Canada)"
+    datetime_str = closed_at.in_time_zone(timezone).strftime("%b %d, %Y at %-I:%M %p %Z")
+    "Check-in was force closed by #{casual} on #{datetime_str}."
+  end
 
   def only_one_open_check_in_per_teammate_assignment
     return unless open? # Only validate for open check-ins
