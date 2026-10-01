@@ -592,7 +592,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Current week confidence check')
         expect(response.body).to include('Submitting a confidence check on this goal will start this goal as well.')
-        expect(response.body).to include('Save confidence check')
+        expect(response.body).to include('Update confidence')
         expect(response.body).not_to include('Start this goal to add confidence checks.')
       end
     end
@@ -1438,9 +1438,12 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       # Check-in form uses sentence: "I'm [dropdown] confident this'll be hit by [date]."
       expect(response.body).to include('confident this\'ll be hit by')
-      expect(response.body).to include('Check In')
-      expect(response.body).to include('data-controller="confirm-leave"')
+      expect(response.body).to include('Update confidence')
       expect(response.body).to include('goal-check-in-form')
+      expect(response.body).to include('goal-check-in-inline-layout__update-btn')
+      expect(response.body).to include('btn-outline-success')
+      expect(response.body).to include('Complete')
+      expect(response.body).to include('data-controller="confirm-leave"')
       expect(response.body).to include('data-confirm-leave-single-active-form-value')
     end
 

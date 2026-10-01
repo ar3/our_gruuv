@@ -311,6 +311,10 @@ module TerminologyHelper
     terminology(:save_confidence_check)
   end
 
+  def update_confidence_label
+    terminology(:update_confidence)
+  end
+
   def save_all_confidence_checks_label
     terminology(:save_all_confidence_checks)
   end

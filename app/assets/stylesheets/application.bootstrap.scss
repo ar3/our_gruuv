@@ -1733,7 +1733,7 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
-// Goals hierarchy (collapsible): inline check-in — two-row main + optional done rail
+// Goals hierarchy (collapsible): inline confidence check — main + update (+ optional complete)
 .goal-check-in-inline-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1745,8 +1745,21 @@ body:has(.vertical-nav.open) .floating-toggle {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
+  &--with-update {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  &--with-update.goal-check-in-inline-layout--with-complete {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+
   &__main {
     min-width: 0;
+  }
+
+  &__sentence {
+    flex-wrap: nowrap;
+    min-width: 450px;
   }
 
   &__reason {
@@ -1763,19 +1776,48 @@ body:has(.vertical-nav.open) .floating-toggle {
   &__rail-or {
     flex: 1 1 0;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
-    padding-bottom: 0.25rem;
+    padding: 0 0.25rem;
     min-height: 0;
   }
 
-  &__done-btn {
-    flex: 2 1 0;
+  &__update-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  &__update-btn {
     align-self: stretch;
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.15rem;
+    min-width: 4.25rem;
+    max-width: 4.75rem;
     min-height: 3.5rem;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+    font-size: 0.85rem;
+  }
+
+  &__done-btn {
+    align-self: stretch;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 5.5rem;
+    min-height: 3.5rem;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    flex: 2 1 0;
   }
 }
 
@@ -1843,7 +1885,9 @@ body:has(.vertical-nav.open) .floating-toggle {
 }
 
 @include media-breakpoint-down(md) {
-  .goal-check-in-inline-layout--with-rail {
+  .goal-check-in-inline-layout--with-rail,
+  .goal-check-in-inline-layout--with-update,
+  .goal-check-in-inline-layout--with-update.goal-check-in-inline-layout--with-complete {
     grid-template-columns: 1fr;
 
     .goal-check-in-inline-layout__rail {
@@ -1856,13 +1900,19 @@ body:has(.vertical-nav.open) .floating-toggle {
 
     .goal-check-in-inline-layout__rail-or {
       flex: 0 0 auto;
-      padding-bottom: 0;
+      padding: 0;
       align-items: center;
     }
 
+    .goal-check-in-inline-layout__update-btn,
     .goal-check-in-inline-layout__done-btn {
       flex: 0 1 auto;
       min-height: 2.75rem;
+      width: 100%;
+    }
+
+    .goal-check-in-inline-layout__update-wrap {
+      width: 100%;
     }
   }
 

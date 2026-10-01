@@ -30,6 +30,7 @@ RSpec.describe TerminologyHelper, type: :helper do
 
     it 'returns save confidence check' do
       expect(helper.save_confidence_check_label).to eq('Save confidence check')
+      expect(helper.update_confidence_label).to eq('Update confidence')
     end
 
     it 'interpolates last confidence check ago' do

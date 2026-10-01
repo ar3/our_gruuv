@@ -83,7 +83,7 @@
             = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
           
           .d-grid
-            = f.submit save_confidence_check_label, class: "btn btn-primary"
+            = f.submit update_confidence_label, class: "btn btn-primary"
   
   / Bottom: Target Dates
   .timeline-item.mb-4

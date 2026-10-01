@@ -76,12 +76,12 @@
                     = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...', disabled: !can_save_check_in
                   - if can_save_check_in
                     .d-grid
-                      = f.submit save_confidence_check_label, class: "btn btn-primary"
+                      = f.submit update_confidence_label, class: "btn btn-primary"
                   - else
                     .d-flex.align-items-center.gap-2
                       .flex-grow-1
                         %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
-                          = save_confidence_check_label
+                          = update_confidence_label
                       %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal), tabindex: "0", role: "img", "aria-label" => "Permission notice"}
               - if show_complete_rail
                 .goal-check-in-inline-layout__rail-or
@@ -92,7 +92,7 @@
                       organization: @organization,
                       return_url: check_in_return_url,
                       return_text: 'Goal',
-                      button_class: 'btn btn-success btn-lg w-100',
+                      button_class: 'btn btn-outline-success btn-lg w-100',
                       label: 'Complete',
                       stacked: true
           - elsif goal_is_completed?(@goal)
