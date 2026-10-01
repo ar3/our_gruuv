@@ -1,9 +1,10 @@
--# locals: node, depth, owner_options, can_check_in_ids
+-# locals: node, depth, owner_options (grouped [label, options] pairs), filter_owner_value, can_check_in_ids
 - goal = node[:goal]
 - can_edit = policy(goal).update?
 - can_check_in = can_check_in_ids.include?(goal.id)
 - check_in = node[:current_week_check_in] || node[:most_recent_check_in]
 - pad = depth * 1.25
+- filter_owner_value = local_assigns[:filter_owner_value]
 
 %div{class: goals_bulk_edit_row_classes(goal), style: "margin-left: #{pad}rem;", id: "goals-sheet-row-#{goal.id}"}
   %button.goals-sheet-row__status{type: "button",
@@ -40,7 +41,7 @@
                 .col-md-4
                   %label.form-label.small.mb-0 Owner
                   = select_tag "goal[owner_id]",
-                               options_for_select(owner_options, goals_bulk_edit_owner_value(goal)),
+                               grouped_options_for_select(owner_options, goals_bulk_edit_owner_value(goal)),
                                class: "form-select form-select-sm",
                                required: true
                 .col-md-4
@@ -50,29 +51,29 @@
                                class: "form-select form-select-sm",
                                required: true
                 .col-md-4
-                  %label.form-label.small.mb-0 Privacy
+                  %label.form-label.small.mb-0 Who can see this goal
                   = select_tag "goal[privacy_level]",
                                options_for_select(goals_bulk_edit_privacy_level_options, goal.privacy_level),
                                class: "form-select form-select-sm",
                                required: true
               .row.g-2.mt-1
                 .col-md-3
-                  %label.form-label.small.mb-0 Confidence
+                  %label.form-label.small.mb-0 I'm 👇 this confident...
                   - if can_check_in
                     = select_tag "goal[confidence_percentage]",
                                  options_for_select([["—", ""]] + confidence_percentage_options, check_in&.confidence_percentage),
                                  class: "form-select form-select-sm"
                   - else
                     %span.form-control.form-control-sm.bg-light= check_in&.confidence_percentage.present? ? "#{check_in.confidence_percentage}%" : "—"
+                .col-md-4
+                  %label.form-label.small.mb-0 ... will be achieved on...
+                  = date_field_tag "goal[most_likely_target_date]", goal.most_likely_target_date, class: "form-control form-control-sm"
                 .col-md-5
-                  %label.form-label.small.mb-0 Reason
+                  %label.form-label.small.mb-0 ... because of this reason
                   - if can_check_in
                     = text_field_tag "goal[confidence_reason]", check_in&.confidence_reason, class: "form-control form-control-sm", placeholder: "Why?"
                   - else
                     %span.form-control.form-control-sm.bg-light.text-truncate{title: check_in&.confidence_reason}= check_in&.confidence_reason.presence || "—"
-                .col-md-4
-                  %label.form-label.small.mb-0 Completed on (most likely)
-                  = date_field_tag "goal[most_likely_target_date]", goal.most_likely_target_date, class: "form-control form-control-sm"
 
         .d-flex.align-items-center.justify-content-between.gap-2.mt-2.ps-1
           %details.flex-grow-1
@@ -82,6 +83,7 @@
             .mt-2
               = render "organizations/goals_bulk_edit/add_form",
                        parent_goal: goal,
+                       filter_owner_value: filter_owner_value,
                        owner_value: goals_bulk_edit_owner_value(goal),
                        owner_options: owner_options
           %span.small.text-muted.text-nowrap.d-none{data: { check_in_autosave_target: "status" }, "aria-live": "polite"}
@@ -95,4 +97,5 @@
            node: child_node,
            depth: depth + 1,
            owner_options: owner_options,
+           filter_owner_value: filter_owner_value,
            can_check_in_ids: can_check_in_ids

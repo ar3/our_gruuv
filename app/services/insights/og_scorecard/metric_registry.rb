@@ -356,7 +356,7 @@ module Insights
           ),
           metric(
             key: 'unique_teammates_goal_check_in_this_week',
-            label: 'Teammates with at least one goal confidence check-in this week',
+            label: 'Teammates with at least one goal confidence check this week',
             direction: :more,
             supports_percent: true,
             group: 'Goals'

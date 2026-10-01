@@ -336,7 +336,7 @@ module Maap
           'Type' => goal.goal_type,
           'Status' => goal.status.to_s,
           'Associations' => goal.goal_associations.map { |ga| "#{ga.associable_type}: #{associable_name(ga)}" }.presence || '(none)',
-          'Recent confidence check-ins' => check_ins.map { |c|
+          'Recent confidence checks' => check_ins.map { |c|
             "#{c.check_in_week_start}: #{c.confidence_percentage}% — #{truncate_text(c.confidence_reason, 200)}"
           }.presence || '(none)'
         }

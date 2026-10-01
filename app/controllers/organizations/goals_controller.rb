@@ -176,7 +176,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Apply filters
     @goals = apply_timeframe_filter(@goals, params[:timeframe])
     @goals = apply_goal_type_filter(@goals, params[:goal_type])
+    pre_status_goals = @goals
     @goals = apply_status_filter(@goals, selected_statuses)
+    expanded_ids = Goals::IncludeAncestorGoals.expanded_ids(matching: @goals, candidates: pre_status_goals)
+    @goals = pre_status_goals.where(id: expanded_ids)
     @goals = apply_spotlight_filter(@goals, spotlight_param)
 
     # Apply sorting

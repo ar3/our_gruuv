@@ -103,6 +103,7 @@ export default class extends Controller {
         this.lastError = null
         succeeded = true
         this.updateStatus(`Saved ${this.formatTime(data.saved_at)}`)
+        this.applySheetRowChrome(data.sheet_row)
       } else {
         this.lastError = data.errors || "Save failed"
         this.showSaveError(retryAttempt)
@@ -197,6 +198,35 @@ export default class extends Controller {
     this.statusTarget.classList.toggle("d-none", !visible)
     this.statusTarget.classList.toggle("text-danger", isError)
     this.statusTarget.classList.toggle("text-muted", !isError)
+  }
+
+  // Bulk Edit Goals: refresh the left status strip color/popover after save.
+  applySheetRowChrome(sheetRow) {
+    if (!sheetRow || !sheetRow.row_classes) return
+
+    const row = this.element.closest(".goals-sheet-row")
+    if (!row) return
+
+    row.className = sheetRow.row_classes
+
+    const statusBtn = row.querySelector(".goals-sheet-row__status")
+    if (!statusBtn) return
+
+    if (sheetRow.popover_title != null) {
+      statusBtn.setAttribute("aria-label", sheetRow.popover_title)
+      statusBtn.setAttribute("title", sheetRow.popover_title)
+      statusBtn.setAttribute("data-bs-title", sheetRow.popover_title)
+    }
+    if (sheetRow.popover_content != null) {
+      statusBtn.setAttribute("data-bs-content", sheetRow.popover_content)
+    }
+
+    const Popover = window.bootstrap?.Popover
+    if (!Popover) return
+
+    const existing = Popover.getInstance(statusBtn)
+    if (existing) existing.dispose()
+    new Popover(statusBtn, { html: true, sanitize: false })
   }
 
   clearDebounce() {

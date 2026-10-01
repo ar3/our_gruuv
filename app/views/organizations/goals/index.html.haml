@@ -145,10 +145,6 @@
               %span.badge.rounded-pill.bg-info.me-2.mb-1
                 Goals for: #{@filter_prompt.prompt_template.title}
             %small.text-muted
-              %i.bi.bi-funnel.me-1
-              Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
-                
-              %br
               %i.bi.bi-sort-down.me-1
               - sort_display = case @current_filters[:sort]
               - when 'smart_sort' then 'Smart Sort'
@@ -159,6 +155,10 @@
               - when 'title' then 'Title (A-Z)'
               - else 'Smart Sort'
               Sort: #{sort_display} (#{@current_filters[:direction] || 'asc'})
+              %br
+              %i.bi.bi-funnel.me-1
+              Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+            = render "organizations/goals/status_quick_filter", filters: @current_filters, base: :index
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-table.me-1

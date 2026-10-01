@@ -488,5 +488,57 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe 'status quick filter' do
+    describe '#goal_status_quick_filter_selection' do
+      it 'returns :all for blank or draft+active' do
+        expect(helper.goal_status_quick_filter_selection({})).to eq(:all)
+        expect(helper.goal_status_quick_filter_selection(status: [])).to eq(:all)
+        expect(helper.goal_status_quick_filter_selection(status: %w[active draft])).to eq(:all)
+      end
+
+      it 'returns :draft and :active for single-status presets' do
+        expect(helper.goal_status_quick_filter_selection(status: %w[draft])).to eq(:draft)
+        expect(helper.goal_status_quick_filter_selection(status: %w[active])).to eq(:active)
+      end
+
+      it 'returns :custom when completed/archived or mixed sets are present' do
+        expect(helper.goal_status_quick_filter_selection(status: %w[draft active completed])).to eq(:custom)
+        expect(helper.goal_status_quick_filter_selection(status: %w[archived])).to eq(:custom)
+      end
+    end
+
+    describe '#goal_status_quick_filter_path' do
+      before do
+        controller.params = ActionController::Parameters.new(
+          controller: 'organizations/goals',
+          action: 'index',
+          organization_id: company.to_param,
+          owner_id: 'my_relevant_goals',
+          status: ['completed']
+        )
+      end
+
+      it 'builds Only Active with status param and keeps owner filter' do
+        path = helper.goal_status_quick_filter_path(company, :active)
+        expect(path).to include('status')
+        expect(path).to include('active')
+        expect(path).to include('owner_id=my_relevant_goals')
+        expect(path).not_to include('completed')
+      end
+
+      it 'clears status for Draft + Active' do
+        path = helper.goal_status_quick_filter_path(company, :all)
+        expect(path).not_to include('status')
+        expect(path).to include('owner_id=my_relevant_goals')
+      end
+
+      it 'targets bulk edit when base is bulk_edit' do
+        path = helper.goal_status_quick_filter_path(company, :draft, base: :bulk_edit)
+        expect(path).to include('/goals/bulk_edit')
+        expect(path).to include('status')
+        expect(path).to include('draft')
+      end
+    end
+  end
 end
 

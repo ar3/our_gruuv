@@ -21,7 +21,7 @@ module Slack
       slack_service = SlackService.new(organization)
       dm_result = slack_service.post_dm(
         user_id: user_id,
-        text: "✅ Check-in saved for goal: #{goal.title}\nView it here: #{goal_url}"
+        text: "✅ Confidence check saved for goal: #{goal.title}\nView it here: #{goal_url}"
       )
       
       unless dm_result[:success]

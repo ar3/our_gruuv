@@ -1,0 +1,20 @@
+- selection = goal_status_quick_filter_selection(local_assigns[:filters] || @current_filters)
+- enabled = selection != :custom
+- base = local_assigns.fetch(:base, :index)
+- options = [[:draft, "Only Draft"], [:active, "Only Active"], [:all, "Draft + Active"]]
+- customize_params = params.except(:controller, :action, :page).permit!.to_h
+.goal-status-quick-filter{class: local_assigns[:wrapper_class]}
+  - if enabled
+    .btn-group.btn-group-sm{role: "group", "aria-label": "Goal status filter"}
+      - options.each do |key, label|
+        - active = selection == key
+        = link_to label, goal_status_quick_filter_path(@organization, key, base: base), class: "btn #{active ? 'btn-primary' : 'btn-outline-secondary'}", "aria-current": (active ? "true" : nil)
+  - else
+    %span.d-inline-block{"data-bs-toggle" => "tooltip", "data-bs-title" => GoalsHelper::STATUS_QUICK_FILTER_CUSTOM_TOOLTIP}
+      .btn-group.btn-group-sm{role: "group", "aria-label": "Goal status filter"}
+        - options.each do |_key, label|
+          %button.btn.btn-outline-secondary.disabled{type: "button", disabled: true}= label
+  - unless local_assigns[:hide_customize_hint]
+    %small.text-muted.d-block.mt-1
+      Same status filter can be set in
+      = link_to "Customize View", customize_view_organization_goals_path(@organization, customize_params), class: "link-secondary"

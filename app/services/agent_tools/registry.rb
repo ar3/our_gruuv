@@ -43,7 +43,7 @@ module AgentTools
         properties: {
           needing_check_in: {
             type: "boolean",
-            description: "If true, only goals needing a current-week confidence check-in (AND with other filters)"
+            description: "If true, only goals needing a current-week confidence check (AND with other filters)"
           },
           owned_by_me: {
             type: "boolean",

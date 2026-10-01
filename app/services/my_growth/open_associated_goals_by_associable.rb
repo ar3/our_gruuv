@@ -2,7 +2,7 @@
 
 module MyGrowth
   # Open (incomplete, unarchived) goals owned by a teammate and associated to Assignments or Abilities,
-  # plus each goal's latest confidence check-in for catalog-card footers.
+  # plus each goal's latest confidence check for catalog-card footers.
   # Pass active_only: true to restrict to started (active) goals — used by Missing Goals pills.
   class OpenAssociatedGoalsByAssociable
     def self.call(teammate:, associable_type:, associable_ids:, active_only: false)

@@ -75,10 +75,10 @@ class GoalsChartSeries
     series = [
       { name: 'Started that week (on track)', data: started_on_track_data },
       { name: 'Started that week (overdue)', data: started_overdue_data },
-      { name: 'Check-in that week — on track', data: check_in_on_track_data },
-      { name: 'Check-in that week — overdue', data: check_in_overdue_data },
-      { name: 'Ongoing, no check-in — on track', data: ongoing_on_track_data },
-      { name: 'Ongoing, no check-in — overdue', data: ongoing_overdue_data },
+      { name: 'Confidence check that week — on track', data: check_in_on_track_data },
+      { name: 'Confidence check that week — overdue', data: check_in_overdue_data },
+      { name: 'Ongoing, no confidence check — on track', data: ongoing_on_track_data },
+      { name: 'Ongoing, no confidence check — overdue', data: ongoing_overdue_data },
       { name: 'Completed that week', data: completed_data }
     ]
     { categories: categories, series: series }
@@ -277,8 +277,8 @@ class GoalsChartSeries
     end
 
     series = [
-      { name: 'Goals with no check-in that week', data: no_check_in_data },
-      { name: 'Goals with at least one check-in that week', data: with_check_in_data }
+      { name: 'Goals with no confidence check that week', data: no_check_in_data },
+      { name: 'Goals with at least one confidence check that week', data: with_check_in_data }
     ]
     { categories: categories, series: series }
   end

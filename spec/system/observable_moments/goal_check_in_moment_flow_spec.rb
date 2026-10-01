@@ -41,7 +41,7 @@ RSpec.describe 'Goal Check-In Observable Moment Flow', type: :system do
       # Visit dashboard — Observable Moments details stay collapsed by default
       visit organization_get_shit_done_path(company)
       expect(page).to have_content('1 observable moment ready to celebrate')
-      expect(page).to have_css('#observableMomentsSection', text: 'Goal Check-In', visible: :all)
+      expect(page).to have_css('#observableMomentsSection', text: 'Confidence Check', visible: :all)
     end
     
     it 'does not create moment when confidence changed by only 15 points' do

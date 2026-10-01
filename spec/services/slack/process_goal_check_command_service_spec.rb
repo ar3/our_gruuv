@@ -39,7 +39,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
       it 'returns error message with goals URL' do
         result = service.call
         expect(result.ok?).to be false
-        expect(result.error).to include("don't have any goals available for check-in")
+        expect(result.error).to include("don't have any goals available for a confidence check")
         expect(result.error).to include("/goals")
       end
     end
@@ -77,7 +77,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
       it 'opens modal successfully' do
         result = service.call
         expect(result.ok?).to be true
-        expect(result.value).to include("Opening goal check-in form")
+        expect(result.value).to include("Opening confidence check form")
       end
 
       it 'includes both goals in the modal' do
@@ -118,7 +118,7 @@ RSpec.describe Slack::ProcessGoalCheckCommandService, type: :service do
         it 'returns error message' do
           result = service.call
           expect(result.ok?).to be false
-          expect(result.error).to include("Failed to open check-in form")
+          expect(result.error).to include("Failed to open confidence check form")
         end
       end
     end

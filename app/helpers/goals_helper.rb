@@ -3,6 +3,44 @@ module GoalsHelper
   include AssociableGoalsHelper
   include GroupAvatarHelper
 
+  DRAFT_AND_ACTIVE_STATUS_QUICK_FILTER = %w[draft active].freeze
+  STATUS_QUICK_FILTER_CUSTOM_TOOLTIP =
+    "Status must be set in Customize View".freeze
+
+  # :all / :draft / :active when filters match a neat preset; :custom otherwise.
+  def goal_status_quick_filter_selection(filters)
+    statuses = Array(filters && filters[:status]).map(&:to_s).reject(&:blank?).uniq.sort
+    return :all if statuses.empty? || statuses == DRAFT_AND_ACTIVE_STATUS_QUICK_FILTER.sort
+    return :draft if statuses == %w[draft]
+    return :active if statuses == %w[active]
+
+    :custom
+  end
+
+  def goal_status_quick_filter_path(organization, selection, base: :index)
+    path_params = params.except(
+      :controller, :action, :page, :status, :show_completed, :show_deleted, :organization_id, :id
+    ).permit!.to_h
+
+    case selection.to_sym
+    when :draft
+      path_params[:status] = %w[draft]
+    when :active
+      path_params[:status] = %w[active]
+    when :all
+      path_params.delete("status")
+      path_params.delete(:status)
+    else
+      raise ArgumentError, "Unknown status quick filter selection: #{selection}"
+    end
+
+    if base.to_sym == :bulk_edit
+      organization_goals_bulk_edit_path(organization, path_params)
+    else
+      organization_goals_path(organization, path_params)
+    end
+  end
+
   def goal_badge_class(goal_type)
     case goal_type
     when 'inspirational_objective'

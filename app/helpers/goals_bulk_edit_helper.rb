@@ -27,7 +27,7 @@ module GoalsBulkEditHelper
     },
     na: {
       title: "Started — track color not available",
-      body: "Blue means the goal is started, but On Track / Off Track color is not available yet (needs a due date and a confidence check-in)."
+      body: "Blue means the goal is started, but On Track / Off Track color is not available yet (needs a due date and a confidence check)."
     }
   }.freeze
 
@@ -51,14 +51,14 @@ module GoalsBulkEditHelper
     status = goal.progress_status
     title = PROGRESS_STATUS_COPY.fetch(status.to_sym)[:title]
     eh = EngagementHealth::GoalConfidence.status_for_goal(goal)
-    return "#{title} · Stale check-in" if EngagementHealth::GoalConfidence.stale?(eh)
+    return "#{title} · Stale confidence check" if EngagementHealth::GoalConfidence.stale?(eh)
 
     title
   end
 
   def goals_bulk_edit_border_popover_content(goal)
     if goal.started_at.blank?
-      return "Grey means this goal is still a draft (not started). Setting confidence creates a check-in and starts the goal."
+      return "Grey means this goal is still a draft (not started). Setting confidence creates a confidence check and starts the goal."
     end
 
     status = goal.progress_status

@@ -13,7 +13,7 @@ RSpec.describe GoalsChartSeries do
       names = data[:series].map { |s| s[:name] }
       expect(names).to include('Started that week (on track)')
       expect(names).to include('Completed that week')
-      expect(names).to include('Ongoing, no check-in — overdue')
+      expect(names).to include('Ongoing, no confidence check — overdue')
     end
   end
 
@@ -23,7 +23,7 @@ RSpec.describe GoalsChartSeries do
       scope = GoalsChartSeries.goals_base_scope(company).none
       data = described_class.owner_check_in_series(range, scope)
       expect(data[:series].size).to eq(2)
-      expect(data[:series].first[:name]).to include('no check-in')
+      expect(data[:series].first[:name]).to include('no confidence check')
     end
   end
 

@@ -59,7 +59,7 @@ class ObservableMoment < ApplicationRecord
     when 'goal_check_in'
       goal_check_in = momentable
       goal = goal_check_in&.goal
-      "Goal Check-In: #{goal&.title || 'Unknown Goal'}"
+      "Confidence Check: #{goal&.title || 'Unknown Goal'}"
     when 'birthday'
       person = associated_person
       "Birthday: #{person&.display_name || 'Unknown'}"

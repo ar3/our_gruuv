@@ -14,7 +14,7 @@
       - if all_goals.any?
         %strong= pluralize(all_goals.count, 'active goal')
         - if goals_needing_check_in > 0
-          , #{pluralize(goals_needing_check_in, 'needs check-in')}
+          , #{pluralize(goals_needing_check_in, 'needs confidence check')}
       - else
         No active goals found.
 
@@ -51,14 +51,14 @@
                       %br
                       %small.text-muted= latest_check_in.check_in_week_start.strftime('%b %d, %Y')
                     - else
-                      %span.text-muted No check-in yet
+                      %span.text-muted No confidence check yet
                   %td
                     - if needs_check_in
-                      %span.badge.bg-warning.text-dark New check-in needed
+                      %span.badge.bg-warning.text-dark New confidence check needed
                     - elsif latest_check_in
                       %span.badge.bg-success Up to date
                     - else
-                      %span.badge.bg-secondary No check-in yet
+                      %span.badge.bg-secondary No confidence check yet
       - else
         %p.text-muted.mb-3 No active goals found.
       

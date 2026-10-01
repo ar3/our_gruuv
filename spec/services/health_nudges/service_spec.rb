@@ -67,13 +67,13 @@ RSpec.describe HealthNudges::Service do
       teammate_thread = Notification.find(posted_ids[1])
       why_thread = Notification.find(posted_ids.last)
       expect(main.main_thread_id).to be_nil
-      expect(main.fallback_text).not_to include("Fresh Goal Confidence check-ins")
+      expect(main.fallback_text).not_to include("Fresh Goal Confidence checks")
       expect(teammate_thread.main_thread).to eq(main)
       expect(teammate_thread.fallback_text).to include(employee.person.casual_name)
       expect(teammate_thread.rich_message.first["type"] || teammate_thread.rich_message.first[:type]).to eq("section")
       expect(why_thread.main_thread).to eq(main)
       expect(why_thread.metadata["thread_kind"]).to eq("importance")
-      expect(why_thread.fallback_text).to include("Fresh Goal Confidence check-ins")
+      expect(why_thread.fallback_text).to include("Fresh Goal Confidence checks")
     end
 
     it "creates a health_nudge notification for check-ins health" do

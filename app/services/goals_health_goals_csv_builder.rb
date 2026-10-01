@@ -34,8 +34,8 @@ class GoalsHealthGoalsCsvBuilder
       "Goal Type",
       "Started At",
       "Completed At",
-      "Latest Check-in Week Start",
-      "Latest Check-in Confidence %"
+      "Latest Confidence Check Week Start",
+      "Latest Confidence %"
     ]
   end
 

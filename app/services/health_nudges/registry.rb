@@ -24,10 +24,10 @@ module HealthNudges
         nudge_path_name: :organization_goals_health_nudge_path,
         dashboard_url_name: :organization_goals_health_url,
         dashboard_link_label: "Open Goals Health for your team",
-        title: "Goals Health check-in",
+        title: "Goals Health",
         greeting: "a quick look at Goal Confidence for your direct reports",
         metric_label: "Goal Confidence",
-        importance: "Fresh Goal Confidence check-ins keep goals honest: they surface and encourage " \
+        importance: "Fresh Goal Confidence checks keep goals honest: they surface and encourage " \
                     "the most important aspect of goals... they encourage deliberate and continuous learning. " \
                     "By reflecting on goals and why your confidence in hitting the goal changes week over week, " \
                     "you can't help but learn along the way. This will help you adjust, better communicate, " \

@@ -7,7 +7,7 @@ class GoalCheckIn < ApplicationRecord
   # Validations
   validates :confidence_percentage, inclusion: { in: 0..100 }, allow_nil: true
   validates :check_in_week_start, presence: true
-  validates :goal_id, uniqueness: { scope: :check_in_week_start, message: "already has a check-in for this week" }
+  validates :goal_id, uniqueness: { scope: :check_in_week_start, message: "already has a confidence check for this week" }
   validate :check_in_week_start_must_be_monday
   validate :at_least_one_field_present
   

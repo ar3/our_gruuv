@@ -42,7 +42,7 @@
                       %br
                       %small.text-muted= last_check_in.check_in_week_start.strftime('%b %d, %Y')
                     - else
-                      %span.text-muted No check-in yet
+                      %span.text-muted No confidence check yet
                   %td
                     = link_to "Check In", 
                               organization_goal_path(organization, goal, anchor: 'check-in'),

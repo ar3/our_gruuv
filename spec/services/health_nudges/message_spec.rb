@@ -22,12 +22,12 @@ RSpec.describe HealthNudges::Message do
       spotlight_stats: stats
     )
 
-    expect(message.body_mrkdwn).to include("Goals Health check-in")
+    expect(message.body_mrkdwn).to include("Goals Health")
     expect(message.body_mrkdwn).to include("Goal Confidence")
-    expect(message.body_mrkdwn).not_to include("Fresh Goal Confidence check-ins")
+    expect(message.body_mrkdwn).not_to include("Fresh Goal Confidence checks")
     expect(message.body_mrkdwn).not_to include("Why this matters is in the thread")
     expect(message.include_importance_thread?).to be true
-    expect(message.importance_mrkdwn).to include("Fresh Goal Confidence check-ins")
+    expect(message.importance_mrkdwn).to include("Fresh Goal Confidence checks")
     expect(message.dashboard_url).to start_with("http")
     expect(message.dashboard_url).to include("/goals_health")
     expect(message.body_mrkdwn).to include("<#{message.dashboard_url}|")

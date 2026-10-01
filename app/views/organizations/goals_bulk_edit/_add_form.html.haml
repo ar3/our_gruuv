@@ -1,10 +1,11 @@
--# locals: parent_goal (nil for top-level), owner_value, owner_options
+-# locals: parent_goal (nil for top-level), owner_value, filter_owner_value, owner_options (grouped [label, options] pairs)
 - form_id = parent_goal ? "bulk-edit-add-child-#{parent_goal.id}" : "bulk-edit-add-top"
+- filter_owner_value = local_assigns[:filter_owner_value].presence || owner_value
 = form_with url: organization_goals_bulk_edit_create_path(@organization),
             method: :post,
             local: true,
             html: { id: form_id, class: "goals-sheet-add-form" } do |f|
-  = hidden_field_tag :owner_id, owner_value
+  = hidden_field_tag :owner_id, filter_owner_value
   - if parent_goal
     = hidden_field_tag :parent_id, parent_goal.id
   .row.g-2.align-items-end
@@ -14,7 +15,7 @@
     .col-md-2
       %label.form-label.small.mb-0{for: "#{form_id}-owner"} Owner
       = select_tag "goal[owner_id]",
-                   options_for_select(owner_options, owner_value),
+                   grouped_options_for_select(owner_options, owner_value),
                    class: "form-select form-select-sm",
                    id: "#{form_id}-owner",
                    required: true

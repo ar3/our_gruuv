@@ -25,7 +25,7 @@ module Slack
       if goals.empty?
         url_options = Rails.application.routes.default_url_options || {}
         goals_url = Rails.application.routes.url_helpers.organization_goals_url(@organization, url_options)
-        return Result.err("You don't have any goals available for check-in. Create a goal first in OurGruuv: #{goals_url}")
+        return Result.err("You don't have any goals available for a confidence check. Create a goal first in OurGruuv: #{goals_url}")
       end
       
       # 3. Build goal options for the modal dropdown
@@ -53,11 +53,11 @@ module Slack
         callback_id: 'goal_check_in',
         title: {
           type: 'plain_text',
-          text: 'Goal Check-In'
+          text: 'Confidence Check'
         },
         submit: {
           type: 'plain_text',
-          text: 'Submit Check-In'
+          text: 'Submit Confidence Check'
         },
         close: {
           type: 'plain_text',
@@ -69,7 +69,7 @@ module Slack
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: "Select a goal to check in on for this week (#{Date.current.beginning_of_week(:monday).strftime('%b %d')} - #{Date.current.end_of_week(:sunday).strftime('%b %d, %Y')}):"
+              text: "Select a goal to record a confidence check for this week (#{Date.current.beginning_of_week(:monday).strftime('%b %d')} - #{Date.current.end_of_week(:sunday).strftime('%b %d, %Y')}):"
             }
           },
           {
@@ -140,9 +140,9 @@ module Slack
       result = @slack_service.open_modal(@trigger_id, view)
       
       if result[:success]
-        Result.ok("Opening goal check-in form...")
+        Result.ok("Opening confidence check form...")
       else
-        Result.err("Failed to open check-in form: #{result[:error]}")
+        Result.err("Failed to open confidence check form: #{result[:error]}")
       end
     rescue => e
       error_message = "Unexpected error processing goal-check command: #{e.message}"

@@ -131,7 +131,7 @@ module Organizations::CompanyTeammatesHelper
           ),
           internal_teammate_views_entry(
             title: "Grow by Goals",
-            description: "Goal-centric growth view with check-ins and progress.",
+            description: "Goal-centric growth view with confidence checks and progress.",
             path: my_growth_goals_organization_company_teammate_path(organization, teammate),
             enabled: policy(teammate).complete_picture?,
             tooltip: context[:hierarchy_complete_picture]
@@ -406,10 +406,10 @@ module Organizations::CompanyTeammatesHelper
             content_tag(:li, class: "mb-0") do
               ("If we see the phrase ").html_safe +
                 content_tag(:strong, "“this week”") +
-                " for goal check-ins ".html_safe +
-                ("-- then we need to use the same Monday–Sunday window as weekly goal check-ins (the week whose ").html_safe +
-                content_tag(:strong, "check-in week start") +
-                " is that Monday, per the app’s goal check-in week start logic).".html_safe
+                " for confidence checks ".html_safe +
+                ("-- then we need to use the same Monday–Sunday window as weekly confidence checks (the week whose ").html_safe +
+                content_tag(:strong, "confidence check week start") +
+                " is that Monday, per the app’s confidence check week start logic).".html_safe
             end
           ]
         )

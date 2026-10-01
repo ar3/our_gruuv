@@ -34,11 +34,11 @@
            activities: @goals_by_those_i_serve,
            title: 'Goals updated by those I serve',
            icon: 'bi-bullseye',
-           description: 'Goal changes and new confidence check-ins from your direct reports',
+           description: 'Goal changes and new confidence checks from your direct reports',
            collapse_id: 'goalsByThoseIServeSection',
            summary: "#{pluralize(@goals_by_those_i_serve.size, 'goal')} updated by those you serve"
 - else
-  - quiet_categories << { title: 'Goals updated by those I serve', icon: 'bi-bullseye', description: 'Goal changes and new confidence check-ins from your direct reports' }
+  - quiet_categories << { title: 'Goals updated by those I serve', icon: 'bi-bullseye', description: 'Goal changes and new confidence checks from your direct reports' }
 
 - if @goals_on_my_teams.any?
   = render 'organizations/get_shit_done/interesting_goals_section',

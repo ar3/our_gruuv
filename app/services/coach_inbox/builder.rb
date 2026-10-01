@@ -265,7 +265,7 @@ module CoachInbox
           teammate_id: teammate.id,
           person_name: person_name_for(teammate),
           title: goal.title,
-          subtitle: last ? "Last confidence week of #{last.check_in_week_start}" : "No confidence check-in yet",
+          subtitle: last ? "Last confidence week of #{last.check_in_week_start}" : "No confidence check yet",
           url: routes.organization_goal_path(organization, goal)
         )
       end

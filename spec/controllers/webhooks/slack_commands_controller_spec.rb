@@ -170,21 +170,21 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
 
           before do
             allow(Slack::ProcessGoalCheckCommandService).to receive(:call).and_return(
-              Result.ok("Opening goal check-in form...")
+              Result.ok("Opening confidence check form...")
             )
           end
 
           it 'opens goal check-in modal' do
             post :create, params: build_request_params(text).first.merge(trigger_id: trigger_id)
             expect(response).to have_http_status(:ok)
-            expect(JSON.parse(response.body)['text']).to include('Opening goal check-in form')
+            expect(JSON.parse(response.body)['text']).to include('Opening confidence check form')
           end
         end
 
         context 'when user has no goals' do
           before do
             allow(Slack::ProcessGoalCheckCommandService).to receive(:call).and_return(
-              Result.err("You don't have any goals available for check-in. Create a goal first in OurGruuv.")
+              Result.err("You don't have any goals available for a confidence check. Create a goal first in OurGruuv.")
             )
           end
 

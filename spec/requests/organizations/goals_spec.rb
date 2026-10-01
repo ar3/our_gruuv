@@ -1830,9 +1830,26 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include(select_create_organization_goals_path(organization))
       expect(response.body).to include(organization_goals_bulk_edit_path(organization))
       expect(response.body).to include("Bulk Edit Goals")
+      expect(response.body).to include("Only Draft")
+      expect(response.body).to include("Only Active")
+      expect(response.body).to include("Draft + Active")
       expect(response.body).not_to include("Add goals for")
       expect(response.body).not_to include("Create single goal")
       expect(response.body).not_to include("Bulk create goals")
+    end
+
+    it 'keeps draft parent lineage when filtering to active only' do
+      parent = create(:goal, :draft, creator: teammate, owner: teammate, title: 'Draft Index Parent')
+      child = create(:goal, creator: teammate, owner: teammate, title: 'Active Index Child', started_at: 1.week.ago)
+      create(:goal_link, parent: parent, child: child)
+      other_draft = create(:goal, :draft, creator: teammate, owner: teammate, title: 'Unrelated Index Draft')
+
+      get organization_goals_path(organization, status: ['active'])
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Active Index Child')
+      expect(response.body).to include('Draft Index Parent')
+      expect(response.body).not_to include('Unrelated Index Draft')
     end
 
     it 'loads the index for a specific CompanyTeammate and shows only that teammate\'s goals' do

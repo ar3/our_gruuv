@@ -163,7 +163,7 @@ module OrganizationSitemap
               ctx.organization_goals_path(ctx.organization, owner_id: "CompanyTeammate_#{ctx.teammate.id}")
             },
             policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
-            goal: "Track goals you own, including confidence check-ins and progress.",
+            goal: "Track goals you own, including confidence checks and progress.",
             synonyms: %w[my goals goals I own personal goals]
           ),
           page(
@@ -289,7 +289,7 @@ module OrganizationSitemap
               ctx.organization_goals_path(ctx.organization, owner_id: "CompanyTeammate_#{ctx.teammate.id}")
             },
             policy: ->(ctx) { ctx.policy(ctx.company).view_goals? },
-            goal: "Track goals you own, including confidence check-ins and progress.",
+            goal: "Track goals you own, including confidence checks and progress.",
             synonyms: %w[my personal goals goals I own personal goals]
           ),
           page(
@@ -475,7 +475,7 @@ module OrganizationSitemap
             synonyms: %w[expectations compliance jd sign job description signature true jd hygiene beta]),
           insights_page(:goals_health, "Goals Health", "bi-heart-pulse", :organization_goals_health_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).goals_health? },
-            goal: "Monitor goal check-in health and stale goals across the organization.",
+            goal: "Monitor goal confidence check health and stale goals across the organization.",
             synonyms: %w[goals health goal health stale goals]),
           insights_page(:teams_health, "Teams Health", "bi-heart-pulse", :organization_teams_health_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).teams_health? },
