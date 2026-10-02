@@ -201,12 +201,20 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       expect(response.body).to include('view=wall')
     end
 
-    it 'shows teammate lens CTA to the 1-by-1 ability page and omits Associated Goals on catalog show' do
+    it 'shows Ability + teammate lens button in Actions and omits Associated Goals on catalog show' do
       get organization_ability_path(organization, ability)
       lens_href = organization_teammate_ability_path(organization, teammate, ability)
       expect(response.body).to include(lens_href)
-      expect(response.body).to include('btn-outline-secondary btn-sm w-100')
+      expect(response.body).to include('ability-actions')
+      expect(response.body).to include("#{ability.name} + #{person.casual_name}")
       expect(response.body).not_to include('Associated Goals')
+    end
+
+    it 'shows manage assignment milestones in the assignments-requiring card' do
+      get organization_ability_path(organization, ability)
+      expect(response.body).to include('assignments-requiring-this-ability')
+      expect(response.body).to include(organization_ability_assignment_milestones_path(organization, ability))
+      expect(response.body).to include('Manage assignment milestones')
     end
 
     it 'renders description and milestone definitions as markdown HTML' do
@@ -215,7 +223,7 @@ RSpec.describe 'Organizations::Abilities', type: :request do
         milestone_2_description: 'Level two *emphasis*.'
       )
       get organization_ability_path(organization, ability)
-      expect(response.body).to include('class="markdown-content"')
+      expect(response.body).to include('markdown-content')
       expect(response.body).to match(%r{<strong>Bold</strong>})
       expect(response.body).to match(%r{<em>emphasis</em>})
       expect(response.body).to include('Milestone 2 (Advanced)')
@@ -229,6 +237,39 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       expect(response.body).to include('/paper_trail')
       expect(response.body).to include('item_type=Ability')
       expect(response.body).to include("item_id=#{ability.id}")
+    end
+
+    it 'renders three-band layout with uncarded essentials and empty first-rating alignment' do
+      get organization_ability_path(organization, ability)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('abilityShowPageHelp')
+      expect(response.body).to include("#{ability.name} - Connected")
+      expect(response.body).to include("#{ability.name} continuously more clear")
+      expect(response.body).to include('Milestone descriptions')
+      expect(response.body).not_to include('id="ability-details"')
+      expect(response.body).to include('Initial milestone rating alignment')
+      expect(response.body).to include('No both-sided first ratings')
+      expect(response.body).to include('anonymous markers')
+      expect(response.body).to include('Proposed edits')
+    end
+
+    it 'renders anonymous dots for both-sided first ratings without names' do
+      observed = create(:teammate, :unassigned_employee, organization: organization, person: create(:person, first_name: 'Secret', last_name: 'Person'))
+      calibration = create(:ability_milestone_calibration, company_teammate: observed)
+      create(
+        :ability_milestone_calibration_item,
+        ability_milestone_calibration: calibration,
+        ability: ability,
+        employee_first_rating: 2,
+        manager_first_rating: 3
+      )
+
+      get organization_ability_path(organization, ability)
+
+      expect(response.body).to include('talent-density-viz-dot')
+      expect(response.body).to include('Anonymous calibration pair')
+      expect(response.body).to include('Emp+mgr differed (no final yet)')
+      expect(response.body).not_to include('Secret')
     end
   end
 

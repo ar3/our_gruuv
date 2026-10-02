@@ -402,6 +402,18 @@ Rails.application.routes.draw do
       resource :assignment_milestones, only: [:show, :update], module: :abilities
       resource :maintainers, only: [:show, :update], module: :abilities
       resources :goal_associations, module: :abilities, only: [:create, :destroy]
+      resources :maap_proposals, module: :abilities do
+        member do
+          post :submit
+          post :apply
+          post :reject
+          get :markdown
+        end
+        collection do
+          post :upload_markdown
+          get :markdown_template
+        end
+      end
     end
     
     # Prompt Templates management

@@ -1,0 +1,31 @@
+-# Locals: organization, ability
+- organization = local_assigns.fetch(:organization)
+- ability = local_assigns.fetch(:ability)
+- can_suggest = policy(MaapProposal).create?
+- can_edit = policy(ability).update?
+
+- if can_suggest || can_edit
+  .dropdown
+    %button.btn.btn-primary.dropdown-toggle{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Edit or suggest edit", title: "Edit or suggest edit"}
+      %i.bi.bi-pencil
+    %ul.dropdown-menu
+      %li
+        - if can_suggest
+          = link_to new_organization_ability_maap_proposal_path(organization, ability), class: "dropdown-item" do
+            %i.bi.bi-lightbulb.me-2
+            Suggest Edit
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-lightbulb.me-2
+            Suggest Edit
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be in the organization to suggest an edit"}
+      %li
+        - if can_edit
+          = link_to edit_organization_ability_path(organization, ability), class: "dropdown-item" do
+            %i.bi.bi-pencil.me-2
+            Edit
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-pencil.me-2
+            Edit
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit abilities"}

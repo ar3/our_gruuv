@@ -1,0 +1,8 @@
+- point = local_assigns.fetch(:point)
+- tone = ability_first_rating_alignment_marker_tone(point.agreement)
+- popover = ability_first_rating_alignment_marker_popover(point)
+- popover_data = { bs_toggle: "popover", bs_trigger: "hover focus", bs_html: "true", bs_placement: "top", bs_custom_class: "talent-density-viz-popover text-start", bs_content: popover }
+
+.d-inline-flex.align-items-center.gap-0
+  %span.talent-density-viz-dot.d-inline-block.rounded-circle.border{class: "border-#{tone} bg-#{tone}", style: "width: 1rem; height: 1rem;", tabindex: 0, role: "img", "aria-label" => "Anonymous calibration pair", data: popover_data}
+  = ability_first_rating_alignment_arrow_icon(point)

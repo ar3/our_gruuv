@@ -117,6 +117,8 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       .map { |records| records.max_by(&:milestone_level) }
       .sort_by { |m| m.company_teammate.person.casual_name.to_s.downcase }
 
+    @first_rating_alignment = Abilities::FirstRatingAlignmentQuery.call(ability: @ability)
+
     assign_public_kudos_for_rateable_card!(
       organization: @organization,
       rateable_type: "Ability",

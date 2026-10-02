@@ -16,7 +16,8 @@ class Ability < ApplicationRecord
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
 has_many :comments, as: :commentable, dependent: :destroy
-has_many :og_consultations, as: :subject, dependent: :destroy
+  has_many :og_consultations, as: :subject, dependent: :destroy
+  has_many :maap_proposals, as: :proposable, dependent: :destroy
 
 def latest_ability_clarity_consultation
   og_consultations.for_kind(OgConsultation::KIND_ABILITY_CLARITY).latest_first.first

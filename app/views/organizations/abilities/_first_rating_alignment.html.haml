@@ -1,0 +1,36 @@
+- query = local_assigns.fetch(:query)
+- organization = local_assigns.fetch(:organization)
+- columns = Abilities::FirstRatingAlignmentQuery::AGREEMENT_COLUMNS
+- labels = Abilities::FirstRatingAlignmentQuery::COLUMN_LABELS
+
+.card.mb-4{ role: "region", "aria-labelledby": "ability-first-rating-alignment" }
+  .card-header
+    %h5.mb-0{ id: "ability-first-rating-alignment" }
+      %i.bi.bi-diagram-3.me-2
+      Initial milestone rating alignment
+  .card-body
+    %p.text-muted.small.mb-3
+      Where employee and manager
+      %strong first
+      proposals for this Ability lined up—shown as anonymous markers (no names). An arrow appears only when a final awarded level exists.
+    - if query.empty?
+      .alert.alert-info.mb-0{ role: "status" }
+        %i.bi.bi-info-circle.me-2
+        No both-sided first ratings for this Ability yet. Initial proposals are collected during one-time ability milestone calibration on each teammate.
+        = link_to "Celebrate milestones", celebrate_milestones_organization_path(organization), class: "alert-link fw-semibold ms-1"
+    - else
+      .table-responsive
+        %table.table.table-bordered.mb-0.talent-density-viz-grid
+          %thead
+            %tr
+              %th.align-middle.text-muted.small Ability ↓ / Agreement →
+              - columns.each do |column|
+                %th.text-center.small{style: "min-width: 7.5rem;"}= labels[column]
+          %tbody
+            %tr
+              %th.align-middle.small{style: "min-width: 10rem;"}= @ability.name
+              - columns.each do |column|
+                %td.align-top{style: "min-width: 7.5rem; min-height: 4rem;"}
+                  .d-flex.flex-wrap.gap-1.align-items-start
+                    - query.cell(column).each do |point|
+                      = render "organizations/abilities/first_rating_alignment_marker", point: point

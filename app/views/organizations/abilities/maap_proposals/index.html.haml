@@ -1,0 +1,77 @@
+- content_for :title, "#{all_proposed_ability_edits_label(@ability)} · #{@ability.name}"
+- page_help_id = "abilityMaapProposalsPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span= all_proposed_ability_edits_label(@ability)
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Everyone can help keep MAAP relevant. Click for how proposals work."
+      - if policy(MaapProposal).create?
+        = link_to new_organization_ability_maap_proposal_path(@organization, @ability),
+                  class: "btn btn-primary",
+                  title: "Propose edit",
+                  "aria-label" => "Propose edit",
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+          %i.bi.bi-pencil
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities", url: organization_abilities_path(@organization) }, { label: @ability.name, url: organization_ability_path(@organization, @ability) }, { label: all_proposed_ability_edits_label(@ability), url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/abilities/maap_proposals/page_help"
+
+.row.justify-content-center
+  .col-lg-10
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-4
+      %p.text-muted.mb-0
+        Propose apply-ready edits to this ability. Editors with MAAP update permission can apply or reject submitted proposals.
+      .d-flex.flex-wrap.gap-2
+        - if policy(MaapProposal).upload_markdown?
+          = link_to markdown_template_organization_ability_maap_proposals_path(@organization, @ability), class: "btn btn-outline-secondary" do
+            %i.bi.bi-download.me-1
+            Download markdown template
+          %button.btn.btn-outline-secondary{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#uploadAbilityMarkdownCollapse"}
+            %i.bi.bi-upload.me-1
+            Upload markdown
+
+    - if policy(MaapProposal).upload_markdown?
+      #uploadAbilityMarkdownCollapse.collapse.mb-4
+        .card
+          .card-body
+            = form_with url: upload_markdown_organization_ability_maap_proposals_path(@organization, @ability), method: :post, multipart: true, local: true do |f|
+              .mb-3
+                = label_tag :markdown_file, "Markdown file", class: "form-label"
+                = file_field_tag :markdown_file, accept: ".md,text/markdown,text/plain", class: "form-control"
+              .mb-3
+                = label_tag :markdown_body, "Or paste markdown", class: "form-label"
+                = text_area_tag :markdown_body, nil, rows: 8, class: "form-control font-monospace"
+              = submit_tag "Create draft from markdown", class: "btn btn-primary"
+
+    = form_with url: organization_ability_maap_proposals_path(@organization, @ability), method: :get, local: true, class: "mb-3" do
+      .d-flex.flex-wrap.align-items-center.gap-3
+        %span.small.text-muted.fw-semibold Status
+        - @filterable_statuses.each do |status|
+          .form-check.form-check-inline.mb-0
+            = check_box_tag "statuses[]",
+                            status,
+                            @selected_statuses.include?(status),
+                            id: "ability_proposal_status_#{status}",
+                            class: "form-check-input",
+                            onchange: "this.form.requestSubmit()"
+            = label_tag "ability_proposal_status_#{status}", status.titleize, class: "form-check-label"
+
+    - if @proposals.any?
+      .list-group
+        - @proposals.each do |proposal|
+          = link_to organization_ability_maap_proposal_path(@organization, @ability, proposal), class: "list-group-item list-group-item-action" do
+            .d-flex.justify-content-between.align-items-start.gap-3
+              %div
+                %strong= proposal.proposed_title.presence || @ability.name
+                .small.text-muted
+                  = proposal.proposer.person.display_name
+                  · created #{l(proposal.created_at, format: :short)}
+              %span.badge{class: proposal_status_badge_class(proposal.status)}= proposal.status
+    - else
+      %p.text-muted.mb-0 No proposals match these filters.

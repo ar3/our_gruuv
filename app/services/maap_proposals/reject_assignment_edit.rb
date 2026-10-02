@@ -19,6 +19,8 @@ module MaapProposals
         AssignmentPayload.empty.to_h
       elsif @proposal.proposable_type == "Assignment" && @proposal.proposable
         AssignmentPayload.from_assignment(@proposal.proposable).to_h
+      elsif @proposal.proposable_type == "Ability" && @proposal.proposable
+        AbilityPayload.from_ability(@proposal.proposable).to_h
       end
 
       if @proposal.update(

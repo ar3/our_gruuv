@@ -1,18 +1,26 @@
 - content_for :title, @ability.name
+- page_help_id = "abilityShowPageHelp"
 
 - content_for :header do
-  = render 'shared/header', 
-    header_name: content_tag(:i, '', class: 'bi bi-lightning me-2') + @ability.name,
-    header_quick_action_url: edit_organization_ability_path(@organization, @ability),
-    header_quick_action_content: content_tag(:i, '', class: 'bi bi-pencil me-2'),
-    header_quick_action_is_enabled: policy(@ability).update?,
-    header_quick_action_disabled_tooltip: "You need MAAP management permissions for this organization to edit abilities"
-      
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %i.bi.bi-lightning
+      %span= @ability.name
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Ability expectations and how to keep them fresh. Click for details."
+      = render "organizations/abilities/header_edit_dropdown",
+               organization: @organization,
+               ability: @ability
+
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities", url: organization_abilities_path(@organization) }, { label: @ability.name, url: nil }])
 
 - content_for :header_action do
   = render 'mode_switcher'
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/abilities/page_help_show"
 
 - if @ability.archived?
   .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
@@ -21,228 +29,233 @@
       Archived as of #{l(@ability.deleted_at, format: :long)}
     %p.mb-0 This ability is archived. It no longer appears in lists or selectors but remains viewable and its data (milestones, ratings, etc.) is preserved.
 
-.row
-  .col-md-8
-    .card.mb-4{ role: "region", "aria-labelledby": "ability-details" }
-      .card-header
-        %h5.mb-0{ id: "ability-details" }
-          %i.bi.bi-info-circle.me-2
-          Ability Details
-      .card-body
-        %dl.row
-          %dt.col-sm-3 Name:
-          %dd.col-sm-9= @ability.name
-          %dt.col-sm-3 Department:
-          %dd.col-sm-9
-            - if @ability.department
-              = link_to @ability.department.display_name, organization_department_path(@organization, @ability.department), class: "text-decoration-none"
-            - else
-              %em.text-muted Company-level
-          %dt.col-sm-3 Description:
-          %dd.col-sm-9
-            - if @ability.description.present?
-              .markdown-content= render_markdown(@ability.description)
-            - else
-              %em.text-muted No description provided
-
-    = render "shared/object_maintainers",
-      maintainable: @ability,
-      organization: @organization,
-      manage_path: organization_ability_maintainers_path(@organization, @ability)
-
-    .card.mb-4{ role: "region", "aria-labelledby": "milestone-descriptions" }
-      .card-header
-        %h5.mb-0{ id: "milestone-descriptions" }
-          %i.bi.bi-list-ol.me-2
-          Milestone Descriptions
-      .card-body
-        - (1..5).each do |level|
-          - description = @ability.send("milestone_#{level}_description")
-          - if description.present?
-            .mb-3
-              %h6.text-primary Milestone #{level} (#{milestone_level_display(level)})
-              .markdown-content.markdown-content--bordered= render_markdown(description)
-        - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
-          %em.text-muted No milestone descriptions provided
-
-  .col-md-4
-    - created_name, created_at = ability_audit_created_meta(@ability)
-    - updated_name, updated_at = ability_audit_last_updated_meta(@ability)
-    .card.mb-4
-      .card-header
-        %h6.mb-0
-          %i.bi.bi-star.me-2
-          Spotlight
-      .card-body
+.row.justify-content-center
+  .col-12
+    .row.g-4.mb-4.align-items-start
+      .col-lg-8
         .mb-3
-          .d-flex.justify-content-between
-            %span Version:
-            %strong= @ability.semantic_version
-
-        .mb-3
-          %h6.text-muted.small.mb-2 Interesting Tidbits
-          - if @ability.description.present?
-            %p.small
-              %i.bi.bi-check-circle.text-success.me-1
-              Has detailed description
+          %h6.text-muted Department
+          - if @ability.department
+            = link_to @ability.department.display_name, organization_department_path(@organization, @ability.department), class: "text-decoration-none"
           - else
-            %p.small
-              %i.bi.bi-exclamation-circle.text-warning.me-1
-              Missing description
-          
-          - milestone_count = (1..5).count { |level| @ability.send("milestone_#{level}_description").present? }
-          %p.small
-            %i.bi.bi-list-ol.text-info.me-1
-            #{milestone_count} of 5 milestones defined
-          
-          %p.small
-            = link_to organization_ability_path(@organization, @ability, anchor: 'assignments-requiring-this-ability'), class: 'text-decoration-underline text-body' do
-              - if @ability.is_required_by_assignments?
-                - ac = @ability.required_by_assignments_count
-                %i.bi.bi-clipboard-check.text-primary.me-1
-                Required by #{ac} #{'assignment'.pluralize(ac)}
-              - else
-                %i.bi.bi-clipboard.text-muted.me-1
-                Not required by any assignments
-          %p.small
-            = link_to organization_ability_path(@organization, @ability, anchor: 'positions-requiring-this-ability'), class: 'text-decoration-underline text-body' do
-              - if @ability.is_required_by_positions?
-                - pc = @ability.required_by_positions_count
-                %i.bi.bi-briefcase.text-primary.me-1
-                Required by #{pc} #{'position'.pluralize(pc)}
-              - else
-                %i.bi.bi-briefcase.text-muted.me-1
-                Not required by any positions
-          %p.small
-            = link_to organization_ability_path(@organization, @ability, anchor: 'teammate-milestones-for-this-ability'), class: 'text-decoration-underline text-body' do
-              - if @teammate_milestone_rows.any?
-                - tc = @teammate_milestone_rows.size
-                %i.bi.bi-people.text-success.me-1
-                - if tc == 1
-                  1 person has earned a milestone for this ability
-                - else
-                  #{tc} people have earned milestones for this ability
-              - else
-                %i.bi.bi-person.text-muted.me-1
-                No milestone attainments yet
+            %em.text-muted Company-level
 
-        %hr.mt-3.mb-2
-        %small.text-muted.d-block
-          Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
-          %br
-          Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
-          %br
-          = link_to organization_paper_trail_path(@organization, item_type: 'Ability', item_id: @ability.id), class: 'text-decoration-none' do
-            %i.bi.bi-clock-history.me-1
-            View full change history
+        .mb-3
+          %h6.text-muted Description
+          - if @ability.description.present?
+            .markdown-content.markdown-content--bordered= render_markdown(@ability.description)
+          - else
+            %em.text-muted No description provided
 
-    .card.mb-4
-      .card-header
-        %h6.mb-0
-          %i.bi.bi-lightning-charge.me-2
-          Actions
-      .card-body
+        .mb-3{ role: "region", "aria-labelledby": "milestone-descriptions" }
+          %h6.text-muted.mb-2{ id: "milestone-descriptions" } Milestone descriptions
+          - defined_any = false
+          - (1..5).each do |level|
+            - description = @ability.send("milestone_#{level}_description")
+            - if description.present?
+              - defined_any = true
+              .mb-3
+                %h6.text-primary Milestone #{level} (#{milestone_level_display(level)})
+                .markdown-content.markdown-content--bordered= render_markdown(description)
+          - unless defined_any
+            %em.text-muted No milestone descriptions provided
 
-        / Edit mode
-        - if policy(@ability).update?
-          = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
-            %i.bi.bi-pencil.me-2
-            Edit mode
-        - else
-          .d-flex.align-items-center.gap-2.mb-2
-            .flex-grow-1
-              %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+      .col-lg-4.d-flex.flex-column.gap-4
+        - created_name, created_at = ability_audit_created_meta(@ability)
+        - updated_name, updated_at = ability_audit_last_updated_meta(@ability)
+        .card
+          .card-header
+            %h6.mb-0
+              %i.bi.bi-star.me-2
+              Spotlight
+          .card-body
+            .mb-3
+              .d-flex.justify-content-between
+                %span Version:
+                %strong= @ability.semantic_version
+
+            .mb-3
+              %h6.text-muted.small.mb-2 Interesting Tidbits
+              %p.small
+                = link_to organization_ability_path(@organization, @ability, anchor: 'assignments-requiring-this-ability'), class: 'text-decoration-underline text-body' do
+                  - if @ability.is_required_by_assignments?
+                    - ac = @ability.required_by_assignments_count
+                    %i.bi.bi-clipboard-check.text-primary.me-1
+                    Required by #{ac} #{'assignment'.pluralize(ac)}
+                  - else
+                    %i.bi.bi-clipboard.text-muted.me-1
+                    Not required by any assignments
+              %p.small
+                = link_to organization_ability_path(@organization, @ability, anchor: 'positions-requiring-this-ability'), class: 'text-decoration-underline text-body' do
+                  - if @ability.is_required_by_positions?
+                    - pc = @ability.required_by_positions_count
+                    %i.bi.bi-briefcase.text-primary.me-1
+                    Required by #{pc} #{'position'.pluralize(pc)}
+                  - else
+                    %i.bi.bi-briefcase.text-muted.me-1
+                    Not required by any positions
+              %p.small
+                = link_to organization_ability_path(@organization, @ability, anchor: 'teammate-milestones-for-this-ability'), class: 'text-decoration-underline text-body' do
+                  - if @teammate_milestone_rows.any?
+                    - tc = @teammate_milestone_rows.size
+                    %i.bi.bi-people.text-success.me-1
+                    - if tc == 1
+                      1 person has earned a milestone for this ability
+                    - else
+                      #{tc} people have earned milestones for this ability
+                  - else
+                    %i.bi.bi-person.text-muted.me-1
+                    No milestone attainments yet
+
+            %hr.mt-3.mb-2
+            %small.text-muted.d-block
+              Created by #{created_name} on #{format_time_in_user_timezone(created_at)}
+              %br
+              Last updated by #{updated_name} on #{format_time_in_user_timezone(updated_at)}
+              %br
+              = link_to organization_paper_trail_path(@organization, item_type: 'Ability', item_id: @ability.id), class: 'text-decoration-none' do
+                %i.bi.bi-clock-history.me-1
+                View full change history
+
+        .card{ role: "region", "aria-labelledby": "ability-actions" }
+          .card-header
+            %h6.mb-0{ id: "ability-actions" }
+              %i.bi.bi-lightning-charge.me-2
+              Actions
+          .card-body
+            - if policy(@ability).update?
+              = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
                 %i.bi.bi-pencil.me-2
                 Edit mode
-            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions for this organization to edit abilities"}}
+            - else
+              .d-flex.align-items-center.gap-2.mb-2
+                .flex-grow-1
+                  %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+                    %i.bi.bi-pencil.me-2
+                    Edit mode
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions for this organization to edit abilities"}}
 
-        / Public MAAP version
-        = link_to organization_public_maap_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
-          %i.bi.bi-globe.me-2
-          Public version
+            - if policy(MaapProposal).index?
+              = link_to organization_ability_maap_proposals_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
+                %i.bi.bi-pencil-square.me-2
+                = all_proposed_ability_edits_label(@ability)
+              - if policy(MaapProposal).create?
+                = link_to new_organization_ability_maap_proposal_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
+                  %i.bi.bi-lightbulb.me-2
+                  Propose edit
 
-        / Consult OG (LLM)
-        = render 'organizations/shared/maap_clarity_review_button',
-                   review_path: maap_clarity_organization_ability_path(@organization, @ability),
-                   run: @ability_clarity_run,
-                   can_run: policy(@ability).run_clarity?,
-                   extra_classes: 'btn-sm w-100 mb-2',
-                   small: true,
-                   wrapper_class: 'mb-2',
-                   disabled_tooltip: 'You need MAAP management permissions to consult OG'
+            = link_to organization_public_maap_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
+              %i.bi.bi-globe.me-2
+              Public version
 
-        / Manage assignment milestones
-        - if policy(@ability).update?
-          = link_to organization_ability_assignment_milestones_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
-            %i.bi.bi-link-45deg.me-2
-            Manage assignment milestones
-        - else
-          .d-flex.align-items-center.gap-2.mb-2
-            .flex-grow-1
-              %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+            - teammate_lens_href = organization_teammate_lens_catalog_href(@organization, @ability, current_person)
+            - if teammate_lens_href.present?
+              = link_to teammate_lens_href, class: "btn btn-outline-primary btn-sm w-100 mb-2" do
+                %i.bi.bi-person.me-2
+                = organization_teammate_lens_catalog_label(@ability, current_person)
+
+            = render 'organizations/shared/maap_clarity_review_button',
+                       review_path: maap_clarity_organization_ability_path(@organization, @ability),
+                       run: @ability_clarity_run,
+                       can_run: policy(@ability).run_clarity?,
+                       extra_classes: 'btn-sm w-100 mb-2',
+                       small: true,
+                       wrapper_class: 'mb-2',
+                       disabled_tooltip: 'You need MAAP management permissions to consult OG'
+
+            - if policy(@ability).update?
+              = link_to organization_ability_assignment_milestones_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
                 %i.bi.bi-link-45deg.me-2
                 Manage assignment milestones
-            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to manage assignment milestones"}}
+            - else
+              .d-flex.align-items-center.gap-2.mb-2
+                .flex-grow-1
+                  %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+                    %i.bi.bi-link-45deg.me-2
+                    Manage assignment milestones
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to manage assignment milestones"}}
 
-        / Manage maintainers
-        - if policy(@ability).manage_maintainers?
-          = link_to organization_ability_maintainers_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
-            %i.bi.bi-people.me-2
-            Manage maintainers
-        - else
-          .d-flex.align-items-center.gap-2.mb-2
-            .flex-grow-1
-              %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+            - if policy(@ability).manage_maintainers?
+              = link_to organization_ability_maintainers_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100 mb-2" do
                 %i.bi.bi-people.me-2
                 Manage maintainers
-            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP admin or existing maintainer access"}}
+            - else
+              .d-flex.align-items-center.gap-2.mb-2
+                .flex-grow-1
+                  %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+                    %i.bi.bi-people.me-2
+                    Manage maintainers
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP admin or existing maintainer access"}}
 
-        / Archive or restore
-        - if @ability.archived?
-          - if policy(@ability).restore?
-            = link_to restore_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100", data: { turbo_method: :patch, turbo_confirm: "Restore this ability? It will appear in lists and selectors again." } do
-              %i.bi.bi-arrow-counterclockwise.me-2
-              Restore ability
-          - else
-            .d-flex.align-items-center.gap-2
-              .flex-grow-1
-                %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+            - if @ability.archived?
+              - if policy(@ability).restore?
+                = link_to restore_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100", data: { turbo_method: :patch, turbo_confirm: "Restore this ability? It will appear in lists and selectors again." } do
                   %i.bi.bi-arrow-counterclockwise.me-2
                   Restore ability
-              %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to restore this ability"}}
-        - elsif policy(@ability).archive?
-          = link_to archive_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100" do
-            %i.bi.bi-archive.me-2
-            Archive ability
-        - else
-          .d-flex.align-items-center.gap-2
-            .flex-grow-1
-              %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+              - else
+                .d-flex.align-items-center.gap-2
+                  .flex-grow-1
+                    %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+                      %i.bi.bi-arrow-counterclockwise.me-2
+                      Restore ability
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to restore this ability"}}
+            - elsif policy(@ability).archive?
+              = link_to archive_organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100" do
                 %i.bi.bi-archive.me-2
                 Archive ability
-            %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to archive this ability"}}
+            - else
+              .d-flex.align-items-center.gap-2
+                .flex-grow-1
+                  %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{type: "button", disabled: true}
+                    %i.bi.bi-archive.me-2
+                    Archive ability
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to archive this ability"}}
 
-    / Comments Section
-    = render 'shared/comment_summary', commentable: @ability, organization: @organization
+        = render 'shared/comment_summary', commentable: @ability, organization: @organization
 
+    = render "shared/public_kudos_for_rateable_card",
+      organization: @organization,
+      public_kudos: @public_kudos_for_rateable,
+      rateable_display_name: @public_kudos_rateable_display_name,
+      all_kudos_url: @public_kudos_all_kudos_observations_url,
+      all_types_url: @public_kudos_all_types_observations_url
 
-.row
-  .col-12
+    = render "shared/section_header",
+             title: "#{@ability.name} - Connected",
+             icon: "bi-diagram-3",
+             description: "How this ability links to assignments, positions, and people",
+             include_top_header_margin: false
 
     .card.mb-4{ role: "region", "aria-labelledby": "assignments-heading", id: "assignments-requiring-this-ability" }
-      .card-header
+      .card-header.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2
         %h5.mb-0{ id: "assignments-heading" }
           %i.bi.bi-clipboard-check.me-2
           Assignments Requiring This Ability
+        - if policy(@ability).update?
+          = link_to organization_ability_assignment_milestones_path(@organization, @ability), class: "btn btn-sm btn-outline-primary" do
+            %i.bi.bi-pencil.me-1
+            Manage assignment milestones
+        - else
+          .d-flex.align-items-center.gap-2
+            %button.btn.btn-sm.btn-outline-secondary{type: "button", disabled: true, "aria-label" => "Manage assignment milestones"}
+              %i.bi.bi-pencil.me-1
+              Manage assignment milestones
+            %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => "You need MAAP management permissions to manage assignment milestones", tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+              %i.bi.bi-exclamation-triangle
       .card-body
-        - @ability.required_by_assignments.each_with_index do |assignment_ability, index|
-          - if index > 0
-            %hr
-          .mb-3
-            = link_to organization_assignment_path(assignment_ability.assignment.company, assignment_ability.assignment), class: "text-decoration-none" do
-              %h6.mb-1= assignment_ability.assignment.title
-            %p.mb-0.text-muted.small
-              Required milestone level: #{milestone_level_display(assignment_ability.milestone_level)} (M#{assignment_ability.milestone_level})
+        - if @ability.required_by_assignments.any?
+          - @ability.required_by_assignments.each_with_index do |assignment_ability, index|
+            - if index > 0
+              %hr
+            .mb-3
+              = link_to organization_assignment_path(assignment_ability.assignment.company, assignment_ability.assignment), class: "text-decoration-none" do
+                %h6.mb-1= assignment_ability.assignment.title
+              %p.mb-0.text-muted.small
+                Required milestone level: #{milestone_level_display(assignment_ability.milestone_level)} (M#{assignment_ability.milestone_level})
+        - else
+          .alert.alert-info.mb-0{ role: "alert" }
+            %i.bi.bi-info-circle.me-2
+            No assignments require this ability.
 
     .card.mb-4{ role: "region", "aria-labelledby": "positions-heading", id: "positions-requiring-this-ability" }
       .card-header
@@ -294,16 +307,34 @@
             %i.bi.bi-info-circle.me-2
             No teammates have earned a milestone for this ability yet.
             = link_to "Celebrate milestones", celebrate_milestones_organization_path(@organization), class: "alert-link fw-semibold ms-1"
-.row.mt-2
-  .col-12
-    = render "shared/public_kudos_for_rateable_card",
-      organization: @organization,
-      public_kudos: @public_kudos_for_rateable,
-      rateable_display_name: @public_kudos_rateable_display_name,
-      all_kudos_url: @public_kudos_all_kudos_observations_url,
-      all_types_url: @public_kudos_all_types_observations_url
 
-= render "organizations/shared/teammate_lens_catalog_cta",
-    organization: @organization,
-    associable: @ability,
-    viewing_person: current_person
+    = render "shared/section_header",
+             title: "#{@ability.name} continuously more clear",
+             icon: "bi-brightness-high",
+             description: "Maintainers, proposed edits, and lived clarity signals"
+
+    = render "shared/object_maintainers",
+      maintainable: @ability,
+      organization: @organization,
+      manage_path: organization_ability_maintainers_path(@organization, @ability)
+
+    - if policy(MaapProposal).index?
+      .card.mb-4{ role: "region", "aria-labelledby": "proposed-edits" }
+        .card-header.d-flex.justify-content-between.align-items-center.gap-2.flex-wrap
+          %h5.mb-0{ id: "proposed-edits" }
+            %i.bi.bi-pencil-square.me-2
+            Proposed edits
+          = link_to "View all", organization_ability_maap_proposals_path(@organization, @ability), class: "btn btn-sm btn-outline-secondary"
+        .card-body
+          %p.mb-2
+            = link_to all_proposed_ability_edits_label(@ability),
+                      organization_ability_maap_proposals_path(@organization, @ability),
+                      class: "text-decoration-none"
+          - if policy(MaapProposal).create?
+            = link_to new_organization_ability_maap_proposal_path(@organization, @ability), class: "btn btn-outline-primary btn-sm" do
+              %i.bi.bi-plus-lg.me-1
+              Propose edit
+
+    = render "organizations/abilities/first_rating_alignment",
+             query: @first_rating_alignment,
+             organization: @organization

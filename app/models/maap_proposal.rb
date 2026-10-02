@@ -92,7 +92,9 @@ class MaapProposal < ApplicationRecord
   end
 
   def proposed_title
-    proposed_payload.is_a?(Hash) ? proposed_payload["title"].to_s : ""
+    return "" unless proposed_payload.is_a?(Hash)
+
+    proposed_payload["title"].presence || proposed_payload["name"].to_s
   end
 
   private

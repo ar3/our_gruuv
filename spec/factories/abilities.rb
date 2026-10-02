@@ -2,6 +2,7 @@ FactoryBot.define do
   factory :ability do
     sequence(:name) { |n| "Ability #{n}" }
     description { "A comprehensive ability description" }
+    milestone_1_description { "Can demonstrate the basics with guidance" }
     semantic_version { "1.0.0" }
     association :company, factory: :company
     department { nil }

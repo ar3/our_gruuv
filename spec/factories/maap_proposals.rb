@@ -67,5 +67,29 @@ FactoryBot.define do
         }
       end
     end
+
+    trait :ability_edit do
+      transient do
+        ability { nil }
+      end
+
+      proposable { ability || association(:ability, company: organization) }
+      organization { proposable.company }
+      based_on_semantic_version { proposable.try(:semantic_version) || "0.0.1" }
+      content_schema_version { MaapProposals::AbilityPayload::SCHEMA_VERSION }
+      proposed_payload do
+        {
+          "schema_version" => MaapProposals::AbilityPayload::SCHEMA_VERSION,
+          "name" => proposable.try(:name) || "Proposed Ability",
+          "description" => proposable.try(:description) || "Proposed description",
+          "department_id" => proposable.try(:department_id),
+          "milestone_1_description" => proposable.try(:milestone_1_description) || "Milestone one",
+          "milestone_2_description" => proposable.try(:milestone_2_description),
+          "milestone_3_description" => proposable.try(:milestone_3_description),
+          "milestone_4_description" => proposable.try(:milestone_4_description),
+          "milestone_5_description" => proposable.try(:milestone_5_description)
+        }
+      end
+    end
   end
 end

@@ -75,7 +75,7 @@ module MaapCleanupInbox
       [
         subtype_summary(
           :submitted_maap_proposals,
-          "Assignment create and edit proposals awaiting apply or reject",
+          "Assignment and Ability proposals awaiting apply or reject",
           items: items,
           count: proposals.size
         )
@@ -99,6 +99,8 @@ module MaapCleanupInbox
         "new Assignment"
       elsif proposal.proposable.respond_to?(:title)
         proposal.proposable.title
+      elsif proposal.proposable.respond_to?(:name)
+        proposal.proposable.name
       else
         proposal.proposable_type.to_s
       end
@@ -107,6 +109,8 @@ module MaapCleanupInbox
         routes.organization_maap_assignment_create_path(organization, proposal)
       elsif proposal.proposable_type == "Assignment" && proposal.proposable
         routes.organization_assignment_maap_proposal_path(organization, proposal.proposable, proposal)
+      elsif proposal.proposable_type == "Ability" && proposal.proposable
+        routes.organization_ability_maap_proposal_path(organization, proposal.proposable, proposal)
       end
 
       Item.new(

@@ -1,0 +1,36 @@
+- content_for :title, "Edit proposal · #{@ability.name}"
+
+- content_for :header do
+  %h1.mb-0 Edit draft proposal
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities", url: organization_abilities_path(@organization) }, { label: @ability.name, url: organization_ability_path(@organization, @ability) }, { label: "Proposal", url: organization_ability_maap_proposal_path(@organization, @ability, @proposal) }, { label: "Edit", url: nil }])
+
+.row.justify-content-center
+  .col-lg-8
+    = form_with model: @proposal, url: organization_ability_maap_proposal_path(@organization, @ability, @proposal), method: :patch, local: true, scope: :maap_proposal do |f|
+      .mb-3
+        = f.label :name, class: "form-label"
+        = f.text_field :name, value: @payload.name, class: "form-control", required: true
+      .mb-3
+        = f.label :department_id, "Department", class: "form-label"
+        = f.collection_select :department_id, @organization.departments.order(:name), :id, :name, { include_blank: "No department", selected: @payload.department_id }, class: "form-select"
+      .mb-3
+        = f.label :description, class: "form-label"
+        = f.text_area :description, value: @payload.description, class: "form-control", rows: 4, required: true
+
+      %h5.mt-4.mb-2 Milestone descriptions
+      %p.text-muted.small
+        At least one milestone level must have a description. These define the skill ladder for this ability.
+
+      - (1..5).each do |level|
+        .mb-3
+          = f.label "milestone_#{level}_description", "Milestone #{level}", class: "form-label"
+          = f.text_area "milestone_#{level}_description",
+                        value: @payload.public_send("milestone_#{level}_description"),
+                        class: "form-control",
+                        rows: 5
+
+      .d-flex.flex-wrap.gap-2.mt-4
+        = f.submit "Save draft", class: "btn btn-primary"
+        = link_to "Cancel", organization_ability_maap_proposal_path(@organization, @ability, @proposal), class: "btn btn-outline-secondary"
