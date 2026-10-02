@@ -41,7 +41,7 @@
                 %table.table.table-hover.mb-0
                   %thead.table-light
                     %tr
-                      %th Position Type
+                      %th Title
                       %th Needed By
                       %th State
                       %th Actions
@@ -51,11 +51,7 @@
                         %td= seat.title_label.presence || 'No Title'
                         %td= seat.seat_needed_by&.strftime('%B %d, %Y') || 'N/A'
                         %td
-                          %span.badge{class: seat_state_badge_class(seat.state)}
-                            = seat.state.titleize
-                            - if seat.needs_reconciliation?
-                              %span.badge.bg-warning.ms-1
-                                %i.bi.bi-exclamation-triangle
+                          = render "organizations/seats/displays/seat_state_cell", organization: organization, seat: seat
                         %td
                           = render "organizations/seats/displays/seat_row_actions", organization: organization, seat: seat
 - elsif @filtered_seats && @filtered_seats.any?
@@ -64,7 +60,7 @@
     %table.table.table-hover.mb-0
       %thead.table-light
         %tr
-          %th Position Type
+          %th Title
           %th Needed By
           %th State
           %th Actions
@@ -74,11 +70,7 @@
             %td= seat.title_label
             %td= seat.seat_needed_by.strftime('%B %d, %Y')
             %td
-              %span.badge{class: seat_state_badge_class(seat.state)}
-                = seat.state.titleize
-                - if seat.needs_reconciliation?
-                  %span.badge.bg-warning.ms-1
-                    %i.bi.bi-exclamation-triangle
+              = render "organizations/seats/displays/seat_state_cell", organization: organization, seat: seat
             %td
               = render "organizations/seats/displays/seat_row_actions", organization: organization, seat: seat
 - else

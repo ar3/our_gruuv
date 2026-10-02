@@ -1,15 +1,7 @@
-- active_tenure = seat.employment_tenures.active.first
-- filler = active_tenure&.teammate
-- person = filler&.person
 .d-flex.align-items-center.flex-wrap.gap-1
   = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary btn-sm" do
     %i.bi.bi-eye.me-1
     View this seat
-  - if filler && person&.casual_name.present?
-    %span.text-nowrap
-      (
-      = link_to person.casual_name, internal_organization_company_teammate_path(organization, filler), class: "text-decoration-none"
-      )
   - if seat.needs_reconciliation?
     = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning btn-sm", data: { confirm: "Reconcile seat state?" } do
       %i.bi.bi-arrow-clockwise

@@ -1,0 +1,14 @@
+- active_tenure = seat.employment_tenures.active.first
+- filler = active_tenure&.teammate
+- person = filler&.person
+.d-flex.align-items-center.flex-wrap.gap-1
+  %span.badge{class: seat_state_badge_class(seat.state)}
+    = seat.state.titleize
+    - if seat.needs_reconciliation?
+      %span.badge.bg-warning.ms-1
+        %i.bi.bi-exclamation-triangle
+  - if filler && person&.casual_name.present?
+    %span.text-nowrap
+      (
+      = link_to person.casual_name, internal_organization_company_teammate_path(organization, filler), class: "text-decoration-none"
+      )

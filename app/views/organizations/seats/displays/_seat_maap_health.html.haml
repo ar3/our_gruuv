@@ -35,11 +35,7 @@
                     %tr
                       %td= seat.seat_needed_by.strftime('%B %d, %Y')
                       %td
-                        %span.badge{class: seat_state_badge_class(seat.state)}
-                          = seat.state.titleize
-                          - if seat.needs_reconciliation?
-                            %span.badge.bg-warning.ms-1
-                              %i.bi.bi-exclamation-triangle
+                        = render "organizations/seats/displays/seat_state_cell", organization: organization, seat: seat
                       %td= seat.why_now.to_s[0..300]
                       %td
                         = render "organizations/seats/displays/seat_row_actions", organization: organization, seat: seat

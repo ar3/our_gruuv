@@ -127,6 +127,8 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('View Title')
       expect(response.body).to include('View this seat')
+      expect(response.body).to include('>Title</th>')
+      expect(response.body).not_to include('>Position Type</th>')
       expect(response.body).to include(organization_title_path(company, indexed_title))
       expect(response.body).to include(organization_seat_path(company, indexed_seat))
       expect(response.body).not_to include(edit_organization_seat_path(company, indexed_seat))
