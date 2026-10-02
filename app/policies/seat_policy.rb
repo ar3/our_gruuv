@@ -28,6 +28,14 @@ class SeatPolicy < ApplicationPolicy
   end
 
   def destroy?
+    false
+  end
+
+  def archive?
+    create?
+  end
+
+  def restore?
     create?
   end
 

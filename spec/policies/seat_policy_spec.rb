@@ -63,16 +63,33 @@ RSpec.describe SeatPolicy, type: :policy do
   end
 
   permissions :destroy? do
-    it "allows MAAP managers to destroy seats" do
+    it "denies destroy for everyone (use archive instead)" do
+      expect(subject).not_to permit(pundit_user_maap_manager, seat)
+      expect(subject).not_to permit(pundit_user_active_employee, seat)
+    end
+  end
+
+  permissions :archive? do
+    it "allows MAAP managers to archive seats" do
       expect(subject).to permit(pundit_user_maap_manager, seat)
     end
 
-    it "denies active employees from destroying seats" do
+    it "denies active employees from archiving seats" do
       expect(subject).not_to permit(pundit_user_active_employee, seat)
     end
 
-    it "denies external users from destroying seats" do
+    it "denies external users from archiving seats" do
       expect(subject).not_to permit(pundit_user_external_user, seat)
+    end
+  end
+
+  permissions :restore? do
+    it "allows MAAP managers to restore seats" do
+      expect(subject).to permit(pundit_user_maap_manager, seat)
+    end
+
+    it "denies active employees from restoring seats" do
+      expect(subject).not_to permit(pundit_user_active_employee, seat)
     end
   end
 

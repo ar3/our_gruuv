@@ -1,0 +1,21 @@
+- content_for :title, "Edit Seat create proposal · #{@payload.seat_needed_by}"
+
+- content_for :header do
+  %h1.mb-0 Edit draft Seat create proposal
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: "Proposed Seat creates", url: organization_maap_seat_creates_path(@organization) }, { label: "Proposal", url: organization_maap_seat_create_path(@organization, @proposal) }, { label: "Edit", url: nil }])
+
+.row.justify-content-center
+  .col-lg-8
+    = form_with model: @proposal, url: organization_maap_seat_create_path(@organization, @proposal), method: :patch, local: true, scope: :maap_proposal do |f|
+      = render "organizations/seats/maap_proposals/form_fields",
+               f: f,
+               organization: @organization,
+               titles: @titles,
+               reportable_seats: @reportable_seats,
+               payload: @payload
+
+      .d-flex.flex-wrap.gap-2.mt-4
+        = f.submit "Save draft", class: "btn btn-primary"
+        = link_to "Cancel", organization_maap_seat_create_path(@organization, @proposal), class: "btn btn-outline-secondary"

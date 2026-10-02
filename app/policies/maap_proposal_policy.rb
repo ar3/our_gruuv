@@ -92,6 +92,8 @@ class MaapProposalPolicy < ApplicationPolicy
 
     if record.ability_create?
       Pundit.policy(pundit_user, Ability.new(company: record.organization)).create?
+    elsif record.seat_create?
+      Pundit.policy(pundit_user, Seat.new).create?
     else
       Pundit.policy(pundit_user, Assignment.new(company: record.organization)).create?
     end

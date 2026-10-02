@@ -17,7 +17,16 @@ module MaapProposals
       return Result.err("Only Seat proposals are supported") unless @proposal.proposable_type == "Seat"
 
       current = SeatPayload.from_hash(@proposal.proposed_payload).to_h
-      merged = current.merge(@attributes.deep_stringify_keys.slice(*SeatPayload::ATTR_KEYS))
+      attrs = @attributes.deep_stringify_keys
+      if attrs.key?("additional_title_ids")
+        attrs["additional_title_ids"] = SeatPayload.normalize_id_list(attrs["additional_title_ids"])
+      end
+      # Drop primary from additional if the form still listed it
+      if attrs["title_id"].present? && attrs["additional_title_ids"].is_a?(Array)
+        primary = attrs["title_id"].to_i
+        attrs["additional_title_ids"] = attrs["additional_title_ids"].reject { |id| id.to_i == primary }
+      end
+      merged = current.merge(attrs.slice(*SeatPayload::ATTR_KEYS))
       payload = SeatPayload.from_hash(merged)
 
       errors = payload.validate!(company: @proposal.organization, excluding_seat: @proposal.proposable)

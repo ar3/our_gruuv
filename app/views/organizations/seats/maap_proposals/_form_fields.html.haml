@@ -1,0 +1,75 @@
+- titles = local_assigns.fetch(:titles)
+- reportable_seats = local_assigns.fetch(:reportable_seats)
+- payload = local_assigns.fetch(:payload)
+- organization = local_assigns.fetch(:organization)
+- selected_additional = Array(payload.additional_title_ids).map(&:to_i)
+
+.mb-3
+  = f.label :title_id, "Primary Title", class: "form-label"
+  = f.select :title_id,
+    titles_grouped_options_for_select(titles, payload.title_id),
+    { prompt: "Select a title" },
+    { class: "form-select", required: true }
+
+.mb-3
+  = f.label :additional_title_ids, "Additional Titles (Optional)", class: "form-label"
+  - additional_titles = titles.reject { |t| t.id == payload.title_id.to_i }
+  = select_tag "maap_proposal[additional_title_ids][]",
+    titles_grouped_options_for_select(additional_titles, selected_additional),
+    { multiple: true, class: "form-select", size: [[additional_titles.size, 8].min, 3].max, id: "maap_proposal_additional_title_ids" }
+  = hidden_field_tag "maap_proposal[additional_title_ids][]", ""
+  .form-text
+    Extra titles this seat can fill (same as Manage Titles). Grouped by department. Hold Ctrl/Cmd to select multiple. Primary title is kept separately.
+
+.mb-3
+  = f.label :seat_needed_by, "Needed By Date", class: "form-label"
+  = f.date_field :seat_needed_by, value: payload.seat_needed_by, class: "form-control", required: true
+
+.mb-3
+  = f.label :job_classification, "Job Classification", class: "form-label"
+  = f.select :job_classification, MaapProposals::SeatPayload::JOB_CLASSIFICATIONS, { selected: payload.job_classification }, { class: "form-select", required: true }
+
+= render "shared/team_dropdown",
+  form: f,
+  organization: organization,
+  field_name: :team_id,
+  label_text: "Team (Optional)",
+  selected_team_id: payload.team_id,
+  include_blank: true,
+  help_text: "The primary team this seat will live on should live within the same department as the title"
+
+.mb-3
+  = f.label :reports_to_seat_id, "Reports To Seat (Optional)", class: "form-label"
+  = f.select :reports_to_seat_id,
+    seats_grouped_options_for_select(organization, seats: reportable_seats, selected_seat_id: payload.reports_to_seat_id),
+    { prompt: "Select a seat (optional)", include_blank: "No Seat" },
+    { class: "form-select" }
+
+.mb-3
+  = f.label :reports, "Direct Reports", class: "form-label"
+  = f.text_area :reports, value: payload.reports, class: "form-control", rows: 3
+
+%h5.mt-4.mb-2 Seat Defense
+.mb-3
+  = f.label :why_needed, "Why do we need this role?", class: "form-label"
+  = f.text_area :why_needed, value: payload.why_needed, class: "form-control", rows: 3
+.mb-3
+  = f.label :why_now, "Why is now the time to hire for this role?", class: "form-label"
+  = f.text_area :why_now, value: payload.why_now, class: "form-control", rows: 3
+.mb-3
+  = f.label :costs_risks, "What are the costs/risks if we choose not to hire for this role now?", class: "form-label"
+  = f.text_area :costs_risks, value: payload.costs_risks, class: "form-control", rows: 3
+
+%h5.mt-4.mb-2 HR / JD text
+.mb-3
+  = f.label :seat_disclaimer, "Seat disclaimer", class: "form-label"
+  = f.text_area :seat_disclaimer, value: payload.seat_disclaimer, class: "form-control", rows: 3
+.mb-3
+  = f.label :work_environment, "Work environment", class: "form-label"
+  = f.text_area :work_environment, value: payload.work_environment, class: "form-control", rows: 3
+.mb-3
+  = f.label :physical_requirements, "Physical requirements", class: "form-label"
+  = f.text_area :physical_requirements, value: payload.physical_requirements, class: "form-control", rows: 3
+.mb-3
+  = f.label :travel, "Travel", class: "form-label"
+  = f.text_area :travel, value: payload.travel, class: "form-control", rows: 3

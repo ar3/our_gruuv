@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module MaapProposals
-  # Structured apply-ready document for Seat edit proposals (jsonb SoT).
+  # Structured apply-ready document for Seat edit/create proposals (jsonb SoT).
   class SeatPayload
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
     JOB_CLASSIFICATIONS = [
       "Salaried Exempt",
       "Salaried Non-Exempt",
@@ -13,6 +13,7 @@ module MaapProposals
     ].freeze
     ATTR_KEYS = %w[
       title_id
+      additional_title_ids
       seat_needed_by
       job_classification
       team_id
@@ -28,10 +29,12 @@ module MaapProposals
     ].freeze
 
     def self.from_seat(seat)
+      additional_ids = seat.associated_title_ids.map(&:to_i) - [seat.title_id.to_i]
       new(
         {
           "schema_version" => SCHEMA_VERSION,
           "title_id" => seat.title_id,
+          "additional_title_ids" => additional_ids.sort,
           "seat_needed_by" => seat.seat_needed_by&.iso8601,
           "job_classification" => seat.job_classification.to_s,
           "team_id" => seat.team_id,
@@ -56,11 +59,24 @@ module MaapProposals
       from_hash({})
     end
 
+    def self.blank_for_create(company:)
+      title_id = company.titles.unarchived.ordered.first&.id
+      from_hash(
+        {
+          "title_id" => title_id,
+          "additional_title_ids" => [],
+          "seat_needed_by" => (Date.current + 3.months).iso8601,
+          "job_classification" => JOB_CLASSIFICATIONS.first
+        }
+      )
+    end
+
     def self.normalize(raw)
       hash = raw.deep_stringify_keys
       {
         "schema_version" => (hash["schema_version"].presence || SCHEMA_VERSION).to_i,
         "title_id" => blank_to_nil_id(hash["title_id"]),
+        "additional_title_ids" => normalize_id_list(hash["additional_title_ids"]),
         "seat_needed_by" => normalize_date(hash["seat_needed_by"]),
         "job_classification" => hash["job_classification"].to_s.strip,
         "team_id" => blank_to_nil_id(hash["team_id"]),
@@ -85,6 +101,10 @@ module MaapProposals
       return nil if value.nil? || value.to_s.strip.empty?
 
       value.to_i
+    end
+
+    def self.normalize_id_list(value)
+      Array(value).filter_map { |id| blank_to_nil_id(id) }.uniq.sort
     end
 
     def self.normalize_date(value)
@@ -119,6 +139,10 @@ module MaapProposals
       nil
     end
 
+    def associated_title_ids
+      ([title_id] + Array(additional_title_ids)).compact.map(&:to_i).uniq
+    end
+
     ATTR_KEYS.each do |key|
       define_method(key) { @payload[key] }
     end
@@ -142,6 +166,20 @@ module MaapProposals
         end
       end
 
+      Array(additional_title_ids).each do |extra_id|
+        if title_id.present? && extra_id == title_id.to_i
+          errors << "additional titles cannot include the primary title"
+          next
+        end
+
+        extra = Title.find_by(id: extra_id)
+        if extra.nil?
+          errors << "additional_title_ids contains invalid id #{extra_id}"
+        elsif extra.company_id != company.id
+          errors << "additional titles must belong to the company"
+        end
+      end
+
       if team_id.present?
         team = Team.find_by(id: team_id)
         if team.nil?
@@ -162,7 +200,7 @@ module MaapProposals
         end
       end
 
-      errors
+      errors.uniq
     end
   end
 end

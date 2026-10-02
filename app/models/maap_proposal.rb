@@ -38,6 +38,7 @@ class MaapProposal < ApplicationRecord
   scope :creates, -> { where(kind: "create") }
   scope :assignment_creates, -> { creates.where(proposable_type: [nil, "Assignment"]) }
   scope :ability_creates, -> { creates.where(proposable_type: "Ability") }
+  scope :seat_creates, -> { creates.where(proposable_type: "Seat") }
   scope :recent_first, -> { order(updated_at: :desc) }
   scope :created_first, -> { order(created_at: :desc) }
   scope :with_statuses, ->(statuses) {
@@ -83,6 +84,10 @@ class MaapProposal < ApplicationRecord
 
   def assignment_create?
     create_kind? && (proposable_type.blank? || proposable_type == "Assignment")
+  end
+
+  def seat_create?
+    create_kind? && proposable_type == "Seat"
   end
 
   def deletable?

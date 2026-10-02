@@ -60,9 +60,7 @@
                     = link_to 'Manage titles', manage_titles_organization_seat_path(@organization, seat), class: 'text-decoration-none'
                     %span.text-muted.ms-1
                       or
-                    = link_to 'Edit seat', edit_organization_seat_path(@organization, seat), class: 'text-decoration-none'
-                    %span.text-muted.ms-1
-                      to archive
+                    = link_to 'Archive seat', archive_organization_seat_path(@organization, seat), class: 'text-decoration-none'
           %li
             - if @blocking_title_paths.empty?
               %i.bi.bi-check-circle.text-success.me-2

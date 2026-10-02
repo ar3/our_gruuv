@@ -39,8 +39,39 @@ RSpec.describe "Organizations::Seats::MaapProposals", type: :request do
     end
   end
 
+  describe "GET edit" do
+    before { sign_in_as_teammate_for_request(person, organization) }
+
+    it "renders the draft edit form with primary and additional titles" do
+      department = create(:department, company: organization, name: "Engineering")
+      extra_title = create(
+        :title,
+        company: organization,
+        department: department,
+        external_title: "Staff Engineer"
+      )
+      result = MaapProposals::CreateSeatEditDraft.call(seat: seat, proposer: person_teammate)
+      proposal = result.value
+
+      get edit_organization_seat_maap_proposal_path(organization, seat, proposal)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Edit draft proposal")
+      expect(response.body).to include("Primary Title")
+      expect(response.body).to include("Additional Titles")
+      expect(response.body).to include(title.external_title)
+      expect(response.body).to include(extra_title.external_title)
+      expect(response.body).to include("optgroup")
+      expect(response.body).to match(/optgroup label="[^"]*Engineering/)
+      expect(response.body).to include("Needed By Date")
+      expect(response.body).to include("Save draft")
+      expect(response.body).to include(organization_seat_maap_proposal_path(organization, seat, proposal))
+    end
+  end
+
   describe "proposal lifecycle" do
     it "lets a teammate draft and submit, and a MAAP manager apply" do
+      extra_title = create(:title, company: organization, external_title: "Staff Engineer")
       sign_in_as_teammate_for_request(person, organization)
       get new_organization_seat_maap_proposal_path(organization, seat)
       expect(response).to redirect_to(%r{/maap_proposals/\d+/edit})
@@ -49,6 +80,7 @@ RSpec.describe "Organizations::Seats::MaapProposals", type: :request do
       patch organization_seat_maap_proposal_path(organization, seat, proposal), params: {
         maap_proposal: {
           title_id: title.id,
+          additional_title_ids: [extra_title.id],
           seat_needed_by: (Date.current + 3.months).iso8601,
           job_classification: "Hourly",
           team_id: "",
@@ -78,20 +110,30 @@ RSpec.describe "Organizations::Seats::MaapProposals", type: :request do
       expect(seat.reload.job_classification).to eq("Hourly")
       expect(seat.why_needed).to eq("Need more capacity")
       expect(seat.reports).to eq("One junior")
+      expect(seat.associated_title_ids).to contain_exactly(title.id, extra_title.id)
     end
   end
 
   describe "GET seat show" do
-    before { sign_in_as_teammate_for_request(person, organization) }
-
-    it "surfaces suggest edit and proposed edits entry points" do
+    it "surfaces suggest edit and proposed edits for any teammate" do
+      sign_in_as_teammate_for_request(person, organization)
       get organization_seat_path(organization, seat)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Suggest Edit")
       expect(response.body).to include("proposed edits")
       expect(response.body).to include(organization_seat_maap_proposals_path(organization, seat))
-      expect(response.body).to include("Delete")
+      expect(response.body).to include("Archive")
+      expect(response.body).not_to include("bi-trash")
+    end
+
+    it "links Archive for MAAP managers" do
+      sign_in_as_teammate_for_request(manager, organization)
+      get organization_seat_path(organization, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(archive_organization_seat_path(organization, seat))
+      expect(response.body).to include("Archive")
     end
   end
 end

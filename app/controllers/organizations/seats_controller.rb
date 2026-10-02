@@ -1,5 +1,5 @@
 class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_seat, only: [:show, :edit, :update, :destroy, :reconcile, :manage_titles, :update_titles]
+  before_action :set_seat, only: [:show, :edit, :update, :reconcile, :manage_titles, :update_titles, :archive, :execute_archive, :restore]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
@@ -136,10 +136,38 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     end
   end
 
-  def destroy
-    authorize @seat
-    @seat.destroy
-    redirect_to organization_seats_path(organization), notice: 'Seat was successfully deleted.'
+  def archive
+    authorize @seat, :archive?
+    @active_employment_tenures = @seat.blocking_active_employment_tenures
+                                      .includes(company_teammate: :person)
+                                      .order(started_at: :desc)
+    @inactive_employment_tenures = @seat.inactive_employment_tenures
+                                        .includes(company_teammate: :person)
+                                        .order(ended_at: :desc)
+    @archivable = @seat.archivable?
+  end
+
+  def execute_archive
+    authorize @seat, :archive?
+    unless @seat.archivable?
+      redirect_to archive_organization_seat_path(organization, @seat),
+                  alert: "Cannot archive: end or reassign all active employment tenures on this seat first."
+      return
+    end
+
+    @seat.archive!
+    redirect_to organization_seat_path(organization, @seat), notice: "Seat was successfully archived."
+  end
+
+  def restore
+    authorize @seat, :restore?
+    unless @seat.archived?
+      redirect_to organization_seat_path(organization, @seat), alert: "Seat is not archived."
+      return
+    end
+
+    @seat.restore!
+    redirect_to organization_seat_path(organization, @seat), notice: "Seat was successfully restored."
   end
 
   def reconcile

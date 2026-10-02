@@ -1,4 +1,44 @@
 module SeatsHelper
+  STATE_QUICK_FILTER_CUSTOM_TOOLTIP =
+    "Status must be set in Customize View".freeze
+
+  # :all / :filled / :unfilled / :all_open / :draft when filters match a neat preset; :custom otherwise.
+  # Unfilled = open only. All Open = open + filled (active seats; excludes draft/archived).
+  def seat_state_quick_filter_selection(filters)
+    states = Array(filters && filters[:state]).map(&:to_s).reject(&:blank?).uniq.sort
+    return :all if states.empty?
+    return :filled if states == %w[filled]
+    return :unfilled if states == %w[open]
+    return :all_open if states == %w[filled open]
+    return :draft if states == %w[draft]
+
+    :custom
+  end
+
+  def seat_state_quick_filter_path(organization, selection)
+    path_params = params.except(
+      :controller, :action, :page, :state, :organization_id, :id
+    ).permit!.to_h
+
+    case selection.to_sym
+    when :filled
+      path_params[:state] = %w[filled]
+    when :unfilled
+      path_params[:state] = %w[open]
+    when :all_open
+      path_params[:state] = %w[open filled]
+    when :draft
+      path_params[:state] = %w[draft]
+    when :all
+      path_params.delete("state")
+      path_params.delete(:state)
+    else
+      raise ArgumentError, "Unknown seat state quick filter selection: #{selection}"
+    end
+
+    organization_seats_path(organization, path_params)
+  end
+
   def seat_state_badge_class(state)
     case state.to_s
     when 'draft'

@@ -36,6 +36,7 @@ module MaapProposals
         {
           "schema_version" => meta["maap_proposal_schema_version"] || SeatPayload::SCHEMA_VERSION,
           "title_id" => meta["title_id"],
+          "additional_title_ids" => meta["additional_title_ids"],
           "seat_needed_by" => meta["seat_needed_by"],
           "job_classification" => meta["job_classification"],
           "team_id" => meta["team_id"],

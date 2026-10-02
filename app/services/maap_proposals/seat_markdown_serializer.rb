@@ -30,6 +30,7 @@ module MaapProposals
         lines << "proposable_id: #{@seat.id}"
       end
       lines << "title_id: #{yaml_scalar(@payload.title_id)}"
+      lines << "additional_title_ids: #{yaml_id_list(@payload.additional_title_ids)}"
       lines << "seat_needed_by: #{yaml_scalar(@payload.seat_needed_by)}"
       lines << "job_classification: #{yaml_scalar(@payload.job_classification)}"
       lines << "team_id: #{yaml_scalar(@payload.team_id)}"
@@ -60,6 +61,13 @@ module MaapProposals
 
     def yaml_scalar(value)
       value.nil? || value.to_s.strip.empty? ? "" : value.to_s
+    end
+
+    def yaml_id_list(ids)
+      list = Array(ids).map(&:to_i)
+      return "[]" if list.empty?
+
+      "[#{list.join(", ")}]"
     end
   end
 end

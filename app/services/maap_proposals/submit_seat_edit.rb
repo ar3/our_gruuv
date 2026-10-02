@@ -12,8 +12,31 @@ module MaapProposals
 
     def call
       return Result.err("Only draft proposals can be submitted") unless @proposal.submittable?
-      return Result.err("Only Seat edit proposals are supported") unless @proposal.edit_kind? && @proposal.proposable_type == "Seat"
 
+      if @proposal.seat_create?
+        submit_create
+      elsif @proposal.edit_kind? && @proposal.proposable_type == "Seat"
+        submit_edit
+      else
+        Result.err("Only Seat proposals are supported")
+      end
+    end
+
+    private
+
+    def submit_create
+      payload = SeatPayload.from_hash(@proposal.proposed_payload)
+      errors = payload.validate!(company: @proposal.organization)
+      return Result.err(errors) if errors.any?
+
+      if @proposal.update(status: "submitted", submitted_at: Time.current)
+        Result.ok(@proposal)
+      else
+        Result.err(@proposal.errors.full_messages)
+      end
+    end
+
+    def submit_edit
       seat = @proposal.proposable
       payload = SeatPayload.from_hash(@proposal.proposed_payload)
       errors = payload.validate!(company: seat.company, excluding_seat: seat)

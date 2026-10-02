@@ -1,17 +1,34 @@
 - content_for :title, "Seats"
 
 - content_for :header do
+  - can_create_seat = policy(Seat).create?
+  - primary_create_path = can_create_seat ? new_organization_seat_path(organization) : new_organization_maap_seat_create_path(organization)
+  - primary_create_label = can_create_seat ? "Create New Seat" : "Suggest New Seat"
   .d-flex.align-items-center
     %h1.mb-0.me-2
       Seats
-    .d-flex.align-items-center
-      - if policy(Seat).create?
-        = link_to new_organization_seat_path(organization), class: "btn btn-primary ml-2" do
-          %i.bi.bi-plus
-      - else
-        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-          %i.bi.bi-plus
-        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
+    .btn-group.ms-2
+      = link_to primary_create_path,
+                class: "btn btn-primary",
+                title: primary_create_label,
+                "aria-label" => primary_create_label,
+                data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+        %i.bi.bi-plus
+      %button.btn.btn-primary.dropdown-toggle.dropdown-toggle-split{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "More create options"}
+        %span.visually-hidden Toggle Dropdown
+      %ul.dropdown-menu.dropdown-menu-end
+        %li
+          - if can_create_seat
+            = link_to "Create New Seat", new_organization_seat_path(organization), class: "dropdown-item"
+          - else
+            %span.dropdown-item.disabled.d-flex.align-items-center.gap-2{tabindex: "-1", "aria-disabled" => "true"}
+              %span Create New Seat
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "left", "data-bs-title" => "You need MAAP management permissions for this organization to create seats", role: "img", "aria-label" => "You need MAAP management permissions for this organization to create seats."}
+                %i.bi.bi-exclamation-triangle
+        %li
+          = link_to "Suggest New Seat", new_organization_maap_seat_create_path(organization), class: "dropdown-item"
+        %li
+          = link_to "View Suggested New Seats", organization_maap_seat_creates_path(organization), class: "dropdown-item"
 - content_for :header_action do
   - customize_params = params.except(:controller, :action, :page).permit!.to_h
   = link_to customize_view_organization_seats_path(organization, customize_params), class: "btn btn-outline-secondary" do
@@ -229,20 +246,12 @@
                 .h3.text-warning= @spotlight_stats[:employees][:without_seats]
                 %small.text-muted Without Seats
               .col-3
-                - if @spotlight_stats[:employees][:without_seats] > 0
-                  - if policy(Seat).create?
-                    = button_to create_missing_employee_seats_organization_seats_path(organization), method: :post, class: "btn btn-primary btn-sm", data: { confirm: "Create seats for #{@spotlight_stats[:employees][:without_seats]} employee(s) without seats?" } do
-                      %i.bi.bi-plus-circle.me-2
-                      Create Missing Seats
-                  - else
-                    .d-flex.align-items-center.justify-content-center
-                      .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-                        %i.bi.bi-plus-circle.me-2
-                        Create Missing Seats
-                      %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
-                - else
+                - if @spotlight_stats[:employees][:without_seats].zero?
                   .h3.text-success= "✓"
                   %small.text-muted All Covered
+                - else
+                  .h3.text-warning= @spotlight_stats[:employees][:without_seats]
+                  %small.text-muted Need seats
           
           .col-md-4
             / Action alerts or status messages
@@ -274,20 +283,12 @@
                 .h3.text-warning= @spotlight_stats[:titles][:without_seats]
                 %small.text-muted Without Seats
               .col-3
-                - if @spotlight_stats[:titles][:without_seats] > 0
-                  - if policy(Seat).create?
-                    = button_to create_missing_title_seats_organization_seats_path(organization), method: :post, class: "btn btn-primary btn-sm", data: { confirm: "Create seats for #{@spotlight_stats[:titles][:without_seats]} title(s) without seats?" } do
-                      %i.bi.bi-plus-circle.me-2
-                      Create Missing Seats
-                  - else
-                    .d-flex.align-items-center.justify-content-center
-                      .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-                        %i.bi.bi-plus-circle.me-2
-                        Create Missing Seats
-                      %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
-                - else
+                - if @spotlight_stats[:titles][:without_seats].zero?
                   .h3.text-success= "✓"
                   %small.text-muted All Covered
+                - else
+                  .h3.text-warning= @spotlight_stats[:titles][:without_seats]
+                  %small.text-muted Need seats
           
           .col-md-4
             / Action alerts or status messages
@@ -299,6 +300,47 @@
               .alert.alert-success.small
                 %i.bi.bi-check-circle.me-2
                 %strong All position types have at least one seat
+
+- employees_missing = @spotlight_stats[:employees][:without_seats].to_i
+- titles_missing = @spotlight_stats[:titles][:without_seats].to_i
+- if employees_missing.positive? || titles_missing.positive?
+  .row.justify-content-center.mb-3
+    .col-lg-12
+      %a.small.text-muted.text-decoration-none.d-inline-flex.align-items-center.gap-1{href: "#createMissingSeatsTools", "data-bs-toggle": "collapse", "aria-expanded": "false", "aria-controls": "createMissingSeatsTools", role: "button"}
+        %i.bi.bi-plus-circle
+        Create missing seats…
+      #createMissingSeatsTools.collapse.mt-2
+        .card.border-0.bg-light
+          .card-body.py-3
+            .d-flex.flex-wrap.gap-3.align-items-start
+              - if employees_missing.positive?
+                .d-flex.flex-column.gap-1
+                  %span.small.text-muted #{employees_missing} employee#{'s' if employees_missing != 1} without seats
+                  - if policy(Seat).create?
+                    = button_to create_missing_employee_seats_organization_seats_path(organization), method: :post, class: "btn btn-outline-primary btn-sm", data: { confirm: "Create seats for #{employees_missing} employee(s) without seats?" } do
+                      %i.bi.bi-plus-circle.me-1
+                      Create missing employee seats
+                  - else
+                    .d-flex.align-items-center.gap-2
+                      .btn.btn-outline-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                        Create missing employee seats
+                      %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
+              - if titles_missing.positive?
+                .d-flex.flex-column.gap-1
+                  %span.small.text-muted #{titles_missing} title#{'s' if titles_missing != 1} without seats
+                  - if policy(Seat).create?
+                    = button_to create_missing_title_seats_organization_seats_path(organization), method: :post, class: "btn btn-outline-primary btn-sm", data: { confirm: "Create seats for #{titles_missing} title(s) without seats?" } do
+                      %i.bi.bi-plus-circle.me-1
+                      Create missing title seats
+                  - else
+                    .d-flex.align-items-center.gap-2
+                      .btn.btn-outline-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                        Create missing title seats
+                      %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    = render "organizations/seats/state_quick_filter", filters: @current_filters
 
 / Main Content Area
 .row.justify-content-center

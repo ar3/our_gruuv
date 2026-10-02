@@ -56,4 +56,27 @@ RSpec.describe "MaapProposals Seat edit lifecycle", type: :service do
     expect(seat.reload.why_needed).to eq("Updated need from MD")
     expect(seat.job_classification).to eq("Contractor")
   end
+
+  it "applies additional titles on edit" do
+    extra_title = create(:title, company: organization, external_title: "UX Writer")
+    draft = MaapProposals::CreateSeatEditDraft.call(seat: seat, proposer: proposer)
+    proposal = draft.value
+
+    update = MaapProposals::UpdateSeatEditDraft.call(
+      proposal: proposal,
+      attributes: {
+        "why_needed" => "Need with extra title",
+        "additional_title_ids" => [extra_title.id]
+      }
+    )
+    expect(update).to be_ok
+
+    submit = MaapProposals::SubmitSeatEdit.call(proposal: proposal.reload)
+    expect(submit).to be_ok
+
+    apply = MaapProposals::ApplySeatEdit.call(proposal: proposal.reload, decided_by: decider)
+    expect(apply).to be_ok
+    expect(seat.reload.associated_title_ids).to contain_exactly(title.id, extra_title.id)
+    expect(seat.title_id).to eq(title.id)
+  end
 end

@@ -1,0 +1,79 @@
+- content_for :title, "Proposed Seat creates"
+- page_help_id = "maapSeatCreatesPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span Proposed Seat creates
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Propose a new Seat. Click for how create proposals work."
+      - if policy(MaapProposal).create?
+        = link_to new_organization_maap_seat_create_path(@organization),
+                  class: "btn btn-primary",
+                  title: "Propose new Seat",
+                  "aria-label" => "Propose new Seat",
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+          %i.bi.bi-plus
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: "Proposed Seat creates", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/maap_seat_creates/page_help"
+
+.row.justify-content-center
+  .col-lg-10
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-4
+      %p.text-muted.mb-0
+        Draft and submit apply-ready proposals to create a new Seat. Teammates who can create Seats can apply or reject submitted proposals.
+      .d-flex.flex-wrap.gap-2
+        - if policy(MaapProposal).upload_markdown?
+          = link_to markdown_template_organization_maap_seat_creates_path(@organization), class: "btn btn-outline-secondary" do
+            %i.bi.bi-download.me-1
+            Download markdown template
+          %button.btn.btn-outline-secondary{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#uploadSeatCreateMarkdownCollapse"}
+            %i.bi.bi-upload.me-1
+            Upload markdown
+
+    - if policy(MaapProposal).upload_markdown?
+      #uploadSeatCreateMarkdownCollapse.collapse.mb-4
+        .card
+          .card-body
+            = form_with url: upload_markdown_organization_maap_seat_creates_path(@organization), method: :post, multipart: true, local: true do |f|
+              .mb-3
+                = label_tag :markdown_file, "Markdown file", class: "form-label"
+                = file_field_tag :markdown_file, accept: ".md,text/markdown,text/plain", class: "form-control"
+              .mb-3
+                = label_tag :markdown_body, "Or paste markdown", class: "form-label"
+                = text_area_tag :markdown_body, nil, rows: 8, class: "form-control font-monospace"
+              = submit_tag "Create draft from markdown", class: "btn btn-primary"
+
+    = form_with url: organization_maap_seat_creates_path(@organization), method: :get, local: true, class: "mb-3" do
+      .d-flex.flex-wrap.align-items-center.gap-3
+        %span.small.text-muted.fw-semibold Status
+        - @filterable_statuses.each do |status|
+          .form-check.form-check-inline.mb-0
+            = check_box_tag "statuses[]",
+                            status,
+                            @selected_statuses.include?(status),
+                            id: "seat_create_proposal_status_#{status}",
+                            class: "form-check-input",
+                            onchange: "this.form.requestSubmit()"
+            = label_tag "seat_create_proposal_status_#{status}", status.titleize, class: "form-check-label"
+
+    - if @proposals.any?
+      .list-group
+        - @proposals.each do |proposal|
+          = link_to organization_maap_seat_create_path(@organization, proposal), class: "list-group-item list-group-item-action" do
+            .d-flex.justify-content-between.align-items-start.gap-3
+              %div
+                %strong= proposal.proposed_title.presence || "Untitled Seat create"
+                .small.text-muted
+                  = proposal.proposer.person.display_name
+                  · created #{l(proposal.created_at, format: :short)}
+                  - if proposal.applied? && proposal.proposable
+                    · applied as #{proposal.proposable.display_name}
+              %span.badge{class: proposal_status_badge_class(proposal.status)}= proposal.status
+    - else
+      %p.text-muted.mb-0 No create proposals match these filters.

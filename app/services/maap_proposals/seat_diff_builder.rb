@@ -76,6 +76,12 @@ module MaapProposals
         diffs << build_field(:reports_to_seat, "Reports to seat", before_reports_to, after_reports_to)
       end
 
+      before_additional = titles_text(@before.additional_title_ids)
+      after_additional = titles_text(@after.additional_title_ids)
+      if before_additional != after_additional
+        diffs << build_field(:additional_titles, "Additional titles", before_additional, after_additional)
+      end
+
       diffs
     end
 
@@ -100,6 +106,10 @@ module MaapProposals
       return "" if title_id.blank?
 
       Title.find_by(id: title_id)&.external_title.to_s
+    end
+
+    def titles_text(ids)
+      Array(ids).filter_map { |id| Title.find_by(id: id)&.external_title }.join("\n")
     end
 
     def team_label(team_id)

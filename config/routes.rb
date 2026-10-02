@@ -274,6 +274,19 @@ Rails.application.routes.draw do
         get :markdown_template
       end
     end
+    resources :maap_seat_creates,
+              controller: "organizations/maap_seat_creates" do
+      member do
+        post :submit
+        post :apply
+        post :reject
+        get :markdown
+      end
+      collection do
+        post :upload_markdown
+        get :markdown_template
+      end
+    end
 
     resource :talent_density,
              only: [:show, :update],
@@ -908,7 +921,7 @@ Rails.application.routes.draw do
     end
     
     # Seats management
-    resources :seats, module: :organizations do
+    resources :seats, module: :organizations, except: [:destroy] do
       collection do
         post :create_missing_employee_seats
         post :create_missing_title_seats
@@ -919,6 +932,9 @@ Rails.application.routes.draw do
         patch :reconcile
         get :manage_titles
         patch :update_titles
+        get :archive
+        patch :execute_archive
+        patch :restore
       end
       resources :maap_proposals, module: :seats do
         member do

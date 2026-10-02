@@ -17,6 +17,8 @@ module MaapProposals
 
       baseline_payload = if @proposal.ability_create?
         AbilityPayload.empty.to_h
+      elsif @proposal.seat_create?
+        SeatPayload.empty.to_h
       elsif @proposal.create_kind?
         AssignmentPayload.empty.to_h
       elsif @proposal.proposable_type == "Assignment" && @proposal.proposable

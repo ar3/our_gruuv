@@ -32,4 +32,57 @@ RSpec.describe SeatsHelper, type: :helper do
       expect(html).to include("Filled · #{filled_seat.display_name} (Alex)")
     end
   end
+
+  describe 'state quick filter' do
+    describe '#seat_state_quick_filter_selection' do
+      it 'maps empty and single-state presets' do
+        expect(helper.seat_state_quick_filter_selection({})).to eq(:all)
+        expect(helper.seat_state_quick_filter_selection(state: %w[filled])).to eq(:filled)
+        expect(helper.seat_state_quick_filter_selection(state: %w[open])).to eq(:unfilled)
+        expect(helper.seat_state_quick_filter_selection(state: %w[filled open])).to eq(:all_open)
+        expect(helper.seat_state_quick_filter_selection(state: %w[draft])).to eq(:draft)
+      end
+
+      it 'marks other multi-state filters as custom' do
+        expect(helper.seat_state_quick_filter_selection(state: %w[open draft])).to eq(:custom)
+        expect(helper.seat_state_quick_filter_selection(state: %w[archived])).to eq(:custom)
+      end
+    end
+
+    describe '#seat_state_quick_filter_path' do
+      before do
+        allow(helper).to receive(:params).and_return(
+          ActionController::Parameters.new(view: 'table', sort: 'title', state: %w[draft])
+        )
+      end
+
+      it 'sets state for a preset and preserves other params' do
+        path = helper.seat_state_quick_filter_path(organization, :filled)
+        expect(path).to include('state%5B%5D=filled')
+        expect(path).to include('view=table')
+        expect(path).to include('sort=title')
+      end
+
+      it 'maps unfilled to open state' do
+        path = helper.seat_state_quick_filter_path(organization, :unfilled)
+        expect(path).to include('state%5B%5D=open')
+        expect(path).not_to include('filled')
+        expect(path).not_to include('draft')
+      end
+
+      it 'maps all_open to open and filled' do
+        path = helper.seat_state_quick_filter_path(organization, :all_open)
+        expect(path).to include('state%5B%5D=open')
+        expect(path).to include('state%5B%5D=filled')
+        expect(path).not_to include('draft')
+        expect(path).not_to include('archived')
+      end
+
+      it 'clears state for all' do
+        path = helper.seat_state_quick_filter_path(organization, :all)
+        expect(path).not_to include('state')
+        expect(path).to include('view=table')
+      end
+    end
+  end
 end

@@ -246,6 +246,38 @@ RSpec.describe Seat, type: :model do
         end
       end
     end
+
+    describe '#archivable?' do
+      it 'is true when there are no active employment tenures' do
+        create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
+        expect(seat.archivable?).to be true
+      end
+
+      it 'is false when an active employment tenure exists' do
+        create(:employment_tenure, :with_seat, seat: seat, ended_at: nil)
+        expect(seat.archivable?).to be false
+      end
+
+      it 'is false when already archived' do
+        seat.update!(state: :archived)
+        expect(seat.archivable?).to be false
+      end
+    end
+
+    describe '#archive!' do
+      it 'sets state to archived' do
+        seat.archive!
+        expect(seat.reload).to be_archived
+      end
+    end
+
+    describe '#restore!' do
+      it 'restores an archived seat to open when no active tenure' do
+        seat.update!(state: :archived)
+        seat.restore!
+        expect(seat.reload.state).to eq('open')
+      end
+    end
   end
 
   describe 'HR text cascade' do

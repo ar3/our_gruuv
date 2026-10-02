@@ -129,9 +129,27 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include('View this seat')
       expect(response.body).to include('>Title</th>')
       expect(response.body).not_to include('>Position Type</th>')
+      expect(response.body).to include('Filled only')
+      expect(response.body).to include('Unfilled only')
+      expect(response.body).to include('All Open')
+      expect(response.body).to include('Draft only')
       expect(response.body).to include(organization_title_path(company, indexed_title))
       expect(response.body).to include(organization_seat_path(company, indexed_seat))
       expect(response.body).not_to include(edit_organization_seat_path(company, indexed_seat))
+    end
+
+    it 'hides create-missing actions behind a muted expand link when gaps exist' do
+      create(:title, company: company, position_major_level: position_major_level, external_title: 'Orphan Title')
+
+      get organization_seats_path(company)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Create missing seats…')
+      expect(response.body).to include('createMissingSeatsTools')
+      expect(response.body).to include('Create missing title seats')
+      expect(response.body).to include('btn-outline-primary')
+      expect(response.body).not_to include('Create Missing Seats')
+      expect(response.body).not_to match(/btn-primary[^>]*Create missing (employee|title) seats/i)
     end
 
     it 'links filled seat filler casual name to the internal teammate page' do
@@ -321,6 +339,72 @@ RSpec.describe 'Organizations::Seats', type: :request do
 
       expect(response).to redirect_to(manage_titles_organization_seat_path(company, seat))
       expect(flash[:alert]).to include('at least one title')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/seats/:id/archive' do
+    it 'shows archive confirmation and blocks when an active tenure exists' do
+      filler = create(:teammate, :assigned_employee, organization: company)
+      create(:employment_tenure, :with_seat, company: company, company_teammate: filler, seat: seat, ended_at: nil)
+
+      get archive_organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Archive Seat')
+      expect(response.body).to include('currently filling this seat')
+      expect(response.body).to include(organization_teammate_position_path(company, filler))
+      expect(response.body).not_to include('Archive seat</button>')
+      expect(response.body).not_to include('value="Archive seat"')
+    end
+
+    it 'lists past tenures and allows archive when none are active' do
+      past_teammate = create(:teammate, :assigned_employee, organization: company)
+      create(
+        :employment_tenure,
+        :with_seat,
+        company: company,
+        company_teammate: past_teammate,
+        seat: seat,
+        started_at: 1.year.ago,
+        ended_at: 1.month.ago
+      )
+
+      get archive_organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No active employment tenures')
+      expect(response.body).to include('Past employment on this seat')
+      expect(response.body).to include(organization_teammate_position_path(company, past_teammate))
+      expect(response.body).to include('Archive seat')
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/seats/:id/execute_archive' do
+    it 'archives when archivable' do
+      patch execute_archive_organization_seat_path(company, seat)
+
+      expect(response).to redirect_to(organization_seat_path(company, seat))
+      expect(seat.reload).to be_archived
+    end
+
+    it 'refuses when an active tenure exists' do
+      filler = create(:teammate, :assigned_employee, organization: company)
+      create(:employment_tenure, :with_seat, company: company, company_teammate: filler, seat: seat, ended_at: nil)
+
+      patch execute_archive_organization_seat_path(company, seat)
+
+      expect(response).to redirect_to(archive_organization_seat_path(company, seat))
+      expect(seat.reload).not_to be_archived
+    end
+  end
+
+  describe 'seat show archive entry point' do
+    it 'links to archive instead of hard delete' do
+      get organization_seat_path(company, seat)
+
+      expect(response.body).to include(archive_organization_seat_path(company, seat))
+      expect(response.body).to include('Archive')
+      expect(response.body).not_to include('Delete')
     end
   end
 end

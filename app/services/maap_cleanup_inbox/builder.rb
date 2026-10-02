@@ -97,6 +97,8 @@ module MaapCleanupInbox
       kind_label = proposal.create_kind? ? "Create" : "Edit"
       target = if proposal.ability_create?
         "new Ability"
+      elsif proposal.seat_create?
+        "new Seat"
       elsif proposal.create_kind?
         "new Assignment"
       elsif proposal.proposable_type == "Seat" && proposal.proposable
@@ -113,6 +115,8 @@ module MaapCleanupInbox
 
       review_url = if proposal.ability_create?
         routes.organization_maap_ability_create_path(organization, proposal)
+      elsif proposal.seat_create?
+        routes.organization_maap_seat_create_path(organization, proposal)
       elsif proposal.create_kind?
         routes.organization_maap_assignment_create_path(organization, proposal)
       elsif proposal.proposable_type == "Assignment" && proposal.proposable

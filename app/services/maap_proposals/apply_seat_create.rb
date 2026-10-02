@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MaapProposals
-  class ApplySeatEdit
+  class ApplySeatCreate
     def self.call(proposal:, decided_by:, decision_note: nil)
       new(proposal: proposal, decided_by: decided_by, decision_note: decision_note).call
     end
@@ -14,14 +14,14 @@ module MaapProposals
 
     def call
       return Result.err("Only submitted proposals can be applied") unless @proposal.decidable?
-      return Result.err("Only Seat edit proposals are supported") unless @proposal.edit_kind? && @proposal.proposable_type == "Seat"
+      return Result.err("Only Seat create proposals are supported") unless @proposal.seat_create?
 
-      seat = @proposal.proposable
       payload = SeatPayload.from_hash(@proposal.proposed_payload)
-      errors = payload.validate!(company: seat.company, excluding_seat: seat)
+      errors = payload.validate!(company: @proposal.organization)
       return Result.err(errors) if errors.any?
 
-      baseline_payload = SeatPayload.from_seat(seat).to_h
+      baseline_payload = SeatPayload.empty.to_h
+      seat = Seat.new(state: :draft)
 
       ApplicationRecord.transaction do
         seat.assign_attributes(
@@ -41,7 +41,7 @@ module MaapProposals
         )
         SeatTitlesApplier.call(seat: seat, payload: payload)
         unless seat.save
-          raise ApplyFailed.new(seat.errors.full_messages.presence || ["Failed to save seat"])
+          raise ApplyFailed.new(seat.errors.full_messages.presence || ["Failed to create seat"])
         end
 
         @proposal.update!(
@@ -51,7 +51,8 @@ module MaapProposals
           decision_note: @decision_note.presence,
           applied_version_type: nil,
           baseline_payload: baseline_payload,
-          decision_warnings: []
+          decision_warnings: [],
+          proposable: seat.reload
         )
       end
 

@@ -158,6 +158,26 @@ class Seat < ApplicationRecord
     end
   end
 
+  def archivable?
+    !archived? && blocking_active_employment_tenures.none?
+  end
+
+  def blocking_active_employment_tenures
+    employment_tenures.active
+  end
+
+  def inactive_employment_tenures
+    employment_tenures.where.not(ended_at: nil)
+  end
+
+  def archive!
+    update!(state: :archived)
+  end
+
+  def restore!
+    update!(state: employment_tenures.active.exists? ? :filled : :open)
+  end
+
   # HR text cascade: seat → title → organization
   def job_description_hr_text
     JobDescriptionHrText.for(organization: title.company, title: title, seat: self)

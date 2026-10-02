@@ -1,0 +1,80 @@
+- content_for :title, "Archive Seat - #{@seat.display_name}"
+- content_for :header do
+  Archive Seat: #{@seat.display_name}
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: @seat.display_name, url: organization_seat_path(@organization, @seat) }, { label: "Archive", url: nil }])
+
+.row.justify-content-center
+  .col-lg-10
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-archive.me-2
+          What happens when you archive
+      .card-body
+        %p.mb-2
+          Archiving this seat will:
+        %ul
+          %li Mark it as archived so it no longer appears as an open/filled/draft seat in default lists.
+          %li Keep the seat page reachable by direct URL, with an archived banner.
+          %li Preserve titles, team, reports-to, employment history, and proposals.
+        %p.mb-0.text-muted
+          You must end or reassign any active employment tenures on this seat before archiving.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-exclamation-triangle.me-2
+          Requirements before archiving
+      .card-body
+        %ul.list-unstyled.mb-0
+          %li
+            - if @active_employment_tenures.empty?
+              %i.bi.bi-check-circle.text-success.me-2
+              No active employment tenures on this seat
+            - else
+              %i.bi.bi-x-circle.text-danger.me-2
+              #{pluralize(@active_employment_tenures.size, 'person')} currently filling this seat. End employment or reassign their seat first.
+              %ul.mt-1.mb-0.ms-4
+                - @active_employment_tenures.each do |tenure|
+                  - teammate = tenure.teammate
+                  %li
+                    = link_to teammate.person.display_name, organization_teammate_position_path(teammate.organization, teammate), class: "text-decoration-none"
+                    %span.text-muted.ms-1
+                      — seat management
+                      (started #{tenure.started_at&.strftime('%b %d, %Y') || 'N/A'})
+
+    - if @inactive_employment_tenures.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-clock-history.me-2
+            Past employment on this seat
+        .card-body
+          %p.text-muted.small.mb-2
+            These tenures have ended. They do not block archiving. Links go to each teammate's seat management page.
+          %ul.mb-0
+            - @inactive_employment_tenures.each do |tenure|
+              - teammate = tenure.teammate
+              %li
+                = link_to teammate.person.display_name, organization_teammate_position_path(teammate.organization, teammate), class: "text-decoration-none"
+                %span.text-muted.ms-1
+                  (#{tenure.started_at&.strftime('%b %d, %Y') || 'N/A'}
+                  – #{tenure.ended_at&.strftime('%b %d, %Y') || 'N/A'})
+
+    - if @archivable
+      .card.mb-4
+        .card-body
+          = form_with url: execute_archive_organization_seat_path(@organization, @seat), method: :patch, local: true do |f|
+            .form-check.mb-3
+              = check_box_tag :confirm_archive, '1', false, class: 'form-check-input', id: 'confirm_archive', required: true
+              = label_tag 'confirm_archive', 'I understand that this seat will be archived and removed from active seat lists.', class: 'form-check-label'
+            = f.submit 'Archive seat', class: 'btn btn-warning'
+    - else
+      .card.mb-4.border-warning
+        .card-body
+          %p.mb-2.text-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            You cannot archive until all active employment tenures on this seat are ended or reassigned.
+          %p.mb-0
+            = link_to 'Back to seat', organization_seat_path(@organization, @seat), class: 'btn btn-outline-secondary'

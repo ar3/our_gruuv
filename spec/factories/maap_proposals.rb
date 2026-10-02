@@ -125,5 +125,23 @@ FactoryBot.define do
       content_schema_version { MaapProposals::SeatPayload::SCHEMA_VERSION }
       proposed_payload { MaapProposals::SeatPayload.from_seat(proposable).to_h }
     end
+
+    trait :seat_create do
+      kind { "create" }
+      proposable { nil }
+      proposable_type { "Seat" }
+      create_key { SecureRandom.uuid }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::SeatPayload::SCHEMA_VERSION }
+      proposed_payload do
+        title = organization.titles.first || create(:title, company: organization)
+        MaapProposals::SeatPayload.from_hash(
+          "title_id" => title.id,
+          "additional_title_ids" => [],
+          "seat_needed_by" => (Date.current + 3.months).iso8601,
+          "job_classification" => MaapProposals::SeatPayload::JOB_CLASSIFICATIONS.first
+        ).to_h
+      end
+    end
   end
 end
