@@ -14,7 +14,7 @@ module MaapProposals
 
     def call
       return Result.err("Only draft proposals can be edited") unless @proposal.editable?
-      return Result.err("Only Ability edit proposals are supported") unless ability_edit?
+      return Result.err("Only Ability proposals are supported") unless ability_proposal?
 
       current = AbilityPayload.from_hash(@proposal.proposed_payload).to_h
       merged = current.merge(@attributes.deep_stringify_keys.slice(*AbilityPayload::ATTR_KEYS))
@@ -38,8 +38,8 @@ module MaapProposals
 
     private
 
-    def ability_edit?
-      @proposal.edit_kind? && @proposal.proposable_type == "Ability"
+    def ability_proposal?
+      @proposal.proposable_type == "Ability"
     end
   end
 end

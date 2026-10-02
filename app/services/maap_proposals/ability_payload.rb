@@ -36,6 +36,32 @@ module MaapProposals
       new(normalize(raw))
     end
 
+    def self.empty
+      from_hash(
+        "name" => "",
+        "description" => "",
+        "department_id" => nil,
+        "milestone_1_description" => nil,
+        "milestone_2_description" => nil,
+        "milestone_3_description" => nil,
+        "milestone_4_description" => nil,
+        "milestone_5_description" => nil
+      )
+    end
+
+    def self.blank_for_create
+      from_hash(
+        "name" => "New Ability",
+        "description" => "Describe this ability",
+        "department_id" => nil,
+        "milestone_1_description" => Ability.default_milestone_description(1),
+        "milestone_2_description" => Ability.default_milestone_description(2),
+        "milestone_3_description" => Ability.default_milestone_description(3),
+        "milestone_4_description" => Ability.default_milestone_description(4),
+        "milestone_5_description" => Ability.default_milestone_description(5)
+      )
+    end
+
     def self.normalize(raw)
       hash = raw.deep_stringify_keys
       {

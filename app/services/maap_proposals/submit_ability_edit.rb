@@ -12,8 +12,31 @@ module MaapProposals
 
     def call
       return Result.err("Only draft proposals can be submitted") unless @proposal.submittable?
-      return Result.err("Only Ability edit proposals are supported") unless @proposal.edit_kind? && @proposal.proposable_type == "Ability"
 
+      if @proposal.ability_create?
+        submit_create
+      elsif @proposal.edit_kind? && @proposal.proposable_type == "Ability"
+        submit_edit
+      else
+        Result.err("Only Ability proposals are supported")
+      end
+    end
+
+    private
+
+    def submit_create
+      payload = AbilityPayload.from_hash(@proposal.proposed_payload)
+      errors = payload.validate!(company: @proposal.organization)
+      return Result.err(errors) if errors.any?
+
+      if @proposal.update(status: "submitted", submitted_at: Time.current)
+        Result.ok(@proposal)
+      else
+        Result.err(@proposal.errors.full_messages)
+      end
+    end
+
+    def submit_edit
       ability = @proposal.proposable
       payload = AbilityPayload.from_hash(@proposal.proposed_payload)
       errors = payload.validate!(company: ability.company)

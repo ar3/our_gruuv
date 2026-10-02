@@ -4,18 +4,32 @@
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Abilities", url: nil }])
 
 - content_for :header do
+  - can_create_ability = policy(Ability.new(company: @organization)).create?
+  - primary_create_path = can_create_ability ? new_organization_ability_path(@organization) : new_organization_maap_ability_create_path(@organization)
+  - primary_create_label = can_create_ability ? "Create New Ability" : "Suggest New Ability"
   - object_lens_trailing = capture do
-    - if policy(Ability).create?
-      = link_to new_organization_ability_path(@organization),
+    .btn-group
+      = link_to primary_create_path,
                 class: "btn btn-primary",
-                title: "Add new Ability",
-                "aria-label" => "Add new Ability",
+                title: primary_create_label,
+                "aria-label" => primary_create_label,
                 data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
         %i.bi.bi-plus
-    - else
-      .btn.btn-primary.disabled{title: "Add new Ability", "aria-label" => "Add new Ability"}
-        %i.bi.bi-plus
-      %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need ability management permissions for this organization to create abilities"}
+      %button.btn.btn-primary.dropdown-toggle.dropdown-toggle-split{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "More create options"}
+        %span.visually-hidden Toggle Dropdown
+      %ul.dropdown-menu.dropdown-menu-end
+        %li
+          - if can_create_ability
+            = link_to "Create New Ability", new_organization_ability_path(@organization), class: "dropdown-item"
+          - else
+            %span.dropdown-item.disabled.d-flex.align-items-center.gap-2{tabindex: "-1", "aria-disabled" => "true"}
+              %span Create New Ability
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "left", "data-bs-title" => "You need permission to create Abilities.", role: "img", "aria-label" => "You need permission to create Abilities."}
+                %i.bi.bi-exclamation-triangle
+        %li
+          = link_to "Suggest New Ability", new_organization_maap_ability_create_path(@organization), class: "dropdown-item"
+        %li
+          = link_to "View Suggested New Abilities", organization_maap_ability_creates_path(@organization), class: "dropdown-item"
   = render "shared/object_lens_header/switchers",
            organization: @organization,
            current_object: :abilities,

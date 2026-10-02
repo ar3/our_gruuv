@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MaapProposals
-  class CreateAssignmentCreateDraft
+  class CreateAbilityCreateDraft
     def self.call(organization:, proposer:, source: "in_product", payload: nil, source_markdown: nil, create_key: nil)
       new(
         organization: organization,
@@ -23,7 +23,7 @@ module MaapProposals
     end
 
     def call
-      existing = MaapProposal.creates
+      existing = MaapProposal.ability_creates
                              .open_proposals
                              .find_by(organization: @organization, create_key: @create_key)
       if existing
@@ -35,7 +35,7 @@ module MaapProposals
 
           attrs = {
             proposed_payload: @payload.to_h,
-            content_schema_version: AssignmentPayload::SCHEMA_VERSION,
+            content_schema_version: AbilityPayload::SCHEMA_VERSION,
             source: @source
           }
           attrs[:source_markdown] = @source_markdown unless @source_markdown.nil?
@@ -45,14 +45,14 @@ module MaapProposals
         return Result.ok(existing)
       end
 
-      payload = @payload || AssignmentPayload.blank_for_create
+      payload = @payload || AbilityPayload.blank_for_create
       errors = payload.validate!(company: @organization)
       return Result.err(errors) if errors.any?
 
       proposal = MaapProposal.new(
         organization: @organization,
         proposable: nil,
-        proposable_type: "Assignment",
+        proposable_type: "Ability",
         kind: "create",
         status: "draft",
         proposer: @proposer,
@@ -60,7 +60,7 @@ module MaapProposals
         based_on_semantic_version: nil,
         source: @source,
         proposed_payload: payload.to_h,
-        content_schema_version: AssignmentPayload::SCHEMA_VERSION,
+        content_schema_version: AbilityPayload::SCHEMA_VERSION,
         source_markdown: @source_markdown
       )
 

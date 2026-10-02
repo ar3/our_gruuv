@@ -103,6 +103,19 @@ RSpec.describe MaapCleanupInbox::Builder do
         "supplier_assignment_ids" => []
       }
     )
+    create(
+      :maap_proposal,
+      :ability_create,
+      :submitted,
+      organization: organization,
+      proposer: teammate,
+      proposed_payload: {
+        "schema_version" => 1,
+        "name" => "New Ability Create",
+        "description" => "desc",
+        "milestone_1_description" => "m1"
+      }
+    )
 
     sections = described_class.call(
       organization: organization,
@@ -110,9 +123,15 @@ RSpec.describe MaapCleanupInbox::Builder do
     )
     subtype = proposals_section(sections).subtypes.first
 
-    expect(subtype.count).to eq(2)
-    expect(subtype.items.map(&:title)).to include("Edit: Edited Title", "Create: Brand New")
+    expect(subtype.count).to eq(3)
+    expect(subtype.items.map(&:title)).to include(
+      "Edit: Edited Title",
+      "Create: Brand New",
+      "Create: New Ability Create"
+    )
     expect(subtype.items.flat_map { |item| item.actions.map(&:label) }).to all(eq("Review proposal"))
+    ability_create_item = subtype.items.find { |item| item.title == "Create: New Ability Create" }
+    expect(ability_create_item.actions.first.url).to include("/maap_ability_creates/")
   end
 
   it "ignores ended tenures and matching seat/position pairs" do

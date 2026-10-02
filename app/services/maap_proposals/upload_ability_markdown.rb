@@ -13,8 +13,16 @@ module MaapProposals
     end
 
     def call
-      result = AbilityMarkdownDeserializer.call(markdown: @markdown, ability: @ability)
+      result = AbilityMarkdownDeserializer.call(
+        markdown: @markdown,
+        organization: @ability.company,
+        ability: @ability
+      )
       return result unless result.ok?
+
+      if result.value[:kind] == "create"
+        return Result.err("This markdown is a create proposal; upload it from Proposed Ability creates")
+      end
 
       CreateAbilityEditDraft.call(
         ability: @ability,

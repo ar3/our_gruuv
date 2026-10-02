@@ -91,5 +91,27 @@ FactoryBot.define do
         }
       end
     end
+
+    trait :ability_create do
+      kind { "create" }
+      proposable { nil }
+      proposable_type { "Ability" }
+      create_key { SecureRandom.uuid }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::AbilityPayload::SCHEMA_VERSION }
+      proposed_payload do
+        {
+          "schema_version" => MaapProposals::AbilityPayload::SCHEMA_VERSION,
+          "name" => "New Ability",
+          "description" => "Describe this ability",
+          "department_id" => nil,
+          "milestone_1_description" => Ability.default_milestone_description(1),
+          "milestone_2_description" => Ability.default_milestone_description(2),
+          "milestone_3_description" => Ability.default_milestone_description(3),
+          "milestone_4_description" => Ability.default_milestone_description(4),
+          "milestone_5_description" => Ability.default_milestone_description(5)
+        }
+      end
+    end
   end
 end

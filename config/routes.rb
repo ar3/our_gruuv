@@ -261,6 +261,19 @@ Rails.application.routes.draw do
         get :markdown_template
       end
     end
+    resources :maap_ability_creates,
+              controller: "organizations/maap_ability_creates" do
+      member do
+        post :submit
+        post :apply
+        post :reject
+        get :markdown
+      end
+      collection do
+        post :upload_markdown
+        get :markdown_template
+      end
+    end
 
     resource :talent_density,
              only: [:show, :update],

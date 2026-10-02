@@ -95,7 +95,9 @@ module MaapCleanupInbox
       proposer = proposal.proposer
       title = proposal.proposed_title.presence || "Untitled proposal"
       kind_label = proposal.create_kind? ? "Create" : "Edit"
-      target = if proposal.create_kind?
+      target = if proposal.ability_create?
+        "new Ability"
+      elsif proposal.create_kind?
         "new Assignment"
       elsif proposal.proposable.respond_to?(:title)
         proposal.proposable.title
@@ -105,7 +107,9 @@ module MaapCleanupInbox
         proposal.proposable_type.to_s
       end
 
-      review_url = if proposal.create_kind?
+      review_url = if proposal.ability_create?
+        routes.organization_maap_ability_create_path(organization, proposal)
+      elsif proposal.create_kind?
         routes.organization_maap_assignment_create_path(organization, proposal)
       elsif proposal.proposable_type == "Assignment" && proposal.proposable
         routes.organization_assignment_maap_proposal_path(organization, proposal.proposable, proposal)

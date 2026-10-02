@@ -21,6 +21,7 @@ module MaapProposals
     end
 
     def self.coerce_before(before:, ability:)
+      return AbilityPayload.empty if before == :empty
       return AbilityPayload.from_ability(ability) if before.nil? && ability
       return before if before.is_a?(AbilityPayload)
       return AbilityPayload.from_hash(before) if before.present?

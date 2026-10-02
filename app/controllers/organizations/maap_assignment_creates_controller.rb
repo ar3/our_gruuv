@@ -13,7 +13,7 @@ class Organizations::MaapAssignmentCreatesController < Organizations::Organizati
       @filterable_statuses.dup
     end
     @proposals = policy_scope(MaapProposal)
-      .creates
+      .assignment_creates
       .for_organization(@organization)
       .with_statuses(@selected_statuses)
       .created_first
@@ -187,7 +187,7 @@ class Organizations::MaapAssignmentCreatesController < Organizations::Organizati
 
   def set_proposal
     @proposal = policy_scope(MaapProposal)
-      .creates
+      .assignment_creates
       .for_organization(@organization)
       .includes(decided_by: :person, proposable: [])
       .find(params[:id])

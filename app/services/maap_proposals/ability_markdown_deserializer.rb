@@ -14,12 +14,13 @@ module MaapProposals
       "milestone 5" => :milestone_5_description
     }.freeze
 
-    def self.call(markdown:, ability:)
-      new(markdown: markdown, ability: ability).call
+    def self.call(markdown:, organization:, ability: nil)
+      new(markdown: markdown, organization: organization, ability: ability).call
     end
 
-    def initialize(markdown:, ability:)
+    def initialize(markdown:, organization:, ability:)
       @markdown = markdown.to_s
+      @organization = organization
       @ability = ability
     end
 
@@ -44,12 +45,15 @@ module MaapProposals
         }
       )
 
-      errors = payload.validate!(company: @ability.company)
+      errors = payload.validate!(company: @organization)
       return Result.err(errors) if errors.any?
 
+      kind = meta["kind"].presence || (@ability ? "edit" : "create")
       Result.ok(
         payload: payload,
-        based_on_semantic_version: meta["based_on_semantic_version"].presence || @ability.semantic_version
+        kind: kind,
+        create_key: meta["create_key"].presence,
+        based_on_semantic_version: meta["based_on_semantic_version"].presence || @ability&.semantic_version
       )
     rescue Psych::SyntaxError => e
       Result.err("Invalid YAML front matter: #{e.message}")
@@ -75,9 +79,18 @@ module MaapProposals
 
     def validate_identity(meta)
       type = meta["proposable_type"].to_s
+      kind = meta["kind"].to_s.presence || (@ability ? "edit" : "create")
       id = meta["proposable_id"].to_i
 
       return "proposable_type must be Ability" if type.present? && type != "Ability"
+
+      if kind == "create"
+        return "create markdown must not include proposable_id" if id.positive?
+
+        return nil
+      end
+
+      return "edit markdown requires an ability context" unless @ability
       return "proposable_id does not match this ability" if id.positive? && id != @ability.id
 
       nil

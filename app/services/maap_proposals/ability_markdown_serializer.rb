@@ -2,18 +2,28 @@
 
 module MaapProposals
   class AbilityMarkdownSerializer
-    def self.call(ability:, payload:, based_on_semantic_version:)
+    def self.call(
+      payload:,
+      based_on_semantic_version: nil,
+      ability: nil,
+      kind: nil,
+      create_key: nil
+    )
       new(
-        ability: ability,
         payload: payload,
-        based_on_semantic_version: based_on_semantic_version
+        based_on_semantic_version: based_on_semantic_version,
+        ability: ability,
+        kind: kind,
+        create_key: create_key
       ).call
     end
 
-    def initialize(ability:, payload:, based_on_semantic_version:)
+    def initialize(payload:, based_on_semantic_version:, ability:, kind:, create_key:)
       @ability = ability
       @payload = payload.is_a?(AbilityPayload) ? payload : AbilityPayload.from_hash(payload)
       @based_on_semantic_version = based_on_semantic_version
+      @kind = (kind.presence || (@ability ? "edit" : "create")).to_s
+      @create_key = create_key
     end
 
     def call
@@ -26,9 +36,13 @@ module MaapProposals
       lines = ["---"]
       lines << "maap_proposal_schema_version: #{AbilityPayload::SCHEMA_VERSION}"
       lines << "proposable_type: Ability"
-      lines << "proposable_id: #{@ability.id}"
-      lines << "kind: edit"
-      lines << "based_on_semantic_version: #{yaml_scalar(@based_on_semantic_version)}"
+      lines << "kind: #{@kind}"
+      if @kind == "create"
+        lines << "create_key: #{yaml_scalar(@create_key)}"
+      else
+        lines << "proposable_id: #{@ability.id}"
+        lines << "based_on_semantic_version: #{yaml_scalar(@based_on_semantic_version)}"
+      end
       lines << "department_id: #{yaml_scalar(@payload.department_id)}"
       lines << "---"
       lines.join("\n")
