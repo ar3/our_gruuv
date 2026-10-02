@@ -25,7 +25,10 @@
             .col-md-6
               .mb-3
                 = f.label :title_id, "Primary Title", class: "form-label"
-                = f.collection_select :title_id, @titles, :id, :external_title, { prompt: "Select a title" }, { class: "form-select", required: true }
+                = f.select :title_id,
+                  titles_grouped_options_for_select(@titles, @seat.title_id),
+                  { prompt: "Select a title" },
+                  { class: "form-select", required: true }
                 %small.form-text.text-muted
                   Choose the primary title for this seat. You can add additional titles after creating the seat.
                 - if @seat.errors[:title_id].any?
@@ -51,37 +54,19 @@
                 label_text: "Team (Optional)",
                 selected_team_id: @seat.team_id,
                 include_blank: true,
-                help_text: "Select the team for this seat"
+                help_text: "The primary team this seat will live on should live within the same department as the title"
 
               .mb-3
                 = f.label :reports_to_seat_id, "Reports To Seat (Optional)", class: "form-label"
-                - grouped_options = []
-                - filled_seats = @filled_seats || []
-                - unfilled_seats = @unfilled_seats || []
-                - if filled_seats.any?
-                  - filled_options = filled_seats.map do |item|
-                    - person = item[:person]
-                    - display_name = "#{person.casual_name} - #{item[:seat].display_name}"
-                    - [display_name, item[:seat].id]
-                  - grouped_options << ["Filled Seats", filled_options]
-                - if unfilled_seats.any?
-                  - unfilled_options = unfilled_seats.map { |seat| [seat.display_name, seat.id] }
-                  - grouped_options << ["Unfilled Seats", unfilled_options]
                 = f.select :reports_to_seat_id,
-                  grouped_options_for_select(grouped_options, @seat.reports_to_seat_id),
-                  { prompt: 'Select a seat (optional)', include_blank: 'No Seat' },
+                  seats_grouped_options_for_select(@organization, seats: @reportable_seats || [], selected_seat_id: @seat.reports_to_seat_id),
+                  { prompt: "Select a seat (optional)", include_blank: "No Seat" },
                   { class: "form-select" }
                 %small.form-text.text-muted Select the seat that this seat reports to
 
               .mb-3
                 = f.label :reports, "Direct Reports", class: "form-label"
                 = f.text_area :reports, class: "form-control", rows: 3, placeholder: "Describe who this position will manage"
-
-          .row
-            .col-12
-              .mb-3
-                = f.label :measurable_outcomes, "Measurable Outcomes", class: "form-label"
-                = f.text_area :measurable_outcomes, class: "form-control", rows: 4, placeholder: "List specific, measurable outcomes for this role"
 
           .row
             .col-12

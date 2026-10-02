@@ -7,12 +7,14 @@
 - children_id = "seat-children-#{seat.id}"
 - active_tenure = seat.employment_tenures.active.first
 - active_employee = active_tenure&.teammate&.person
+- current_seat_id = local_assigns[:current_seat_id]
+- is_current = current_seat_id.present? && seat.id == current_seat_id
 
 .tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
   .d-flex.align-items-center
     - if depth > 0
       %i.bi.bi-arrow-return-right.me-2{style: "color: #999;"}
-    .card{style: "width: 500px; position: relative;"}
+    .card{class: is_current ? "border-primary border-2" : nil, style: "width: 500px; position: relative;"}
       .card-body.p-2
         .d-flex.align-items-start
           .flex-shrink-0.me-3
@@ -23,6 +25,8 @@
               = content_tag :div, class: "bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white", style: "width: 48px; height: 48px;" do
                 = content_tag :span, "S", class: "fw-bold", style: "font-size: 19px;"
           .flex-grow-1
+            - if is_current
+              %span.badge.bg-primary.mb-1 This seat
             - if has_subordinates
               .d-flex.align-items-center.mb-2
                 %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
@@ -49,5 +53,5 @@
 - if has_subordinates
   .collapse.show{id: children_id}
     - children.each do |child_node|
-      = render 'organizations/seats/displays/seat_node', node: child_node, depth: depth + 1, organization: organization
+      = render 'organizations/seats/displays/seat_node', node: child_node, depth: depth + 1, organization: organization, current_seat_id: current_seat_id
 

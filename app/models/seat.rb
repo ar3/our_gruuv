@@ -9,6 +9,7 @@ class Seat < ApplicationRecord
   belongs_to :team, optional: true
   belongs_to :reports_to_seat, class_name: 'Seat', optional: true
   has_many :reporting_seats, class_name: 'Seat', foreign_key: 'reports_to_seat_id', dependent: :nullify
+  has_many :maap_proposals, as: :proposable, dependent: :destroy
 
   # Validations
   validates :seat_needed_by, presence: true
@@ -189,6 +190,15 @@ class Seat < ApplicationRecord
 
   def department_id
     title&.department_id
+  end
+
+  # Organization for policies / MAAP proposals (Seat has no company_id column)
+  def company
+    title&.company
+  end
+
+  def company_id
+    title&.company_id
   end
 
   def title_ids

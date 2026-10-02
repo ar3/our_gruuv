@@ -1,27 +1,15 @@
 - company = organization.root_company || organization
-- teams = company ? company.descendants.select { |org| org.type == 'Team' } : []
-- # Exclude specified IDs (for parent selection, exclude self and descendants)
+- teams = company ? Team.for_company(company).active.includes(:department).ordered.to_a : []
 - exclude_ids = exclude_ids || []
 - teams = teams.reject { |team| exclude_ids.include?(team.id) }
-- # Sort teams so that children appear immediately after their parent
-- # display_name includes full hierarchy (e.g., "Company > c > 1"), so string sorting
-- # naturally groups children right after their parent: a, b, c, c > 1, c > 2, d
-- sorted_teams = teams.sort_by { |team| team.display_name }
-- # Build options: only teams (no company)
-- team_options = sorted_teams.map { |team| [team.display_name, team.id] }
-- # Add "No Team" option if include_blank is true (for seats where team is optional)
-- # "No Team" should be first and the default when no selection is provided
-- if include_blank
-  - team_options = [['No Team', '']] + team_options
-- # Default to "No Team" (empty string) if no selection provided
-- default_selected_id = selected_team_id || ''
+- default_selected_id = selected_team_id || ""
+- team_help_text = local_assigns[:help_text]
+- team_help_text = "The primary team this seat will live on should live within the same department as the title" if team_help_text.nil?
 .mb-3
   = form.label field_name, label_text, class: "form-label"
-  = form.select field_name, 
-                team_options,
-                { selected: default_selected_id },
-                { class: 'form-select' }
-  - if help_text.present?
-    %small.form-text.text-muted= help_text
-
-
+  = form.select field_name,
+                teams_grouped_options_for_select(teams, default_selected_id),
+                include_blank ? { include_blank: "No Team" } : {},
+                { class: "form-select" }
+  - if team_help_text.present?
+    %small.form-text.text-muted= team_help_text

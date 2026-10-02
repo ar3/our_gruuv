@@ -32,8 +32,7 @@
               = title&.external_title || 'No Title'
             %span.badge.bg-secondary.ms-2= "#{title_seats.size} seat#{'s' if title_seats.size != 1}"
           - if title
-            = link_to organization_title_path(organization, title), class: "btn btn-sm btn-outline-secondary", title: "View Title" do
-              %i.bi.bi-eye
+            = render "organizations/seats/displays/view_title_link", organization: organization, title: title
       
         .collapse{"id" => "seatTitle#{title&.id || 'none'}"}
           .card-body.p-0
@@ -65,16 +64,7 @@
                           - else
                             %span.text-muted -
                         %td
-                          .btn-group.btn-group-sm
-                            = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
-                            = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-secondary" do
-                              %i.bi.bi-pencil
-                            - if seat.needs_reconciliation?
-                              = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
-                                %i.bi.bi-arrow-clockwise
-                            = link_to organization_seat_path(organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
-                              %i.bi.bi-trash
+                          = render "organizations/seats/displays/seat_row_actions", organization: organization, seat: seat
 - elsif @filtered_seats && @filtered_seats.any?
   / Fallback to old view if seats_by_department is not set
   .table-responsive
@@ -104,16 +94,7 @@
               - else
                 %span.text-muted -
             %td
-              .btn-group.btn-group-sm
-                = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary" do
-                  %i.bi.bi-eye
-                = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-secondary" do
-                  %i.bi.bi-pencil
-                - if seat.needs_reconciliation?
-                  = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
-                    %i.bi.bi-arrow-clockwise
-                = link_to organization_seat_path(organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
-                  %i.bi.bi-trash
+              = render "organizations/seats/displays/seat_row_actions", organization: organization, seat: seat
 - else
   .alert.alert-info
     %h6.mb-2

@@ -98,6 +98,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def show
     authorize @seat
+    @show_page_data = Seats::ShowPageData.new(seat: @seat, organization: organization)
     render layout: determine_layout
   end
 
@@ -263,40 +264,14 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     if @seat&.title_id.present?
       titles_scope = titles_scope.or(organization.titles.where(id: @seat.title_id))
     end
-    @titles = titles_scope.ordered
-    
-    @departments = organization.descendants.select { |o| o.type == 'Department' }.sort_by(&:display_name)
-    @teams = organization.descendants.select { |o| o.type == 'Team' }.sort_by(&:display_name)
-    
-    # Load seats with their active employment tenures and teammates
-    all_seats = Seat.for_organization(organization)
-                    .includes(:title, :titles, employment_tenures: { company_teammate: :person })
-                    .order('titles.external_title ASC, seats.seat_needed_by ASC')
-    
-    # Exclude current seat if editing (can't report to itself)
+    @titles = titles_scope.includes(:department).ordered
+
     current_seat_id = @seat&.id || params[:id]
-    all_seats = all_seats.where.not(id: current_seat_id) if current_seat_id.present?
-    
-    # Separate into filled and unfilled
-    @filled_seats = []
-    @unfilled_seats = []
-    
-    all_seats.each do |seat|
-      active_tenure = seat.employment_tenures.active.first
-      if active_tenure && active_tenure.teammate
-        @filled_seats << {
-          seat: seat,
-          tenure: active_tenure,
-          teammate: active_tenure.teammate,
-          person: active_tenure.teammate.person
-        }
-      else
-        @unfilled_seats << seat
-      end
-    end
-    
-    # Sort filled seats by person's last_name, first_name
-    @filled_seats.sort_by! { |item| [item[:person].last_name || '', item[:person].first_name || ''] }
+    reportable_scope = Seat.for_organization(organization)
+                           .includes(:title, employment_tenures: { company_teammate: :person })
+                           .order("titles.external_title ASC, seats.seat_needed_by ASC")
+    reportable_scope = reportable_scope.where.not(id: current_seat_id) if current_seat_id.present?
+    @reportable_seats = reportable_scope.to_a
   end
 
   def seat_params
@@ -308,7 +283,6 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       :team_id,
       :reports_to_seat_id,
       :reports,
-      :measurable_outcomes,
       :seat_disclaimer,
       :work_environment,
       :physical_requirements,

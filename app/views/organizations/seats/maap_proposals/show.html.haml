@@ -1,0 +1,137 @@
+- content_for :title, "Proposal · #{@seat.display_name}"
+- page_help_id = "seatMaapProposalShowPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span Seat edit proposal
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Everyone can help keep MAAP relevant. Click for how proposals work."
+      - if policy(@proposal).edit?
+        = link_to edit_organization_seat_maap_proposal_path(@organization, @seat, @proposal),
+                  class: "btn btn-primary",
+                  title: "Edit draft",
+                  "aria-label" => "Edit draft",
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+          %i.bi.bi-pencil
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: @seat.display_name, url: organization_seat_path(@organization, @seat) }, { label: "MAAP proposals", url: organization_seat_maap_proposals_path(@organization, @seat) }, { label: "Proposal", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/seats/maap_proposals/page_help"
+
+.row.justify-content-center
+  .col-lg-8
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-3
+      %div
+        %span.badge.me-2{class: proposal_status_badge_class(@proposal.status)}= @proposal.status
+        %span.text-muted
+          Proposed by #{@proposal.proposer.person.display_name}
+      .d-flex.flex-wrap.gap-2
+        = link_to markdown_organization_seat_maap_proposal_path(@organization, @seat, @proposal), class: "btn btn-outline-secondary btn-sm" do
+          %i.bi.bi-download.me-1
+          Download .md
+        - if policy(@proposal).edit?
+          = link_to "Edit draft", edit_organization_seat_maap_proposal_path(@organization, @seat, @proposal), class: "btn btn-outline-primary btn-sm"
+        - if policy(@proposal).submit?
+          = button_to "Submit", submit_organization_seat_maap_proposal_path(@organization, @seat, @proposal), method: :post, class: "btn btn-primary btn-sm"
+        - if policy(@proposal).destroy?
+          = button_to "Delete", organization_seat_maap_proposal_path(@organization, @seat, @proposal), method: :delete, class: "btn btn-outline-danger btn-sm", data: { turbo_confirm: "Delete this proposal?" }
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          - if @proposal.baseline_payload.present?
+            Changes vs seat at decision
+          - else
+            Changes vs current seat
+      .card-body
+        - if @field_diffs.any?
+          - @field_diffs.each do |field_diff|
+            = render_maap_proposal_field_diff(field_diff)
+        - else
+          %p.text-muted.mb-0
+            - if @proposal.baseline_payload.present?
+              No differences from the seat at decision.
+            - else
+              No differences from the current seat.
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Proposed content
+      .card-body
+        %h6.text-muted Primary title
+        %p= Title.find_by(id: @payload.title_id)&.external_title || @payload.title_id
+        %h6.text-muted Needed by
+        %p= @payload.seat_needed_by
+        %h6.text-muted Job classification
+        %p= @payload.job_classification
+        %h6.text-muted Team
+        %p= @payload.team_id.present? ? (Team.find_by(id: @payload.team_id)&.display_name || @payload.team_id) : "None"
+        %h6.text-muted Reports to seat
+        %p= @payload.reports_to_seat_id.present? ? (Seat.find_by(id: @payload.reports_to_seat_id)&.display_name || @payload.reports_to_seat_id) : "None"
+        %h6.text-muted Direct reports
+        .markdown-content.mb-3= simple_format(@payload.reports.to_s.presence || "None")
+        %h6.text-muted Why needed
+        .markdown-content.mb-3= simple_format(@payload.why_needed.to_s.presence || "None")
+        %h6.text-muted Why now
+        .markdown-content.mb-3= simple_format(@payload.why_now.to_s.presence || "None")
+        %h6.text-muted Costs / risks
+        .markdown-content.mb-3= simple_format(@payload.costs_risks.to_s.presence || "None")
+        %h6.text-muted Seat disclaimer
+        .markdown-content.mb-3= simple_format(@payload.seat_disclaimer.to_s.presence || "None")
+        %h6.text-muted Work environment
+        .markdown-content.mb-3= simple_format(@payload.work_environment.to_s.presence || "None")
+        %h6.text-muted Physical requirements
+        .markdown-content.mb-3= simple_format(@payload.physical_requirements.to_s.presence || "None")
+        %h6.text-muted Travel
+        .markdown-content.mb-3= simple_format(@payload.travel.to_s.presence || "None")
+
+    - if @proposal.applied? || @proposal.rejected?
+      - decision_verb = @proposal.applied? ? "accepted" : "rejected"
+      - decision_alert_class = @proposal.applied? ? "alert-success" : "alert-danger"
+      - decider_name = @proposal.decided_by&.person&.display_name || "Someone"
+      .alert{class: "#{decision_alert_class} mb-4", role: "region", "aria-labelledby": "seat-proposal-decision"}
+        %h5.alert-heading.mb-2{ id: "seat-proposal-decision" }
+          %i.bi{class: "#{@proposal.applied? ? 'bi-check-circle' : 'bi-x-circle'} me-2"}
+          Proposal #{decision_verb}
+        %p.mb-2
+          #{decider_name} #{decision_verb} this proposal
+          - if @proposal.decided_at.present?
+            on #{l(@proposal.decided_at, format: :long)}
+        - if @proposal.decision_note.present?
+          %p.mb-2
+            %strong Note:
+            = @proposal.decision_note
+        - else
+          %p.mb-2.text-muted No note was left with this decision.
+    - else
+      - decision_disabled_reason = maap_proposal_decision_disabled_reason(@proposal)
+      .card.mb-4{ role: "region", "aria-labelledby": "seat-proposal-review" }
+        .card-header
+          %h5.mb-0{ id: "seat-proposal-review" } Review
+        .card-body
+          - if decision_disabled_reason.blank?
+            = form_with url: apply_organization_seat_maap_proposal_path(@organization, @seat, @proposal), method: :post, local: true do
+              %p.text-muted.small
+                Applying updates the live Seat. Seats are not versioned.
+              .mb-3
+                = label_tag :decision_note, "Note (optional)", class: "form-label"
+                = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+              .d-flex.flex-wrap.gap-2
+                = submit_tag "Apply proposal", class: "btn btn-success"
+            = form_with url: reject_organization_seat_maap_proposal_path(@organization, @seat, @proposal), method: :post, local: true, class: "mt-3" do
+              .mb-3
+                = label_tag :decision_note, "Rejection note (optional)", class: "form-label"
+                = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+              = submit_tag "Reject proposal", class: "btn btn-outline-danger", data: { turbo_confirm: "Reject this proposal?" }
+          - else
+            .d-flex.flex-wrap.align-items-center.gap-2
+              %button.btn.btn-success{type: "button", disabled: true, "aria-label" => "Apply proposal"} Apply proposal
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => decision_disabled_reason, tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                %i.bi.bi-exclamation-triangle
+              %button.btn.btn-outline-danger{type: "button", disabled: true, "aria-label" => "Reject proposal"} Reject proposal
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => decision_disabled_reason, tabindex: "0", role: "img", "aria-label" => "Permission notice"}
+                %i.bi.bi-exclamation-triangle

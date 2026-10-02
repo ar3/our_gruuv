@@ -113,5 +113,17 @@ FactoryBot.define do
         }
       end
     end
+
+    trait :seat_edit do
+      transient do
+        seat { nil }
+      end
+
+      proposable { seat || association(:seat, title: association(:title, company: organization)) }
+      organization { proposable.company }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::SeatPayload::SCHEMA_VERSION }
+      proposed_payload { MaapProposals::SeatPayload.from_seat(proposable).to_h }
+    end
   end
 end

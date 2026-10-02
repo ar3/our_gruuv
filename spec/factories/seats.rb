@@ -20,7 +20,6 @@ FactoryBot.define do
     trait :with_hr_content do
       team { "Platform Engineering" }
       reports { "Junior Developers" }
-      measurable_outcomes { "Deliver 3 major features per quarter" }
       seat_disclaimer { "Custom seat disclaimer text" }
       work_environment { "Hybrid work environment" }
       physical_requirements { "Must be able to lift 25 pounds" }

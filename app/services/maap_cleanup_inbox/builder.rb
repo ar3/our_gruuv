@@ -99,8 +99,12 @@ module MaapCleanupInbox
         "new Ability"
       elsif proposal.create_kind?
         "new Assignment"
-      elsif proposal.proposable.respond_to?(:title)
+      elsif proposal.proposable_type == "Seat" && proposal.proposable
+        proposal.proposable.display_name
+      elsif proposal.proposable_type == "Assignment" && proposal.proposable
         proposal.proposable.title
+      elsif proposal.proposable_type == "Ability" && proposal.proposable
+        proposal.proposable.name
       elsif proposal.proposable.respond_to?(:name)
         proposal.proposable.name
       else
@@ -115,6 +119,8 @@ module MaapCleanupInbox
         routes.organization_assignment_maap_proposal_path(organization, proposal.proposable, proposal)
       elsif proposal.proposable_type == "Ability" && proposal.proposable
         routes.organization_ability_maap_proposal_path(organization, proposal.proposable, proposal)
+      elsif proposal.proposable_type == "Seat" && proposal.proposable
+        routes.organization_seat_maap_proposal_path(organization, proposal.proposable, proposal)
       end
 
       Item.new(

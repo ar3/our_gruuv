@@ -32,4 +32,12 @@ module DepartmentGroupedSelectsHelper
   def abilities_grouped_options_for_select(abilities, selected_id = nil)
     department_grouped_options_for_select(abilities, selected_id, label_method: :name)
   end
+
+  def titles_grouped_options_for_select(titles, selected_id = nil)
+    department_grouped_options_for_select(titles, selected_id, label_method: :external_title)
+  end
+
+  def teams_grouped_options_for_select(teams, selected_id = nil)
+    department_grouped_options_for_select(teams, selected_id, label_method: :display_name)
+  end
 end

@@ -104,7 +104,16 @@ class MaapProposal < ApplicationRecord
   def proposed_title
     return "" unless proposed_payload.is_a?(Hash)
 
-    proposed_payload["title"].presence || proposed_payload["name"].to_s
+    named = proposed_payload["title"].presence || proposed_payload["name"].presence
+    return named if named.present?
+
+    if proposable_type == "Seat" || proposed_payload.key?("seat_needed_by") || proposed_payload.key?("title_id")
+      title_name = Title.find_by(id: proposed_payload["title_id"])&.external_title || "Seat"
+      needed_by = proposed_payload["seat_needed_by"].to_s
+      return needed_by.present? ? "#{title_name} - #{needed_by}" : title_name
+    end
+
+    ""
   end
 
   private

@@ -920,6 +920,18 @@ Rails.application.routes.draw do
         get :manage_titles
         patch :update_titles
       end
+      resources :maap_proposals, module: :seats do
+        member do
+          post :submit
+          post :apply
+          post :reject
+          get :markdown
+        end
+        collection do
+          post :upload_markdown
+          get :markdown_template
+        end
+      end
     end
     
     # Departments management

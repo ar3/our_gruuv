@@ -1,0 +1,26 @@
+- rows = local_assigns.fetch(:rows)
+- empty_message = local_assigns.fetch(:empty_message)
+- organization = local_assigns.fetch(:organization)
+
+- if rows.any?
+  .table-responsive
+    %table.table.table-sm.align-middle.mb-0
+      %thead
+        %tr
+          %th Seat
+          %th Status
+          %th Filled by
+      %tbody
+        - rows.each do |row|
+          %tr
+            %td
+              = link_to row.seat.display_name, organization_seat_path(organization, row.seat), class: "text-decoration-none"
+            %td
+              %span.badge{class: seat_state_badge_class(row.seat.state)}= row.seat.state.humanize
+            %td
+              - if row.person && row.teammate
+                = link_to row.person.casual_name, internal_organization_company_teammate_path(organization, row.teammate), class: "text-decoration-none"
+              - else
+                %span.text-muted —
+- else
+  %p.text-muted.mb-0= empty_message

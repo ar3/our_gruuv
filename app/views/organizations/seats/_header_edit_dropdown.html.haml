@@ -1,0 +1,51 @@
+-# Locals: organization, seat
+- organization = local_assigns.fetch(:organization)
+- seat = local_assigns.fetch(:seat)
+- can_suggest = policy(MaapProposal).create?
+- can_edit = policy(seat).update?
+- can_destroy = policy(seat).destroy?
+- proposed_edits_label = "View #{open_seat_maap_proposals_count(seat)} proposed edits"
+
+- if can_suggest || can_edit || can_destroy
+  .dropdown
+    %button.btn.btn-outline-primary.dropdown-toggle{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Seat actions", title: "Seat actions"}
+      %i.bi.bi-pencil
+    %ul.dropdown-menu.dropdown-menu-end
+      %li
+        - if can_suggest
+          = link_to new_organization_seat_maap_proposal_path(organization, seat), class: "dropdown-item" do
+            %i.bi.bi-lightbulb.me-2
+            Suggest Edit
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-lightbulb.me-2
+            Suggest Edit
+      %li
+        - if can_edit
+          = link_to edit_organization_seat_path(organization, seat), class: "dropdown-item" do
+            %i.bi.bi-pencil.me-2
+            Edit
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-pencil.me-2
+            Edit
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}
+      %li
+        = link_to organization_seat_maap_proposals_path(organization, seat), class: "dropdown-item" do
+          %i.bi.bi-list-ul.me-2
+          = proposed_edits_label
+      %li
+        %hr.dropdown-divider
+      %li
+        - if can_destroy
+          = link_to organization_seat_path(organization, seat),
+                    method: :delete,
+                    data: { confirm: "Are you sure you want to delete this seat?", turbo_confirm: "Are you sure you want to delete this seat?" },
+                    class: "dropdown-item text-danger" do
+            %i.bi.bi-trash.me-2
+            Delete
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-trash.me-2
+            Delete
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}

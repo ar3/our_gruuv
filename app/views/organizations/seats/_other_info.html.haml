@@ -1,0 +1,106 @@
+- organization = local_assigns.fetch(:organization)
+- seat = local_assigns.fetch(:seat)
+- page_data = local_assigns.fetch(:page_data)
+- primary_peers = page_data.primary_title_peers
+- other_groups = page_data.other_title_peer_groups
+- chart_id_prefix = "seat-#{seat.id}-org"
+
+= render "shared/section_header",
+         title: "Other info about this seat",
+         icon: "bi-info-circle",
+         description: "Related seats by title, plus the reporting org chart around this seat",
+         include_top_header_margin: false
+
+.mb-4
+  %h5.mb-2
+    Seats with the same primary title
+    - if primary_peers.title
+      %span.text-muted.fw-normal
+        (#{primary_peers.title.external_title})
+    %span.badge.bg-secondary.ms-1= primary_peers.seats.size
+  = render "organizations/seats/related_seats_table",
+           organization: organization,
+           rows: primary_peers.seats,
+           empty_message: "No other seats share this primary title."
+
+- other_groups.each do |group|
+  .mb-4
+    %h5.mb-2
+      Seats that also use title
+      %span.fw-normal= group.title.external_title
+      %span.text-muted.fw-normal (not already listed above)
+      %span.badge.bg-secondary.ms-1= group.seats.size
+    = render "organizations/seats/related_seats_table",
+             organization: organization,
+             rows: group.seats,
+             empty_message: "No other seats share this title."
+
+.mb-2
+  %h5.mb-2 Reporting org chart
+  %p.text-muted.small.mb-3
+    Ancestors and reports for this seat. This seat is highlighted. Try each view and tell us which sticks.
+
+= render "shared/cytoscape_dagre_scripts"
+-# treegraph extends treemap — load treemap first or the series never registers
+%script{src: "https://code.highcharts.com/modules/treemap.js", "data-turbo-track": "reload"}
+%script{src: "https://code.highcharts.com/modules/treegraph.js", "data-turbo-track": "reload"}
+
+.seat-org-chart.card{
+  data: {
+    controller: "seat-org-chart",
+    action: "shown.bs.tab->seat-org-chart#onTabShown",
+    seat_org_chart_organization_data_json_value: page_data.highcharts_organization_data.to_json,
+    seat_org_chart_treegraph_data_json_value: page_data.highcharts_treegraph_data.to_json
+  }
+}
+  .card-header.bg-white
+    %ul.nav.nav-tabs.card-header-tabs{role: "tablist"}
+      %li.nav-item{role: "presentation"}
+        %button.nav-link.active{id: "#{chart_id_prefix}-tree-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "##{chart_id_prefix}-tree-pane", "aria-controls": "#{chart_id_prefix}-tree-pane", "aria-selected": "true"}
+          Tree
+      %li.nav-item{role: "presentation"}
+        %button.nav-link{id: "#{chart_id_prefix}-organization-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "##{chart_id_prefix}-organization-pane", "aria-controls": "#{chart_id_prefix}-organization-pane", "aria-selected": "false"}
+          Highcharts org
+      %li.nav-item{role: "presentation"}
+        %button.nav-link{id: "#{chart_id_prefix}-treegraph-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "##{chart_id_prefix}-treegraph-pane", "aria-controls": "#{chart_id_prefix}-treegraph-pane", "aria-selected": "false"}
+          Highcharts boxes
+      %li.nav-item{role: "presentation"}
+        %button.nav-link{id: "#{chart_id_prefix}-cytoscape-tab", type: "button", role: "tab", "data-bs-toggle": "tab", "data-bs-target": "##{chart_id_prefix}-cytoscape-pane", "aria-controls": "#{chart_id_prefix}-cytoscape-pane", "aria-selected": "false"}
+          Cytoscape
+  .card-body
+    .tab-content
+      .tab-pane.fade.show.active{id: "#{chart_id_prefix}-tree-pane", role: "tabpanel", "aria-labelledby": "#{chart_id_prefix}-tree-tab"}
+        %p.small.text-muted.mb-3 Nested seat cards (same idea as Seats → hierarchy view), with this seat outlined.
+        - if page_data.hierarchy_roots.any?
+          - page_data.hierarchy_roots.each do |node|
+            = render "organizations/seats/displays/seat_node",
+                     node: node,
+                     depth: 0,
+                     organization: organization,
+                     current_seat_id: seat.id
+        - else
+          %p.text-muted.mb-0 No reporting relationships to show for this seat.
+      .tab-pane.fade{id: "#{chart_id_prefix}-organization-pane", role: "tabpanel", "aria-labelledby": "#{chart_id_prefix}-organization-tab", data: { seat_org_chart_target: "organizationPane" }}
+        %p.small.text-muted.mb-2 Highcharts organization series. Click a node to open that seat.
+        %div{id: "#{chart_id_prefix}-organization-chart", style: "min-height: 360px;", data: { seat_org_chart_target: "organizationContainer" }}
+      .tab-pane.fade{id: "#{chart_id_prefix}-treegraph-pane", role: "tabpanel", "aria-labelledby": "#{chart_id_prefix}-treegraph-tab", data: { seat_org_chart_target: "treegraphPane" }}
+        %p.small.text-muted.mb-2
+          Highcharts
+          %a{href: "https://www.highcharts.com/demo/highcharts/treegraph-boxes", target: "_blank", rel: "noopener noreferrer"} treegraph box layout
+          \ — click a box to open that seat. This seat is highlighted.
+        %div{id: "#{chart_id_prefix}-treegraph-chart", style: "min-height: 420px;", data: { seat_org_chart_target: "treegraphContainer" }}
+      .tab-pane.fade{id: "#{chart_id_prefix}-cytoscape-pane", role: "tabpanel", "aria-labelledby": "#{chart_id_prefix}-cytoscape-tab", data: { seat_org_chart_target: "cytoscapePane" }}
+        %p.small.text-muted.mb-2 Interactive network (Cytoscape + dagre). This seat is highlighted; click a node to open it.
+        = render partial: "shared/cytoscape/supply_flow_graph",
+          locals: { elements: page_data.cytoscape_elements,
+                    root_node_ids: page_data.cytoscape_root_node_ids,
+                    export_filename: "seat-#{seat.id}-org-chart",
+                    lazy: true,
+                    can_edit_layout: false,
+                    layout_url: "",
+                    saved_positions: {},
+                    node_fingerprint: "",
+                    stored_node_fingerprint: "",
+                    graph_id: "#{chart_id_prefix}-cytoscape-graph",
+                    extra_graph_classes: "seat-org-cytoscape",
+                    aria_label: "Interactive map of seat reporting relationships" }

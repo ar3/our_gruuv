@@ -77,6 +77,73 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include(organization_title_path(company, title))
       expect(response.body).to include(organization_position_path(company, position))
     end
+
+    it 'renders other info section with related seats and org chart tabs' do
+      peer = create(:seat, title: title, seat_needed_by: Date.current + 1.month)
+
+      get organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Other info about this seat')
+      expect(response.body).to include('Seats with the same primary title')
+      expect(response.body).to include(peer.display_name)
+      expect(response.body).to include('Reporting org chart')
+      expect(response.body).to include('Highcharts org')
+      expect(response.body).to include('Highcharts boxes')
+      expect(response.body).to include('treemap.js')
+      expect(response.body).to include('treegraph.js')
+      expect(response.body).to include('Cytoscape')
+      expect(response.body).to include('data-controller="seat-org-chart"')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/seats/:id/edit' do
+    it 'opt-groups title, team, and reports-to by department' do
+      department = create(:department, company: company, name: 'Engineering')
+      title.update!(department: department)
+      team = create(:team, company: company, department: department, name: 'Platform')
+      peer = create(:seat, :open, title: title, seat_needed_by: Date.current + 2.months)
+      seat.update!(team: team)
+
+      get edit_organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('optgroup label="Engineering"')
+      expect(response.body).to include(title.external_title)
+      expect(response.body).to include('same department as the title')
+      expect(response.body).to include(team.name)
+      expect(response.body).to include("Open · #{peer.display_name}")
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/seats' do
+    let(:department) { create(:department, company: company, name: 'Engineering') }
+    let(:indexed_title) { create(:title, company: company, department: department, position_major_level: position_major_level) }
+    let!(:indexed_seat) { create(:seat, :open, title: indexed_title, seat_needed_by: Date.current) }
+
+    it 'renders View Title and View this seat links without row edit or delete' do
+      get organization_seats_path(company)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('View Title')
+      expect(response.body).to include('View this seat')
+      expect(response.body).to include(organization_title_path(company, indexed_title))
+      expect(response.body).to include(organization_seat_path(company, indexed_seat))
+      expect(response.body).not_to include(edit_organization_seat_path(company, indexed_seat))
+    end
+
+    it 'links filled seat filler casual name to the internal teammate page' do
+      filled_seat = create(:seat, :filled, title: indexed_title, seat_needed_by: Date.current + 1.month)
+      filler_person = create(:person, first_name: 'Alex', preferred_name: 'Alex')
+      filler_teammate = create(:teammate, :assigned_employee, person: filler_person, organization: company)
+      create(:employment_tenure, :with_seat, company: company, company_teammate: filler_teammate, seat: filled_seat, ended_at: nil)
+
+      get organization_seats_path(company, state: ['filled'])
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(internal_organization_company_teammate_path(company, filler_teammate))
+      expect(response.body).to include('>Alex</a>')
+    end
   end
 
   describe 'GET /organizations/:organization_id/seats/customize_view' do
