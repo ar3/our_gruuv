@@ -248,6 +248,19 @@ Rails.application.routes.draw do
     resource :maap_cleanup_inbox,
              only: [:show],
              controller: "organizations/maap_cleanup_inbox"
+    get "seat_suggestion",
+        to: "organizations/seat_suggestions#show",
+        as: :seat_suggestion
+    resources :seat_suggestions,
+              only: [:create],
+              module: :organizations,
+              controller: "seat_suggestions" do
+      member do
+        get :status
+        post :confirm
+        post :reply
+      end
+    end
     resources :maap_assignment_creates,
               controller: "organizations/maap_assignment_creates" do
       member do
@@ -285,6 +298,33 @@ Rails.application.routes.draw do
       collection do
         post :upload_markdown
         get :markdown_template
+      end
+    end
+    resources :maap_title_creates,
+              only: [:show],
+              controller: "organizations/maap_title_creates" do
+      member do
+        post :submit
+        post :apply
+        post :reject
+      end
+    end
+    resources :maap_team_creates,
+              only: [:show],
+              controller: "organizations/maap_team_creates" do
+      member do
+        post :submit
+        post :apply
+        post :reject
+      end
+    end
+    resources :maap_position_creates,
+              only: [:show],
+              controller: "organizations/maap_position_creates" do
+      member do
+        post :submit
+        post :apply
+        post :reject
       end
     end
 

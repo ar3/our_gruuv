@@ -94,6 +94,12 @@ class MaapProposalPolicy < ApplicationPolicy
       Pundit.policy(pundit_user, Ability.new(company: record.organization)).create?
     elsif record.seat_create?
       Pundit.policy(pundit_user, Seat.new).create?
+    elsif record.title_create?
+      Pundit.policy(pundit_user, Title.new(company: record.organization)).create?
+    elsif record.team_create?
+      Pundit.policy(pundit_user, Team.new(company: record.organization)).create?
+    elsif record.position_create?
+      Pundit.policy(pundit_user, Position.new).create?
     else
       Pundit.policy(pundit_user, Assignment.new(company: record.organization)).create?
     end

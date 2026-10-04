@@ -25,6 +25,9 @@ module MaapProposals
     private
 
     def submit_create
+      blockers = @proposal.seat_submit_blockers
+      return Result.err(blockers) if blockers.any?
+
       payload = SeatPayload.from_hash(@proposal.proposed_payload)
       errors = payload.validate!(company: @proposal.organization)
       return Result.err(errors) if errors.any?

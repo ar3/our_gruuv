@@ -119,6 +119,15 @@ class OrganizationPolicy < ApplicationPolicy
     true
   end
 
+  # Beta Seat Suggestion chat — any employed teammate in this org.
+  def seat_suggestion?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return false unless viewing_teammate.employed?
+
+    true
+  end
+
   def goals_health?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

@@ -140,6 +140,47 @@ has_many :goal_associations, as: :associable, dependent: :destroy
     DEFAULT_MILESTONE_DESCRIPTIONS[level]
   end
 
+  # Keep the canonical milestone stem; replace only the placeholder Examples block.
+  def self.milestone_description_with_examples(level, examples)
+    template = default_milestone_description(level)
+    return template if template.blank?
+
+    examples_markdown = normalize_milestone_examples(examples)
+    return template if examples_markdown.blank?
+
+    examples_section = <<~EXAMPLES.strip
+      -----
+
+      ##### Examples
+
+      #{examples_markdown}
+
+      *This is NOT a checklist, but instead a list of example activities or results that indicate a demonstration of this ability.*
+    EXAMPLES
+
+    template.sub(EXAMPLES_BLOCK, examples_section)
+  end
+
+  def self.normalize_milestone_examples(examples)
+    case examples
+    when nil
+      nil
+    when String
+      examples.strip.presence
+    when Array
+      lines = examples.filter_map { |item| item.to_s.strip.presence }
+      return nil if lines.empty?
+
+      if lines.all? { |line| line.start_with?("|") || line.match?(/\A\|?[-:| ]+\|?\z/) }
+        lines.join("\n")
+      else
+        lines.map { |line| "- #{line.delete_prefix("- ").delete_prefix("* ")}" }.join("\n")
+      end
+    else
+      examples.to_s.strip.presence
+    end
+  end
+
   EXAMPLES_BLOCK = <<~EXAMPLES.strip
     -----
 

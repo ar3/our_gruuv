@@ -56,14 +56,15 @@ module Assistant
       )
 
       parsed = ParseAskOgResponse.call(llm.content.to_s)
+      actions = Array(parsed[:proposed_actions]).reject { |a| a["tool"] == "create_seat_suggestion_bundle" }
       @result.append_message!(
         role: AskOgMessage::ROLE_ASSISTANT,
         body: parsed[:answer],
-        proposed_actions: parsed[:proposed_actions]
+        proposed_actions: actions
       )
       @result.update!(
         answer_text: parsed[:answer],
-        proposed_actions: parsed[:proposed_actions]
+        proposed_actions: actions
       )
       @consultation.update!(
         status: "completed",
@@ -100,7 +101,7 @@ module Assistant
         #{JSON.pretty_generate(tool_context)}
 
         Write tool schemas (JSON):
-        #{JSON.pretty_generate(AgentTools::Registry.write_tool_schemas)}
+        #{JSON.pretty_generate(AgentTools::Registry.write_tool_schemas.except("create_seat_suggestion_bundle"))}
 
         ---
         Prompt version: #{Assistant::Prompts::ASK_OG_PROMPT_VERSION}

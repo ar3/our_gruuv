@@ -16,8 +16,21 @@ module MaapProposals
       return Result.err("Only submitted proposals can be applied") unless @proposal.decidable?
       return Result.err("Only Seat create proposals are supported") unless @proposal.seat_create?
 
+      blockers = @proposal.seat_apply_blockers
+      return Result.err(blockers) if blockers.any?
+
       payload = SeatPayload.from_hash(@proposal.proposed_payload)
-      errors = payload.validate!(company: @proposal.organization)
+      # Resolve linked title/team if proposals were applied after the draft was created.
+      if payload.title_id.blank?
+        applied_title = @proposal.children_for_role("title").find(&:applied?)&.proposable
+        payload = SeatPayload.from_hash(payload.to_h.merge("title_id" => applied_title&.id)) if applied_title
+      end
+      if payload.team_id.blank?
+        applied_team = @proposal.children_for_role("team").find(&:applied?)&.proposable
+        payload = SeatPayload.from_hash(payload.to_h.merge("team_id" => applied_team&.id)) if applied_team
+      end
+
+      errors = payload.validate!(company: @proposal.organization, for_apply: true)
       return Result.err(errors) if errors.any?
 
       baseline_payload = SeatPayload.empty.to_h

@@ -1,0 +1,10 @@
+- parent = local_assigns[:parent_seat_proposal] || @parent_seat_proposal
+- if parent.present?
+  .alert.alert-light.border.mb-4{role: "status"}
+    %i.bi.bi-link-45deg.me-1
+    Part of Seat create proposal
+    = link_to parent.proposed_title.presence || "Seat proposal ##{parent.id}",
+              organization_maap_seat_create_path(@organization, parent),
+              class: "alert-link"
+    %span.text-muted.small.ms-1
+      · can be approved or rejected separately

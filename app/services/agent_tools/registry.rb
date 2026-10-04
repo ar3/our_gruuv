@@ -19,12 +19,14 @@ module AgentTools
       "list_sitemap" => "AgentTools::ListSitemap",
       "search_organization" => "AgentTools::SearchOrganization",
       "create_draft_observation" => "AgentTools::CreateDraftObservation",
-      "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence"
+      "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence",
+      "create_seat_suggestion_bundle" => "AgentTools::CreateSeatSuggestionBundle"
     }.freeze
 
     WRITE_TOOLS = %w[
       create_draft_observation
       set_current_week_goal_confidence
+      create_seat_suggestion_bundle
     ].freeze
 
     # JSON Schema–style input schemas for MCP and other machine clients.
@@ -281,7 +283,8 @@ module AgentTools
       "list_observations" => "List published observations (OGOs) visible to you. Paginate with limit + offset (total_count, has_more, next_offset).",
       "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
-      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings."
+      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings.",
+      "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them."
     }.freeze
 
     TITLES = {
@@ -299,7 +302,8 @@ module AgentTools
       "list_observations" => "List observations",
       "search_organization" => "Search organization",
       "create_draft_observation" => "Create draft observation",
-      "set_current_week_goal_confidence" => "Set current-week goal confidence"
+      "set_current_week_goal_confidence" => "Set current-week goal confidence",
+      "create_seat_suggestion_bundle" => "Create seat suggestion proposal bundle"
     }.freeze
 
     module_function
@@ -360,6 +364,70 @@ module AgentTools
             "learnings" => "string required when confidence is 0 or 100 (completing the goal)"
           },
           "effect" => "Upserts confidence for the current Monday week only. Rejects completed/deleted goals. Completing (0%/100%) requires learnings."
+        },
+        "create_seat_suggestion_bundle" => {
+          "args" => {
+            "bundle" => {
+              "seat" => {
+                "why_needed" => "string",
+                "why_now" => "string",
+                "costs_risks" => "string",
+                "job_classification" => "Salaried Exempt|Salaried Non-Exempt|Hourly|Contractor|Intern",
+                "seat_needed_by" => "YYYY-MM-DD optional",
+                "reports" => "string optional"
+              },
+              "title" => {
+                "mode" => "create|existing",
+                "path" => "existing title path when mode=existing",
+                "external_title" => "string when mode=create",
+                "position_summary" => "string optional"
+              },
+              "team" => {
+                "mode" => "create|existing|none",
+                "name" => "string when mode=create",
+                "team_id" => "integer optional when mode=existing"
+              },
+              "position" => {
+                "position_summary" => "string optional",
+                "position_level_hint" => "usually 1"
+              },
+              "assignments" => [
+                {
+                  "mode" => "create|edit|existing",
+                  "path" => "existing assignment path",
+                  "title" => "title-like role noun (e.g. Campaign Manager, Demo Sourcer, Pipeline Driver — not Execution/Development/Handoff phrases)",
+                  "tagline" => "string",
+                  "energy_percentage" => "integer",
+                  "assignment_type" => "required|suggested",
+                  "outcomes" => ["**(Summary)** specific measurable/observable outcome with thresholds"],
+                  "required_activities" => "recurring/cadence work (daily/weekly/etc. lives here, not in Seat defense)",
+                  "handbook" => "how to do the Assignment well (process/standards)",
+                  "abilities" => [
+                    {
+                      "mode" => "create|edit|existing",
+                      "path" => "existing ability path",
+                      "name" => "tierable/demonstrable capability noun",
+                      "description" => "short capability definition only (1–2 sentences; not milestone prose)",
+                      "milestone_level" => "1-5 required level on the Assignment",
+                      "milestone_1_examples" => "I early proof (~test/quarter); replaces Milestone I Examples block",
+                      "milestone_2_examples" => "II early proof without hand-holding; replaces Milestone II Examples block",
+                      "milestone_3_examples" => "III sustained org impact (~year); replaces Milestone III Examples block",
+                      "milestone_4_examples" => "IV company-wide sustained impact; replaces Milestone IV Examples block",
+                      "milestone_5_examples" => "V rare industry/community recognition; replaces Milestone V Examples block",
+                      "milestone_examples" => {
+                        "1" => "optional nested form of milestone_1_examples",
+                        "2" => "optional nested form of milestone_2_examples",
+                        "3" => "optional nested form of milestone_3_examples",
+                        "4" => "optional nested form of milestone_4_examples",
+                        "5" => "optional nested form of milestone_5_examples"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "effect" => "Creates draft proposals only (Seat collective + children). Does not apply. Prefer reuse via existing/edit paths from tool context. Cadence/work-shape content belongs in Assignment outcomes/required_activities/handbook only."
         }
       }
     end

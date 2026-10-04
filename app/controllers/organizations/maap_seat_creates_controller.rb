@@ -54,15 +54,6 @@ class Organizations::MaapSeatCreatesController < Organizations::OrganizationName
   def show
     authorize @proposal
     @payload = MaapProposals::SeatPayload.from_hash(@proposal.proposed_payload)
-    @diff_baseline = if @proposal.baseline_payload.present?
-      MaapProposals::SeatPayload.from_hash(@proposal.baseline_payload)
-    else
-      MaapProposals::SeatPayload.empty
-    end
-    @field_diffs = MaapProposals::SeatDiffBuilder.call(
-      before: @diff_baseline,
-      after: @payload
-    )
   end
 
   def edit

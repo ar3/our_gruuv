@@ -404,6 +404,31 @@ RSpec.describe Ability, type: :model do
     end
   end
 
+  describe '.milestone_description_with_examples' do
+    it 'keeps the stem and replaces only the Examples block' do
+      text = Ability.milestone_description_with_examples(
+        3,
+        [
+          "Frames fuzzy analytics asks as measurable product questions",
+          "Chooses the right instrumentation before building dashboards"
+        ]
+      )
+
+      expect(text).to include('I have observed this person')
+      expect(text).to include('expert within this discipline')
+      expect(text).to include('##### Examples')
+      expect(text).to include('Frames fuzzy analytics asks as measurable product questions')
+      expect(text).to include('Chooses the right instrumentation before building dashboards')
+      expect(text).not_to include('Example 1')
+      expect(text).to include('This is NOT a checklist')
+    end
+
+    it 'returns the default template when examples are blank' do
+      expect(Ability.milestone_description_with_examples(1, nil)).to eq(Ability.default_milestone_description(1))
+      expect(Ability.milestone_description_with_examples(1, "")).to eq(Ability.default_milestone_description(1))
+    end
+  end
+
   describe '#to_param' do
     let(:created_by) { create(:person) }
     let(:updated_by) { create(:person) }

@@ -3,7 +3,7 @@
 module MaapProposals
   # Structured apply-ready document for Seat edit/create proposals (jsonb SoT).
   class SeatPayload
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
     JOB_CLASSIFICATIONS = [
       "Salaried Exempt",
       "Salaried Non-Exempt",
@@ -14,9 +14,13 @@ module MaapProposals
     ATTR_KEYS = %w[
       title_id
       additional_title_ids
+      title_proposal_id
+      pending_title_name
       seat_needed_by
       job_classification
       team_id
+      team_proposal_id
+      pending_team_name
       reports_to_seat_id
       reports
       seat_disclaimer
@@ -26,6 +30,7 @@ module MaapProposals
       why_needed
       why_now
       costs_risks
+      suggestion_source
     ].freeze
 
     def self.from_seat(seat)
@@ -65,8 +70,13 @@ module MaapProposals
         {
           "title_id" => title_id,
           "additional_title_ids" => [],
+          "title_proposal_id" => nil,
+          "pending_title_name" => nil,
           "seat_needed_by" => (Date.current + 3.months).iso8601,
-          "job_classification" => JOB_CLASSIFICATIONS.first
+          "job_classification" => JOB_CLASSIFICATIONS.first,
+          "team_proposal_id" => nil,
+          "pending_team_name" => nil,
+          "suggestion_source" => nil
         }
       )
     end
@@ -77,9 +87,13 @@ module MaapProposals
         "schema_version" => (hash["schema_version"].presence || SCHEMA_VERSION).to_i,
         "title_id" => blank_to_nil_id(hash["title_id"]),
         "additional_title_ids" => normalize_id_list(hash["additional_title_ids"]),
+        "title_proposal_id" => blank_to_nil_id(hash["title_proposal_id"]),
+        "pending_title_name" => blank_to_nil(hash["pending_title_name"]),
         "seat_needed_by" => normalize_date(hash["seat_needed_by"]),
         "job_classification" => hash["job_classification"].to_s.strip,
         "team_id" => blank_to_nil_id(hash["team_id"]),
+        "team_proposal_id" => blank_to_nil_id(hash["team_proposal_id"]),
+        "pending_team_name" => blank_to_nil(hash["pending_team_name"]),
         "reports_to_seat_id" => blank_to_nil_id(hash["reports_to_seat_id"]),
         "reports" => blank_to_nil(hash["reports"]),
         "seat_disclaimer" => blank_to_nil(hash["seat_disclaimer"]),
@@ -88,7 +102,8 @@ module MaapProposals
         "travel" => blank_to_nil(hash["travel"]),
         "why_needed" => blank_to_nil(hash["why_needed"]),
         "why_now" => blank_to_nil(hash["why_now"]),
-        "costs_risks" => blank_to_nil(hash["costs_risks"])
+        "costs_risks" => blank_to_nil(hash["costs_risks"]),
+        "suggestion_source" => blank_to_nil(hash["suggestion_source"])
       }
     end
 
@@ -147,14 +162,23 @@ module MaapProposals
       define_method(key) { @payload[key] }
     end
 
-    def validate!(company:, excluding_seat: nil)
+    def validate!(company:, excluding_seat: nil, for_apply: false)
       errors = []
-      errors << "title_id is required" if title_id.blank?
+      if for_apply || (title_proposal_id.blank? && pending_title_name.blank?)
+        errors << "title_id is required" if title_id.blank?
+      elsif title_id.blank? && title_proposal_id.blank? && pending_title_name.blank?
+        errors << "title_id, title_proposal_id, or pending_title_name is required"
+      end
+
       errors << "seat_needed_by is required" if seat_needed_by.blank?
       errors << "seat_needed_by is invalid" if seat_needed_by.present? && seat_needed_by_date.nil?
       errors << "job_classification is required" if job_classification.blank?
       if job_classification.present? && JOB_CLASSIFICATIONS.exclude?(job_classification)
         errors << "job_classification is invalid"
+      end
+
+      if for_apply && team_proposal_id.present? && team_id.blank?
+        errors << "team_id is required after the linked Team proposal is applied"
       end
 
       if title_id.present?
@@ -164,6 +188,11 @@ module MaapProposals
         elsif title.company_id != company.id
           errors << "title must belong to the company"
         end
+      end
+
+      if title_proposal_id.present?
+        proposal = MaapProposal.find_by(id: title_proposal_id, organization: company)
+        errors << "title_proposal_id is invalid" unless proposal&.title_create?
       end
 
       Array(additional_title_ids).each do |extra_id|
@@ -187,6 +216,11 @@ module MaapProposals
         elsif team.company_id != company.id
           errors << "team must belong to the company"
         end
+      end
+
+      if team_proposal_id.present?
+        proposal = MaapProposal.find_by(id: team_proposal_id, organization: company)
+        errors << "team_proposal_id is invalid" unless proposal&.team_create?
       end
 
       if reports_to_seat_id.present?

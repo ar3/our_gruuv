@@ -65,8 +65,10 @@ export default class extends Controller {
     }
   }
 
-  handleEnter(event) {
-    if (event.key !== "Enter" || event.shiftKey) return
+  // Multi-line composer: plain Enter inserts a newline (browser default).
+  // Wire data-action to keydown.ctrl+enter / keydown.meta+enter — Stimulus's bare
+  // keydown.enter filter does not fire when ⌘/Ctrl is held.
+  handleSendShortcut(event) {
     event.preventDefault()
     this.send(event)
   }

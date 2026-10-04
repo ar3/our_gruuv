@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_29_084500) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_03_174300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -980,6 +980,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_29_084500) do
     t.index ["purpose", "status", "finished_at"], name: "index_llm_invocations_on_purpose_and_status_and_finished_at"
     t.index ["purpose"], name: "index_llm_invocations_on_purpose"
     t.index ["triggered_by_teammate_id"], name: "index_llm_invocations_on_triggered_by_teammate_id"
+  end
+
+  create_table "maap_proposal_links", force: :cascade do |t|
+    t.bigint "parent_proposal_id", null: false
+    t.bigint "child_proposal_id", null: false
+    t.string "role", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["child_proposal_id"], name: "index_maap_proposal_links_on_child_proposal_id"
+    t.index ["parent_proposal_id", "child_proposal_id", "role"], name: "index_maap_proposal_links_on_parent_child_role", unique: true
+    t.index ["parent_proposal_id"], name: "index_maap_proposal_links_on_parent_proposal_id"
+    t.index ["role"], name: "index_maap_proposal_links_on_role"
   end
 
   create_table "maap_proposals", force: :cascade do |t|
@@ -2399,6 +2411,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_29_084500) do
   add_foreign_key "kudos_transactions", "organizations"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_banker_id"
   add_foreign_key "kudos_transactions", "teammates", column: "company_teammate_id"
+  add_foreign_key "maap_proposal_links", "maap_proposals", column: "child_proposal_id"
+  add_foreign_key "maap_proposal_links", "maap_proposals", column: "parent_proposal_id"
   add_foreign_key "maap_proposals", "organizations"
   add_foreign_key "maap_proposals", "teammates", column: "decided_by_id"
   add_foreign_key "maap_proposals", "teammates", column: "proposer_id"

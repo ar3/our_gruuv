@@ -33,6 +33,15 @@ RSpec.describe OgConsultations::Kinds do
     expect(entry.job_class).to eq(AskOgJob)
   end
 
+  it 'registers Seat Suggestion as billable per conversation (not per reply)' do
+    entry = described_class.fetch(OgConsultation::KIND_SEAT_SUGGESTION)
+
+    expect(entry.llm_purpose).to eq('seat_suggestion')
+    expect(entry.billable).to be(true)
+    expect(entry.job_class).to eq(AskOgJob)
+    expect(entry.runner_class).to eq(Assistant::SeatSuggestionRunner)
+  end
+
   it 'raises a clear error for unknown kinds' do
     expect { described_class.fetch('not_a_kind') }.to raise_error(KeyError, /Unknown OgConsultation kind/)
   end

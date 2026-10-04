@@ -23,6 +23,8 @@ RSpec.describe "Organizations::MaapSeatCreates", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Proposed Seat creates")
+      expect(response.body).to include("Suggest a Seat")
+      expect(response.body).to include(organization_seat_suggestion_path(organization))
       expect(response.body).to include("Propose new Seat")
       expect(response.body).to include("maapSeatCreatesPageHelp")
       expect(response.body).to include("Download markdown template")

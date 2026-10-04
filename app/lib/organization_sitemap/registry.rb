@@ -720,7 +720,11 @@ module OrganizationSitemap
           beta_page(:maap_cleanup_inbox, "MAAP Cleanup Inbox", "bi-clipboard2-check", :organization_maap_cleanup_inbox_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).maap_cleanup_inbox? },
             goal: "See org-wide MAAP cleanup items — starting with active tenures whose seat does not include the position title.",
-            synonyms: %w[maap cleanup inbox seat position mismatch tenure alignment clean maap])
+            synonyms: %w[maap cleanup inbox seat position mismatch tenure alignment clean maap]),
+          beta_page(:seat_suggestion, "Suggest a Seat", "bi-chat-dots", :organization_seat_suggestion_path,
+            policy: ->(ctx) { ctx.policy(ctx.organization).seat_suggestion? },
+            goal: "Chat to draft a Seat create proposal with linked Title, Position, Assignment, and Ability drafts when you do not yet know the MAAP shape.",
+            synonyms: %w[suggest seat seat suggestion seat defense temporary seat define seat chat icp])
         ]
       }
     end

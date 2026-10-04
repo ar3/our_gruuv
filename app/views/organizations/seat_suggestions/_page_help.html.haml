@@ -1,0 +1,34 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Help someone who does not yet know the MAAP shape of a Seat produce an impressive
+    %strong Seat create proposal
+    — including linked drafts for Titles, Teams, Positions, Assignments, and Abilities — through a guided chat.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-0
+    %li
+      %strong Beta.
+      Experimental. Expect rough edges; send feedback. Each Seat Suggestion conversation counts as one Consult OG Value Billing unit (not each reply).
+    %li Start by pasting docs or thoughts. The chat interviews for Seat defense (why / why now / risks), then shapes work as Assignments (nouns with measurable outcomes; cadence in required activities / handbook) and certifiable Abilities.
+    %li
+      When ready, OG shows a summary and a Confirm action. Confirm creates
+      %em draft
+      proposals only — nothing is applied automatically.
+    %li When OG invents a new Title, Position, Assignment, or Ability despite close existing matches, the chat should name those near-misses and why it chose create.
+    %li
+      Recent conversations show
+      %strong In progress
+      (still chatting),
+      %strong Draft being reviewed
+      (Confirm summary ready), or
+      %strong Suggestion created
+      (proposal drafts were created) — not raw completed/failed job statuses.
+    %li The Seat proposal tracks linked child proposals. Seat Apply waits until any new Title and Team proposals are applied; Assignment/Ability/Position drafts can be handled later.
+    %li
+      Prefer
+      = succeed " if you already know the Titles and can fill the form yourself." do
+        = link_to "Propose a Seat", organization_maap_seat_creates_path(@organization)

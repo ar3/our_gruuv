@@ -762,6 +762,13 @@ module NavigationHelper
             path: organization_maap_cleanup_inbox_path(current_organization),
             policy_check: -> { policy(current_organization).maap_cleanup_inbox? },
             coming_soon: false
+          },
+          {
+            label: 'Suggest a Seat',
+            icon: 'bi-chat-dots',
+            path: organization_seat_suggestion_path(current_organization),
+            policy_check: -> { policy(current_organization).seat_suggestion? },
+            coming_soon: false
           }
         ]
       },

@@ -24,6 +24,8 @@
 
 .row.justify-content-center
   .col-lg-8
+    = render "organizations/maap_proposals/parent_seat_create_link", parent_seat_proposal: @parent_seat_proposal
+
     .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-3
       %div
         %span.badge.me-2{class: proposal_status_badge_class(@proposal.status)}= @proposal.status
@@ -46,20 +48,6 @@
       .alert.alert-warning.mb-4{role: "status"}
         %i.bi.bi-exclamation-triangle.me-1
         = @title_uniqueness.message
-
-    .card.mb-4
-      .card-header
-        %h5.mb-0
-          - if @proposal.baseline_payload.present?
-            Changes vs empty baseline at decision
-          - else
-            Proposed vs empty Assignment
-      .card-body
-        - if @field_diffs.any?
-          - @field_diffs.each do |field_diff|
-            = render_maap_proposal_field_diff(field_diff)
-        - else
-          %p.text-muted.mb-0 No proposed content yet.
 
     .card.mb-4
       .card-header

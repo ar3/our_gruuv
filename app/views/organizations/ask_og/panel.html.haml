@@ -31,7 +31,7 @@
       .ask-og-composer.border-top.p-3{ data: { ask_og_target: "composer" } }
         .input-group
           %textarea.form-control{
-            data: { ask_og_target: "input", action: "keydown.enter->ask-og#handleEnter" },
+            data: { ask_og_target: "input", action: "keydown.ctrl+enter->ask-og#handleSendShortcut keydown.meta+enter->ask-og#handleSendShortcut" },
             rows: 2,
             placeholder: "Message Ask OG…",
             disabled: @auto_start
@@ -42,3 +42,5 @@
             disabled: @auto_start
           }
             Send
+        %p.form-text.text-muted.small.mb-0.mt-2
+          Enter for a new line · ⌘/Ctrl+Enter to send, or click Send.

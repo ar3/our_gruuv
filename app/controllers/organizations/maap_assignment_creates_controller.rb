@@ -53,15 +53,7 @@ class Organizations::MaapAssignmentCreatesController < Organizations::Organizati
   def show
     authorize @proposal
     @payload = MaapProposals::AssignmentPayload.from_hash(@proposal.proposed_payload)
-    @diff_baseline = if @proposal.baseline_payload.present?
-      MaapProposals::AssignmentPayload.from_hash(@proposal.baseline_payload)
-    else
-      MaapProposals::AssignmentPayload.empty
-    end
-    @field_diffs = MaapProposals::AssignmentDiffBuilder.call(
-      before: @diff_baseline,
-      after: @payload
-    )
+    @parent_seat_proposal = @proposal.parent_seat_create_proposal
     @title_uniqueness = title_uniqueness_for(@proposal, @payload) if @proposal.submitted?
   end
 

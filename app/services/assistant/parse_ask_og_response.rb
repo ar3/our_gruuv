@@ -2,6 +2,7 @@
 
 module Assistant
   # Parses LLM JSON into answer + sanitized write-tool proposals.
+  # Never raises on malformed model JSON — falls back to raw answer text.
   class ParseAskOgResponse
     def self.call(raw)
       new(raw).call
@@ -14,7 +15,7 @@ module Assistant
     def call
       json = extract_json(@raw)
       answer = json["answer"].to_s.strip
-      answer = @raw.to_s.strip.truncate(8_000) if answer.blank?
+      answer = fallback_answer if answer.blank?
 
       actions = Array(json["proposed_actions"]).filter_map { |item| sanitize_action(item) }
 
@@ -24,18 +25,48 @@ module Assistant
     private
 
     def extract_json(text)
+      candidates_for(text).each do |candidate|
+        parsed = try_parse(candidate)
+        return parsed if parsed.is_a?(Hash)
+      end
+
+      {}
+    end
+
+    def candidates_for(text)
       stripped = text.gsub(/\A```(?:json)?\s*/i, "").gsub(/\s*```\z/, "").strip
-      parsed = JSON.parse(stripped)
+      candidates = [stripped, text.strip]
+      if (match = text.match(/\{.*\}/m))
+        candidates << match[0]
+      end
+      candidates.uniq
+    end
+
+    def try_parse(candidate)
+      return nil if candidate.blank?
+
+      parsed = JSON.parse(candidate)
       return parsed if parsed.is_a?(Hash)
 
-      {}
+      nil
     rescue JSON::ParserError
-      match = text.match(/\{.*\}/m)
-      return {} unless match
+      nil
+    end
 
-      JSON.parse(match[0])
+    def fallback_answer
+      # Prefer an answer-looking markdown body if the model wrapped JSON poorly.
+      stripped = @raw.gsub(/\A```(?:json)?\s*/i, "").gsub(/\s*```\z/, "").strip
+      if (match = stripped.match(/"answer"\s*:\s*"(?<body>(?:\\.|[^"\\])*)"/m))
+        return unescape_json_string(match[:body]).truncate(8_000)
+      end
+
+      stripped.truncate(8_000)
+    end
+
+    def unescape_json_string(value)
+      JSON.parse("\"#{value}\"")
     rescue JSON::ParserError
-      {}
+      value.to_s.gsub('\\n', "\n").gsub('\\"', '"').gsub('\\\\', '\\')
     end
 
     def sanitize_action(item)

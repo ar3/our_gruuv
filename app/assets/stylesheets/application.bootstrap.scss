@@ -2609,6 +2609,11 @@ $likert-colors: (
   border-radius: 0.75rem;
 }
 
+.seat-suggestion-thread.ask-og-thread {
+  min-height: 320px;
+  max-height: min(70vh, 640px);
+}
+
 .health-dashboard-toolbar-block {
   .health-dashboard-toolbar__other-actions {
     max-width: none;

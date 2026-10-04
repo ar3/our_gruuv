@@ -46,8 +46,13 @@ module MaapProposals
       end
 
       payload = @payload || SeatPayload.blank_for_create(company: @organization)
-      if payload.title_id.blank?
-        return Result.err("Add at least one Title in this organization before proposing a Seat create")
+      if payload.title_id.blank? &&
+         payload.title_proposal_id.blank? &&
+         payload.pending_title_name.blank?
+        return Result.err(
+          "Add at least one Title in this organization before proposing a Seat create, " \
+          "or include a pending title / title proposal"
+        )
       end
 
       errors = payload.validate!(company: @organization)

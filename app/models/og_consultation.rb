@@ -11,6 +11,7 @@ class OgConsultation < ApplicationRecord
     ogo_search_slack
     ogo_search_consult
     ask_og
+    seat_suggestion
   ].freeze
 
   STATUSES = %w[pending processing completed failed].freeze
@@ -24,6 +25,7 @@ class OgConsultation < ApplicationRecord
   KIND_OGO_SEARCH_SLACK = 'ogo_search_slack'
   KIND_OGO_SEARCH_CONSULT = 'ogo_search_consult'
   KIND_ASK_OG = 'ask_og'
+  KIND_SEAT_SUGGESTION = 'seat_suggestion'
 
   belongs_to :subject, polymorphic: true, optional: true
   belongs_to :organization, class_name: 'Organization'

@@ -53,15 +53,7 @@ class Organizations::MaapAbilityCreatesController < Organizations::OrganizationN
   def show
     authorize @proposal
     @payload = MaapProposals::AbilityPayload.from_hash(@proposal.proposed_payload)
-    @diff_baseline = if @proposal.baseline_payload.present?
-      MaapProposals::AbilityPayload.from_hash(@proposal.baseline_payload)
-    else
-      MaapProposals::AbilityPayload.empty
-    end
-    @field_diffs = MaapProposals::AbilityDiffBuilder.call(
-      before: @diff_baseline,
-      after: @payload
-    )
+    @parent_seat_proposal = @proposal.parent_seat_create_proposal
     if @proposal.submitted?
       @name_uniqueness = MaapProposals::AbilityNameUniqueness.call(
         organization: @organization,

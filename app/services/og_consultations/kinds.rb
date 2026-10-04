@@ -115,6 +115,17 @@ module OgConsultations
         runner_class_name: 'Assistant::AskOgRunner',
         llm_purpose: 'ask_og',
         billable: false
+      ),
+      # Seat Suggestion: one billable consultation per conversation (not per reply).
+      # Replies reuse the same OgConsultation row; Value Billing counts the completed row once.
+      OgConsultation::KIND_SEAT_SUGGESTION => Entry.new(
+        kind: OgConsultation::KIND_SEAT_SUGGESTION,
+        label: 'Seat Suggestion',
+        result_class_name: 'AskOgResult',
+        job_class_name: 'AskOgJob',
+        runner_class_name: 'Assistant::SeatSuggestionRunner',
+        llm_purpose: 'seat_suggestion',
+        billable: true
       )
     }.freeze
 

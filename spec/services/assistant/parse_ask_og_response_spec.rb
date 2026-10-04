@@ -21,4 +21,15 @@ RSpec.describe Assistant::ParseAskOgResponse do
       %w[create_draft_observation set_current_week_goal_confidence]
     )
   end
+
+  it "does not raise when model JSON has unescaped quotes mid-string" do
+    # Simulates: "answer": "... "Franchise" ..." which breaks JSON.parse
+    raw = %({ "answer": "We should hire a "Franchise" Partner Success Manager", "proposed_actions": [] })
+
+    expect { described_class.call(raw) }.not_to raise_error
+    parsed = described_class.call(raw)
+    expect(parsed[:answer]).to be_present
+    expect(parsed[:proposed_actions]).to eq([])
+  end
 end
+
