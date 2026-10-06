@@ -1,0 +1,92 @@
+- consult = local_assigns[:consult]
+- observation = local_assigns.fetch(:observation)
+- organization = local_assigns.fetch(:organization)
+- has_consult = consult.present?
+- open = has_consult || params[:ogo_consult].present?
+- run_path = ogo_quality_consult_organization_observation_path(organization, observation.persisted? ? observation : :new)
+- in_flight = consult&.in_flight?
+- completed = consult&.status == "completed"
+- failed = consult&.status == "failed"
+- result = consult&.result if consult&.result.is_a?(OgoQualityResult)
+- quality = result&.quality || {}
+- observation_aspect = (quality["observation"] || {}).stringify_keys
+- emotion_aspect = (quality["emotion"] || {}).stringify_keys
+- impact_aspect = (quality["impact"] || {}).stringify_keys
+- proposed = result&.proposed_objects || []
+
+.mt-1{ data: { controller: "ogo-quality-consult", ogo_quality_consult_open_value: open, ogo_quality_consult_has_consult_value: has_consult } }
+  .d-flex.align-items-baseline.justify-content-between.gap-2
+    .form-text.mb-0 Markdown is supported for formatting.
+    %a.small.text-decoration-none.text-nowrap{ href: "#", data: { action: "ogo-quality-consult#toggle" } }
+      %i.bi.bi-stars.me-1
+      %span{ data: { ogo_quality_consult_target: "linkLabel" } }
+        = has_consult ? "Consult OG again" : "Consult OG about this OGO"
+  .mt-2.border.rounded.p-3.bg-light{ class: ("d-none" unless open), data: { ogo_quality_consult_target: "panel" } }
+    %p.small.text-muted.mb-2
+      OG suggests how to strengthen this story, and may propose up to three Assignments,
+      Abilities, or Values. Proposals are suggestions only — they are not applied to this OGO.
+    %p.small.text-warning.mb-2.d-none{ data: { ogo_quality_consult_target: "hint" } }
+      Add at least one observee and some story before running.
+
+    - if in_flight
+      = render "shared/og_consultations/status_banner",
+               status_url: ogo_quality_consult_status_organization_observation_path(organization, observation),
+               label: "Consult OG",
+               initial_status: consult.status,
+               wrapper_class: "alert alert-secondary mb-2",
+               time_zone: current_person_iana_timezone
+    - elsif failed
+      .alert.alert-danger.py-2.small.mb-2
+        Consultation failed#{consult.error_message.present? ? ": #{consult.error_message}" : "."}
+
+    - if completed && result
+      .mb-3
+        %p.mb-2= quality["summary"].presence || "Try adding who did what, the feeling it stirred, and who it helped or hurt."
+        - improvements = Array(quality["improvements"]).map { |item| item.to_s.presence }.compact
+        - if improvements.any?
+          %ul.small.mb-3
+            - improvements.each do |item|
+              %li= item
+        .row.g-2.small
+          .col-md-4
+            .border.rounded.p-2.bg-white.h-100
+              %strong Observation
+              %span.text-muted= "#{observation_aspect['score'].to_i}/100"
+              %div= observation_aspect["notes"]
+          .col-md-4
+            .border.rounded.p-2.bg-white.h-100
+              %strong Emotion
+              %span.text-muted= "#{emotion_aspect['score'].to_i}/100"
+              %div= emotion_aspect["notes"]
+          .col-md-4
+            .border.rounded.p-2.bg-white.h-100
+              %strong Impact
+              %span.text-muted= "#{impact_aspect['score'].to_i}/100"
+              %div= impact_aspect["notes"]
+        - if proposed.any?
+          %p.small.fw-semibold.mt-3.mb-1 Proposed objects (not applied)
+          %ul.small.mb-0
+            - proposed.each do |obj|
+              - obj = obj.stringify_keys
+              - type_label = obj["rateable_type"] == "Aspiration" ? "Value" : obj["rateable_type"]
+              %li
+                %strong= ObservationRating.display_label(obj["rating"])
+                example of the #{type_label}
+                %em= obj["rateable_name"]
+                - if obj["reason"].present?
+                  %span.text-muted — #{obj["reason"]}
+        - else
+          %p.small.text-muted.mt-2.mb-0
+            If you are sure which Assignment, Ability, or Value was on display, add it on the form.
+            If you are not sure, leave it off.
+
+    - unless in_flight
+      = button_tag "Run consultation",
+                   type: "submit",
+                   name: "ogo_quality_consult",
+                   value: "1",
+                   formaction: run_path,
+                   formmethod: "post",
+                   class: "btn btn-sm btn-outline-primary mt-2",
+                   data: { ogo_quality_consult_target: "runButton" },
+                   onclick: "var field = document.getElementById('form_method_field'); if (field) field.remove(); return true;"

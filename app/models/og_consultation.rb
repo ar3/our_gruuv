@@ -12,6 +12,7 @@ class OgConsultation < ApplicationRecord
     ogo_search_consult
     ask_og
     seat_suggestion
+    ogo_quality
   ].freeze
 
   STATUSES = %w[pending processing completed failed].freeze
@@ -26,6 +27,7 @@ class OgConsultation < ApplicationRecord
   KIND_OGO_SEARCH_CONSULT = 'ogo_search_consult'
   KIND_ASK_OG = 'ask_og'
   KIND_SEAT_SUGGESTION = 'seat_suggestion'
+  KIND_OGO_QUALITY = 'ogo_quality'
 
   belongs_to :subject, polymorphic: true, optional: true
   belongs_to :organization, class_name: 'Organization'
@@ -41,6 +43,7 @@ class OgConsultation < ApplicationRecord
   has_one :position_change_eligibility_result, dependent: :destroy
   has_one :ogo_search_result, dependent: :destroy
   has_one :ask_og_result, dependent: :destroy
+  has_one :ogo_quality_result, dependent: :destroy
 
   validates :kind, presence: true, inclusion: { in: ->(_) { OgConsultations::Kinds.kinds } }
   validates :status, presence: true, inclusion: { in: STATUSES }

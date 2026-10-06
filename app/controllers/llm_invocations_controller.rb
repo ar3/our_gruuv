@@ -13,6 +13,7 @@ class LlmInvocationsController < ApplicationController
     abilities_hr_enrich
     abilities_hr_match
     ask_og
+    ogo_quality
   ].freeze
 
   PER_PURPOSE_LIMIT = 10

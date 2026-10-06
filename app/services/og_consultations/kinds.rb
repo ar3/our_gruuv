@@ -126,6 +126,15 @@ module OgConsultations
         runner_class_name: 'Assistant::SeatSuggestionRunner',
         llm_purpose: 'seat_suggestion',
         billable: true
+      ),
+      OgConsultation::KIND_OGO_QUALITY => Entry.new(
+        kind: OgConsultation::KIND_OGO_QUALITY,
+        label: 'Consult OG about this OGO',
+        result_class_name: 'OgoQualityResult',
+        job_class_name: 'OgoQualityJob',
+        runner_class_name: 'Observations::OgoQualityRunner',
+        llm_purpose: 'ogo_quality',
+        billable: true
       )
     }.freeze
 

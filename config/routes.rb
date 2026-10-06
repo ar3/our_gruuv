@@ -890,6 +890,12 @@ Rails.application.routes.draw do
         post :update_draft, constraints: { id: /(\d+|new)/ }, to: 'observations#update_draft'  # POST with _method override
         post :cancel, constraints: { id: /(\d+|new)/ }  # Cancel and optionally save draft if story has content (supports 'new' for new records)
         post :publish, constraints: { id: /(\d+|new)/ }  # Publish draft observation (supports 'new' for new records)
+        post :ogo_quality_consult, to: 'observations/ogo_quality_consults#create',
+                                   as: :ogo_quality_consult,
+                                   constraints: { id: /(\d+|new)/ }
+        get :ogo_quality_consult_status, to: 'observations/ogo_quality_consults#status',
+                                         as: :ogo_quality_consult_status,
+                                         constraints: { id: /(\d+|new)/ }
       end
     end
     

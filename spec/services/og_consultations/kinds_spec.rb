@@ -42,6 +42,17 @@ RSpec.describe OgConsultations::Kinds do
     expect(entry.runner_class).to eq(Assistant::SeatSuggestionRunner)
   end
 
+  it 'registers OGO quality consult as billable with a job and runner' do
+    entry = described_class.fetch(OgConsultation::KIND_OGO_QUALITY)
+
+    expect(entry.label).to eq('Consult OG about this OGO')
+    expect(entry.result_class).to eq(OgoQualityResult)
+    expect(entry.job_class).to eq(OgoQualityJob)
+    expect(entry.runner_class).to eq(Observations::OgoQualityRunner)
+    expect(entry.llm_purpose).to eq('ogo_quality')
+    expect(entry.billable).to be(true)
+  end
+
   it 'raises a clear error for unknown kinds' do
     expect { described_class.fetch('not_a_kind') }.to raise_error(KeyError, /Unknown OgConsultation kind/)
   end

@@ -30,12 +30,17 @@ class Observation < ApplicationRecord
   has_many :aspirations, through: :observation_ratings, source: :rateable, source_type: 'Aspiration'
   has_many :notifications, as: :notifiable, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
+  has_many :og_consultations, as: :subject, dependent: :destroy
   has_many_attached :story_images
 
   # Provider-specific source runs (Slack / Zoom / Meet / …) must NOT get FKs here.
   # Attribute excavation via ObservationTrigger — see docs/ogo-creation-attribution.md
   CREATED_AS_SLACK_SOURCE = 'slack_source'
   CREATED_AS_OGO_CONSULT = 'ogo_consult_source'
+
+  def latest_ogo_quality_consultation
+    og_consultations.for_kind(OgConsultation::KIND_OGO_QUALITY).latest_first.first
+  end
 
   accepts_nested_attributes_for :observees, allow_destroy: true
   accepts_nested_attributes_for :observation_ratings, allow_destroy: true

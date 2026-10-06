@@ -60,6 +60,10 @@ class ObservationPolicy < ApplicationPolicy
     update?
   end
 
+  def consult_ogo_quality?
+    update?
+  end
+
   def update?
     # Draft: creator or observer may edit. Published: observer only.
     return false unless viewing_teammate

@@ -488,7 +488,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     prepare_privacy_selector_data
-    
+    load_ogo_quality_consultation
+
     render layout: 'overlay'
   end
 
@@ -576,7 +577,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @show_convert_link = @observation.persisted?
     
     prepare_privacy_selector_data
-    
+    load_ogo_quality_consultation
+
     render 'new_kudos', layout: 'overlay'
   end
 
@@ -598,7 +600,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @show_convert_link = @observation.persisted?
     
     prepare_privacy_selector_data
-    
+    load_ogo_quality_consultation
+
     render 'new_feedback', layout: 'overlay'
   end
 
@@ -619,7 +622,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @show_convert_link = @observation.persisted?
     
     prepare_privacy_selector_data
-    
+    load_ogo_quality_consultation
+
     render 'new_quick_note', layout: 'overlay'
   end
 
@@ -2525,6 +2529,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
 
     permitted
+  end
+
+  def load_ogo_quality_consultation
+    @ogo_quality_consultation =
+      if @observation&.persisted?
+        @observation.latest_ogo_quality_consultation
+      end
   end
 
   def typed_observation_path_for(observation, options = {})

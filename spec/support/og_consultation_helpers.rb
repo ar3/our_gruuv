@@ -150,6 +150,28 @@ module OgConsultationSpecHelpers
     consultation.update!(result: result)
     consultation
   end
+
+  def create_ogo_quality_consultation!(observation:, status: 'pending', payload: {}, output_text: nil, **attrs)
+    consultation = OgConsultation.create!(
+      {
+        kind: OgConsultation::KIND_OGO_QUALITY,
+        subject: observation,
+        organization_id: observation.company_id,
+        status: status,
+        billable: true,
+        prompt_version: Ogo::Prompts::PROMPT_VERSION,
+        units_total: 1,
+        units_completed: status == 'completed' ? 1 : 0
+      }.merge(attrs.slice(*CONSULTATION_ATTRS))
+    )
+    result = OgoQualityResult.create!(
+      og_consultation: consultation,
+      payload: payload,
+      output_text: output_text
+    )
+    consultation.update!(result: result)
+    consultation
+  end
 end
 
 RSpec.configure do |config|

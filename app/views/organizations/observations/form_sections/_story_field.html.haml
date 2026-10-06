@@ -7,7 +7,10 @@
     .single-page-wizard-step 2
   .col-11
     = form.text_area :story, id: 'observation_story', class: 'form-control', rows: 5, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.'
-    .form-text Markdown is supported for formatting.
+    = render 'organizations/observations/form_sections/ogo_quality_consult',
+             observation: observation,
+             organization: organization,
+             consult: local_assigns[:ogo_quality_consultation] || @ogo_quality_consultation
     .form-text.mt-2
       %small.text-muted
         = link_to "Use the OG take on the Non-Violent Communication and feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "observation_story" }
