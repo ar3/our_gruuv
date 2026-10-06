@@ -181,7 +181,7 @@ export default class extends Controller {
               : ""
             return `<li class="mb-2">
               <span class="badge text-bg-success me-1">${match.confidence_pct}%</span>
-              <span class="text-break">${this.escape(match.short_quote || match.quote_preview || "")}</span>
+              <span class="text-break">${this.escape(match.summary || match.quote_preview || "")}</span>
               <div class="mt-1">${link}${permalink}</div>
             </li>`
           })

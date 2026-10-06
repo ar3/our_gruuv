@@ -11,7 +11,8 @@ module Llm
     HAIKU_45_FOUNDATION_SUFFIX = 'anthropic.claude-haiku-4-5-20251001-v1:0'
     # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
     # Ask before bumping major; otherwise set date to today and increment minor.
-    PROMPT_VERSION = '1.20260718.0'
+    # 1.20261006.1 — display quote is summary → full quote → why (no short quote)
+    PROMPT_VERSION = '1.20261006.1'
 
     def self.default_model_id
       region = RubyLLM.config.bedrock_region.presence || ENV['AWS_REGION'].presence || 'us-east-1'
@@ -44,7 +45,7 @@ module Llm
       @triggered_by_teammate_id = triggered_by_teammate_id
     end
 
-    # Returns { "items" => [ { "kind", "summary", "short_quote", "full_quote", "quote", "speaker_label", "recipient_label" }, ... ] }.
+    # Returns { "items" => [ { "kind", "summary", "full_quote", "quote", "speaker_label", "recipient_label", "association_reason", "rating_reason" }, ... ] }.
     def call
       return stub_response unless bedrock_configured?
 
@@ -89,13 +90,14 @@ module Llm
         You extract moments from meeting transcripts where one speaker gives another person kudos (praise)
         or constructive feedback. Return ONLY valid JSON with shape:
         {"items":[{"kind":"kudos"|"feedback","summary":"This is a story about when <name of recipient> caused <outcome> by <action they took>. And this made me feel <impact it had on the speaker>.",
-        "short_quote":"short but accurate quote",
         "full_quote":"complete verbatim quote from transcript",
-        "speaker_label":"name as in transcript","recipient_label":"primary addressee name as in transcript"}]}.
+        "speaker_label":"name as in transcript","recipient_label":"primary addressee name as in transcript",
+        "association_reason":"one concise sentence why this maps to an assignment, ability, or value (or why it matters if that is unclear)",
+        "rating_reason":"one concise sentence why this is exceptional, strong, mis-aligned, or concerning"}]}.
         Rules:
         - full_quote must be verbatim from transcript text.
-        - short_quote must be concise but still an exact quote from transcript.
         - summary must follow the exact sentence pattern above and stay faithful to transcript facts.
+        - association_reason and rating_reason are required (the Why block).
         - Never invent names or details not present in transcript.
         If none, return {"items":[]}.
       TXT
@@ -120,12 +122,14 @@ module Llm
         short_quote = h['short_quote'].to_s.strip
         summary = h['summary'].to_s.strip
         legacy_quote = h['quote'].to_s.strip
+        association_reason = h['association_reason'].to_s.strip
+        rating_reason = h['rating_reason'].to_s.strip
 
         full_quote = legacy_quote if full_quote.blank?
-        short_quote = legacy_quote if short_quote.blank?
+        short_quote = full_quote if short_quote.blank?
         summary = default_summary(
           recipient_label: h['recipient_label'].to_s,
-          quote: short_quote.presence || full_quote.presence || legacy_quote
+          quote: full_quote.presence || short_quote.presence || legacy_quote
         ) if summary.blank?
 
         {
@@ -133,10 +137,15 @@ module Llm
           'summary' => summary.truncate(2500),
           'short_quote' => short_quote.truncate(2500),
           'full_quote' => full_quote.truncate(10_000),
-          'quote' => compose_display_quote(
+          'association_reason' => association_reason.truncate(500),
+          'rating_reason' => rating_reason.truncate(500),
+          'quote' => OgoCandidateDisplayQuote.compose(
             summary: summary,
-            short_quote: short_quote,
-            full_quote: full_quote
+            full_quote: full_quote,
+            why_lines: [
+              association_reason.presence,
+              rating_reason.presence
+            ]
           ).truncate(20_000),
           'speaker_label' => h['speaker_label'].to_s.strip,
           'recipient_label' => h['recipient_label'].to_s.strip
@@ -154,24 +163,6 @@ module Llm
       else
         '{}'
       end
-    end
-
-    def compose_display_quote(summary:, short_quote:, full_quote:)
-      [
-        "Summary: #{summary.presence || '(none)'}",
-        '',
-        '',
-        '====================',
-        '',
-        '',
-        "Short quote: #{short_quote.presence || '(none)'}",
-        '',
-        '',
-        '====================',
-        '',
-        '',
-        "Full quote: #{full_quote.presence || '(none)'}"
-      ].join("\n")
     end
 
     def default_summary(recipient_label:, quote:)

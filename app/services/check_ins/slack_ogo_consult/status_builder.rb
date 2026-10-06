@@ -124,7 +124,7 @@ module CheckIns
           confidence_pct: (item[:confidence].to_f * 100).round,
           kind: item[:kind],
           quote_preview: item[:quote].to_s.truncate(280),
-          short_quote: item[:short_quote].presence || item[:full_quote].to_s.truncate(160),
+          summary: item[:summary].presence || item[:short_quote].presence || item[:full_quote].to_s.truncate(160),
           permalink: item[:permalink],
           batch_id: match.batch.id,
           batch_url: batch_url(match.batch)

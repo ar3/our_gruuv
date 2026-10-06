@@ -50,7 +50,11 @@ RSpec.describe Llm::SlackMomentsExtractor do
     item = result["items"].first
     expect(item["confidence"]).to eq(0.91)
     expect(item["summary"]).to start_with("This is a story about")
-    expect(item["quote"]).to start_with(
+    expect(item["quote"]).to start_with("This is a story about")
+    expect(item["quote"]).to include("Full quote: Pat shipped early and crushed the launch.")
+    expect(item["quote"]).not_to include("Short quote:")
+    expect(item["quote"]).to include("Why:")
+    expect(item["quote"]).to include(
       "OG is suggesting: Exceptional example of the Assignment, Own launch."
     )
     expect(item["quote"]).to include(

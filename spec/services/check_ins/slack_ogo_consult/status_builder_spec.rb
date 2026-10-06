@@ -89,4 +89,30 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
     expect(payload[:consultation_stale]).to eq(false)
     expect(payload[:stale_warning]).to be_nil
   end
+
+  it "serializes summary for the check-in match list, not short quote" do
+    batch.update!(
+      extraction_status: "completed",
+      extractions: {
+        "version" => 1,
+        "items" => [
+          {
+            "id" => "match-1",
+            "kind" => "kudos",
+            "confidence" => 0.9,
+            "include" => true,
+            "summary" => "This is a story about when Pat shipped early.",
+            "short_quote" => "shipped early",
+            "full_quote" => "Pat shipped early and crushed the launch.",
+            "suggested_rateable_type" => "Assignment",
+            "suggested_rateable_id" => assignment.id
+          }
+        ]
+      }
+    )
+
+    match = build_payload[:object_matches].first
+    expect(match[:summary]).to eq("This is a story about when Pat shipped early.")
+    expect(match).not_to have_key(:short_quote)
+  end
 end

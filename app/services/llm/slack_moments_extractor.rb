@@ -9,7 +9,8 @@ module Llm
     SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
     # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
     # Ask before bumping major; otherwise set date to today and increment minor.
-    PROMPT_VERSION = "1.20260731.0"
+    # 1.20261006.1 — display quote is summary → full quote → why (no short quote)
+    PROMPT_VERSION = "1.20261006.1"
     RATING_WORDS = ObservationRating::DISPLAY_LABELS.except("na").freeze
     ALLOWED_RATINGS = RATING_WORDS.keys.freeze
     ALLOWED_RATEABLE_TYPES = %w[Assignment Ability Aspiration].freeze
@@ -165,7 +166,7 @@ module Llm
         "confidence":0.0-1.0,
         "target_is_subject":true,
         "summary":"This is a story about when <recipient> caused <outcome> by <action>. And this made me feel <impact>.",
-        "short_quote":"short exact quote","full_quote":"verbatim quote from message text",
+        "full_quote":"verbatim quote from message text",
         "speaker_label":"speaker name if known","recipient_label":"recipient name if known",
         "channel_id":"from message header","ts":"from message header","permalink":"from message header",
         "slack_user_id":"speaker user id from message header",
@@ -177,7 +178,7 @@ module Llm
         "suggested_goal_id":number|null}]}.
         Rating bands: strongly_agree=#{exceptional}, agree=#{agree}, disagree=#{disagree}, strongly_disagree=#{concerning}.
         Kind follows rating: #{exceptional}/#{agree} => kudos; #{disagree}/#{concerning} => feedback.
-        Rules: full_quote/short_quote must come from message text; never invent channel_id/ts/permalink/slack_user_id;
+        Rules: full_quote must come from message text; never invent channel_id/ts/permalink/slack_user_id;
         every returned item must have a rateable object, rating, association_reason, and rating_reason;
         only use suggested_* ids that appear in SUBJECT CONTEXT; if unsure, omit the item;
         only include moments clearly worth logging as OGOs with confidence >= #{MIN_RETURN_CONFIDENCE};
@@ -221,11 +222,11 @@ module Llm
         legacy_quote = h["quote"].to_s.strip
 
         full_quote = legacy_quote if full_quote.blank?
-        short_quote = legacy_quote if short_quote.blank?
+        short_quote = full_quote if short_quote.blank?
         if summary.blank?
           summary = default_summary(
             recipient_label: h["recipient_label"].to_s,
-            quote: short_quote.presence || full_quote.presence || legacy_quote
+            quote: full_quote.presence || short_quote.presence || legacy_quote
           )
         end
 
@@ -247,15 +248,16 @@ module Llm
           "summary" => summary.truncate(2500),
           "short_quote" => short_quote.truncate(2500),
           "full_quote" => full_quote.truncate(10_000),
-          "quote" => compose_display_quote(
+          "quote" => OgoCandidateDisplayQuote.compose(
             summary: summary,
-            short_quote: short_quote,
             full_quote: full_quote,
-            rating_label: rating_label,
-            rateable_type_label: rateable_type_label,
-            rateable_name: rateable_name,
-            association_reason: association_reason,
-            rating_reason: rating_reason
+            why_lines: OgoCandidateDisplayQuote.suggestion_why_lines(
+              rating_label: rating_label,
+              rateable_type_label: rateable_type_label,
+              rateable_name: rateable_name,
+              association_reason: association_reason,
+              rating_reason: rating_reason
+            )
           ).truncate(20_000),
           "speaker_label" => h["speaker_label"].to_s.strip,
           "recipient_label" => h["recipient_label"].to_s.strip,
@@ -358,35 +360,6 @@ module Llm
       else
         "{}"
       end
-    end
-
-    def compose_display_quote(
-      summary:, short_quote:, full_quote:, rating_label:, rateable_type_label:, rateable_name:,
-      association_reason:, rating_reason:
-    )
-      [
-        "OG is suggesting: #{rating_label} example of the #{rateable_type_label}, #{rateable_name}.",
-        "OG thought it was an example of #{rateable_name} because #{association_reason}.",
-        "OG thought it was a #{rating_label} example because #{rating_reason}.",
-        "",
-        "",
-        "====================",
-        "",
-        "",
-        summary.presence || "(none)",
-        "",
-        "",
-        "====================",
-        "",
-        "",
-        "Short quote: #{short_quote.presence || '(none)'}",
-        "",
-        "",
-        "====================",
-        "",
-        "",
-        "Full quote: #{full_quote.presence || '(none)'}"
-      ].join("\n")
     end
 
     def default_summary(recipient_label:, quote:)
