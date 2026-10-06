@@ -5,28 +5,26 @@ class AbilityMilestoneCalibrationItem < ApplicationRecord
   belongs_to :ability
   belongs_to :awarded_by_teammate, class_name: 'CompanyTeammate', optional: true
 
-  before_validation :normalize_unanswered_ratings
-
   validates :ability, presence: true
   validates :ability_id, uniqueness: { scope: :ability_milestone_calibration_id }
-  # nil = not answered; 1–5 = answered proposal (current).
-  validates :employee_rating, numericality: { only_integer: true, in: 1..5 }, allow_nil: true
-  validates :manager_rating, numericality: { only_integer: true, in: 1..5 }, allow_nil: true
-  validates :employee_first_rating, numericality: { only_integer: true, in: 1..5 }, allow_nil: true
-  validates :manager_first_rating, numericality: { only_integer: true, in: 1..5 }, allow_nil: true
+  # nil = not answered; 0–5 = answered proposal (current).
+  validates :employee_rating, numericality: { only_integer: true, in: 0..5 }, allow_nil: true
+  validates :manager_rating, numericality: { only_integer: true, in: 0..5 }, allow_nil: true
+  validates :employee_first_rating, numericality: { only_integer: true, in: 0..5 }, allow_nil: true
+  validates :manager_first_rating, numericality: { only_integer: true, in: 0..5 }, allow_nil: true
   validates :official_milestone_level, numericality: { only_integer: true, in: 0..5 }, allow_nil: true
 
   scope :ordered_by_ability_name, -> {
     joins(:ability).order(Arel.sql('LOWER(abilities.name) ASC'))
   }
   scope :ready_for_review, -> {
-    where(employee_rating: 1..5).where(manager_rating: 1..5).where(awarded_at: nil)
+    where(employee_rating: 0..5).where(manager_rating: 0..5).where(awarded_at: nil)
   }
   scope :needing_award, -> { ready_for_review }
   scope :calibration_history, -> {
     where.not(awarded_at: nil)
-      .where(employee_rating: 1..5)
-      .where(manager_rating: 1..5)
+      .where(employee_rating: 0..5)
+      .where(manager_rating: 0..5)
   }
   scope :awarded_positive, -> {
     where.not(awarded_at: nil).where('official_milestone_level >= 1')
@@ -87,7 +85,7 @@ class AbilityMilestoneCalibrationItem < ApplicationRecord
   # Does not clear — selections are not undone.
   def assign_side_rating!(role:, value:, at: Time.current)
     value = Integer(value)
-    raise ArgumentError, 'Each rating must be between 1 and 5.' unless (1..5).cover?(value)
+    raise ArgumentError, 'Each rating must be between 0 and 5.' unless (0..5).cover?(value)
 
     role = role.to_sym
     rating_attr = role == :employee ? :employee_rating : :manager_rating
@@ -111,17 +109,10 @@ class AbilityMilestoneCalibrationItem < ApplicationRecord
   end
 
   def self.answered_rating?(value)
-    value.present? && value.to_i >= 1 && value.to_i <= 5
+    !value.nil? && (0..5).cover?(value.to_i)
   end
 
   def answered_rating?(value)
     self.class.answered_rating?(value)
-  end
-
-  private
-
-  def normalize_unanswered_ratings
-    self.employee_rating = nil if employee_rating.present? && employee_rating.to_i < 1
-    self.manager_rating = nil if manager_rating.present? && manager_rating.to_i < 1
   end
 end

@@ -56,7 +56,9 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(response.body).not_to include('Save rating')
       expect(response.body).to include('(you)')
       expect(response.body).to include('will rate what Milestone has been demonstrated')
-      expect(response.body).to include('Select a Milestone (1-5) to save immediately')
+      expect(response.body).to include('Select a Milestone (0-5) to save immediately')
+      expect(response.body).to include("id=\"calibration_rating_")
+      expect(response.body).to include('value="0"')
       expect(response.body).not_to include('You are')
       expect(response.body).not_to include('Select a level')
 
@@ -64,6 +66,18 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       item = calibration.items.find_by!(ability: ability)
       other_item = calibration.items.find_by!(ability: other_ability)
       expect(response.body).to include("id=\"calibration-item-#{item.id}\"")
+      expect(response.body).to include("id=\"calibration_rating_#{item.id}_0\"")
+
+      patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
+            params: { item_id: other_item.id, rating: '0' }
+      expect(response).to redirect_to(
+        ability_milestone_calibration_organization_company_teammate_path(
+          organization, employee_teammate, anchor: "calibration-item-#{other_item.id}"
+        )
+      )
+      expect(other_item.reload.employee_rating).to eq(0)
+      expect(other_item.employee_first_rating).to eq(0)
+      expect(other_item.employee_rated?).to be(true)
 
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
             params: { item_id: item.id, rating: '2' }
@@ -76,7 +90,7 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(item.employee_first_rating).to eq(2)
       expect(item.employee_first_rated_at).to be_present
       expect(item.employee_rating_changed_at).to be_present
-      expect(other_item.reload.employee_rating).to be_nil
+      expect(other_item.reload.employee_rating).to eq(0)
 
       first_at = item.employee_first_rated_at
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
@@ -115,6 +129,11 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(response.body).to include('name="certification_note"')
       expect(response.body).to include('Other participant:')
       expect(response.body).to include('First: M2')
+      expect(response.body).to include('Click here to change your milestone selection...')
+      expect(response.body).to include('or make the final Milestone certification above')
+      expect(response.body).to include("id=\"calibration-manager-rating-#{item.id}\"")
+      expect(response.body).not_to match(/id="calibration-manager-rating-#{item.id}"[^>]*class="[^"]*\bshow\b/)
+      expect(response.body).not_to match(/class="[^"]*\bshow\b[^"]*"[^>]*id="calibration-manager-rating-#{item.id}"/)
 
       expect do
         post award_ability_milestone_calibration_item_organization_company_teammate_path(organization, employee_teammate, item),

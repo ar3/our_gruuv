@@ -125,8 +125,8 @@ module Abilities
         .where(ability_id: @ability.id)
         .where.not(employee_first_rating: nil)
         .where.not(manager_first_rating: nil)
-        .where(employee_first_rating: 1..5)
-        .where(manager_first_rating: 1..5)
+        .where(employee_first_rating: 0..5)
+        .where(manager_first_rating: 0..5)
         .includes(ability_milestone_calibration: { company_teammate: :person })
         .filter_map { |item| point_for(item) }
     end

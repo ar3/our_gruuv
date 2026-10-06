@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_213000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -67,9 +67,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_120000) do
     t.index ["ability_milestone_calibration_id", "ability_id"], name: "index_ability_ms_calibration_items_on_calibration_and_ability", unique: true
     t.index ["ability_milestone_calibration_id"], name: "index_ability_ms_calibration_items_on_calibration_id"
     t.index ["awarded_by_teammate_id"], name: "index_ability_ms_calibration_items_on_awarded_by"
-    t.check_constraint "employee_first_rating IS NULL OR employee_first_rating >= 1 AND employee_first_rating <= 5", name: "ability_ms_calibration_items_employee_first_rating_range"
+    t.check_constraint "employee_first_rating IS NULL OR employee_first_rating >= 0 AND employee_first_rating <= 5", name: "ability_ms_calibration_items_employee_first_rating_range"
     t.check_constraint "employee_rating IS NULL OR employee_rating >= 0 AND employee_rating <= 5", name: "ability_ms_calibration_items_employee_rating_range"
-    t.check_constraint "manager_first_rating IS NULL OR manager_first_rating >= 1 AND manager_first_rating <= 5", name: "ability_ms_calibration_items_manager_first_rating_range"
+    t.check_constraint "manager_first_rating IS NULL OR manager_first_rating >= 0 AND manager_first_rating <= 5", name: "ability_ms_calibration_items_manager_first_rating_range"
     t.check_constraint "manager_rating IS NULL OR manager_rating >= 0 AND manager_rating <= 5", name: "ability_ms_calibration_items_manager_rating_range"
     t.check_constraint "official_milestone_level IS NULL OR official_milestone_level >= 0 AND official_milestone_level <= 5", name: "ability_ms_calibration_items_official_rating_range"
   end

@@ -40,12 +40,11 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
       return
     end
 
-    attr = view_role == :employee ? :employee_rating : :manager_rating
     raw = params[:rating]
-    raise ArgumentError, 'Choose a Milestone (1-5).' if raw.nil? || raw.to_s.strip == ''
+    raise ArgumentError, 'Choose a Milestone (0-5).' if raw.nil? || raw.to_s.strip == ''
 
     value = Integer(raw)
-    raise ArgumentError, 'Each rating must be Milestone 1 through 5.' unless (1..5).cover?(value)
+    raise ArgumentError, 'Each rating must be Milestone 0 through 5.' unless (0..5).cover?(value)
 
     item.assign_side_rating!(role: view_role, value: value)
 
