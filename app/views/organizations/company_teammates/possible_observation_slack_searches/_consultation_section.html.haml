@@ -205,14 +205,20 @@
                     .mb-2
                       .small.text-muted.mb-1
                         Detected: #{item[:speaker_label]} → #{item[:recipient_label]}
-                      = label_tag "#{form_id}_#{idx}_responder", "Observer (speaker)", class: "form-label small mb-0"
-                      = select_tag "items[#{idx}][responder_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + teammates_grouped_for_select, item[:responder_company_teammate_id]), class: "form-select form-select-sm mb-2", id: "#{form_id}_#{idx}_responder", data: { slack_row_field: true }, disabled: !included || locked
-                      = label_tag "#{form_id}_#{idx}_subject", "Subject (observee)", class: "form-label small mb-0"
-                      = select_tag "items[#{idx}][subject_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + teammates_grouped_for_select, item[:subject_company_teammate_id]), class: "form-select form-select-sm", id: "#{form_id}_#{idx}_subject", data: { slack_row_field: true }, disabled: !included || locked
-                      - unless responder_selected
-                        .badge.text-bg-secondary.mt-1 Observer unclear
-                      - unless subject_selected
-                        .badge.text-bg-secondary.mt-1 Subject unclear
+                      .mb-2{ data: { controller: "ogo-identity-alternates" } }
+                        = label_tag "#{form_id}_#{idx}_responder", "Observer (speaker)", class: "form-label small mb-0"
+                        = select_tag "items[#{idx}][responder_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + teammates_grouped_for_select, item[:responder_company_teammate_id]), class: "form-select form-select-sm", id: "#{form_id}_#{idx}_responder", data: { ogo_identity_alternates_target: "select" }, disabled: locked
+                        - unless locked
+                          = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observer_alternates)
+                        - unless responder_selected
+                          .badge.text-bg-secondary.mt-1 Observer unclear
+                      .mb-2{ data: { controller: "ogo-identity-alternates" } }
+                        = label_tag "#{form_id}_#{idx}_subject", "Subject (observee)", class: "form-label small mb-0"
+                        = select_tag "items[#{idx}][subject_company_teammate_id]", grouped_options_for_select([["—", [["—", ""]]]] + teammates_grouped_for_select, item[:subject_company_teammate_id]), class: "form-select form-select-sm", id: "#{form_id}_#{idx}_subject", data: { ogo_identity_alternates_target: "select" }, disabled: locked
+                        - unless locked
+                          = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observee_alternates)
+                        - unless subject_selected
+                          .badge.text-bg-secondary.mt-1 Subject unclear
                     = hidden_field_tag "items[#{idx}][observer_unknown]", item[:observer_unknown]
                     = hidden_field_tag "items[#{idx}][observee_unknown]", item[:observee_unknown]
                     = hidden_field_tag "items[#{idx}][speaker_label]", item[:speaker_label]

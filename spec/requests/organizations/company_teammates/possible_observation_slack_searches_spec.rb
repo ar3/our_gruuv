@@ -216,6 +216,22 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(response.body).not_to include("Quick note")
       end
 
+      it "renders clickable observer identity hints when the stored candidate is unsure" do
+        item = batch.extraction_items.first.to_h.merge(
+          "observer_unknown" => true,
+          "observer_alternates" => [
+            { "company_teammate_id" => subject.id, "name" => subject.person.display_name }
+          ]
+        )
+        batch.replace_extraction_items!([item])
+
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Might also be")
+        expect(response.body).to include("ogo-identity-alternates")
+      end
+
       it "renders confidence-band analytics under the consultation status" do
         items = [
           { "id" => SecureRandom.uuid, "confidence" => 0.91, "quote" => "high", "kind" => "kudos",

@@ -69,10 +69,16 @@
       .form-check
         = radio_button_tag "items[#{idx}][kind]", value, item[:kind].to_s == value, class: "form-check-input", disabled: field_disabled, data: { consult_row_field: true }
         = label_tag nil, label, class: "form-check-label"
-    = label_tag nil, "Observer", class: "form-label small mb-0 mt-2"
-    = select_tag "items[#{idx}][responder_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:responder_company_teammate_id]), class: "form-select form-select-sm", disabled: field_disabled, data: { consult_row_field: true }
-    = label_tag nil, "Subject", class: "form-label small mb-0 mt-2"
-    = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: field_disabled, data: { consult_row_field: true }
+    .mb-1{ data: { controller: "ogo-identity-alternates" } }
+      = label_tag nil, "Observer", class: "form-label small mb-0 mt-2"
+      = select_tag "items[#{idx}][responder_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:responder_company_teammate_id]), class: "form-select form-select-sm", disabled: locked, data: { ogo_identity_alternates_target: "select" }
+      - unless locked
+        = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observer_alternates)
+    .mb-1{ data: { controller: "ogo-identity-alternates" } }
+      = label_tag nil, "Subject", class: "form-label small mb-0 mt-2"
+      = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: locked, data: { ogo_identity_alternates_target: "select" }
+      - unless locked
+        = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observee_alternates)
   %td
     - if locked
       = link_to "Open draft OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"

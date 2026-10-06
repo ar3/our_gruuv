@@ -1,0 +1,12 @@
+-# locals: alternates
+- alts = Array(alternates)
+- if alts.any?
+  .small.text-muted.mt-1
+    Might also be
+    - alts.each_with_index do |alt, i|
+      - if i.positive?
+        = " · "
+      = link_to alt[:name],
+                "#",
+                class: "link-secondary",
+                data: { action: "click->ogo-identity-alternates#choose", ogo_identity_alternates_teammate_id_param: alt[:company_teammate_id] }

@@ -266,6 +266,23 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Faster, but less powerful model")
       expect(response.body).to include("Slower, but more powerful model")
     end
+
+    it "renders clickable observer identity hints when the stored candidate is unsure" do
+      item = consult.extraction_items.first.to_h.merge(
+        "observer_unknown" => true,
+        "observer_alternates" => [
+          { "company_teammate_id" => other.id, "name" => other.person.display_name }
+        ]
+      )
+      consult.update!(extractions: consult.extractions.merge("items" => [item]))
+
+      get organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Might also be")
+      expect(response.body).to include(other.person.display_name)
+      expect(response.body).to include("ogo-identity-alternates")
+    end
   end
 
   describe "GET index" do

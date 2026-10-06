@@ -57,6 +57,7 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
     expect(items.first["include"]).to be(true)
     expect(items.first["confidence"]).to eq(0.9)
     expect(items.first["channel_id"]).to eq("C123")
+    expect(items.first["observer_alternates"]).to eq([])
   end
 
   it "sorts by confidence and leaves mid-confidence rows unchecked" do
@@ -230,5 +231,40 @@ RSpec.describe PossibleObservationSlackSearches::MergeAndResolveExtractionsServi
     )
 
     expect(items).to be_empty
+  end
+
+  it "ranks an ambiguous speaker label when Slack uid is missing" do
+    allow_any_instance_of(Transcripts::TeammateResolverService).to receive(:bedrock_configured?).and_return(false)
+    other_alex_person = create(:person, first_name: "Alex", last_name: "Other")
+    other_alex = create(:company_teammate, person: other_alex_person, organization: organization, first_employed_at: 1.year.ago)
+    create(:employment_tenure, teammate: other_alex, company: organization, started_at: 1.year.ago, ended_at: nil)
+
+    items = described_class.call(
+      search: search,
+      raw_items_by_chunk: [
+        [
+          {
+            "kind" => "kudos",
+            "summary" => "Pat crushed it",
+            "short_quote" => "great job",
+            "full_quote" => "Pat did a great job on the launch.",
+            "quote" => "Pat did a great job on the launch.",
+            "speaker_label" => "Alex",
+            "recipient_label" => "Pat",
+            "channel_id" => "C123",
+            "ts" => "1710000000.000100",
+            "permalink" => "https://example.slack.com/p1",
+            "slack_user_id" => "",
+            "confidence" => 0.9,
+            "target_is_subject" => true
+          }
+        ]
+      ]
+    )
+
+    expect(items.size).to eq(1)
+    expect(items.first["observer_unknown"]).to eq(true)
+    expect([speaker.id, other_alex.id]).to include(items.first["responder_company_teammate_id"])
+    expect(items.first["observer_alternates"]).not_to be_empty
   end
 end

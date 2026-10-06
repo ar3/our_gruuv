@@ -110,6 +110,8 @@ module PossibleObservationSlackSearches
         "subject_company_teammate_id" => subject_id,
         "observer_unknown" => speaker[:unknown],
         "observee_unknown" => subject_unknown,
+        "observer_alternates" => Array(speaker[:alternates]),
+        "observee_alternates" => observee_alternates_for(raw, subject_id, teammates: teammates, resolution_cache: resolution_cache),
         "channel_id" => raw["channel_id"].to_s,
         "ts" => raw["ts"].to_s,
         "permalink" => raw["permalink"].to_s,
@@ -210,7 +212,7 @@ module PossibleObservationSlackSearches
         teammate = TeammateIdentity.find_teammate_by_slack_id(slack_user_id, @organization)
         resolution_cache[cache_key] =
           if teammate
-            { company_teammate_id: teammate.id, unknown: false }
+            { company_teammate_id: teammate.id, unknown: false, alternates: [] }
           else
             resolve_label(raw["speaker_label"], teammates: teammates, resolution_cache: resolution_cache)
           end
@@ -218,6 +220,32 @@ module PossibleObservationSlackSearches
       end
 
       resolve_label(raw["speaker_label"], teammates: teammates, resolution_cache: resolution_cache)
+    end
+
+    def observee_alternates_for(raw, subject_id, teammates:, resolution_cache:)
+      return [] if subject_id.blank?
+
+      resolution = resolve_label(raw["recipient_label"], teammates: teammates, resolution_cache: resolution_cache)
+      ranked_ids = ranked_teammate_ids(resolution)
+      return [] unless ranked_ids.include?(subject_id)
+
+      ranked_alternate_hashes(resolution, teammates: teammates).reject { |alt| alt["company_teammate_id"].to_i == subject_id.to_i }.first(3)
+    end
+
+    def ranked_teammate_ids(resolution)
+      ([resolution[:company_teammate_id]] + Array(resolution[:alternates]).map { |alt| alt["company_teammate_id"] }).compact.map(&:to_i).uniq
+    end
+
+    def ranked_alternate_hashes(resolution, teammates:)
+      names = Array(resolution[:alternates]).index_by { |alt| alt["company_teammate_id"].to_i }
+      ranked_teammate_ids(resolution).filter_map do |id|
+        names[id] || begin
+          teammate = teammates.find { |tm| tm.id == id }
+          next unless teammate
+
+          { "company_teammate_id" => teammate.id, "name" => teammate.person.display_name.to_s }
+        end
+      end
     end
 
     def resolve_label(label, teammates:, resolution_cache:)
