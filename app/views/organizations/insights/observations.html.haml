@@ -161,6 +161,7 @@
                               rare. If #{ObservationRating.display_label('agree')} dominates this heavily, highlight the most extreme positive outcomes so standout impact stays visible and ratings don’t all collapse into “good enough.”
                         - when :below_one
                           .alert.alert-warning.mb-0.small
+                            = Insights::ObservationsRatingHealthCopy.rating_intensity_scale_intro_html
                             %p.mb-0
                               This pattern suggests a potential
                               %strong calibration
@@ -182,6 +183,7 @@
                               rare. If #{ObservationRating.display_label('disagree')} dominates this heavily, ensure the most extreme issues are still called out so serious problems aren’t only ever labeled as “soft” misalignment.
                         - when :below_one
                           .alert.alert-warning.mb-0.small
+                            = Insights::ObservationsRatingHealthCopy.rating_intensity_scale_intro_html
                             %p.mb-0
                               This pattern suggests a potential
                               %strong calibration

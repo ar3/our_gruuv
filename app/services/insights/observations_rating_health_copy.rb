@@ -68,19 +68,24 @@ module Insights
             ])
           end
         when :below_one
-          h.content_tag(:p, class: "small mb-0") do
+          h.content_tag(:div, class: "small") do
             h.safe_join([
-              "This may be a ",
-              h.content_tag(:strong, "calibration"),
-              " issue: ",
-              h.content_tag(:strong, exceptional_label),
-              " or ",
-              h.content_tag(:strong, concerning_label),
-              " may be used often relative to ",
-              h.content_tag(:strong, agree_label),
-              " and ",
-              h.content_tag(:strong, disagree_label),
-              ", making it harder to tell everyday performance from stand-out work—or everyday gaps from serious issues."
+              rating_intensity_scale_intro_html,
+              h.content_tag(:p, class: "mb-0") do
+                h.safe_join([
+                  "This may be a ",
+                  h.content_tag(:strong, "calibration"),
+                  " issue: ",
+                  h.content_tag(:strong, exceptional_label),
+                  " or ",
+                  h.content_tag(:strong, concerning_label),
+                  " may be used often relative to ",
+                  h.content_tag(:strong, agree_label),
+                  " and ",
+                  h.content_tag(:strong, disagree_label),
+                  ", making it harder to tell everyday performance from stand-out work—or everyday gaps from serious issues."
+                ])
+              end
             ])
           end
         when :healthy
@@ -94,6 +99,30 @@ module Insights
         else
           h.content_tag(:p, "Unable to assess this ratio.", class: "small text-muted mb-0")
         end
+      end
+
+      # Framing shown before calibration explanations for extreme vs everyday rating mix.
+      def rating_intensity_scale_intro_html
+        exceptional_label = ObservationRating.display_label('strongly_agree')
+        strong_label = ObservationRating.display_label('agree')
+        misaligned_label = ObservationRating.display_label('disagree')
+        concerning_label = ObservationRating.display_label('strongly_disagree')
+
+        h.safe_join([
+          h.content_tag(
+            :p,
+            "When giving observations people can choose the range of #{exceptional_label} / #{strong_label} / " \
+              "#{misaligned_label} / #{concerning_label} for how the observation related to the assignment / " \
+              "ability / or value.",
+            class: "mb-2"
+          ),
+          h.content_tag(
+            :p,
+            "People are more extreme when they are always choosing #{exceptional_label} or #{concerning_label}. " \
+              "Less extreme when it's #{strong_label} or #{misaligned_label}.",
+            class: "mb-2"
+          )
+        ])
       end
 
       def h
