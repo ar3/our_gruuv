@@ -80,7 +80,9 @@ RSpec.describe 'Check-ins Health', type: :request do
         inputs: {
           'name' => 'Task',
           'action_bar_color' => 'red',
-          'open_check_in_present' => false
+          'open_check_in_present' => false,
+          'days_since_last_event' => 95,
+          'never' => false
         },
         computed_at: Time.current
       )
@@ -96,7 +98,8 @@ RSpec.describe 'Check-ins Health', type: :request do
 
       get organization_check_ins_health_path(company)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Consider checking in on:')
+      expect(response.body).to include('Consider checking in on: Task (Last check-in was 95 days ago)')
+      expect(response.body).not_to include('(Needs Attention)')
       expect(response.body).to include('bi-arrow-clockwise')
       expect(response.body).to include('% clear')
       expect(response.body).to include('clarity-action-slots-summary')

@@ -112,13 +112,34 @@ module CheckInsHealthEngagementHealthHelper
     worst = CheckInsHealthEngagementHealthSupport.worst_item(records)
     return { all_clear: true, message: "Gruuv Health check-ins look good", url: nil } if worst.blank?
 
-    status_label = EngagementHealth::STATUS_LABELS.fetch(worst.status)
     name = worst.inputs["name"].presence || worst.entity_type.to_s.humanize
     {
       all_clear: false,
-      message: "Consider checking in on: #{name} (#{status_label})",
+      message: "Consider checking in on: #{name} (#{check_ins_health_engagement_last_check_in_phrase(worst)})",
       url: check_ins_health_engagement_item_path(organization: organization, teammate: teammate, item: worst)
     }
+  end
+
+  def check_ins_health_engagement_last_check_in_phrase(item)
+    return "This will be the first check-in" if item.inputs["never"]
+
+    days = item.inputs["days_since_last_event"]
+    if days.nil?
+      last_event_at = item.inputs["last_event_at"]
+      if last_event_at.present?
+        days = EngagementHealth::Thresholds.days_since(
+          Time.zone.parse(last_event_at.to_s),
+          reference_time: Time.current
+        )
+      end
+    end
+
+    return "This will be the first check-in" if days.nil? || days.to_i.negative?
+
+    days = days.to_i
+    "Last check-in was #{days} #{'day'.pluralize(days)} ago"
+  rescue ArgumentError, TypeError
+    "This will be the first check-in"
   end
 
   def check_ins_health_engagement_item_path(organization:, teammate:, item:)
