@@ -57,6 +57,7 @@ RSpec.describe "MCP HTTP endpoint", type: :request do
       "get_title",
       "list_sitemap",
       "list_observations",
+      "get_observation",
       "search_organization",
       "create_draft_observation",
       "set_current_week_goal_confidence"

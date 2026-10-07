@@ -16,6 +16,7 @@ module AgentTools
       "list_titles" => "AgentTools::ListTitles",
       "get_title" => "AgentTools::GetTitle",
       "list_observations" => "AgentTools::ListObservations",
+      "get_observation" => "AgentTools::GetObservation",
       "list_sitemap" => "AgentTools::ListSitemap",
       "search_organization" => "AgentTools::SearchOrganization",
       "create_draft_observation" => "AgentTools::CreateDraftObservation",
@@ -207,8 +208,48 @@ module AgentTools
         type: "object",
         properties: {
           query: { type: "string", description: "Optional story text filter" },
+          timeframe: {
+            type: "string",
+            enum: %w[this_week this_month this_quarter last_45_days last_90_days this_year between],
+            description: "Optional observed_at window. Use between with timeframe_start_date and timeframe_end_date."
+          },
+          timeframe_start_date: {
+            type: "string",
+            description: "YYYY-MM-DD start when timeframe=between"
+          },
+          timeframe_end_date: {
+            type: "string",
+            description: "YYYY-MM-DD end when timeframe=between"
+          },
+          rateable_path: {
+            type: "string",
+            description: "Optional Ability/Assignment/Aspiration path — only OGOs that rate that object"
+          },
+          rateable_type: {
+            type: "string",
+            enum: %w[Ability Assignment Aspiration],
+            description: "Optional when rateable_path unavailable; use with rateable_id"
+          },
+          rateable_id: {
+            type: "integer",
+            description: "Optional rateable id when rateable_path unavailable; requires rateable_type"
+          },
+          observation_type: {
+            type: "string",
+            enum: %w[kudos feedback quick_note generic],
+            description: "Optional observation type filter"
+          },
           limit: { type: "integer", description: "Page size (1–50)", minimum: 1, maximum: 50 },
           offset: { type: "integer", description: "Rows to skip (default 0). Use next_offset from prior response when has_more.", minimum: 0 }
+        },
+        additionalProperties: false
+      },
+      "get_observation" => {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Observation path from tool results (preferred)" },
+          observation_path: { type: "string", description: "Alias for path" },
+          observation_id: { type: "integer", description: "Id when path unavailable" }
         },
         additionalProperties: false
       },
@@ -265,6 +306,17 @@ module AgentTools
         },
         required: ["goal_path", "confidence_percentage"],
         additionalProperties: false
+      },
+      "create_seat_suggestion_bundle" => {
+        type: "object",
+        properties: {
+          bundle: {
+            type: "object",
+            description: "Seat suggestion proposal bundle (seat + title/team/position/assignments/abilities). See tool description."
+          }
+        },
+        required: ["bundle"],
+        additionalProperties: false
       }
     }.freeze
 
@@ -280,7 +332,8 @@ module AgentTools
       "list_titles" => "List non-archived titles. Titles are NOT Assignment carriers — use list_positions/get_position for Assignments. Includes end_cap, path_clarity (clear if end_cap or has outbound TitlePath; inbound-only is missing), department, and (expensive) child positions + path edges. Pass detail=minimal to save tokens. Filter with department_path. Paginate with limit + offset.",
       "get_title" => "Get one title by path (preferred). Includes end_cap, path_clarity, department, child positions (level variants), and TitlePath edges. Titles do not carry Assignments.",
       "list_sitemap" => "List pages you can access in this organization (sections, labels, paths, page goals, also-known-as synonyms). Use for navigation / where-to-go questions.",
-      "list_observations" => "List published observations (OGOs) visible to you. Paginate with limit + offset (total_count, has_more, next_offset).",
+      "list_observations" => "List published observations (OGOs) visible to you. Thin rows (story_preview + path). Optional filters AND together: timeframe (+ dates for between), rateable_path (Ability/Assignment/Aspiration), observation_type, story query. Hydrate one OGO with get_observation. Paginate with limit + offset (total_count, has_more, next_offset).",
+      "get_observation" => "Get one observation (OGO) by path (preferred). Fully hydrated: full story, observer + observees (name/path), feelings, type/privacy/publish, goal, and ratings (rateable_type/id/name/path + rating + rating_label). Use after list_observations for analysis.",
       "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings.",
@@ -300,6 +353,7 @@ module AgentTools
       "get_title" => "Get title",
       "list_sitemap" => "List sitemap",
       "list_observations" => "List observations",
+      "get_observation" => "Get observation",
       "search_organization" => "Search organization",
       "create_draft_observation" => "Create draft observation",
       "set_current_week_goal_confidence" => "Set current-week goal confidence",

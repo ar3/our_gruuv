@@ -24,9 +24,11 @@ module Mcp
       by path and include compact reverse usage (positions for an assignment; assignments
       + requiring positions for an ability). For paginated reverse browse use
       list_positions(assignment_path=..., assignment_link=required|suggested|all) or
-      list_assignments(ability_path=...). create_draft_observation never publishes.
-      set_current_week_goal_confidence only updates the current Monday week; 0% or 100%
-      requires learnings.
+      list_assignments(ability_path=...). list_observations returns thin story previews;
+      filter with timeframe / rateable_path / observation_type. get_observation hydrates
+      one OGO (full story, observer/observees, ratings with rateable paths). create_draft_observation
+      never publishes. set_current_week_goal_confidence only updates the current Monday week;
+      0% or 100% requires learnings.
     TEXT
 
     def self.build(agent_tools_context:)

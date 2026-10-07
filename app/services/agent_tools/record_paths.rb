@@ -123,6 +123,49 @@ module AgentTools
       nil
     end
 
+    def resolve_observation(context, path: nil, observation_path: nil, observation_id: nil)
+      path = path.presence || observation_path.presence
+      if path.present?
+        id = extract_id(path, resource: "observations")
+        return Observation.find_by(id: id) if id
+      end
+      return Observation.find_by(id: observation_id) if observation_id.present?
+
+      nil
+    end
+
+    # Ability / Assignment / Aspiration from a rateable path (preferred) or type+id.
+    def resolve_rateable(context, path: nil, rateable_path: nil, rateable_type: nil, rateable_id: nil)
+      path = path.presence || rateable_path.presence
+      if path.present?
+        if (id = extract_id(path, resource: "abilities"))
+          return Ability.find_by(id: id)
+        end
+        if (id = extract_id(path, resource: "assignments"))
+          return Assignment.find_by(id: id)
+        end
+        if (id = extract_id(path, resource: "aspirations"))
+          return Aspiration.find_by(id: id)
+        end
+      end
+
+      return nil if rateable_type.blank? || rateable_id.blank?
+
+      case rateable_type.to_s
+      when "Ability" then Ability.find_by(id: rateable_id)
+      when "Assignment" then Assignment.find_by(id: rateable_id)
+      when "Aspiration" then Aspiration.find_by(id: rateable_id)
+      end
+    end
+
+    def path_for_rateable(context, rateable)
+      case rateable
+      when Ability then ability_path(context, rateable)
+      when Assignment then assignment_path(context, rateable)
+      when Aspiration then aspiration_path(context, rateable)
+      end
+    end
+
     def goal_owner_path(context, owner)
       case owner
       when CompanyTeammate
