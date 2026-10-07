@@ -110,6 +110,30 @@
 - else
   - quiet_categories << { title: 'New comments on observations', icon: 'bi-chat-dots', description: 'Comments on observations you wrote, received, or joined the conversation on' }
 
+- if @check_in_warnings_for_those_i_serve.any?
+  = render 'organizations/get_shit_done/interesting_check_in_warnings_section',
+           events: @check_in_warnings_for_those_i_serve,
+           title: 'Check-ins that reached Warning for those I serve',
+           icon: 'bi-exclamation-triangle',
+           description: 'The day an active assignment, position, or value check-in first reached Warning (61+ days since last finalize)',
+           collapse_id: 'checkInWarningsThoseIServeSection',
+           summary: "#{pluralize(@check_in_warnings_for_those_i_serve.size, 'check-in')} reached Warning for people you serve",
+           show_subject: true
+- else
+  - quiet_categories << { title: 'Check-ins that reached Warning for those I serve', icon: 'bi-exclamation-triangle', description: 'The day an active assignment, position, or value check-in first reached Warning (61+ days since last finalize)' }
+
+- if @check_in_warnings_for_me.any?
+  = render 'organizations/get_shit_done/interesting_check_in_warnings_section',
+           events: @check_in_warnings_for_me,
+           title: 'Check-ins that reached Warning for me',
+           icon: 'bi-exclamation-triangle',
+           description: 'The day one of your active assignment, position, or value check-ins first reached Warning (61+ days since last finalize)',
+           collapse_id: 'checkInWarningsForMeSection',
+           summary: "#{pluralize(@check_in_warnings_for_me.size, 'check-in')} of yours reached Warning",
+           show_subject: false
+- else
+  - quiet_categories << { title: 'Check-ins that reached Warning for me', icon: 'bi-exclamation-triangle', description: 'The day one of your active assignment, position, or value check-ins first reached Warning (61+ days since last finalize)' }
+
 - if quiet_categories.any?
   .row.mt-5.pt-4
     .col-12

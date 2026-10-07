@@ -298,4 +298,127 @@ RSpec.describe SomethingInterestingQueryService do
       expect(service.total_count).to eq(0)
     end
   end
+
+  describe 'check-in Warning day sections' do
+    let(:offset) { SomethingInterestingQueryService::WARNING_REACHED_OFFSET_DAYS }
+
+    def finalize_assignment_check_in!(teammate:, assignment:, completed_at:)
+      check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)
+      check_in.update_column(:official_check_in_completed_at, completed_at)
+      check_in
+    end
+
+    def finalize_position_check_in!(teammate:, employment_tenure:, completed_at:)
+      check_in = create(:position_check_in, :closed, teammate: teammate, employment_tenure: employment_tenure)
+      check_in.update_column(:official_check_in_completed_at, completed_at)
+      check_in
+    end
+
+    def finalize_aspiration_check_in!(teammate:, aspiration:, completed_at:)
+      check_in = create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration)
+      check_in.update_column(:official_check_in_completed_at, completed_at)
+      check_in
+    end
+
+    describe '#check_in_warnings_for_me' do
+      it 'includes an active assignment that reached Warning in the window' do
+        assignment = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: viewer, assignment: assignment, anticipated_energy_percentage: 20)
+        finalize_assignment_check_in!(teammate: viewer, assignment: assignment, completed_at: offset.days.ago)
+
+        events = service.check_in_warnings_for_me
+
+        expect(events.map(&:entity)).to include(assignment)
+        expect(events.first.entity_type).to eq('Assignment')
+      end
+
+      it 'includes position and value check-ins that reached Warning in the window' do
+        employment = create(:employment_tenure, company_teammate: viewer, company: company)
+        aspiration = create(:aspiration, company: company)
+        finalize_position_check_in!(
+          teammate: viewer,
+          employment_tenure: employment,
+          completed_at: offset.days.ago
+        )
+        finalize_aspiration_check_in!(
+          teammate: viewer,
+          aspiration: aspiration,
+          completed_at: offset.days.ago
+        )
+
+        events = service.check_in_warnings_for_me
+
+        expect(events.map(&:entity_type)).to include('Position', 'Aspiration')
+        expect(events.map(&:entity)).to include(employment.position, aspiration)
+      end
+
+      it 'excludes items still within the healthy window' do
+        assignment = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: viewer, assignment: assignment, anticipated_energy_percentage: 20)
+        finalize_assignment_check_in!(teammate: viewer, assignment: assignment, completed_at: 30.days.ago)
+
+        expect(service.check_in_warnings_for_me.map(&:entity)).not_to include(assignment)
+      end
+
+      it 'excludes Warning days before the since baseline' do
+        assignment = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: viewer, assignment: assignment, anticipated_energy_percentage: 20)
+        finalize_assignment_check_in!(
+          teammate: viewer,
+          assignment: assignment,
+          completed_at: (offset + 10).days.ago
+        )
+
+        expect(service.check_in_warnings_for_me.map(&:entity)).not_to include(assignment)
+      end
+
+      it 'excludes never-finalized assignments (grace Warning path)' do
+        assignment = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: viewer, assignment: assignment, anticipated_energy_percentage: 20)
+
+        expect(service.check_in_warnings_for_me).to be_empty
+      end
+
+      it 'excludes ended assignment tenures' do
+        assignment = create(:assignment, company: company)
+        create(
+          :assignment_tenure,
+          teammate: viewer,
+          assignment: assignment,
+          anticipated_energy_percentage: 20,
+          started_at: 1.year.ago,
+          ended_at: 1.week.ago
+        )
+        finalize_assignment_check_in!(teammate: viewer, assignment: assignment, completed_at: offset.days.ago)
+
+        expect(service.check_in_warnings_for_me.map(&:entity)).not_to include(assignment)
+      end
+    end
+
+    describe '#check_in_warnings_for_those_i_serve' do
+      let(:report) { create(:company_teammate, organization: company) }
+
+      before { create(:employment_tenure, company_teammate: report, company: company, manager: viewer) }
+
+      it 'includes Warning days for direct reports' do
+        assignment = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: report, assignment: assignment, anticipated_energy_percentage: 40)
+        finalize_assignment_check_in!(teammate: report, assignment: assignment, completed_at: offset.days.ago)
+
+        events = service.check_in_warnings_for_those_i_serve
+
+        expect(events.map(&:entity)).to include(assignment)
+        expect(events.first.subject_teammate).to eq(report)
+      end
+
+      it 'excludes Warning days for people the viewer does not manage' do
+        stranger = create(:company_teammate, organization: company)
+        assignment = create(:assignment, company: company)
+        create(:assignment_tenure, teammate: stranger, assignment: assignment, anticipated_energy_percentage: 40)
+        finalize_assignment_check_in!(teammate: stranger, assignment: assignment, completed_at: offset.days.ago)
+
+        expect(service.check_in_warnings_for_those_i_serve.map(&:entity)).not_to include(assignment)
+      end
+    end
+  end
 end

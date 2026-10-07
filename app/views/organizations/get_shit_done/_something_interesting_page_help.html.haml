@@ -2,7 +2,8 @@
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
     Catch up on what other people have done since you last checked—goal progress from those you serve and your teams,
-    changes to the assignments and abilities you care about, and new observations about your people and about you.
+    changes to the assignments and abilities you care about, new observations about your people and about you,
+    and the day a check-in first reached Warning for you or someone you serve.
 
   %h3.fw-semibold.mb-2 Context
   = render 'shared/maap/definition'
@@ -33,7 +34,11 @@
     %li
       %strong Observations:
       newly published observations about your direct reports or about you (only ones you're allowed to see).
+    %li
+      %strong Check-ins that reached Warning:
+      for you and your direct reports, the calendar day an active assignment, position, or value check-in first
+      crossed into Warning (61 days after its last finalize). Never-finalized items and Needs Attention days are not listed.
   %p.mb-0
-    Your own activity is left out wherever we can tell it was you—this page is about what
+    Your own activity is left out of the update sections wherever we can tell it was you—those are about what
     %em someone else
-    has done.
+    has done. Warning-day moments are calendar events for you and the people you serve.

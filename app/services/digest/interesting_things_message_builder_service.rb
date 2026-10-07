@@ -95,6 +95,16 @@ module Digest
           title: 'New comments on observations',
           label: 'comments on observations you care about',
           items: @query_service.observation_comments.map { |c| observation_comment_line(c) }
+        },
+        {
+          title: 'Check-ins that reached Warning for those you serve',
+          label: 'check-ins that reached Warning for those you serve',
+          items: @query_service.check_in_warnings_for_those_i_serve.map { |e| check_in_warning_line(e, include_subject: true) }
+        },
+        {
+          title: 'Check-ins that reached Warning for you',
+          label: 'check-ins that reached Warning for you',
+          items: @query_service.check_in_warnings_for_me.map { |e| check_in_warning_line(e, include_subject: false) }
         }
       ]
     end
@@ -118,6 +128,33 @@ module Digest
       url = slack_app_url(:organization_observation_url, @organization, observation)
       author = slack_escape(comment.creator.casual_name)
       "<#{url}|#{author}: #{slack_escape(snippet)}>"
+    end
+
+    def check_in_warning_line(event, include_subject:)
+      label = "#{event.type_label}: #{event.entity_name}"
+      label = "#{event.subject_teammate.person.casual_name} — #{label}" if include_subject
+      snippet = label.to_s
+      snippet = "#{snippet[0, 60]}..." if snippet.length > 60
+      path = check_in_warning_event_app_path(event)
+      url = slack_absolute_url(path)
+      date = event.reached_at.strftime('%b %-d')
+      "<#{url}|#{slack_escape(snippet)}> (Warning on #{date})"
+    end
+
+    def check_in_warning_event_app_path(event)
+      subject = event.subject_teammate
+      helpers = Rails.application.routes.url_helpers
+      opts = slack_url_options
+      case event.entity_type
+      when 'Assignment'
+        helpers.organization_teammate_assignment_url(@organization, subject, event.entity, opts)
+      when 'Position'
+        helpers.position_check_in_organization_teammate_url(@organization, subject, opts)
+      when 'Aspiration'
+        helpers.organization_teammate_aspiration_url(@organization, subject, event.entity, opts)
+      else
+        helpers.hub_organization_company_teammate_check_ins_url(@organization, subject, opts)
+      end
     end
 
     def record_line(label, url_helper, record)

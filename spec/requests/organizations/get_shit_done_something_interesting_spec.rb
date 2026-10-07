@@ -71,6 +71,22 @@ RSpec.describe 'Organizations::GetShitDone something_interesting', type: :reques
       expect(response.body).to include(CGI.escapeHTML("Abilities updated that I'm interested in"))
       expect(response.body).to include('Observations made about those I serve')
       expect(response.body).to include('Observations made about me')
+      expect(response.body).to include('Check-ins that reached Warning for those I serve')
+      expect(response.body).to include('Check-ins that reached Warning for me')
+    end
+
+    it 'shows check-ins that reached Warning for the viewer' do
+      assignment = create(:assignment, company: company, title: "Warning Assignment #{SecureRandom.hex(4)}")
+      create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 25)
+      check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)
+      offset = SomethingInterestingQueryService::WARNING_REACHED_OFFSET_DAYS
+      check_in.update_column(:official_check_in_completed_at, offset.days.ago)
+
+      get path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Check-ins that reached Warning for me')
+      expect(response.body).to include(assignment.title)
     end
 
     it 'requires authentication' do

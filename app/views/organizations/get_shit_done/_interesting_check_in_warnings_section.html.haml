@@ -1,0 +1,48 @@
+-# locals: events (CheckInWarningEvent), title, icon, description, collapse_id, summary, show_subject (bool)
+- events = local_assigns.fetch(:events)
+- title = local_assigns.fetch(:title)
+- icon = local_assigns.fetch(:icon)
+- description = local_assigns.fetch(:description)
+- collapse_id = local_assigns.fetch(:collapse_id)
+- summary = local_assigns.fetch(:summary)
+- show_subject = local_assigns.fetch(:show_subject, false)
+
+= render 'shared/section_header',
+         title: title,
+         icon: icon,
+         description: description,
+         collapsible: true,
+         collapse_target: collapse_id,
+         status_indicator: :info
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:info)}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:info)} #{status_indicator_badge_class(:info)} me-2"}
+    = summary
+
+.collapse{id: collapse_id}
+  .card.mb-4
+    .card-body
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              - if show_subject
+                %th Person
+              %th Type
+              %th Item
+              %th Reached Warning
+              %th Action
+          %tbody
+            - events.each do |event|
+              - path = check_in_warning_event_path(organization, event)
+              %tr
+                - if show_subject
+                  %td= event.subject_teammate.person.casual_name
+                %td= event.type_label
+                %td
+                  %strong= event.entity_name
+                %td
+                  %small.text-muted= event.reached_at.strftime('%b %-d, %Y')
+                %td
+                  = link_to 'View', path, class: 'btn btn-outline-primary btn-sm'

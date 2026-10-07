@@ -33,4 +33,18 @@ module GetShitDoneHelper
     opts[:open] = section if section
     organization_get_shit_done_path(organization, opts)
   end
+
+  def check_in_warning_event_path(organization, event)
+    subject = event.subject_teammate
+    case event.entity_type
+    when 'Assignment'
+      organization_teammate_assignment_path(organization, subject, event.entity)
+    when 'Position'
+      position_check_in_organization_teammate_path(organization, subject)
+    when 'Aspiration'
+      organization_teammate_aspiration_path(organization, subject, event.entity)
+    else
+      hub_organization_company_teammate_check_ins_path(organization, subject)
+    end
+  end
 end
