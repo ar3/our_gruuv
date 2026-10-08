@@ -19,7 +19,7 @@
     method: :patch,
     local: true,
     data: { controller: "check-in-autosave",
-      action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit",
+      action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirtyAndSaveNow submit->check-in-autosave#handleSubmit",
       check_in_autosave_debounce_ms_value: 1200,
       check_in_autosave_message_value: "Your latest changes may still be saving. Leave this page?" } do |form|
     - @in_progress_responses.each_with_index do |response, index|

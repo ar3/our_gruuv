@@ -63,24 +63,18 @@
         
         = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: @return_url, return_text: @return_text), method: :post, local: true do |f|
           .mb-3
-            %p.mb-2
-              As of 
-              %strong= current_week_start.strftime('%B %d, %Y')
-              , 
-              %strong= current_person.display_name
-              reports a 
-              = f.select :confidence_percentage, 
-                  options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
+            .goal-check-in-inline-layout__sentence.d-flex.align-items-center.gap-2
+              %span.text-nowrap By
+              = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control form-control-sm goal-check-in-inline-layout__date'
+              %span.text-nowrap —
+              = f.select :confidence_percentage,
+                  options_for_select(confidence_percentage_options, selected_confidence_percentage_option(@goal, @current_check_in)),
                   { include_blank: 'Select confidence...' },
-                  { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;' }
-              confidence we will achieve 
-              %strong= @goal.title
-              by 
-              = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control d-inline-block w-auto mx-1', style: 'vertical-align: baseline;'
+                  { class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select' }
           
           .mb-3
-            = f.label :confidence_reason, "Notes", class: "form-label"
-            = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
+            = f.label :confidence_reason, "Notes / Learnings", class: "form-label"
+            = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control goal-check-in-inline-layout__reason', rows: 3, placeholder: confidence_reason_placeholder
           
           .d-grid
             = f.submit update_confidence_label, class: "btn btn-primary"

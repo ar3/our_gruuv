@@ -23,7 +23,7 @@
       %div{data: { controller: "check-in-autosave",
                    check_in_autosave_debounce_ms_value: 1200,
                    check_in_autosave_message_value: "Your latest goal edits may still be saving. Leave this page?",
-                   action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty" }}
+                   action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirtyAndSaveNow" }}
         = form_with url: organization_goals_bulk_edit_goal_path(@organization, goal),
                     method: :patch,
                     html: { class: "goals-sheet-row-form",
@@ -58,20 +58,20 @@
                                required: true
               .row.g-2.mt-1
                 .col-md-3
-                  %label.form-label.small.mb-0 I'm 👇 this confident...
+                  %label.form-label.small.mb-0 By
+                  = date_field_tag "goal[most_likely_target_date]", goal.most_likely_target_date, class: "form-control form-control-sm"
+                .col-md-5
+                  %label.form-label.small.mb-0 Confidence
                   - if can_check_in
                     = select_tag "goal[confidence_percentage]",
-                                 options_for_select([["—", ""]] + confidence_percentage_options, check_in&.confidence_percentage),
+                                 options_for_select([["—", ""]] + confidence_percentage_options, selected_confidence_percentage_option(goal, check_in)),
                                  class: "form-select form-select-sm"
                   - else
                     %span.form-control.form-control-sm.bg-light= check_in&.confidence_percentage.present? ? "#{check_in.confidence_percentage}%" : "—"
                 .col-md-4
-                  %label.form-label.small.mb-0 ... will be achieved on...
-                  = date_field_tag "goal[most_likely_target_date]", goal.most_likely_target_date, class: "form-control form-control-sm"
-                .col-md-5
-                  %label.form-label.small.mb-0 ... because of this reason
+                  %label.form-label.small.mb-0 Notes / Learnings
                   - if can_check_in
-                    = text_field_tag "goal[confidence_reason]", check_in&.confidence_reason, class: "form-control form-control-sm", placeholder: "Why?"
+                    = text_field_tag "goal[confidence_reason]", check_in&.confidence_reason, class: "form-control form-control-sm", placeholder: confidence_reason_placeholder
                   - else
                     %span.form-control.form-control-sm.bg-light.text-truncate{title: check_in&.confidence_reason}= check_in&.confidence_reason.presence || "—"
 

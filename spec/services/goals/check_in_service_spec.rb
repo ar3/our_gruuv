@@ -311,8 +311,6 @@ RSpec.describe Goals::CheckInService, type: :service do
     end
 
     context 'when auto-completing goal' do
-      # Note: 0% and 100% are no longer available in the UI dropdowns,
-      # but the service still supports these values programmatically (e.g., when marking goals as done)
       it 'auto-completes goal when confidence is 0%' do
         result = described_class.call(
           goal: goal,
@@ -322,6 +320,7 @@ RSpec.describe Goals::CheckInService, type: :service do
         )
 
         expect(result.ok?).to be true
+        expect(result.value[:completed]).to be true
         goal.reload
         expect(goal.completed_at).to be_present
       end
@@ -335,8 +334,38 @@ RSpec.describe Goals::CheckInService, type: :service do
         )
 
         expect(result.ok?).to be true
+        expect(result.value[:completed]).to be true
         goal.reload
         expect(goal.completed_at).to be_present
+      end
+
+      it 'maps the hit-late select value to 100% and completes' do
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          confidence_percentage: '100_late',
+          confidence_reason: 'Late but done'
+        )
+
+        expect(result.ok?).to be true
+        expect(result.value[:check_in].confidence_percentage).to eq(100)
+        expect(result.value[:completed]).to be true
+        expect(goal.reload.completed_at).to be_present
+      end
+
+      it 'reopens a completed goal when mid-range confidence is set' do
+        goal.update!(completed_at: 1.day.ago, started_at: 1.week.ago)
+
+        result = described_class.call(
+          goal: goal,
+          current_person: person,
+          confidence_percentage: 55,
+          confidence_reason: 'Still in progress'
+        )
+
+        expect(result.ok?).to be true
+        expect(result.value[:reopened]).to be true
+        expect(goal.reload.completed_at).to be_nil
       end
 
       it 'does not auto-complete goal when confidence is not 0% or 100%' do

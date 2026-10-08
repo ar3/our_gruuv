@@ -77,6 +77,7 @@ class Organizations::GoalsBulkEditController < Organizations::OrganizationNamesp
         ok: true,
         saved_at: result.saved_at,
         started: goal.started_at.present?,
+        completed: goal.completed_at.present?,
         sheet_row: {
           row_classes: helpers.goals_bulk_edit_row_classes(goal),
           popover_title: helpers.goals_bulk_edit_border_popover_title(goal),
@@ -170,6 +171,8 @@ class Organizations::GoalsBulkEditController < Organizations::OrganizationNamesp
   end
 
   def load_sheet_goals!
+    # Incomplete only on load. Completing via autosave keeps the row in the DOM (black bar);
+    # a full reload hides it again until the user includes Completed in status filters.
     scope = policy_scope(Goal).incomplete_unarchived
     teammate = current_company_teammate
     company = @organization.root_company || @organization

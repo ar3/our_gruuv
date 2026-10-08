@@ -828,8 +828,6 @@ Rails.application.routes.draw do
         patch :start
         post :check_in
         patch :set_timeframe
-        get :done
-        post :complete
         patch :undelete
         get :weekly_update
       end

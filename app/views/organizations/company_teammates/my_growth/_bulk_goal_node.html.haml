@@ -72,16 +72,15 @@
                 .check-in-inline.mt-1.p-1.bg-light.rounded
                   .goal-check-in-inline-layout
                     .goal-check-in-inline-layout__main.d-flex.flex-column.gap-1
-                      .d-flex.flex-wrap.align-items-center.gap-2
-                        %span.small I'm
-                        = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", options_for_select(confidence_percentage_options, current_week_check_in&.confidence_percentage), { include_blank: 'Select...', class: 'form-select form-select-sm', style: 'width: auto; min-width: 80px; display: inline-block;' }
-                        %span.small confident this'll be hit by
+                      .goal-check-in-inline-layout__sentence.d-flex.align-items-center.gap-2
+                        %span.small.text-nowrap By
                         - if can_update_goal
-                          = date_field_tag "goal_check_ins[#{goal.id}][most_likely_target_date]", goal.most_likely_target_date, class: 'form-control form-control-sm', style: 'width: auto; min-width: 130px; display: inline-block;'
+                          = date_field_tag "goal_check_ins[#{goal.id}][most_likely_target_date]", goal.most_likely_target_date, class: 'form-control form-control-sm goal-check-in-inline-layout__date'
                         - else
                           %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
-                        %span.small .
-                      = text_field_tag "goal_check_ins[#{goal.id}][confidence_reason]", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: 'Brief update (optional)...'
+                        %span.small.text-nowrap —
+                        = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", options_for_select(confidence_percentage_options, selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select' }
+                      = text_field_tag "goal_check_ins[#{goal.id}][confidence_reason]", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: confidence_reason_placeholder
 
 - if has_children
   .collapse.show{id: children_id}

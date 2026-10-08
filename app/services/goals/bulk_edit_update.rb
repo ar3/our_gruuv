@@ -37,7 +37,9 @@ module Goals
       form_attrs[:description] = @attrs[:description] if @attrs.key?(:description)
       form_attrs[:goal_type] = @attrs[:goal_type] if @attrs.key?(:goal_type)
       form_attrs[:privacy_level] = @attrs[:privacy_level] if @attrs.key?(:privacy_level)
-      form_attrs[:most_likely_target_date] = @attrs[:most_likely_target_date] if @attrs.key?(:most_likely_target_date)
+      if @attrs.key?(:most_likely_target_date)
+        form_attrs[:most_likely_target_date] = parse_sheet_date(@attrs[:most_likely_target_date])
+      end
       form_attrs[:owner_id] = @attrs[:owner_id] if @attrs.key?(:owner_id) && @attrs[:owner_id].present?
 
       return [] if form_attrs.empty?
@@ -65,8 +67,12 @@ module Goals
       has_reason = @attrs.key?(:confidence_reason)
       return [] unless has_confidence || has_reason
 
-      percentage = @attrs[:confidence_percentage].presence
-      percentage = percentage.present? ? percentage.to_i : nil
+      raw_percentage = @attrs[:confidence_percentage]
+      percentage = if raw_percentage.nil? || raw_percentage.to_s.strip.empty?
+        nil
+      else
+        raw_percentage.to_s.to_i # "100_late" => 100, "0" => 0
+      end
       reason = @attrs[:confidence_reason].to_s.strip.presence
 
       # Clearing both is a no-op on the sheet (do not destroy check-ins here).
@@ -88,6 +94,16 @@ module Goals
       return [] if result.ok?
 
       Array(result.error)
+    end
+
+    def parse_sheet_date(value)
+      return nil if value.blank?
+      return value if value.is_a?(Date)
+      return value.to_date if value.respond_to?(:to_date) && !value.is_a?(String)
+
+      Date.parse(value.to_s)
+    rescue ArgumentError, TypeError
+      value
     end
 
     def failure(errors)

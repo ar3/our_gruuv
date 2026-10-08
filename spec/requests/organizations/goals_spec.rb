@@ -303,72 +303,6 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
-  describe 'GET /organizations/:organization_id/goals/:id/done' do
-    it 'renders the done page' do
-      get done_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Mark Goal as Done')
-      expect(response.body).to include(goal.title)
-    end
-    
-    it 'loads all check-ins for the goal' do
-      check_in1 = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_percentage: 75, confidence_reporter: person)
-      check_in2 = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
-      
-      get done_organization_goal_path(organization, goal)
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('75%')
-      expect(response.body).to include('80%')
-    end
-    
-    it 'can access done page for completed goal' do
-      completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago)
-      
-      get done_organization_goal_path(organization, completed_goal)
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include('Mark Goal as Done')
-      expect(response.body).to include(completed_goal.title)
-    end
-    
-    it 'accepts return_url and return_text params' do
-      return_url = organization_goals_path(organization)
-      return_text = 'Back to Goals'
-      
-      get done_organization_goal_path(organization, goal), params: {
-        return_url: return_url,
-        return_text: return_text
-      }
-      
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include(return_url)
-    end
-    
-    context 'when user is not authorized' do
-      let(:other_person) { create(:person) }
-      let(:other_teammate) do
-        other_person.teammates.find_or_initialize_by(organization: organization).tap do |t|
-          t.save! unless t.persisted?
-        end
-      end
-      let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'only_creator') }
-      
-      before do
-        other_teammate
-        # Sign in as original person (not the creator/owner of other_goal)
-        sign_in_as_teammate_for_request(person, organization)
-      end
-      
-      it 'denies access' do
-        get done_organization_goal_path(organization, other_goal)
-        
-        expect(response).to have_http_status(:redirect)
-      end
-    end
-  end
-  
   describe 'GET /organizations/:organization_id/goals/:id' do
     it 'links the goals index breadcrumb to hierarchical-collapsible-hidden-checks view' do
       get organization_goal_path(organization, goal)
@@ -537,14 +471,17 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include(choose_outgoing_link_organization_goal_goal_links_path(organization, goal, goal_type: 'stepping_stone_activity'))
     end
 
-    it 'displays Mark complete in Actions and Complete rail on current week check-in when user can update' do
+    it 'displays Mark complete in Actions linking to the confidence check section when user can update' do
       get organization_goal_path(organization, goal)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Mark complete')
-      expect(response.body).to include(done_organization_goal_path(organization, goal))
-      expect(response.body).to include('goal-check-in-inline-layout--triple-column')
-      expect(response.body).to include('mark this goal as done and log if it was hit or not')
+      expect(response.body).to include(organization_goal_path(organization, goal, anchor: 'check-in'))
+      expect(response.body).to include('Jump to the confidence check to mark this goal done')
+      expect(response.body).to include('By')
+      expect(response.body).to include('I&#39;m calling this done (100%)')
+      expect(response.body).to include('I&#39;m calling this done (0%)')
+      expect(response.body).not_to include('goal-check-in-inline-layout--triple-column')
     end
 
     it 'does not display Mark complete when goal is completed' do
@@ -554,7 +491,6 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).not_to include('Mark complete')
-      expect(response.body).not_to include('goal-check-in-inline-layout--triple-column')
     end
 
     it 'does not display Create/associate new child goal button when user cannot update goal' do
@@ -624,7 +560,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         expect(response.body).to include('Current week confidence check')
       end
 
-      it 'does not link Mark complete or Complete rail when viewer cannot update the goal' do
+      it 'does not offer an active Mark complete link when viewer cannot update the goal' do
         other_person = create(:person)
         other_teammate = create(:company_teammate, person: other_person, organization: organization)
         other_goal = create(:goal,
@@ -638,8 +574,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
         get organization_goal_path(organization, other_goal)
 
         expect(response).to have_http_status(:success)
-        expect(response.body).not_to include(done_organization_goal_path(organization, other_goal))
-        expect(response.body).not_to include('goal-check-in-inline-layout--triple-column')
+        expect(response.body).not_to include('Jump to the confidence check to mark this goal done')
       end
       
       it 'displays last check-in in sentence form when present' do
@@ -1216,7 +1151,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       )
     end
 
-    it 'shows mark-done button with tooltip for active check-in-eligible goals' do
+    it 'shows terminal confidence options inline for active check-in-eligible goals' do
       check_in_eligible_goal
 
       get organization_goals_path(organization), params: {
@@ -1225,8 +1160,9 @@ RSpec.describe 'Organizations::Goals', type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(done_organization_goal_path(organization, check_in_eligible_goal))
-      expect(response.body).to include('mark this goal as done and log if it was hit or not')
+      expect(response.body).to include('I&#39;m calling this done (100%)')
+      expect(response.body).to include('I&#39;m calling this done (0%)')
+      expect(response.body).to include(check_in_organization_goal_path(organization, check_in_eligible_goal))
     end
   end
   
@@ -1436,13 +1372,14 @@ RSpec.describe 'Organizations::Goals', type: :request do
       }
       
       expect(response).to have_http_status(:success)
-      # Check-in form uses sentence: "I'm [dropdown] confident this'll be hit by [date]."
-      expect(response.body).to include('confident this\'ll be hit by')
+      # Check-in form: By [date] — [sentence confidence dropdown]
+      expect(response.body).to include('By')
+      expect(response.body).to include('I&#39;m calling this done (100%)')
       expect(response.body).to include('Update confidence')
       expect(response.body).to include('goal-check-in-form')
       expect(response.body).to include('goal-check-in-inline-layout__update-btn')
-      expect(response.body).to include('btn-outline-success')
-      expect(response.body).to include('Complete')
+      expect(response.body).to include('goal-check-in-inline-layout__confidence-select')
+      expect(response.body).not_to include('>Complete<')
       expect(response.body).to include('data-controller="confirm-leave"')
       expect(response.body).to include('data-confirm-leave-single-active-form-value')
     end
@@ -1538,133 +1475,84 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
-  describe 'POST /organizations/:organization_id/goals/:id/complete' do
-    context 'with valid data' do
-      it 'creates final check-in with 100% confidence for hit' do
-        expect {
-          post complete_organization_goal_path(organization, goal), params: {
-            completed_outcome: 'hit',
-            learnings: 'We successfully completed this goal and learned valuable lessons.'
-          }
-        }.to change(GoalCheckIn, :count).by(1)
-        
-        expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_goal_path(organization, goal))
-        
-        final_check_in = goal.goal_check_ins.recent.first
-        expect(final_check_in.confidence_percentage).to eq(100)
-        expect(final_check_in.confidence_reason).to eq('We successfully completed this goal and learned valuable lessons.')
-        expect(goal.reload.completed_at).to be_present
-      end
-      
-      it 'creates final check-in with 100% confidence for hit_late' do
-        expect {
-          post complete_organization_goal_path(organization, goal), params: {
-            completed_outcome: 'hit_late',
-            learnings: 'We completed this goal but it took longer than expected.'
-          }
-        }.to change(GoalCheckIn, :count).by(1)
-        
-        final_check_in = goal.goal_check_ins.recent.first
-        expect(final_check_in.confidence_percentage).to eq(100)
-        expect(final_check_in.confidence_reason).to eq('We completed this goal but it took longer than expected.')
-        expect(goal.reload.completed_at).to be_present
-      end
-      
-      it 'creates final check-in with 0% confidence for miss' do
-        expect {
-          post complete_organization_goal_path(organization, goal), params: {
-            completed_outcome: 'miss',
-            learnings: 'We did not achieve this goal but learned important lessons about what went wrong.'
-          }
-        }.to change(GoalCheckIn, :count).by(1)
-        
-        final_check_in = goal.goal_check_ins.recent.first
-        expect(final_check_in.confidence_percentage).to eq(0)
-        expect(final_check_in.confidence_reason).to eq('We did not achieve this goal but learned important lessons about what went wrong.')
-        expect(goal.reload.completed_at).to be_present
-      end
-      
-      it 'sets completed_at on the goal' do
-        expect {
-          post complete_organization_goal_path(organization, goal), params: {
-            completed_outcome: 'hit',
-            learnings: 'Test learnings'
-          }
-        }.to change { goal.reload.completed_at }.from(nil)
-      end
-      
-      it 'shows success flash message' do
-        post complete_organization_goal_path(organization, goal), params: {
-          completed_outcome: 'hit',
-          learnings: 'Test learnings'
+  describe 'POST /organizations/:organization_id/goals/:id/check_in completing a goal' do
+    it 'completes the goal at 100% with optional Learnings' do
+      expect {
+        post check_in_organization_goal_path(organization, goal), params: {
+          confidence_percentage: 100,
+          confidence_reason: 'We successfully completed this goal and learned valuable lessons.'
         }
-        
-        follow_redirect!
-        expect(response.body).to include('Goal marked as done successfully')
-      end
-      
-      it 'redirects to return_url when provided' do
-        return_url = organization_goals_path(organization)
-        
-        post complete_organization_goal_path(organization, goal), params: {
-          completed_outcome: 'hit',
-          learnings: 'Test learnings',
-          return_url: return_url
-        }
-        
-        expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(return_url)
-      end
-      
-      it 'redirects to goal show page when return_url not provided' do
-        post complete_organization_goal_path(organization, goal), params: {
-          completed_outcome: 'hit',
-          learnings: 'Test learnings'
-        }
-        
-        expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_goal_path(organization, goal))
-      end
+      }.to change(GoalCheckIn, :count).by(1)
+
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(organization_goal_path(organization, goal, anchor: 'check-in'))
+
+      final_check_in = goal.goal_check_ins.recent.first
+      expect(final_check_in.confidence_percentage).to eq(100)
+      expect(final_check_in.confidence_reason).to eq('We successfully completed this goal and learned valuable lessons.')
+      expect(goal.reload.completed_at).to be_present
     end
-    
-    context 'with invalid data' do
-      it 'requires learnings' do
-        expect {
-          post complete_organization_goal_path(organization, goal), params: {
-            completed_outcome: 'hit',
-            learnings: ''
-          }
-        }.not_to change(GoalCheckIn, :count)
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.body).to include('Learnings are required')
-      end
-      
-      it 'requires valid completed_outcome' do
-        expect {
-          post complete_organization_goal_path(organization, goal), params: {
-            completed_outcome: 'invalid',
-            learnings: 'Test learnings'
-          }
-        }.not_to change(GoalCheckIn, :count)
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.body).to include('Invalid completion outcome')
-      end
-      
-      it 're-renders done page with errors' do
-        post complete_organization_goal_path(organization, goal), params: {
-          completed_outcome: 'hit',
-          learnings: ''
+
+    it 'maps the hit-late select value to 100% and completes the goal' do
+      expect {
+        post check_in_organization_goal_path(organization, goal), params: {
+          confidence_percentage: '100_late',
+          confidence_reason: 'We completed this goal but it took longer than expected.'
         }
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.body).to include('Mark Goal as Done')
-      end
+      }.to change(GoalCheckIn, :count).by(1)
+
+      final_check_in = goal.goal_check_ins.recent.first
+      expect(final_check_in.confidence_percentage).to eq(100)
+      expect(goal.reload.completed_at).to be_present
     end
-    
-    context 'when user is not authorized' do
+
+    it 'completes the goal at 0% for a miss' do
+      expect {
+        post check_in_organization_goal_path(organization, goal), params: {
+          confidence_percentage: 0,
+          confidence_reason: 'We did not achieve this goal but learned important lessons about what went wrong.'
+        }
+      }.to change(GoalCheckIn, :count).by(1)
+
+      final_check_in = goal.goal_check_ins.recent.first
+      expect(final_check_in.confidence_percentage).to eq(0)
+      expect(goal.reload.completed_at).to be_present
+    end
+
+    it 'allows completing without Learnings' do
+      expect {
+        post check_in_organization_goal_path(organization, goal), params: {
+          confidence_percentage: 100
+        }
+      }.to change(GoalCheckIn, :count).by(1)
+
+      expect(goal.reload.completed_at).to be_present
+      expect(goal.goal_check_ins.recent.first.confidence_reason).to be_nil
+    end
+
+    it 'shows success flash message when completing' do
+      post check_in_organization_goal_path(organization, goal), params: {
+        confidence_percentage: 100,
+        confidence_reason: 'Test learnings'
+      }
+
+      follow_redirect!
+      expect(response.body).to include('Goal marked as done successfully')
+    end
+
+    it 'redirects to return_url with check-in anchor when provided' do
+      return_url = organization_goals_path(organization)
+
+      post check_in_organization_goal_path(organization, goal), params: {
+        confidence_percentage: 100,
+        return_url: return_url
+      }
+
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to("#{return_url}#check-in")
+    end
+
+    context 'when user is not authorized to check in' do
       let(:other_person) { create(:person) }
       let(:other_teammate) { other_person.company_teammates.find_or_create_by!(organization: organization) { |t| t.first_employed_at = nil; t.last_terminated_at = nil } }
       let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'only_creator') }
@@ -1676,12 +1564,12 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       it 'denies access' do
         expect {
-          post complete_organization_goal_path(organization, other_goal), params: {
-            completed_outcome: 'hit',
-            learnings: 'Test learnings'
+          post check_in_organization_goal_path(organization, other_goal), params: {
+            confidence_percentage: 100,
+            confidence_reason: 'Test learnings'
           }
         }.not_to change(GoalCheckIn, :count)
-        
+
         expect(response).to have_http_status(:redirect)
         expect(other_goal.reload.completed_at).to be_nil
       end

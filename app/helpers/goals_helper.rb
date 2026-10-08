@@ -451,12 +451,57 @@ module GoalsHelper
     html
   end
   
+  # Select value for "hit late" terminal option; maps to 100 via Integer/String#to_i.
+  CONFIDENCE_TERMINAL_HIT_LATE = "100_late"
+
   def confidence_percentage_options
     options = []
+    # 0% done sits at the top next to the low active band; 100% done options stay at the end.
+    options << [confidence_missed_option_label, 0]
     (5..95).step(5).each do |percent|
-      options << ["#{percent}%", percent]
+      options << [confidence_active_option_label(percent), percent]
     end
+    options << [confidence_hit_on_time_option_label, 100]
+    options << [confidence_hit_late_option_label, CONFIDENCE_TERMINAL_HIT_LATE]
     options
+  end
+
+  def confidence_active_option_label(percent)
+    "I'm #{percent}% confident it will be hit by that date"
+  end
+
+  def confidence_missed_option_label
+    "I'm calling this done (0%) and even though it was missed... The most important part is that I'll put Learnings below"
+  end
+
+  def confidence_hit_on_time_option_label
+    "I'm calling this done (100%) and it was hit 🎉 and on time 🎊... The most important part is that I'll put Learnings below"
+  end
+
+  def confidence_hit_late_option_label
+    "I'm calling this done (100%) and it was hit 🎉, though it took longer than originally thought... The most important part is that I'll put Learnings below"
+  end
+
+  # Selected option value for a check-in (distinguishes the two 100% labels via date inference).
+  def selected_confidence_percentage_option(goal, check_in)
+    return nil unless check_in&.confidence_percentage
+
+    pct = check_in.confidence_percentage
+    return pct unless pct == 0 || pct == 100
+    return 0 if pct == 0
+
+    goal_inferred_hit_late?(goal) ? CONFIDENCE_TERMINAL_HIT_LATE : 100
+  end
+
+  def goal_inferred_hit_late?(goal)
+    return false unless goal.most_likely_target_date.present?
+
+    completed_date = goal.completed_at&.to_date || Date.current
+    completed_date > goal.most_likely_target_date
+  end
+
+  def confidence_reason_placeholder
+    "Brief update or Learnings (encouraged when completing)..."
   end
   
   def current_week_start

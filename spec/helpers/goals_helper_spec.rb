@@ -169,34 +169,51 @@ RSpec.describe GoalsHelper, type: :helper do
   end
 
   describe '#confidence_percentage_options' do
-    it 'returns options from 5% to 95% in steps of 5' do
+    it 'returns 0% done first, then active 5–95%, then 100% done options' do
       options = helper.confidence_percentage_options
-      
+
       expect(options).to be_an(Array)
-      expect(options.length).to eq(19) # 5, 10, 15, ..., 95
-      
-      # Check first option
-      expect(options.first).to eq(['5%', 5])
-      
-      # Check last option
-      expect(options.last).to eq(['95%', 95])
-      
-      # Verify all values are multiples of 5
+      expect(options.length).to eq(22) # 0, 5..95 step 5, 100, 100_late
+
+      expect(options.first[0]).to include("I'm calling this done (0%)")
+      expect(options.first[0]).to include('Learnings')
+      expect(options.first[1]).to eq(0)
+      expect(options[1]).to eq(["I'm 5% confident it will be hit by that date", 5])
+      expect(options[19]).to eq(["I'm 95% confident it will be hit by that date", 95])
+
       values = options.map { |opt| opt[1] }
-      expect(values).to all(be_a(Integer))
-      expect(values).to all(be_between(5, 95))
-      expect(values).to all(satisfy { |v| v % 5 == 0 })
-      
-      # Verify 0% and 100% are NOT included
-      expect(values).not_to include(0)
-      expect(values).not_to include(100)
+      expect(values[1, 19]).to all(be_a(Integer))
+      expect(values[1, 19]).to all(be_between(5, 95))
+      expect(values).to include(0, 100, GoalsHelper::CONFIDENCE_TERMINAL_HIT_LATE)
+
+      expect(options[-2][0]).to include('on time')
+      expect(options[-1][0]).to include('took longer')
+      expect(options[-1][1]).to eq(GoalsHelper::CONFIDENCE_TERMINAL_HIT_LATE)
     end
-    
-    it 'returns options in ascending order' do
+
+    it 'returns active percentages in ascending order after the 0% option' do
       options = helper.confidence_percentage_options
-      values = options.map { |opt| opt[1] }
-      
-      expect(values).to eq(values.sort)
+      active_values = options[1, 19].map { |opt| opt[1] }
+
+      expect(active_values).to eq(active_values.sort)
+    end
+  end
+
+  describe '#selected_confidence_percentage_option' do
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: Date.current - 1.week) }
+
+    it 'returns 100_late when completed after the most likely target date' do
+      goal.update!(completed_at: Time.current)
+      check_in = build(:goal_check_in, goal: goal, confidence_percentage: 100)
+
+      expect(helper.selected_confidence_percentage_option(goal, check_in)).to eq(GoalsHelper::CONFIDENCE_TERMINAL_HIT_LATE)
+    end
+
+    it 'returns 100 when completed on or before the most likely target date' do
+      goal.update!(most_likely_target_date: Date.current + 1.week, completed_at: Time.current)
+      check_in = build(:goal_check_in, goal: goal, confidence_percentage: 100)
+
+      expect(helper.selected_confidence_percentage_option(goal, check_in)).to eq(100)
     end
   end
 

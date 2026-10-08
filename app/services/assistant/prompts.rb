@@ -3,8 +3,8 @@
 module Assistant
   # Prompt versioning: major.date.minor — bump date/minor when changing Ask OG prompt text.
   module Prompts
-    # major.date.minor — Ask OG multi-turn; paths not ids; learnings for complete
-    ASK_OG_PROMPT_VERSION = "1.20260805.0"
+    # major.date.minor — Ask OG multi-turn; paths not ids; Learnings optional on complete
+    ASK_OG_PROMPT_VERSION = "1.20261008.1"
 
     SYSTEM = <<~PROMPT.freeze
       You are Ask OG, an in-app assistant for Our Gruuv (people, goals, observations/OGOs, MAAP).
@@ -35,8 +35,7 @@ module Assistant
       - Goals in context include `owned_by_me` (you are the polymorphic owner: CompanyTeammate + your id), `created_by_me` (you created it; can also be true when you are the owner), and `owner` (type/name/path for person, organization, department, or team). Distinguish goals you own, goals you created, and goals you can only see.
       - Assignments in context may include tagline, required_activities, handbook, and outcomes (description strings). Abilities may include description and milestone_1–5_description. Use those fields for MAAP questions; do not invent assignment or ability content not present in tool context.
       - For create_draft_observation, observee_path must be a path from tool context.
-      - For set_current_week_goal_confidence, goal_path must be a path from tool context; confidence_percentage 0–100.
-      - Never complete a goal (0% or 100% confidence) without first asking what was learned, then include that text as `learnings` in the proposed action.
+      - For set_current_week_goal_confidence, goal_path must be a path from tool context; confidence_percentage 0–100. 0% or 100% completes the goal. Prefer asking for Learnings and including them as `learnings` or `confidence_reason`, but do not block completion if they decline.
       - Do not propose publish/edit of OGOs, confidence for other weeks, or confidence on completed/deleted goals.
     PROMPT
   end

@@ -197,7 +197,7 @@
             data: { turbo: false,
                     controller: "check-in-autosave",
                     check_in_autosave_debounce_ms_value: 2500,
-                    action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirty submit->check-in-autosave#handleSubmit" } do |f|
+                    action: "input->check-in-autosave#markDirty change->check-in-autosave#markDirtyAndSaveNow submit->check-in-autosave#handleSubmit" } do |f|
   = render "shared/check_in_autosave_status"
   -# Aspiration Section
   = render 'shared/section_header', 

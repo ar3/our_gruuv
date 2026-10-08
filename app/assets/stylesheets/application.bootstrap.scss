@@ -1733,7 +1733,7 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
-// Goals hierarchy (collapsible): inline confidence check — main + update (+ optional complete)
+// Goals hierarchy (collapsible): inline confidence check — main + update
 .goal-check-in-inline-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1749,21 +1749,31 @@ body:has(.vertical-nav.open) .floating-toggle {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  &--with-update.goal-check-in-inline-layout--with-complete {
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-  }
-
   &__main {
     min-width: 0;
   }
 
   &__sentence {
     flex-wrap: nowrap;
-    min-width: 450px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__date {
+    width: auto;
+    min-width: 9.5rem;
+    flex: 0 0 auto;
+  }
+
+  &__confidence-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
   }
 
   &__reason {
     max-width: 100%;
+    width: 100%;
   }
 
   &__rail {
@@ -1806,48 +1816,6 @@ body:has(.vertical-nav.open) .floating-toggle {
     font-size: 0.85rem;
   }
 
-  &__done-btn {
-    align-self: stretch;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 5.5rem;
-    min-height: 3.5rem;
-    line-height: 1.15;
-    text-align: center;
-    white-space: normal;
-    flex: 2 1 0;
-  }
-}
-
-// Goal show: current-week check-in — main form | or | complete (10 : 1 : 1)
-.goal-check-in-inline-layout--triple-column {
-  grid-template-columns: minmax(0, 10fr) auto minmax(5.25rem, 1fr);
-  align-items: stretch;
-
-  .goal-check-in-inline-layout__rail-or {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 0.25rem;
-    min-height: 0;
-  }
-
-  .goal-check-in-inline-layout__done-btn {
-    flex: none;
-    align-self: stretch;
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    min-height: 3.5rem;
-    width: 100%;
-
-    .goal-mark-complete-link--stacked {
-      flex: 1 1 auto;
-    }
-  }
 }
 
 .goal-mark-complete-link--stacked {
@@ -1886,8 +1854,7 @@ body:has(.vertical-nav.open) .floating-toggle {
 
 @include media-breakpoint-down(md) {
   .goal-check-in-inline-layout--with-rail,
-  .goal-check-in-inline-layout--with-update,
-  .goal-check-in-inline-layout--with-update.goal-check-in-inline-layout--with-complete {
+  .goal-check-in-inline-layout--with-update {
     grid-template-columns: 1fr;
 
     .goal-check-in-inline-layout__rail {
@@ -1904,8 +1871,7 @@ body:has(.vertical-nav.open) .floating-toggle {
       align-items: center;
     }
 
-    .goal-check-in-inline-layout__update-btn,
-    .goal-check-in-inline-layout__done-btn {
+    .goal-check-in-inline-layout__update-btn {
       flex: 0 1 auto;
       min-height: 2.75rem;
       width: 100%;
@@ -1914,18 +1880,9 @@ body:has(.vertical-nav.open) .floating-toggle {
     .goal-check-in-inline-layout__update-wrap {
       width: 100%;
     }
-  }
 
-  .goal-check-in-inline-layout--triple-column {
-    grid-template-columns: 1fr;
-    row-gap: 0.75rem;
-
-    .goal-check-in-inline-layout__rail-or {
-      padding: 0;
-    }
-
-    .goal-check-in-inline-layout__done-btn {
-      min-height: 2.75rem;
+    .goal-check-in-inline-layout__sentence {
+      flex-wrap: wrap;
     }
   }
 }
@@ -2914,6 +2871,10 @@ $likert-colors: (
 
   &--draft .goals-sheet-row__status {
     background-color: #adb5bd;
+  }
+
+  &--completed .goals-sheet-row__status {
+    background-color: #212529;
   }
 
   &--active.goals-sheet-row--good_green .goals-sheet-row__status {

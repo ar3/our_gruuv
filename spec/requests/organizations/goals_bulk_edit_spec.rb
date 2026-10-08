@@ -32,9 +32,10 @@ RSpec.describe "Goals Bulk Edit", type: :request do
       expect(response.body).to include("Add top-level goal")
       expect(response.body).to include("Visible draft")
       expect(response.body).to include("check-in-autosave")
-      expect(response.body).to include("I'm 👇 this confident...")
-      expect(response.body).to include("... will be achieved on...")
-      expect(response.body).to include("... because of this reason")
+      expect(response.body).to include("By")
+      expect(response.body).to include("Confidence")
+      expect(response.body).to include("Notes / Learnings")
+      expect(response.body).to include("I&#39;m calling this done (100%)")
       expect(response.body).to include("Switch object")
       expect(response.body).to include("for ")
       expect(response.body).to include("Switch goals owner filter")
@@ -225,6 +226,99 @@ RSpec.describe "Goals Bulk Edit", type: :request do
       expect(json["ok"]).to eq(true)
       expect(json["sheet_row"]["row_classes"]).to match(/goals-sheet-row--(good_green|green|yellow|red|na)/)
       expect(json["sheet_row"]["popover_title"]).to be_present
+    end
+
+    it "completes the goal at 100% and returns completed sheet chrome" do
+      goal = create(
+        :goal,
+        owner: teammate,
+        creator: teammate,
+        company: company,
+        title: "Finish me",
+        started_at: 1.week.ago,
+        most_likely_target_date: 2.weeks.from_now
+      )
+
+      patch organization_goals_bulk_edit_goal_path(company, goal),
+            params: { goal: { confidence_percentage: 100, confidence_reason: "Shipped" } },
+            headers: { "ACCEPT" => "application/json" }
+
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json["ok"]).to eq(true)
+      expect(json["completed"]).to eq(true)
+      expect(goal.reload.completed_at).to be_present
+      expect(json["sheet_row"]["row_classes"]).to include("goals-sheet-row--completed")
+      expect(json["sheet_row"]["popover_title"]).to eq("Done")
+    end
+
+    it "maps 100_late to 100% completion" do
+      goal = create(
+        :goal,
+        owner: teammate,
+        creator: teammate,
+        company: company,
+        title: "Late finish",
+        started_at: 1.week.ago,
+        most_likely_target_date: 1.day.ago
+      )
+
+      patch organization_goals_bulk_edit_goal_path(company, goal),
+            params: { goal: { confidence_percentage: "100_late", confidence_reason: "Late but done" } },
+            headers: { "ACCEPT" => "application/json" }
+
+      expect(response).to have_http_status(:success)
+      expect(goal.reload.completed_at).to be_present
+      expect(goal.goal_check_ins.recent.first.confidence_percentage).to eq(100)
+    end
+
+    it "reopens a completed goal when mid-range confidence is set" do
+      goal = create(
+        :goal,
+        owner: teammate,
+        creator: teammate,
+        company: company,
+        title: "Reopen me",
+        started_at: 1.week.ago,
+        completed_at: 1.day.ago,
+        most_likely_target_date: 2.weeks.from_now
+      )
+      create(
+        :goal_check_in,
+        goal: goal,
+        confidence_percentage: 100,
+        confidence_reason: "Was done",
+        check_in_week_start: Date.current.beginning_of_week(:monday)
+      )
+
+      patch organization_goals_bulk_edit_goal_path(company, goal),
+            params: { goal: { confidence_percentage: 60, confidence_reason: "Actually still going" } },
+            headers: { "ACCEPT" => "application/json" }
+
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json["ok"]).to eq(true)
+      expect(json["completed"]).to eq(false)
+      expect(goal.reload.completed_at).to be_nil
+      expect(json["sheet_row"]["row_classes"]).to include("goals-sheet-row--active")
+      expect(json["sheet_row"]["row_classes"]).not_to include("goals-sheet-row--completed")
+    end
+
+    it "does not show already-completed goals on the default sheet" do
+      create(
+        :goal,
+        owner: teammate,
+        creator: teammate,
+        company: company,
+        title: "Already done",
+        started_at: 2.weeks.ago,
+        completed_at: 1.day.ago,
+        most_likely_target_date: 1.week.ago
+      )
+
+      get organization_goals_bulk_edit_path(company)
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include("Already done")
     end
   end
 end

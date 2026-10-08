@@ -298,10 +298,10 @@ module AgentTools
             maximum: 100,
             description: "Confidence 0–100 for the current Monday week"
           },
-          confidence_reason: { type: "string", description: "Optional reason for mid-range confidence" },
+          confidence_reason: { type: "string", description: "Optional notes / Learnings (encouraged when completing at 0 or 100)" },
           learnings: {
             type: "string",
-            description: "Required when confidence is 0 or 100 (completing the goal)"
+            description: "Optional Learnings when completing (0 or 100); same as confidence_reason if both sent"
           }
         },
         required: ["goal_path", "confidence_percentage"],
@@ -336,7 +336,7 @@ module AgentTools
       "get_observation" => "Get one observation (OGO) by path (preferred). Fully hydrated: full story, observer + observees (name/path), feelings, type/privacy/publish, goal, and ratings (rateable_type/id/name/path + rating + rating_label). Use after list_observations for analysis.",
       "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
-      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% requires learnings.",
+      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% completes the goal; Learnings optional.",
       "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them."
     }.freeze
 
@@ -413,11 +413,11 @@ module AgentTools
         "set_current_week_goal_confidence" => {
           "args" => {
             "goal_path" => "string path from tool context (required) — active (not completed/deleted) goal only",
-            "confidence_percentage" => "integer 0-100 (required)",
-            "confidence_reason" => "string (optional for mid-range confidence)",
-            "learnings" => "string required when confidence is 0 or 100 (completing the goal)"
+            "confidence_percentage" => "integer 0-100 (required); 0 or 100 completes the goal",
+            "confidence_reason" => "string (optional notes / Learnings; encouraged when completing)",
+            "learnings" => "string (optional Learnings when completing; same as confidence_reason)"
           },
-          "effect" => "Upserts confidence for the current Monday week only. Rejects completed/deleted goals. Completing (0%/100%) requires learnings."
+          "effect" => "Upserts confidence for the current Monday week only. Rejects completed/deleted goals. Completing (0%/100%) does not require Learnings; late vs on-time is inferred from dates."
         },
         "create_seat_suggestion_bundle" => {
           "args" => {

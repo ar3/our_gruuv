@@ -58,7 +58,7 @@ class Goal < ApplicationRecord
   # Target dates are optional - they can be set via timeframe selection or explicitly
   
   validate :title_not_blank_after_strip
-  validate :date_ordering
+  before_validation :align_target_dates_to_most_likely
   validate :privacy_level_for_owner_type
   
   # Scopes
@@ -361,16 +361,23 @@ class Goal < ApplicationRecord
   end
 
   # Aligns most_likely with earliest/latest bounds (same rules as Goals::CheckInService).
+  # If most_likely is before earliest, earliest becomes the day before; if after latest,
+  # latest becomes the day after. Never fails the save for band ordering.
   def sync_most_likely_target_date!(new_date)
-    if new_date.present?
-      if earliest_target_date.present? && earliest_target_date > new_date
-        self.earliest_target_date = new_date
-      end
-      if latest_target_date.present? && new_date >= latest_target_date
-        self.latest_target_date = new_date + 1.day
-      end
-    end
     self.most_likely_target_date = new_date
+    align_target_dates_to_most_likely
+  end
+
+  def align_target_dates_to_most_likely
+    return if most_likely_target_date.blank?
+
+    ml = most_likely_target_date
+    if earliest_target_date.present? && earliest_target_date > ml
+      self.earliest_target_date = ml - 1.day
+    end
+    if latest_target_date.present? && latest_target_date < ml
+      self.latest_target_date = ml + 1.day
+    end
   end
 
   def calculated_target_date
@@ -399,19 +406,6 @@ class Goal < ApplicationRecord
   end
   
   private
-  
-  def date_ordering
-    # Only validate if all dates are present
-    return unless earliest_target_date.present? && most_likely_target_date.present? && latest_target_date.present?
-    
-    if earliest_target_date > most_likely_target_date
-      errors.add(:base, "earliest_target_date must be less than or equal to most_likely_target_date")
-    end
-    
-    if most_likely_target_date > latest_target_date
-      errors.add(:base, "most_likely_target_date must be less than or equal to latest_target_date")
-    end
-  end
   
   def title_not_blank_after_strip
     return unless title.present?

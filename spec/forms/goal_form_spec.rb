@@ -49,24 +49,36 @@ RSpec.describe GoalForm, type: :form do
       expect(form.errors[:privacy_level]).to include("can't be blank")
     end
     
-    it 'validates date ordering: earliest <= most_likely <= latest' do
+    it 'auto-aligns earliest when most_likely is earlier' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+      ml = Date.today + 1.month
       form.earliest_target_date = Date.today + 3.months
-      form.most_likely_target_date = Date.today + 1.month
-      form.latest_target_date = Date.today + 2.months
-      
-      expect(form).not_to be_valid
-      expect(form.errors[:base]).to include("earliest_target_date must be less than or equal to most_likely_target_date")
+      form.most_likely_target_date = ml
+      form.latest_target_date = Date.today + 4.months
+
+      expect(form).to be_valid
+      expect(form.earliest_target_date).to eq(ml - 1.day)
     end
-    
-    it 'validates most_likely_target_date <= latest_target_date' do
+
+    it 'auto-aligns latest when most_likely is later' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+      ml = Date.today + 3.months
       form.earliest_target_date = Date.today + 1.month
-      form.most_likely_target_date = Date.today + 3.months
+      form.most_likely_target_date = ml
       form.latest_target_date = Date.today + 2.months
-      
-      expect(form).not_to be_valid
-      expect(form.errors[:base]).to include("most_likely_target_date must be less than or equal to latest_target_date")
+
+      expect(form).to be_valid
+      expect(form.latest_target_date).to eq(ml + 1.day)
     end
-    
+
     it 'accepts valid date ordering' do
       form.title = "Test Goal"
       form.goal_type = "inspirational_objective"
@@ -76,8 +88,24 @@ RSpec.describe GoalForm, type: :form do
       form.privacy_level = "only_creator"
       form.owner_type = "CompanyTeammate"
       form.owner_id = creator_teammate.id
-      
+
       expect(form).to be_valid
+    end
+
+    it 'aligns dates when most_likely_target_date is a string (sheet autosave)' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.earliest_target_date = Date.new(2026, 7, 1)
+      form.most_likely_target_date = "2026-06-01"
+      form.latest_target_date = Date.new(2026, 5, 1)
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+
+      expect { form.valid? }.not_to raise_error
+      expect(form).to be_valid
+      expect(form.earliest_target_date).to eq(Date.new(2026, 5, 31))
+      expect(form.latest_target_date).to eq(Date.new(2026, 6, 2))
     end
     
     it 'validates goal_type inclusion' do

@@ -33,13 +33,24 @@ export default class extends Controller {
     document.removeEventListener("click", this.boundHandleClick, true)
   }
 
+  // Typing (input): debounce. Selects/dates/etc (change): save immediately so one
+  // field change is not blocked by continued typing in another field.
   markDirty() {
+    this.noteDirty()
+    this.scheduleSave(this.debounceMsValue)
+  }
+
+  markDirtyAndSaveNow() {
+    this.noteDirty()
+    this.scheduleSave(0)
+  }
+
+  noteDirty() {
     this.dirty = true
     this.saveGeneration += 1
     if (!this.saving) {
       this.updateStatus("")
     }
-    this.scheduleSave()
   }
 
   handleSubmit() {
@@ -50,9 +61,9 @@ export default class extends Controller {
     this.updateStatus("Saving…")
   }
 
-  scheduleSave() {
+  scheduleSave(delayMs = this.debounceMsValue) {
     this.clearDebounce()
-    this.debounceTimer = window.setTimeout(() => this.save(), this.debounceMsValue)
+    this.debounceTimer = window.setTimeout(() => this.save(), delayMs)
   }
 
   async save(retryAttempt = 0) {
@@ -124,7 +135,7 @@ export default class extends Controller {
 
     // Debounced saves that fired while `saving` were no-ops; re-schedule if still dirty.
     if (succeeded && this.dirty) {
-      this.scheduleSave()
+      this.scheduleSave(this.debounceMsValue)
     }
   }
 
@@ -138,7 +149,8 @@ export default class extends Controller {
       this.updateStatus("Couldn't save — retrying…", true)
       this.retryTimer = window.setTimeout(() => this.save(1), 5000)
     } else {
-      this.updateStatus("Couldn't save — please try again", true)
+      const detail = this.lastError && this.lastError !== "Save failed" ? `: ${this.lastError}` : ""
+      this.updateStatus(`Couldn't save — please try again${detail}`, true)
     }
   }
 

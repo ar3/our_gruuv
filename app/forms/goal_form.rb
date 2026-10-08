@@ -22,8 +22,8 @@ class GoalForm < Reform::Form
   validates :title, presence: true
   validates :goal_type, presence: true
   validates :privacy_level, presence: true
-  # Target dates are optional
-  validate :date_ordering
+  # Target dates are optional; out-of-order dates are auto-aligned (never fail the save).
+  validate :align_target_dates
   validate :owner_selection
   validate :owner_exists
   validate :owner_type_valid
@@ -96,17 +96,29 @@ class GoalForm < Reform::Form
   
   private
   
-  def date_ordering
-    # Only validate if all dates are present
-    return unless earliest_target_date.present? && most_likely_target_date.present? && latest_target_date.present?
-    
-    if earliest_target_date > most_likely_target_date
-      errors.add(:base, "earliest_target_date must be less than or equal to most_likely_target_date")
+  def align_target_dates
+    most_likely = coerce_form_date(most_likely_target_date)
+    return unless most_likely
+
+    earliest = coerce_form_date(earliest_target_date)
+    latest = coerce_form_date(latest_target_date)
+
+    if earliest && earliest > most_likely
+      self.earliest_target_date = most_likely - 1.day
     end
-    
-    if most_likely_target_date > latest_target_date
-      errors.add(:base, "most_likely_target_date must be less than or equal to latest_target_date")
+    if latest && latest < most_likely
+      self.latest_target_date = most_likely + 1.day
     end
+  end
+
+  def coerce_form_date(value)
+    return nil if value.blank?
+    return value if value.is_a?(Date)
+    return value.to_date if value.respond_to?(:to_date)
+
+    Date.parse(value.to_s)
+  rescue ArgumentError, TypeError
+    nil
   end
   
   def owner_selection

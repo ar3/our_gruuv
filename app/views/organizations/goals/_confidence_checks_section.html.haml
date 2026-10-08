@@ -48,32 +48,25 @@
               Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
             - can_save_check_in = policy(GoalCheckIn.new(goal: @goal)).create?
             - can_update_goal = policy(@goal).update?
-            - show_complete_rail = can_update_goal
             - check_in_return_url = organization_goal_path(@organization, @goal)
-            .goal-check-in-inline-layout{class: ('goal-check-in-inline-layout--triple-column' if show_complete_rail)}
+            .goal-check-in-inline-layout
               .goal-check-in-inline-layout__main
                 = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: check_in_return_url, return_text: 'Goal'), method: :post, local: true do |f|
                   .mb-3
-                    %p.mb-2
-                      As of
-                      %strong= current_week_start.strftime('%B %d, %Y')
-                      ,
-                      %strong= current_person.display_name
-                      reports a
-                      = f.select :confidence_percentage,
-                          options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
-                          { include_blank: 'Select confidence...' },
-                          { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', disabled: !can_save_check_in }
-                      confidence we will achieve
-                      %strong= @goal.title
-                      by
+                    .goal-check-in-inline-layout__sentence.d-flex.align-items-center.gap-2
+                      %span.text-nowrap By
                       - if can_update_goal
-                        = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', disabled: !can_save_check_in
+                        = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control form-control-sm goal-check-in-inline-layout__date', disabled: !can_save_check_in
                       - else
-                        %span.mx-1= @goal.most_likely_target_date.present? ? @goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
+                        %span= @goal.most_likely_target_date.present? ? @goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
+                      %span.text-nowrap —
+                      = f.select :confidence_percentage,
+                          options_for_select(confidence_percentage_options, selected_confidence_percentage_option(@goal, @current_check_in)),
+                          { include_blank: 'Select confidence...' },
+                          { class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select', disabled: !can_save_check_in }
                   .mb-3
-                    = f.label :confidence_reason, "Notes", class: "form-label"
-                    = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...', disabled: !can_save_check_in
+                    = f.label :confidence_reason, "Notes / Learnings", class: "form-label"
+                    = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control goal-check-in-inline-layout__reason', rows: 3, placeholder: confidence_reason_placeholder, disabled: !can_save_check_in
                   - if can_save_check_in
                     .d-grid
                       = f.submit update_confidence_label, class: "btn btn-primary"
@@ -83,18 +76,6 @@
                         %button.btn.btn-outline-secondary.w-100{type: "button", disabled: true}
                           = update_confidence_label
                       %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_no_check_in_access_tooltip(@goal), tabindex: "0", role: "img", "aria-label" => "Permission notice"}
-              - if show_complete_rail
-                .goal-check-in-inline-layout__rail-or
-                  %span.small.text-muted or
-                .goal-check-in-inline-layout__done-btn
-                  = render 'organizations/goals/goal_mark_complete_link',
-                      goal: @goal,
-                      organization: @organization,
-                      return_url: check_in_return_url,
-                      return_text: 'Goal',
-                      button_class: 'btn btn-outline-success btn-lg w-100',
-                      label: 'Complete',
-                      stacked: true
           - elsif goal_is_completed?(@goal)
             .alert.alert-info.mb-0= goal_completed_confidence_checks_readonly_label
           - else

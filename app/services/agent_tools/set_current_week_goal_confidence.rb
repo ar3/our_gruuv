@@ -2,7 +2,7 @@
 
 module AgentTools
   # Current-week goal confidence only. week_start is pinned server-side to this Monday.
-  # Completing a goal (0% or 100%) requires learnings — mirrors GoalsController#complete.
+  # 0% or 100% completes the goal; Learnings are encouraged but not required (late vs on-time inferred from dates).
   class SetCurrentWeekGoalConfidence < Base
     include Rails.application.routes.url_helpers
 
@@ -43,15 +43,7 @@ module AgentTools
         return err("confidence_percentage must be between 0 and 100", code: "validation_failed")
       end
 
-      learnings_text = learnings.to_s.strip.presence || confidence_reason.to_s.strip.presence
-      if [0, 100].include?(pct) && learnings_text.blank?
-        return err(
-          "cannot complete a goal (0% or 100%) without learnings — ask what was learned first",
-          code: "validation_failed"
-        )
-      end
-
-      reason = learnings_text.presence || confidence_reason
+      reason = learnings.to_s.strip.presence || confidence_reason.to_s.strip.presence
 
       result = Goals::CheckInService.call(
         goal: goal,

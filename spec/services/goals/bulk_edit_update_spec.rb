@@ -51,4 +51,62 @@ RSpec.describe Goals::BulkEditUpdate do
     expect(goal.goal_check_ins.count).to eq(1)
     expect(goal.goal_check_ins.first.confidence_percentage).to eq(70)
   end
+
+  it "completes the goal at 0% and 100_late" do
+    started = create(:goal, owner: teammate, creator: teammate, company: company, title: "Active", started_at: 1.week.ago)
+
+    result = described_class.call(
+      goal: started,
+      current_person: person,
+      current_teammate: teammate,
+      attrs: { confidence_percentage: "100_late", confidence_reason: "Done late" }
+    )
+    expect(result.ok?).to eq(true)
+    expect(started.reload.completed_at).to be_present
+    expect(started.goal_check_ins.first.confidence_percentage).to eq(100)
+
+    started.update!(completed_at: nil)
+    miss = described_class.call(
+      goal: started,
+      current_person: person,
+      current_teammate: teammate,
+      attrs: { confidence_percentage: "0", confidence_reason: "Missed" }
+    )
+    expect(miss.ok?).to eq(true)
+    expect(started.reload.completed_at).to be_present
+    expect(started.goal_check_ins.order(updated_at: :desc).first.confidence_percentage).to eq(0)
+  end
+
+  it "accepts string most_likely_target_date from the sheet alongside confidence (Date vs String)" do
+    started = create(
+      :goal,
+      owner: teammate,
+      creator: teammate,
+      company: company,
+      title: "Dated goal",
+      started_at: 1.week.ago,
+      earliest_target_date: Date.new(2026, 1, 1),
+      most_likely_target_date: Date.new(2026, 6, 1),
+      latest_target_date: Date.new(2026, 12, 1)
+    )
+
+    result = described_class.call(
+      goal: started,
+      current_person: person,
+      current_teammate: teammate,
+      attrs: {
+        title: started.title,
+        goal_type: started.goal_type,
+        privacy_level: started.privacy_level,
+        owner_id: "CompanyTeammate_#{teammate.id}",
+        most_likely_target_date: "2026-06-01",
+        confidence_percentage: "0",
+        confidence_reason: "this is now done"
+      }
+    )
+
+    expect(result.ok?).to eq(true), "expected success, got errors: #{result.errors.inspect}"
+    expect(started.reload.completed_at).to be_present
+    expect(started.most_likely_target_date).to eq(Date.new(2026, 6, 1))
+  end
 end

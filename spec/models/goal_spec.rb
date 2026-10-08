@@ -154,30 +154,44 @@ RSpec.describe Goal, type: :model do
       expect(goal.errors[:creator]).to include("must exist")
     end
     
-    it 'validates date ordering: earliest <= most_likely <= latest' do
+    it 'auto-aligns earliest to the day before most_likely when out of order' do
+      ml = Date.today + 1.month
       goal.earliest_target_date = Date.today + 3.months
-      goal.most_likely_target_date = Date.today + 1.month
-      goal.latest_target_date = Date.today + 2.months
-      
-      expect(goal).not_to be_valid
-      expect(goal.errors[:base]).to include("earliest_target_date must be less than or equal to most_likely_target_date")
+      goal.most_likely_target_date = ml
+      goal.latest_target_date = Date.today + 4.months
+
+      expect(goal).to be_valid
+      expect(goal.earliest_target_date).to eq(ml - 1.day)
     end
-    
-    it 'validates most_likely_target_date <= latest_target_date' do
+
+    it 'auto-aligns latest to the day after most_likely when out of order' do
+      ml = Date.today + 3.months
       goal.earliest_target_date = Date.today + 1.month
-      goal.most_likely_target_date = Date.today + 3.months
+      goal.most_likely_target_date = ml
       goal.latest_target_date = Date.today + 2.months
-      
-      expect(goal).not_to be_valid
-      expect(goal.errors[:base]).to include("most_likely_target_date must be less than or equal to latest_target_date")
+
+      expect(goal).to be_valid
+      expect(goal.latest_target_date).to eq(ml + 1.day)
     end
-    
+
     it 'accepts valid date ordering' do
       goal.earliest_target_date = Date.today + 1.month
       goal.most_likely_target_date = Date.today + 2.months
       goal.latest_target_date = Date.today + 3.months
-      
+
       expect(goal).to be_valid
+    end
+
+    it 'sync_most_likely_target_date! pulls earliest/latest around the new date' do
+      goal.update!(
+        earliest_target_date: Date.new(2026, 6, 1),
+        most_likely_target_date: Date.new(2026, 7, 1),
+        latest_target_date: Date.new(2026, 8, 1)
+      )
+      goal.sync_most_likely_target_date!(Date.new(2026, 5, 1))
+      expect(goal.most_likely_target_date).to eq(Date.new(2026, 5, 1))
+      expect(goal.earliest_target_date).to eq(Date.new(2026, 4, 30))
+      expect(goal.latest_target_date).to eq(Date.new(2026, 8, 1))
     end
     
     it 'validates goal_type inclusion via enum' do

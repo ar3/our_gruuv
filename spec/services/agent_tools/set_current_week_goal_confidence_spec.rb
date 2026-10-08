@@ -72,16 +72,16 @@ RSpec.describe AgentTools::SetCurrentWeekGoalConfidence, type: :service do
     expect(goal.goal_check_ins.count).to eq(0)
   end
 
-  it "rejects 0% or 100% without learnings" do
+  it "allows completing at 100% without learnings" do
     result = described_class.call(
       context: context,
       goal_path: goal_path,
       confidence_percentage: 100
     )
 
-    expect(result.ok?).to be(false)
-    expect(result.error).to include("learnings")
-    expect(goal.reload.completed_at).to be_nil
+    expect(result.ok?).to be(true)
+    expect(goal.reload.completed_at).to be_present
+    expect(goal.goal_check_ins.find_by!(check_in_week_start: current_monday).confidence_reason).to be_nil
   end
 
   it "allows completing at 100% when learnings are provided" do

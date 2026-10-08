@@ -6,7 +6,7 @@ module Goals
       @goal = goal
       @current_person = current_person
       @current_company_teammate = current_company_teammate
-      @confidence_percentage = confidence_percentage.present? ? confidence_percentage.to_i : nil
+      @confidence_percentage = parse_confidence_percentage(confidence_percentage)
       @confidence_reason = confidence_reason&.strip.presence
       @most_likely_target_date_param = most_likely_target_date
       @week_start = week_start || Date.current.beginning_of_week(:monday)
@@ -84,9 +84,19 @@ module Goals
         source_check_in: check_in
       )
 
-      # Auto-complete goal if confidence is 0% or 100%
-      if @confidence_percentage.present? && (@confidence_percentage == 0 || @confidence_percentage == 100) && @goal.completed_at.nil?
-        @goal.update(completed_at: Time.current)
+      # Terminal 0%/100% completes; mid-range confidence reopens a completed goal.
+      completed = false
+      reopened = false
+      if !@confidence_percentage.nil?
+        if [0, 100].include?(@confidence_percentage)
+          if @goal.completed_at.nil?
+            @goal.update(completed_at: Time.current)
+            completed = true
+          end
+        elsif @goal.completed_at.present?
+          @goal.update(completed_at: nil)
+          reopened = true
+        end
       end
 
       # Create observable moment if confidence changed significantly
@@ -100,7 +110,9 @@ module Goals
       Result.ok(
         check_in: check_in,
         goal: @goal,
-        target_date_updated: target_date_updated
+        target_date_updated: target_date_updated,
+        completed: completed,
+        reopened: reopened
       )
     rescue Date::Error => e
       Result.err("Invalid date format: #{e.message}")
@@ -109,6 +121,16 @@ module Goals
     end
 
     private
+
+    # Accepts "", nil, 0, "0", 100, "100_late" (maps to 100 via to_i).
+    def parse_confidence_percentage(value)
+      return nil if value.nil?
+
+      str = value.to_s.strip
+      return nil if str.empty?
+
+      str.to_i
+    end
 
     def parse_target_date
       return nil unless @most_likely_target_date_param.present?

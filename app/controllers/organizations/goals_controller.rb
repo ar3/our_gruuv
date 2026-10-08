@@ -1,6 +1,6 @@
 class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete, :undelete, :weekly_update]
+  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :undelete, :weekly_update]
   
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -703,7 +703,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       if result.value[:no_changes]
         redirect_to return_url
       else
-        notice = I18n.t('terminology.confidence_check_saved_successfully')
+        notice = if result.value[:completed]
+          'Goal marked as done successfully.'
+        else
+          I18n.t('terminology.confidence_check_saved_successfully')
+        end
         notice += ' Target date updated.' if result.value[:target_date_updated]
         redirect_to return_url, notice: notice
       end
@@ -877,82 +881,6 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     else
       redirect_to redirect_target,
                   alert: "#{I18n.t('terminology.failed_to_save_confidence_checks')}: #{result.error}"
-    end
-  end
-  
-  def done
-    authorize @goal, :update?
-    
-    @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
-    @return_text = params[:return_text] || 'Goal'
-    
-    @check_ins = @goal.goal_check_ins
-      .includes(:confidence_reporter)
-      .order(check_in_week_start: :desc)
-    
-    @current_week_start = Date.current.beginning_of_week(:monday)
-  end
-  
-  def complete
-    authorize @goal, :update?
-    
-    completed_outcome = params[:completed_outcome]
-    learnings = params[:learnings]&.strip
-    
-    if learnings.blank?
-      @check_ins = @goal.goal_check_ins
-        .includes(:confidence_reporter)
-        .order(check_in_week_start: :desc)
-      @current_week_start = Date.current.beginning_of_week(:monday)
-      flash.now[:alert] = 'Learnings are required.'
-      render :done, status: :unprocessable_entity
-      return
-    end
-    
-    unless %w[hit hit_late miss].include?(completed_outcome)
-      @check_ins = @goal.goal_check_ins
-        .includes(:confidence_reporter)
-        .order(check_in_week_start: :desc)
-      @current_week_start = Date.current.beginning_of_week(:monday)
-      flash.now[:alert] = 'Invalid completion outcome.'
-      render :done, status: :unprocessable_entity
-      return
-    end
-    
-    # Determine confidence percentage
-    confidence_percentage = (completed_outcome.in?(%w[hit hit_late])) ? 100 : 0
-    
-    # Get current week start
-    current_week_start = Date.current.beginning_of_week(:monday)
-    
-    # Set PaperTrail whodunnit for version tracking (company teammate id)
-    PaperTrail.request.whodunnit = current_company_teammate.id.to_s if current_company_teammate
-    
-    # Create or update final check-in
-    check_in = GoalCheckIn.find_or_initialize_by(
-      goal: @goal,
-      check_in_week_start: current_week_start
-    )
-    
-    check_in.assign_attributes(
-      confidence_percentage: confidence_percentage,
-      confidence_reason: learnings,
-      confidence_reporter: current_person
-    )
-    
-    if check_in.save && @goal.update(completed_at: Time.current)
-      EngagementHealth.schedule_refresh_for_goal(@goal)
-      redirect_url = params[:return_url] || organization_goal_path(@organization, @goal)
-      redirect_to redirect_url,
-                  notice: 'Goal marked as done successfully.'
-    else
-      @check_ins = @goal.goal_check_ins
-        .includes(:confidence_reporter)
-        .order(check_in_week_start: :desc)
-      @current_week_start = Date.current.beginning_of_week(:monday)
-      errors = check_in.errors.full_messages + @goal.errors.full_messages
-      flash.now[:alert] = "Failed to complete goal: #{errors.join(', ')}"
-      render :done, status: :unprocessable_entity
     end
   end
   

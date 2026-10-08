@@ -33,7 +33,9 @@ module GoalsBulkEditHelper
 
   def goals_bulk_edit_row_classes(goal)
     classes = ["goals-sheet-row", "mb-2", "rounded-end"]
-    if goal.started_at.blank?
+    if goal.completed_at.present?
+      classes << "goals-sheet-row--completed"
+    elsif goal.started_at.blank?
       classes << "goals-sheet-row--draft"
     else
       status = goal.progress_status
@@ -46,6 +48,7 @@ module GoalsBulkEditHelper
   end
 
   def goals_bulk_edit_border_popover_title(goal)
+    return "Done" if goal.completed_at.present?
     return "Draft" if goal.started_at.blank?
 
     status = goal.progress_status
@@ -57,6 +60,10 @@ module GoalsBulkEditHelper
   end
 
   def goals_bulk_edit_border_popover_content(goal)
+    if goal.completed_at.present?
+      return "Black means this goal is marked done. You can still edit fields here. Pick a mid-range confidence (5–95%) to reopen it."
+    end
+
     if goal.started_at.blank?
       return "Grey means this goal is still a draft (not started). Setting confidence creates a confidence check and starts the goal."
     end
