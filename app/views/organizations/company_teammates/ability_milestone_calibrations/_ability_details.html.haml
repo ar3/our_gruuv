@@ -1,0 +1,77 @@
+- item = local_assigns[:item]
+- ability = local_assigns[:ability]
+- teammate = local_assigns[:teammate]
+- organization = local_assigns[:organization]
+- sources = local_assigns[:sources] || []
+- observations = local_assigns[:observations] || []
+- observations_total = local_assigns[:observations_total].to_i
+- limit = AbilityMilestoneCalibrationHelper::RECENT_OGOS_LIMIT
+- collapse_id = "calibration-ability-details-#{item.id}"
+- casual = teammate.person.casual_name
+- ability_label = "#{ability.display_name} Ability"
+- grow_by_abilities_url = my_growth_abilities_organization_company_teammate_path(organization, teammate)
+- teammate_ability_url = organization_teammate_ability_path(organization, teammate, ability)
+- ogos_filtered_url = organization_observations_path(organization, observee_ids: [teammate.id], rateable_type: 'Ability', rateable_id: ability.id, view: 'large_list', return_url: ability_milestone_calibration_organization_company_teammate_path(organization, teammate), return_text: 'Milestone calibration')
+
+.mt-2.mb-3
+  %p.small.mb-2
+    %button.btn.btn-link.btn-sm.p-0.align-baseline{type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{collapse_id}" }, aria: { expanded: 'false', controls: collapse_id }}
+      Expand for Ability details
+      %i.bi.bi-chevron-down.ms-1
+  .collapse{id: collapse_id}
+    .border.rounded.p-3.bg-body-tertiary
+      %section.mb-4
+        %h3.h6.mb-2 Why is this Ability here?
+        - if sources.any?
+          %ul.mb-0.ps-3
+            - sources.each do |source|
+              %li.small= ability_milestone_calibration_source_label(source)
+        - else
+          %p.small.text-muted.mb-0 No requirement sources recorded for this Ability.
+
+      %section.mb-4
+        %h3.h6.mb-2 Ability description
+        - if ability.description.present?
+          .markdown-content.small= render_markdown(ability.description)
+        - else
+          %p.small.text-muted.mb-0 No Ability description.
+
+      %section.mb-4
+        %h3.h6.mb-2 Milestones
+        - (0..5).each do |level|
+          .mb-3{class: (level < 5 ? 'pb-3 border-bottom border-light' : nil)}
+            %h4.h6.mb-1= ability_milestone_calibration_rating_label(level)
+            - if level.to_i.zero?
+              %p.small.text-muted.mb-2 No Milestone earned yet for this Ability.
+              %p.small.mb-0
+                If #{casual} is actively working on earning Milestone 1, click the "Add Goal" button for this Ability from the
+                = succeed ' page.' do
+                  = link_to 'Grow By Abilities', grow_by_abilities_url
+            - else
+              = ability_milestone_calibration_milestone_details_html(ability, level)
+
+      %section.mb-4
+        %h3.h6.mb-2
+          Observations on #{ability_label}
+          - if observations_total.positive?
+            %span.text-muted.fw-normal.small
+              - if observations_total > limit
+                (showing #{[observations.size, limit].min} of #{observations_total})
+              - else
+                (#{observations_total})
+        - if observations.any?
+          = render 'organizations/observations/large_list_view', observations: observations, organization: organization
+        - else
+          %p.small.text-muted.mb-0 No observations where #{casual} was rated on #{ability_label} yet.
+
+      %section.mb-0
+        %h3.h6.mb-2 More details
+        %ul.list-unstyled.mb-0.small
+          %li.mb-1
+            = link_to teammate_ability_url do
+              #{casual} + #{ability_label} page
+              %i.bi.bi-box-arrow-up-right.ms-1
+          %li
+            = link_to ogos_filtered_url do
+              All OGOs for #{casual} + #{ability_label}
+              %i.bi.bi-box-arrow-up-right.ms-1

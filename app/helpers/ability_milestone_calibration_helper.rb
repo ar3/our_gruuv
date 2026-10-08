@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module AbilityMilestoneCalibrationHelper
+  RECENT_OGOS_LIMIT = 5
+
   def ability_milestone_calibration_entry_counts(teammate:, organization:)
     AbilityMilestoneCalibrationAbilitiesCatalog.entry_counts(teammate:, organization:)
   end
@@ -19,26 +21,32 @@ module AbilityMilestoneCalibrationHelper
     "Milestone #{level.to_i}"
   end
 
-  def ability_milestone_calibration_ability_description_popover_html(ability)
-    if ability.description.present?
-      tag.div(class: 'text-start markdown-content small') { render_markdown(ability.description) }
+  def ability_milestone_calibration_source_label(source)
+    level = source.milestone_level.to_i
+    case source.kind.to_sym
+    when :assignment_tenure
+      "Assignment tenure: #{source.assignment.display_name} (requires Milestone #{level})"
+    when :position_direct
+      ctx = position_context_label(source.position_context)
+      "Required directly by #{ctx} #{source.position.display_name} (Milestone #{level})"
+    when :required_assignment
+      ctx = position_context_label(source.position_context)
+      "Required assignment on #{ctx} #{source.position.display_name}: " \
+        "#{source.assignment.display_name} (Milestone #{level})"
     else
-      tag.p('No ability description.', class: 'small text-muted mb-0')
+      "Requirement (Milestone #{level})"
     end
   end
 
-  # Proposal and official ratings use 0-5. nil = not answered yet; 0 = Milestone 0 (no Milestone earned yet).
-  def ability_milestone_calibration_milestone_popover_html(ability, level, milestone_rec = nil)
+  # Inline milestone copy for the Ability-details accordion (replaces popovers).
+  # Milestone 0 copy (with Grow By Abilities CTA) is rendered in the accordion partial.
+  def ability_milestone_calibration_milestone_details_html(ability, level, milestone_rec = nil)
     if level.nil?
-      return tag.div(class: 'small text-muted text-start') do
-        'Not answered. No milestone proposal yet for this ability.'
-      end
+      return tag.p('Not answered. No milestone proposal yet for this Ability.', class: 'small text-muted mb-0')
     end
 
     if level.to_i < 1
-      return tag.div(class: 'small text-muted text-start') do
-        'Milestone 0. No Milestone earned yet for this ability.'
-      end
+      return tag.p('No Milestone earned yet for this Ability.', class: 'small text-muted mb-0')
     end
 
     if milestone_rec.present?
@@ -72,10 +80,12 @@ module AbilityMilestoneCalibrationHelper
     lines
   end
 
-  def ability_milestone_calibration_milestones_index(teammate, items)
-    ability_ids = Array(items).map(&:ability_id)
-    return {} if ability_ids.empty?
+  private
 
-    teammate.teammate_milestones.where(ability_id: ability_ids).index_by { |m| [m.ability_id, m.milestone_level] }
+  def position_context_label(context)
+    case context.to_s
+    when 'target' then 'target position'
+    else 'current position'
+    end
   end
 end

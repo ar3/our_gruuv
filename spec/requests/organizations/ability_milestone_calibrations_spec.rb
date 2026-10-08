@@ -61,6 +61,27 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(response.body).to include('value="0"')
       expect(response.body).not_to include('You are')
       expect(response.body).not_to include('Select a level')
+      expect(response.body).to include('Expand for Ability details')
+      expect(response.body).to include('Why is this Ability here?')
+      expect(response.body).to include('Assignment tenure:')
+      expect(response.body).to include(assignment.title)
+      expect(response.body).to include('Ability description')
+      expect(response.body).to include('Milestones')
+      expect(response.body).to include('No Milestone earned yet for this Ability.')
+      expect(response.body).to include('actively working on earning Milestone 1')
+      expect(response.body).to include('Add Goal')
+      expect(response.body).to include('Grow By Abilities')
+      expect(response.body).to include(my_growth_abilities_organization_company_teammate_path(organization, employee_teammate))
+      expect(response.body).to include("Observations on #{ability.display_name} Ability")
+      expect(response.body).to include("#{employee.casual_name} + #{ability.display_name} Ability page")
+      expect(response.body).to include("All OGOs for #{employee.casual_name} + #{ability.display_name} Ability")
+      expect(response.body).to include(organization_teammate_ability_path(organization, employee_teammate, ability))
+      expect(response.body).to include('rateable_type=Ability')
+      expect(response.body).to include("rateable_id=#{ability.id}")
+      expect(response.body).not_to include('bs-toggle="popover"')
+      expect(response.body).not_to include("data-bs-toggle=\"popover\"")
+      expect(response.body).to match(/id="calibration-ability-details-\d+"[^>]*class="collapse"|class="collapse"[^>]*id="calibration-ability-details-\d+"/)
+      expect(response.body).not_to match(/id="calibration-ability-details-\d+"[^>]*class="[^"]*\bshow\b/)
 
       calibration = employee_teammate.reload.ability_milestone_calibration
       item = calibration.items.find_by!(ability: ability)
@@ -176,6 +197,45 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(response.body).to include('Other participant:')
       expect(response.body).to include('First: M4')
       expect(response.body).not_to include('Employee proposal')
+    end
+  end
+
+  describe 'ability details accordion OGOs' do
+    def create_ability_observation!(story:, observed_at:)
+      obs = build(
+        :observation,
+        observer: manager,
+        company: organization,
+        privacy_level: :observed_and_managers,
+        published_at: observed_at,
+        observed_at: observed_at,
+        story: story
+      )
+      obs.observees = []
+      obs.observees.build(teammate: employee_teammate)
+      obs.save!
+      create(:observation_rating, observation: obs, rateable: ability, rating: :agree)
+      obs
+    end
+
+    it 'lists recent OGOs with large-list rows and a 5 of X caption when more than five exist' do
+      6.times do |i|
+        create_ability_observation!(
+          story: "Calibration OGO story number #{i}",
+          observed_at: (6 - i).days.ago
+        )
+      end
+
+      sign_in_as_teammate_for_request(employee, organization)
+      get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('showing 5 of 6')
+      expect(response.body).to include('Calibration OGO story number 5')
+      expect(response.body).to include('Calibration OGO story number 1')
+      expect(response.body).not_to include('Calibration OGO story number 0')
+      expect(response.body).to include('From:')
+      expect(response.body).to include(manager.casual_name)
     end
   end
 

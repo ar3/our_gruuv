@@ -23,6 +23,9 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
       teammate: @teammate,
       organization: organization
     )
+    @sources_by_ability_id = @entry_counts[:rows].index_by { |row| row[:ability_id] }
+      .transform_values { |row| row[:sources] }
+    load_recent_observations_for_items!
     @can_award = can_award?
   end
 
@@ -166,5 +169,44 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
     else
       "#{ability.display_name} left at Milestone 0 (still needs calibration until Milestone 1-5 is recognized and certified)."
     end
+  end
+
+  def load_recent_observations_for_items!
+    @recent_observations_by_ability_id = Hash.new { |h, k| h[k] = [] }
+    @observation_total_by_ability_id = Hash.new(0)
+
+    ability_ids = @items.map(&:ability_id).uniq
+    return if ability_ids.empty?
+
+    limit = AbilityMilestoneCalibrationHelper::RECENT_OGOS_LIMIT
+    all_recent = []
+
+    ability_ids.each do |ability_id|
+      relation = ObservationsQuery.new(
+        organization,
+        {
+          observee_ids: [@teammate.id],
+          rateable_type: 'Ability',
+          rateable_id: ability_id,
+          include_viewer_drafts: true
+        },
+        current_person: current_person
+      ).call
+        .joins(:observation_ratings)
+        .where(observation_ratings: { rateable_type: 'Ability', rateable_id: ability_id })
+        .distinct
+
+      @observation_total_by_ability_id[ability_id] =
+        relation.unscope(:order).count('DISTINCT observations.id')
+      recent = relation
+        .includes(:observer, :observation_ratings, observed_teammates: :person)
+        .order(observed_at: :desc)
+        .limit(limit)
+        .to_a
+      @recent_observations_by_ability_id[ability_id] = recent
+      all_recent.concat(recent)
+    end
+
+    preload_rateables_for_observations(all_recent)
   end
 end
