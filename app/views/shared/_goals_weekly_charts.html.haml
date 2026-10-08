@@ -75,33 +75,40 @@
         .col-12
           %p.mb-0.text-muted= goals_summary_timespan_label
       .row.mb-4.g-3
-        .col-md-3
+        .col
           .card.bg-light.border-0.h-100
             .card-body.text-center
               .display-6.fw-semibold= number_with_delimiter(goals_summary.created_goals_count)
               .small.text-muted.mt-1 Goals created
               .fw-semibold.mt-2= number_with_delimiter(goals_summary.created_teammates_count)
               .small.text-muted Teammates
-        .col-md-3
+        .col
           .card.bg-light.border-0.h-100
             .card-body.text-center
               .display-6.fw-semibold= number_with_delimiter(goals_summary.confidence_checked_goals_count)
               .small.text-muted.mt-1 Goals with a confidence check
               .fw-semibold.mt-2= number_with_delimiter(goals_summary.confidence_checked_teammates_count)
               .small.text-muted Teammates
-        .col-md-3
+        .col
           .card.bg-light.border-0.h-100
             .card-body.text-center
               .display-6.fw-semibold= number_with_delimiter(goals_summary.stale_goals_count)
               .small.text-muted.mt-1{ title: "Created before this timespan with no confidence checks during this timespan" } Stale goals
               .fw-semibold.mt-2= number_with_delimiter(goals_summary.stale_teammates_count)
               .small.text-muted Teammates
-        .col-md-3
+        .col
           .card.bg-light.border-0.h-100
             .card-body.text-center
               .display-6.fw-semibold= number_with_delimiter(goals_summary.completed_goals_count)
               .small.text-muted.mt-1 Goals completed
               .fw-semibold.mt-2= number_with_delimiter(goals_summary.completed_teammates_count)
+              .small.text-muted Teammates
+        .col
+          .card.bg-light.border-0.h-100
+            .card-body.text-center
+              .display-6.fw-semibold= number_with_delimiter(goals_summary.completed_and_hit_goals_count)
+              .small.text-muted.mt-1 Completed and hit
+              .fw-semibold.mt-2= number_with_delimiter(goals_summary.completed_and_hit_teammates_count)
               .small.text-muted Teammates
 
     - if show_network || goals_summary.present?

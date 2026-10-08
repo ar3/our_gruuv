@@ -115,6 +115,7 @@ module Insights
       when 'unique_teammates_active_goal_90_days' then goals_counts[:unique_teammates_active_goal_90_days]
       when 'unique_teammates_goal_check_in_this_week' then goals_counts[:unique_teammates_goal_check_in_this_week]
       when 'unique_teammates_completed_goal_90_days' then goals_counts[:unique_teammates_completed_goal_90_days]
+      when 'unique_teammates_completed_and_hit_goal_90_days' then goals_counts[:unique_teammates_completed_and_hit_goal_90_days]
       else
         if key.start_with?(OgScorecard::GruuvHealthWeekCounts::METRIC_KEY_PREFIX)
           gruuv_health_counts[key] || week_starts.index_with { 0 }

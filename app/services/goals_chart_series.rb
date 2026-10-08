@@ -4,7 +4,7 @@ class GoalsChartSeries
     Goal.where(company: company).where(deleted_at: nil)
   end
 
-  # Stacked column: started / check-in / ongoing (each split overdue vs on track), completed.
+  # Stacked column: started / check-in / ongoing (each split overdue vs on track), completed hit/miss.
   # Overdue matches goals index spotlight: active goal with most_likely_target_date before week end (date).
   def self.stacked_series(chart_range, goals_scope)
     week_dates, categories = week_axis(chart_range)
@@ -15,7 +15,8 @@ class GoalsChartSeries
     check_in_overdue_data = []
     ongoing_on_track_data = []
     ongoing_overdue_data = []
-    completed_data = []
+    completed_hit_data = []
+    completed_miss_data = []
 
     week_dates.each do |w|
       week_end_d = w + 6.days
@@ -25,6 +26,9 @@ class GoalsChartSeries
       completed_ids = goals_scope
         .where(completed_at: week_start_time..week_end_time)
         .pluck(:id)
+      outcomes = Goals::CompletionOutcome.for_goal_ids(completed_ids)
+      completed_hit_ids = completed_ids.select { |id| outcomes[id] == :hit }
+      completed_miss_ids = completed_ids.select { |id| outcomes[id] == :miss }
 
       started_scope = goals_scope
         .where(started_at: week_start_time..week_end_time)
@@ -69,7 +73,8 @@ class GoalsChartSeries
       check_in_overdue_data << check_in_overdue_ids.size
       ongoing_on_track_data << ongoing_on_track_ids.size
       ongoing_overdue_data << ongoing_overdue_ids.size
-      completed_data << completed_ids.size
+      completed_hit_data << completed_hit_ids.size
+      completed_miss_data << completed_miss_ids.size
     end
 
     series = [
@@ -79,7 +84,8 @@ class GoalsChartSeries
       { name: 'Confidence check that week — overdue', data: check_in_overdue_data },
       { name: 'Ongoing, no confidence check — on track', data: ongoing_on_track_data },
       { name: 'Ongoing, no confidence check — overdue', data: ongoing_overdue_data },
-      { name: 'Completed that week', data: completed_data }
+      { name: 'Completed and hit that week', data: completed_hit_data },
+      { name: 'Completed and missed that week', data: completed_miss_data }
     ]
     { categories: categories, series: series }
   end
@@ -93,16 +99,18 @@ class GoalsChartSeries
     rows = goals_scope
       .where('created_at <= ?', chart_end)
       .where('completed_at IS NULL OR completed_at >= ?', chart_start)
-      .pluck(:created_at, :started_at, :completed_at)
+      .pluck(:id, :created_at, :started_at, :completed_at)
 
-    keys = %i[created_started created_unstarted stayed_started stayed_unstarted completed]
+    outcomes = Goals::CompletionOutcome.for_goal_ids(rows.map(&:first))
+
+    keys = %i[created_started created_unstarted stayed_started stayed_unstarted completed_hit completed_miss]
     tallies = keys.index_with { Array.new(week_dates.size, 0) }
 
     week_dates.each_with_index do |w, idx|
       ws = w.to_time.beginning_of_day
       we = (w + 6.days).to_time.end_of_day
-      rows.each do |created_at, started_at, completed_at|
-        bucket = lifecycle_bucket(created_at, started_at, completed_at, ws, we)
+      rows.each do |goal_id, created_at, started_at, completed_at|
+        bucket = lifecycle_bucket(created_at, started_at, completed_at, ws, we, outcomes[goal_id])
         tallies[bucket][idx] += 1 if bucket
       end
     end
@@ -112,12 +120,13 @@ class GoalsChartSeries
       { name: 'Created (unstarted)', data: tallies[:created_unstarted] },
       { name: 'Stayed started', data: tallies[:stayed_started] },
       { name: 'Stayed unstarted', data: tallies[:stayed_unstarted] },
-      { name: 'Completed that week', data: tallies[:completed] }
+      { name: 'Completed and hit that week', data: tallies[:completed_hit] },
+      { name: 'Completed and missed that week', data: tallies[:completed_miss] }
     ]
     { categories: categories, series: series }
   end
 
-  # One bucket per teammate (priority): completed a goal this week > has active started > goals all unstarted.
+  # One bucket per teammate (priority): completed+hit > completed+miss > active started > all unstarted.
   def self.employees_goal_weekly_status_series(chart_range, goals_scope)
     week_dates, categories = week_axis(chart_range)
     chart_start = chart_range.begin.beginning_of_day
@@ -127,35 +136,42 @@ class GoalsChartSeries
       .where('created_at <= ?', chart_end)
       .where('completed_at IS NULL OR completed_at >= ?', chart_start)
 
-    rows = scope.pluck(:owner_id, :created_at, :started_at, :completed_at)
-    by_owner = rows.group_by(&:first).transform_values { |rs| rs.map { |r| r.drop(1) } }
+    rows = scope.pluck(:id, :owner_id, :created_at, :started_at, :completed_at)
+    outcomes = Goals::CompletionOutcome.for_goal_ids(rows.map(&:first))
+    by_owner = rows.group_by { |r| r[1] }.transform_values { |rs| rs.map { |r| [r[0], *r.drop(2)] } }
 
-    completed_week_data = []
+    completed_hit_week_data = []
+    completed_miss_week_data = []
     has_started_active_data = []
     all_unstarted_data = []
 
     week_dates.each do |w|
       ws = w.to_time.beginning_of_day
       we = (w + 6.days).to_time.end_of_day
-      completed_ct = 0
+      hit_ct = 0
+      miss_ct = 0
       started_ct = 0
       unstarted_ct = 0
 
       by_owner.each do |_owner_id, tuples|
         next if tuples.empty?
 
-        any_completed_this_week = false
+        any_hit_this_week = false
+        any_miss_this_week = false
         any_started_active = false
         any_only_unstarted = false
         visible = false
 
-        tuples.each do |created_at, started_at, completed_at|
+        tuples.each do |goal_id, created_at, started_at, completed_at|
           next if created_at > we
           next if completed_at && completed_at < ws
 
           visible = true
           if completed_at && completed_at >= ws && completed_at <= we
-            any_completed_this_week = true
+            case outcomes[goal_id]
+            when :hit then any_hit_this_week = true
+            when :miss then any_miss_this_week = true
+            end
           end
 
           still_open_at_week_end = !completed_at || completed_at > we
@@ -170,8 +186,10 @@ class GoalsChartSeries
 
         next unless visible
 
-        if any_completed_this_week
-          completed_ct += 1
+        if any_hit_this_week
+          hit_ct += 1
+        elsif any_miss_this_week
+          miss_ct += 1
         elsif any_started_active
           started_ct += 1
         elsif any_only_unstarted
@@ -179,13 +197,15 @@ class GoalsChartSeries
         end
       end
 
-      completed_week_data << completed_ct
+      completed_hit_week_data << hit_ct
+      completed_miss_week_data << miss_ct
       has_started_active_data << started_ct
       all_unstarted_data << unstarted_ct
     end
 
     series = [
-      { name: 'Completed a goal this week', data: completed_week_data },
+      { name: 'Completed and hit a goal this week', data: completed_hit_week_data },
+      { name: 'Completed and missed a goal this week', data: completed_miss_week_data },
       { name: 'Has active started goal(s)', data: has_started_active_data },
       { name: 'Has goals, all unstarted', data: all_unstarted_data }
     ]
@@ -211,6 +231,7 @@ class GoalsChartSeries
       return { categories: categories, series: empty }
     end
 
+    outcomes = Goals::CompletionOutcome.for_goal_ids(goal_ids)
     parent_ids = GoalLink.where(child_id: goal_ids).distinct.pluck(:child_id).to_set
     prompt_ids = PromptGoal.where(goal_id: goal_ids).distinct.pluck(:goal_id).to_set
 
@@ -223,7 +244,7 @@ class GoalsChartSeries
         else
           :top_no_prompt
         end
-      [struct, created_at, started_at, completed_at]
+      [id, struct, created_at, started_at, completed_at]
     end
 
     defs = association_segment_definitions
@@ -232,8 +253,8 @@ class GoalsChartSeries
     week_dates.each_with_index do |w, idx|
       ws = w.to_time.beginning_of_day
       we = (w + 6.days).to_time.end_of_day
-      meta.each do |struct, created_at, started_at, completed_at|
-        status = association_status(created_at, started_at, completed_at, ws, we)
+      meta.each do |goal_id, struct, created_at, started_at, completed_at|
+        status = association_status(created_at, started_at, completed_at, ws, we, outcomes[goal_id])
         next unless status
 
         seg_idx = defs.index { |d| d[:struct] == struct && d[:status] == status }
@@ -291,12 +312,15 @@ class GoalsChartSeries
     [week_dates, categories]
   end
 
-  def self.lifecycle_bucket(created_at, started_at, completed_at, week_start_time, week_end_time)
+  def self.lifecycle_bucket(created_at, started_at, completed_at, week_start_time, week_end_time, outcome = nil)
     return nil if created_at > week_end_time
     return nil if completed_at && completed_at < week_start_time
 
     if completed_at && completed_at >= week_start_time && completed_at <= week_end_time
-      return :completed
+      return :completed_hit if outcome == :hit
+      return :completed_miss if outcome == :miss
+
+      return nil
     end
 
     if created_at >= week_start_time && created_at <= week_end_time
@@ -312,12 +336,15 @@ class GoalsChartSeries
     end
   end
 
-  def self.association_status(created_at, started_at, completed_at, week_start_time, week_end_time)
+  def self.association_status(created_at, started_at, completed_at, week_start_time, week_end_time, outcome = nil)
     return nil if created_at > week_end_time
     return nil if completed_at && completed_at < week_start_time
 
     if completed_at && completed_at >= week_start_time && completed_at <= week_end_time
-      :completed
+      return :completed_hit if outcome == :hit
+      return :completed_miss if outcome == :miss
+
+      return nil
     elsif started_at && started_at <= week_end_time
       :started
     else
@@ -329,13 +356,16 @@ class GoalsChartSeries
     [
       { struct: :top_no_prompt, status: :unstarted, name: 'Top-level, no prompt — unstarted' },
       { struct: :top_no_prompt, status: :started, name: 'Top-level, no prompt — started' },
-      { struct: :top_no_prompt, status: :completed, name: 'Top-level, no prompt — completed (this week)' },
+      { struct: :top_no_prompt, status: :completed_hit, name: 'Top-level, no prompt — completed and hit (this week)' },
+      { struct: :top_no_prompt, status: :completed_miss, name: 'Top-level, no prompt — completed and missed (this week)' },
       { struct: :top_with_prompt, status: :unstarted, name: 'Top-level, with prompt — unstarted' },
       { struct: :top_with_prompt, status: :started, name: 'Top-level, with prompt — started' },
-      { struct: :top_with_prompt, status: :completed, name: 'Top-level, with prompt — completed (this week)' },
+      { struct: :top_with_prompt, status: :completed_hit, name: 'Top-level, with prompt — completed and hit (this week)' },
+      { struct: :top_with_prompt, status: :completed_miss, name: 'Top-level, with prompt — completed and missed (this week)' },
       { struct: :has_parent, status: :unstarted, name: 'Has parent(s) — unstarted' },
       { struct: :has_parent, status: :started, name: 'Has parent(s) — started' },
-      { struct: :has_parent, status: :completed, name: 'Has parent(s) — completed (this week)' }
+      { struct: :has_parent, status: :completed_hit, name: 'Has parent(s) — completed and hit (this week)' },
+      { struct: :has_parent, status: :completed_miss, name: 'Has parent(s) — completed and missed (this week)' }
     ]
   end
   private_class_method :week_axis, :lifecycle_bucket, :association_status, :association_segment_definitions

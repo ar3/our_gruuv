@@ -92,4 +92,33 @@ RSpec.describe Insights::GoalsSummaryStats do
     expect(result.completed_goals_count).to eq(2)
     expect(result.completed_teammates_count).to eq(2)
   end
+
+  it "counts completed-and-hit goals and distinct owners in the range" do
+    hit = personal_goal!(
+      owner: teammate_a,
+      attrs: { created_at: 60.days.ago, completed_at: 4.days.ago }
+    )
+    miss = personal_goal!(
+      owner: teammate_b,
+      attrs: { created_at: 60.days.ago, completed_at: 2.days.ago }
+    )
+    create(
+      :goal_check_in,
+      goal: hit,
+      confidence_percentage: 100,
+      confidence_reporter: person_a,
+      check_in_week_start: 4.days.ago.beginning_of_week(:monday)
+    )
+    create(
+      :goal_check_in,
+      goal: miss,
+      confidence_percentage: 0,
+      confidence_reporter: person_b,
+      check_in_week_start: 2.days.ago.beginning_of_week(:monday)
+    )
+
+    expect(result.completed_goals_count).to eq(2)
+    expect(result.completed_and_hit_goals_count).to eq(1)
+    expect(result.completed_and_hit_teammates_count).to eq(1)
+  end
 end

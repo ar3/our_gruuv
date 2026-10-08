@@ -266,6 +266,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include(organization_milestones_health_path(organization))
       expect(response.body).to include('Goals')
       expect(response.body).to include(organization_goals_health_path(organization))
+      expect(response.body).to include('Teammates with a completed goal in the past 90 days')
+      expect(response.body).to include('Teammates with a completed and hit goal in the past 90 days')
       expect(response.body).to include('bi-heart-pulse')
       expect(response.body).not_to match(/og-scorecard-metric-cell[^>]*>\s*Metric/)
       expect(response.body).to include('Aspirational Value')
@@ -630,6 +632,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Goals with a confidence check')
       expect(response.body).to include('Stale goals')
       expect(response.body).to include('Goals completed')
+      expect(response.body).to include('Completed and hit')
       expect(response.body).to match(/During the timespan between .+ and .+…/)
     end
 

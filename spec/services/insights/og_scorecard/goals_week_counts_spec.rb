@@ -119,6 +119,45 @@ RSpec.describe Insights::OgScorecard::GoalsWeekCounts do
       expect(result[:unique_teammates_completed_goal_90_days][monday]).to eq(1)
     end
 
+    it 'counts unique owners with a completed and hit goal in rolling 90 days ending Sunday' do
+      sunday = monday + 6.days
+      hit_owner = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+      miss_owner = create(:teammate, organization: company, first_employed_at: monday - 1.year)
+      hit_goal = create(
+        :goal,
+        company: company,
+        owner: hit_owner,
+        creator: hit_owner,
+        started_at: sunday - 120.days,
+        completed_at: sunday - 45.days
+      )
+      miss_goal = create(
+        :goal,
+        company: company,
+        owner: miss_owner,
+        creator: miss_owner,
+        started_at: sunday - 120.days,
+        completed_at: sunday - 30.days
+      )
+      create(
+        :goal_check_in,
+        goal: hit_goal,
+        confidence_percentage: 100,
+        check_in_week_start: (sunday - 45.days).beginning_of_week(:monday)
+      )
+      create(
+        :goal_check_in,
+        goal: miss_goal,
+        confidence_percentage: 0,
+        check_in_week_start: (sunday - 30.days).beginning_of_week(:monday)
+      )
+
+      result = described_class.call(company: company, week_starts: week_starts)
+
+      expect(result[:unique_teammates_completed_goal_90_days][monday]).to eq(2)
+      expect(result[:unique_teammates_completed_and_hit_goal_90_days][monday]).to eq(1)
+    end
+
     it 'counts unique owners whose goal was live for any day in the trailing 90 days' do
       sunday = monday + 6.days
       still_active = create(:teammate, organization: company, first_employed_at: monday - 1.year)

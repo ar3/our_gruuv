@@ -19,7 +19,8 @@ module Insights
           unique_teammates_active_goal: counts_by_week(:active_goal),
           unique_teammates_active_goal_90_days: counts_by_week(:active_goal_90_days),
           unique_teammates_goal_check_in_this_week: counts_by_week(:goal_check_in),
-          unique_teammates_completed_goal_90_days: counts_by_week(:completed_90_days)
+          unique_teammates_completed_goal_90_days: counts_by_week(:completed_90_days),
+          unique_teammates_completed_and_hit_goal_90_days: counts_by_week(:completed_and_hit_90_days)
         }
       end
 
@@ -44,6 +45,8 @@ module Insights
             owners_with_check_in_during_week(week_start, week_end_date, reference_time).size
           when :completed_90_days
             owners_with_completion_in_90_days(week_end_date).size
+          when :completed_and_hit_90_days
+            owners_with_hit_completion_in_90_days(week_end_date).size
           else
             0
           end
@@ -51,7 +54,7 @@ module Insights
       end
 
       def active_owner_ids(reference_time)
-        goal_rows.filter_map do |owner_id, started_at, completed_at, deleted_at|
+        goal_rows.filter_map do |_goal_id, owner_id, started_at, completed_at, deleted_at|
           next unless teammate_in_scope?(owner_id)
           next unless goal_active_at?(started_at, completed_at, deleted_at, reference_time)
 
@@ -72,12 +75,28 @@ module Insights
 
       def owners_with_completion_in_90_days(week_end_date)
         window_start = week_end_date - 89.days
-        goal_rows.filter_map do |owner_id, _started_at, completed_at, _deleted_at|
+        goal_rows.filter_map do |_goal_id, owner_id, _started_at, completed_at, _deleted_at|
           next unless teammate_in_scope?(owner_id)
           next if completed_at.blank?
 
           completed_date = completed_at.to_date
           next unless completed_date >= window_start && completed_date <= week_end_date
+
+          owner_id
+        end.uniq
+      end
+
+      def owners_with_hit_completion_in_90_days(week_end_date)
+        window_start = week_end_date - 89.days
+        outcomes = completion_outcomes
+
+        goal_rows.filter_map do |goal_id, owner_id, _started_at, completed_at, _deleted_at|
+          next unless teammate_in_scope?(owner_id)
+          next if completed_at.blank?
+
+          completed_date = completed_at.to_date
+          next unless completed_date >= window_start && completed_date <= week_end_date
+          next unless outcomes[goal_id] == :hit
 
           owner_id
         end.uniq
@@ -90,7 +109,7 @@ module Insights
       def owners_with_active_goal_in_90_days(week_end_date)
         window_start = week_end_date - 89.days
         window_end_time = week_end_date.in_time_zone.end_of_day
-        goal_rows.filter_map do |owner_id, started_at, completed_at, deleted_at|
+        goal_rows.filter_map do |_goal_id, owner_id, started_at, completed_at, deleted_at|
           next unless teammate_in_scope?(owner_id)
           next unless goal_overlapped_window?(started_at, completed_at, deleted_at, window_start, window_end_time)
 
@@ -114,10 +133,19 @@ module Insights
         true
       end
 
+      def completion_outcomes
+        @completion_outcomes ||= begin
+          completed_ids = goal_rows.filter_map do |goal_id, _owner_id, _started_at, completed_at, _deleted_at|
+            goal_id if completed_at.present?
+          end
+          Goals::CompletionOutcome.for_goal_ids(completed_ids)
+        end
+      end
+
       def goal_rows
         @goal_rows ||= Goal
           .where(company: company, owner_type: 'CompanyTeammate')
-          .pluck(:owner_id, :started_at, :completed_at, :deleted_at)
+          .pluck(:id, :owner_id, :started_at, :completed_at, :deleted_at)
       end
 
       def check_in_rows

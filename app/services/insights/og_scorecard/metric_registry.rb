@@ -368,6 +368,13 @@ module Insights
             supports_percent: true,
             group: 'Goals'
           ),
+          metric(
+            key: 'unique_teammates_completed_and_hit_goal_90_days',
+            label: 'Teammates with a completed and hit goal in the past 90 days',
+            direction: :more,
+            supports_percent: true,
+            group: 'Goals'
+          ),
           separator(group: 'Goals', label: 'Gruuv Health · Goal Confidence')
         ] +
         gruuv_health_entries(

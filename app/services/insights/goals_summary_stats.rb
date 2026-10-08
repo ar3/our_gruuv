@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module Insights
-  # Headline totals for Insights → Goals: created, confidence-checked, stale, and completed
-  # goals in a timespan, plus distinct teammates for each bucket.
+  # Headline totals for Insights → Goals: created, confidence-checked, stale, completed,
+  # and completed-and-hit goals in a timespan, plus distinct teammates for each bucket.
   class GoalsSummaryStats
     Result = Struct.new(
       :created_goals_count,
@@ -13,6 +13,8 @@ module Insights
       :stale_teammates_count,
       :completed_goals_count,
       :completed_teammates_count,
+      :completed_and_hit_goals_count,
+      :completed_and_hit_teammates_count,
       keyword_init: true
     )
 
@@ -30,7 +32,9 @@ module Insights
         stale_goals_count: stale_scope.count,
         stale_teammates_count: stale_teammates_count,
         completed_goals_count: completed_scope.count,
-        completed_teammates_count: completed_teammates_count
+        completed_teammates_count: completed_teammates_count,
+        completed_and_hit_goals_count: completed_and_hit_goal_ids.size,
+        completed_and_hit_teammates_count: completed_and_hit_teammates_count
       )
     end
 
@@ -76,6 +80,22 @@ module Insights
 
     def completed_teammates_count
       completed_scope
+        .where(owner_type: "CompanyTeammate")
+        .distinct
+        .count(:owner_id)
+    end
+
+    def completed_and_hit_goal_ids
+      @completed_and_hit_goal_ids ||= begin
+        completed_ids = completed_scope.pluck(:id)
+        outcomes = Goals::CompletionOutcome.for_goal_ids(completed_ids)
+        completed_ids.select { |id| outcomes[id] == :hit }
+      end
+    end
+
+    def completed_and_hit_teammates_count
+      completed_scope
+        .where(id: completed_and_hit_goal_ids)
         .where(owner_type: "CompanyTeammate")
         .distinct
         .count(:owner_id)
