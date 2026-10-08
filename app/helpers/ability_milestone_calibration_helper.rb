@@ -21,18 +21,37 @@ module AbilityMilestoneCalibrationHelper
     "Milestone #{level.to_i}"
   end
 
-  def ability_milestone_calibration_source_label(source)
+  def ability_milestone_calibration_source_html(source, organization:, teammate:, casual:)
     level = source.milestone_level.to_i
     case source.kind.to_sym
     when :assignment_tenure
-      "Assignment tenure: #{source.assignment.display_name} (requires Milestone #{level})"
+      safe_join(
+        [
+          "#{casual} is actively taking on ",
+          ability_milestone_calibration_assignment_link(source.assignment, organization:, teammate:),
+          '.'
+        ]
+      )
     when :position_direct
       ctx = position_context_label(source.position_context)
-      "Required directly by #{ctx} #{source.position.display_name} (Milestone #{level})"
+      safe_join(
+        [
+          "Required directly by #{ctx} ",
+          ability_milestone_calibration_position_link(source.position, organization:, teammate:),
+          " (Milestone #{level})"
+        ]
+      )
     when :required_assignment
       ctx = position_context_label(source.position_context)
-      "Required assignment on #{ctx} #{source.position.display_name}: " \
-        "#{source.assignment.display_name} (Milestone #{level})"
+      safe_join(
+        [
+          "Required Assignment on #{ctx} ",
+          ability_milestone_calibration_position_link(source.position, organization:, teammate:),
+          ': ',
+          ability_milestone_calibration_assignment_link(source.assignment, organization:, teammate:),
+          " (Milestone #{level})"
+        ]
+      )
     else
       "Requirement (Milestone #{level})"
     end
@@ -81,6 +100,22 @@ module AbilityMilestoneCalibrationHelper
   end
 
   private
+
+  def ability_milestone_calibration_assignment_link(assignment, organization:, teammate:)
+    link_to(
+      assignment.display_name,
+      organization_teammate_assignment_path(organization, teammate, assignment),
+      class: 'text-decoration-none'
+    )
+  end
+
+  def ability_milestone_calibration_position_link(position, organization:, teammate:)
+    link_to(
+      position.display_name,
+      position_check_in_organization_teammate_path(organization, teammate),
+      class: 'text-decoration-none'
+    )
+  end
 
   def position_context_label(context)
     case context.to_s

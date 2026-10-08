@@ -15,11 +15,33 @@ RSpec.describe AbilityMilestoneCalibrationAbilitiesCatalog do
     create(:assignment_tenure, teammate: teammate, assignment: assignment)
   end
 
-  it 'includes abilities from assignment tenures' do
+  it 'includes abilities from active assignment tenures with energy' do
     rows = described_class.call(teammate: teammate, organization: organization)
     ids = rows.map { |r| r[:ability_id] }
 
     expect(ids).to include(ability.id, other_ability.id)
+    tenure_sources = rows.find { |r| r[:ability_id] == ability.id }[:sources]
+    expect(tenure_sources.map(&:kind)).to include(:assignment_tenure)
+  end
+
+  it 'excludes abilities only present via ended assignment tenures' do
+    AssignmentTenure.where(company_teammate: teammate, assignment: assignment)
+      .update_all(ended_at: 1.day.ago, anticipated_energy_percentage: 25)
+
+    rows = described_class.call(teammate: teammate, organization: organization)
+    ids = rows.map { |r| r[:ability_id] }
+
+    expect(ids).not_to include(ability.id, other_ability.id)
+  end
+
+  it 'excludes abilities only present via active zero-energy assignment tenures' do
+    AssignmentTenure.where(company_teammate: teammate, assignment: assignment)
+      .update_all(ended_at: nil, anticipated_energy_percentage: 0)
+
+    rows = described_class.call(teammate: teammate, organization: organization)
+    ids = rows.map { |r| r[:ability_id] }
+
+    expect(ids).not_to include(ability.id, other_ability.id)
   end
 
   it 'counts will_show vs full_set for entry copy' do

@@ -61,10 +61,7 @@ class AbilityMilestoneCalibrationAbilitiesCatalog
     ids = Set.new
     company_scope = @organization.self_and_descendants
 
-    AssignmentTenure
-      .where(company_teammate: @teammate)
-      .joins(:assignment)
-      .where(assignments: { company: company_scope })
+    active_energy_tenures_scope(company_scope)
       .includes(assignment: :assignment_abilities)
       .find_each do |tenure|
         tenure.assignment.assignment_abilities.each { |aa| ids.add(aa.ability_id) if aa.ability_id.present? }
@@ -100,10 +97,7 @@ class AbilityMilestoneCalibrationAbilitiesCatalog
     list = []
     company_scope = @organization.self_and_descendants
 
-    AssignmentTenure
-      .where(company_teammate: @teammate)
-      .joins(:assignment)
-      .where(assignments: { company: company_scope })
+    active_energy_tenures_scope(company_scope)
       .includes(assignment: :assignment_abilities)
       .find_each do |tenure|
         aa = tenure.assignment.assignment_abilities.find_by(ability: ability)
@@ -167,6 +161,14 @@ class AbilityMilestoneCalibrationAbilitiesCatalog
     end
 
     out
+  end
+
+  def active_energy_tenures_scope(company_scope)
+    AssignmentTenure
+      .active_and_given_energy
+      .where(company_teammate: @teammate)
+      .joins(:assignment)
+      .where(assignments: { company: company_scope })
   end
 
   def dedupe_sources(list)
