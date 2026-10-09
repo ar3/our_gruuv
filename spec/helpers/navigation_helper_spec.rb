@@ -899,6 +899,13 @@ RSpec.describe NavigationHelper, type: :helper do
       expect(helper.nav_prompts_item_active?).to be true
     end
 
+    it 'returns true when path is own Whole person tab' do
+      allow(request_double).to receive(:path).and_return(
+        my_growth_whole_person_organization_company_teammate_path(company, teammate)
+      )
+      expect(helper.nav_prompts_item_active?).to be true
+    end
+
     it 'returns false when path is prompts edit for another teammate\'s prompt' do
       other_teammate = create(:company_teammate, organization: company)
       prompt = create(:prompt, company_teammate: other_teammate, prompt_template: create(:prompt_template, company: company))

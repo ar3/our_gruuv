@@ -194,7 +194,7 @@ module PeopleHelper
       return goals_label_for(@teammate)
     end
 
-    if controller_name == 'company_teammates' && %w[my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
+    if controller_name == 'company_teammates' && %w[my_growth_whole_person my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
       return growth_label_for(@teammate)
     end
 

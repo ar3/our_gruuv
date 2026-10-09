@@ -6,43 +6,13 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
 
   def index
     authorize company, :view_prompts?
-    
-    # Get all active/available templates for the company
-    company = @organization.root_company || @organization
-    @active_templates = PromptTemplate.where(company: company).available.ordered
-    
-    # Get current teammate
-    current_teammate = current_person.teammates.find_by(organization: company)
-    
-    # For each template, find active and previous prompts for current user
-    @template_prompts = {}
-    @active_templates.each do |template|
-      if current_teammate
-        active_prompt = Prompt.where(company_teammate: current_teammate, prompt_template: template).open.first
-        previous_prompts = Prompt.where(company_teammate: current_teammate, prompt_template: template).closed.ordered.limit(10)
-        
-        @template_prompts[template.id] = {
-          active: active_prompt,
-          previous: previous_prompts
-        }
-      else
-        @template_prompts[template.id] = {
-          active: nil,
-          previous: []
-        }
-      end
-    end
 
-    # Prompts from templates that are no longer active (for current user)
-    inactive_template_ids = PromptTemplate.where(company: company).where.not(id: @active_templates.select(:id)).pluck(:id)
-    inactive_prompts = if current_teammate && inactive_template_ids.any?
-      Prompt.where(company_teammate: current_teammate, prompt_template_id: inactive_template_ids)
-            .includes(:prompt_template)
-            .ordered
+    target = whole_person_redirect_teammate
+    if target
+      redirect_to my_growth_whole_person_organization_company_teammate_path(@organization, target)
     else
-      Prompt.none
+      redirect_to organization_path(@organization), alert: 'Unable to open Whole person.'
     end
-    @inactive_template_prompts_by_template = inactive_prompts.group_by(&:prompt_template).sort_by { |t, _| t.title }.to_h
   end
 
   def customize_view
@@ -62,8 +32,8 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     
     # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h
-    @return_url = organization_prompts_path(@organization, return_params)
-    @return_text = "Back to Prompts"
+    @return_url = whole_person_path_for_current_teammate(return_params)
+    @return_text = 'Back to Whole person'
     
     render layout: 'overlay'
   end
@@ -74,28 +44,27 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
     
-    redirect_to organization_prompts_path(@organization, redirect_params)
+    redirect_to whole_person_path_for_current_teammate(redirect_params)
   end
 
 
   def create
     authorize Prompt, :create?
     
-    template = PromptTemplate.find_by(id: params[:template_id], company: @organization.root_company || @organization)
+    template = PromptTemplate.find_by(id: params[:template_id], company: company_scope)
     unless template
-      redirect_to organization_prompts_path(@organization), alert: 'Prompt template not found.'
+      redirect_to whole_person_path_for_current_teammate, alert: 'Prompt template not found.'
       return
     end
     
     unless template.available?
-      redirect_to organization_prompts_path(@organization), alert: 'This prompt template is not available.'
+      redirect_to whole_person_path_for_current_teammate, alert: 'This prompt template is not available.'
       return
     end
     
-    company = @organization.root_company || @organization
-    teammate = current_person.teammates.find_by(organization: company)
+    teammate = current_person.teammates.find_by(organization: company_scope)
     unless teammate.is_a?(CompanyTeammate)
-      redirect_to organization_prompts_path(@organization), alert: 'You must be a company teammate to start a prompt.'
+      redirect_to whole_person_path_for_current_teammate, alert: 'You must be a company teammate to start a prompt.'
       return
     end
     
@@ -114,7 +83,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     redirect_to edit_organization_prompt_path(@organization, @prompt), 
                 notice: 'Prompt started successfully.'
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to organization_prompts_path(@organization), alert: "Error starting prompt: #{e.message}"
+    redirect_to whole_person_path_for_current_teammate, alert: "Error starting prompt: #{e.message}"
   end
 
   def close_and_start_new
@@ -263,7 +232,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
         redirect_to edit_organization_prompt_path(@organization, next_prompt), 
                     notice: 'Prompt updated successfully.'
       else
-        redirect_to organization_prompts_path(@organization), 
+        redirect_to whole_person_path_for_current_teammate,
                     notice: 'Prompt updated successfully.'
       end
     elsif params[:save_and_continue].present?
@@ -389,6 +358,30 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     end
     
     @prompt = Prompt.includes(company_teammate: :person).find(params[:id])
+  end
+
+  def company_scope
+    @organization.root_company || @organization
+  end
+
+  def whole_person_redirect_teammate
+    requested = if params[:teammate].present?
+      CompanyTeammate.find_by(id: params[:teammate], organization: company_scope)
+    end
+    if requested && CompanyTeammatePolicy.new(pundit_user, requested).complete_picture?
+      return requested
+    end
+
+    current_person.teammates.find_by(organization: company_scope)
+  end
+
+  def whole_person_path_for_current_teammate(extra_params = {})
+    teammate = current_person.teammates.find_by(organization: company_scope)
+    if teammate
+      my_growth_whole_person_organization_company_teammate_path(@organization, teammate, extra_params)
+    else
+      organization_path(@organization)
+    end
   end
 end
 

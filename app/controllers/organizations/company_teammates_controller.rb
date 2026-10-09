@@ -148,6 +148,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @kudos_return_text = params[:return_text].presence
   end
 
+  def my_growth_whole_person
+    authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
+    assign_viewable_teammates_context!(selected_teammate: @teammate)
+    @person = @teammate.person
+    @current_organization = organization
+    @viewing_own_whole_person = current_company_teammate.present? && current_company_teammate == @teammate
+    load_my_growth_whole_person
+  end
+
   def my_growth_experiences
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
     assign_viewable_teammates_context!(selected_teammate: @teammate)
@@ -1099,6 +1108,31 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
     ability_ids = @my_growth_ability_rows.map { |r| r[:ability].id }.uniq
     @my_growth_ability_goal_counts_by_id = my_growth_ability_goal_counts_for_teammate(ability_ids)
+  end
+
+  def load_my_growth_whole_person
+    company_scope = organization.root_company || organization
+    @active_templates = PromptTemplate.where(company: company_scope).available.ordered
+
+    @template_prompts = {}
+    @active_templates.each do |template|
+      active_prompt = Prompt.where(company_teammate: @teammate, prompt_template: template).open.first
+      previous_prompts = Prompt.where(company_teammate: @teammate, prompt_template: template).closed.ordered.limit(10)
+      @template_prompts[template.id] = {
+        active: active_prompt,
+        previous: previous_prompts
+      }
+    end
+
+    inactive_template_ids = PromptTemplate.where(company: company_scope).where.not(id: @active_templates.select(:id)).pluck(:id)
+    inactive_prompts = if inactive_template_ids.any?
+      Prompt.where(company_teammate: @teammate, prompt_template_id: inactive_template_ids)
+            .includes(:prompt_template)
+            .ordered
+    else
+      Prompt.none
+    end
+    @inactive_template_prompts_by_template = inactive_prompts.group_by(&:prompt_template).sort_by { |t, _| t.title }.to_h
   end
 
   def load_my_growth_experiences_rows

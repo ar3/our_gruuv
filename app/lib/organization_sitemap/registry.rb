@@ -152,8 +152,8 @@ module OrganizationSitemap
             icon: "bi-journal-text",
             path: ->(ctx) { ctx.organization_prompts_path(ctx.organization) },
             policy: ->(ctx) { ctx.policy(ctx.company).view_prompts? },
-            goal: "Manage your growth prompts and growth plan.",
-            synonyms: %w[prompts my prompts growth plan my growth plan]
+            goal: "Begin with the end — bring the whole person into OurGruuv via prompts and reflections.",
+            synonyms: %w[prompts my prompts growth plan my growth plan whole person begin with the end]
           ),
           page(
             key: :my_goals,

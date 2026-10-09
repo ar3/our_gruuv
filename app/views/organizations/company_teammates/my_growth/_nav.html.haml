@@ -1,4 +1,9 @@
 %ul.nav.nav-pills.mb-4.flex-wrap.gap-1
+  - if my_growth_whole_person_tab_visible?(organization)
+    %li.nav-item
+      = link_to my_growth_whole_person_organization_company_teammate_path(organization, @teammate),
+        class: "nav-link #{'active' if action_name == 'my_growth_whole_person'}" do
+        Whole person
   %li.nav-item
     = link_to my_growth_experiences_organization_company_teammate_path(organization, @teammate),
       class: "nav-link #{'active' if action_name == 'my_growth_experiences'}" do

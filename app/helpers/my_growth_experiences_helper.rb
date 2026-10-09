@@ -5,6 +5,13 @@ module MyGrowthExperiencesHelper
 
   MY_GROWTH_SHARED_QUERY_KEYS = %w[show_suggested anchor].freeze
 
+  # Grow tab only when the company has fillable (available) prompt templates.
+  # Archived-only history stays reachable via vertical nav → prompts redirect.
+  def my_growth_whole_person_tab_visible?(organization)
+    company = organization.root_company || organization
+    PromptTemplate.where(company: company).available.exists?
+  end
+
   def my_growth_shared_return_path_options
     return {} unless respond_to?(:request) && request&.query_parameters
 

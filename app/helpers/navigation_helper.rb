@@ -826,11 +826,20 @@ module NavigationHelper
     %w[show update review_most_recent save_and_redirect].include?(action_name)
   end
 
-  # Prompts (My Growth Plan) item is active only on exact prompts index or when editing own prompt.
+  # Prompts (My Growth Plan) item is active on prompts index redirect target (own Whole person),
+  # or when editing own prompt.
   def nav_prompts_item_active?
     return false unless current_organization
     prompts_index = organization_prompts_path(current_organization)
     return true if request.path == prompts_index
+
+    if current_company_teammate
+      whole_person = my_growth_whole_person_organization_company_teammate_path(
+        current_organization, current_company_teammate
+      )
+      return true if request.path == whole_person
+    end
+
     edit_match = request.path.match(%r{\A/organizations/[^/]+/prompts/(\d+)/edit\z})
     return false unless edit_match
     prompt = Prompt.find_by(id: edit_match[1])

@@ -18,35 +18,20 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     let!(:prompt1) { create(:prompt, company_teammate: teammate, prompt_template: template) }
     let!(:prompt2) { create(:prompt, :closed, company_teammate: teammate, prompt_template: template) }
 
-    it 'renders the index template' do
+    it 'redirects to the viewing teammate Whole person tab' do
       get :index, params: { organization_id: organization.id }
-      expect(response).to have_http_status(:success)
-      expect(response).to render_template(:index)
+      expect(response).to redirect_to(
+        my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+      )
     end
 
-    it 'assigns active templates and template prompts' do
-      get :index, params: { organization_id: organization.id }
-      expect(assigns(:active_templates)).to be_present
-      expect(assigns(:template_prompts)).to be_a(Hash)
-    end
-
-    it 'assigns inactive_template_prompts_by_template as empty when user has no prompts from inactive templates' do
-      get :index, params: { organization_id: organization.id }
-      expect(assigns(:inactive_template_prompts_by_template)).to eq({})
-    end
-
-    context 'when user has prompts from inactive (no longer active) templates' do
-      let(:inactive_template) { create(:prompt_template, :unavailable, company: organization, title: 'Retired Reflection') }
-      let!(:inactive_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: inactive_template) }
-
-      it 'assigns inactive_template_prompts_by_template with those prompts grouped by template' do
-        get :index, params: { organization_id: organization.id }
-        inactive_by_template = assigns(:inactive_template_prompts_by_template)
-        expect(inactive_by_template).to be_a(Hash)
-        expect(inactive_by_template.keys.map(&:title)).to include('Retired Reflection')
-        prompts_shown = inactive_by_template.values.flatten
-        expect(prompts_shown).to contain_exactly(inactive_prompt)
-      end
+    it 'redirects to the requested teammate Whole person tab when authorized' do
+      other = create(:company_teammate, organization: organization)
+      teammate.update!(can_manage_employment: true)
+      get :index, params: { organization_id: organization.id, teammate: other.id }
+      expect(response).to redirect_to(
+        my_growth_whole_person_organization_company_teammate_path(organization, other)
+      )
     end
   end
 
@@ -94,8 +79,10 @@ RSpec.describe Organizations::PromptsController, type: :controller do
 
     it 'sets return_url and return_text' do
       get :customize_view, params: { organization_id: organization.id }
-      expect(assigns(:return_url)).to include(organization_prompts_path(organization))
-      expect(assigns(:return_text)).to eq('Back to Prompts')
+      expect(assigns(:return_url)).to include(
+        my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+      )
+      expect(assigns(:return_text)).to eq('Back to Whole person')
     end
 
     it 'preserves current params in return_url' do
@@ -238,7 +225,9 @@ RSpec.describe Organizations::PromptsController, type: :controller do
           organization_id: organization.id,
           template_id: unavailable_template.id
         }
-        expect(response).to redirect_to(organization_prompts_path(organization))
+        expect(response).to redirect_to(
+          my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+        )
         expect(flash[:alert]).to be_present
       end
     end
@@ -591,7 +580,7 @@ RSpec.describe Organizations::PromptsController, type: :controller do
   end
 
   describe 'PATCH #update_view' do
-    it 'redirects to index with view customization params' do
+    it 'redirects to Whole person with view customization params' do
       patch :update_view, params: {
         organization_id: organization.id,
         template: template.id.to_s,
@@ -603,7 +592,9 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       }
       expect(response).to have_http_status(:redirect)
       redirect_url = response.redirect_url
-      expect(redirect_url).to include(organization_prompts_path(organization))
+      expect(redirect_url).to include(
+        my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+      )
       expect(redirect_url).to include("template=#{template.id}")
       expect(redirect_url).to include('status=open')
       expect(redirect_url).to include("teammate=#{teammate.id}")
@@ -870,7 +861,9 @@ RSpec.describe Organizations::PromptsController, type: :controller do
           organization_id: organization.id,
           template_id: 99999
         }
-        expect(response).to redirect_to(organization_prompts_path(organization))
+        expect(response).to redirect_to(
+          my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+        )
         expect(flash[:alert]).to be_present
       end
     end
@@ -907,7 +900,9 @@ RSpec.describe Organizations::PromptsController, type: :controller do
           organization_id: organization.id,
           template_id: other_template.id
         }
-        expect(response).to redirect_to(organization_prompts_path(organization))
+        expect(response).to redirect_to(
+          my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+        )
         expect(flash[:alert]).to be_present
       end
     end
@@ -999,19 +994,17 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
   end
 
-  describe 'GET #index' do
+  describe 'GET #index (legacy list behavior)' do
     let!(:prompt1) { create(:prompt, company_teammate: teammate, prompt_template: template, created_at: 2.days.ago) }
     let!(:prompt2) { create(:prompt, :closed, company_teammate: teammate, prompt_template: template, created_at: 1.day.ago) }
 
-    it 'assigns active templates' do
+    it 'redirects to Whole person instead of assigning index collections' do
       get :index, params: { organization_id: organization.id }
-      expect(assigns(:active_templates)).to include(template)
-    end
-
-    it 'assigns template prompts' do
-      get :index, params: { organization_id: organization.id }
-      expect(assigns(:template_prompts)).to be_a(Hash)
-      expect(assigns(:template_prompts)[template.id]).to be_present
+      expect(response).to redirect_to(
+        my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+      )
+      expect(assigns(:active_templates)).to be_nil
+      expect(assigns(:template_prompts)).to be_nil
     end
 
     skip 'These specs test features not in current index (use customize_view instead)' do

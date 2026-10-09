@@ -34,7 +34,7 @@ module TeammateModalityHeaderHelper
     return :goals if controller_name == "company_teammates" && action_name == "my_growth_goals"
     return :true_jd_signed if controller_name == "job_description_acknowledgements"
     return :true_jd_signed if controller_name == "company_teammates" && action_name == "true_jd_print"
-    if controller_name == "company_teammates" && %w[my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
+    if controller_name == "company_teammates" && %w[my_growth_whole_person my_growth_experiences my_growth_abilities my_growth_position_change].include?(action_name)
       return :growth
     end
     if controller_path == "organizations/company_teammates/maap_teammate_growth" && action_name == "show"
@@ -121,7 +121,7 @@ module TeammateModalityHeaderHelper
         key: :growth,
         icon: "bi-flask",
         label: growth_label_for(teammate),
-        active: controller_name == "company_teammates" && %w[my_growth_experiences my_growth_abilities my_growth_goals my_growth_position_change].include?(action_name),
+        active: controller_name == "company_teammates" && %w[my_growth_whole_person my_growth_experiences my_growth_abilities my_growth_goals my_growth_position_change].include?(action_name),
         path: (my_growth_experiences_organization_company_teammate_path(organization, teammate_route_param(teammate)) if policy(teammate).complete_picture?),
         allowed: policy(teammate).complete_picture?,
         disabled_tooltip: "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"

@@ -2,9 +2,9 @@
 
 - content_for :go_back_link do
   - if @can_edit
-    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "My #{company_label_plural('reflection', 'Reflection')}", url: organization_prompts_path(@organization) }, { label: "Edit", url: nil }])
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: 'Whole person', url: my_growth_whole_person_organization_company_teammate_path(@organization, @prompt.company_teammate) }, { label: "Edit", url: nil }])
   - else
-    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "About #{@prompt.company_teammate.person.casual_name}", url: about_me_organization_company_teammate_path(@organization, @prompt.company_teammate) }, { label: "Edit prompt", url: nil }])
+    = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: 'Whole person', url: my_growth_whole_person_organization_company_teammate_path(@organization, @prompt.company_teammate) }, { label: 'View prompt', url: nil }])
 
 - view_mode = params[:view] || 'split'
 - content_for :header do
@@ -102,7 +102,7 @@
       
       - if @can_edit
         .d-flex.justify-content-between.mt-4
-          = link_to 'Cancel', organization_prompts_path(@organization), class: 'btn btn-secondary'
+          = link_to 'Cancel', my_growth_whole_person_organization_company_teammate_path(@organization, @prompt.company_teammate), class: 'btn btn-secondary'
           .d-flex.gap-2
             = form.submit 'Save and continue editing', class: 'btn btn-primary', name: 'save_and_continue'
             - if @next_prompt

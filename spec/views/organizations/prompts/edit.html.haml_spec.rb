@@ -39,7 +39,8 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     end
     
     # Mock route helpers
-    allow(view).to receive(:organization_prompts_path).and_return("/organizations/#{organization.id}/prompts")
+    allow(view).to receive(:my_growth_whole_person_organization_company_teammate_path)
+      .and_return("/organizations/#{organization.id}/company_teammates/#{teammate.id}/my_growth/whole_person")
     allow(view).to receive(:about_me_organization_company_teammate_path).and_return("/organizations/#{organization.id}/company_teammates/#{teammate.id}/about_me")
     allow(view).to receive(:edit_organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}/edit")
     allow(view).to receive(:organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}")

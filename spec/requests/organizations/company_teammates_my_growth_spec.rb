@@ -26,6 +26,34 @@ RSpec.describe 'Company teammate My Growth', type: :request do
         sign_in_as_teammate_for_request(manager, organization)
       end
 
+      it 'allows GET my_growth/whole_person' do
+        create(:prompt_template, :available, company: organization)
+        get my_growth_whole_person_organization_company_teammate_path(organization, employee_teammate)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Growth')
+        expect(response.body).to include('context-callout')
+        expect(response.body).to include('Begin with the end')
+        expect(response.body).to include('Whole person')
+        expect(response.body).to include('Grow by experiences')
+      end
+
+      it 'hides the Whole person Grow tab when the company has no available prompt templates' do
+        get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include(
+          my_growth_whole_person_organization_company_teammate_path(organization, employee_teammate)
+        )
+      end
+
+      it 'shows the Whole person Grow tab when the company has available prompt templates' do
+        create(:prompt_template, :available, company: organization)
+        get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include(
+          my_growth_whole_person_organization_company_teammate_path(organization, employee_teammate)
+        )
+      end
+
       it 'allows GET my_growth/experiences' do
         get my_growth_experiences_organization_company_teammate_path(organization, employee_teammate)
         expect(response).to have_http_status(:success)

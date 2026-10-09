@@ -53,6 +53,13 @@ RSpec.describe TeammateModalityHeaderHelper, type: :helper do
       allow(helper).to receive(:clarity_check_ins_view_active?).and_return(false)
       expect(helper.people_current_modality_key).to eq(:teammate)
     end
+
+    it "maps my_growth_whole_person to :growth" do
+      allow(helper).to receive(:controller_name).and_return("company_teammates")
+      allow(helper).to receive(:action_name).and_return("my_growth_whole_person")
+      allow(helper).to receive(:clarity_check_ins_view_active?).and_return(false)
+      expect(helper.people_current_modality_key).to eq(:growth)
+    end
   end
 
   describe "#teammate_modality_closed_label" do

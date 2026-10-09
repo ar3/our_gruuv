@@ -138,6 +138,14 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq("Alex's Growth")
     end
 
+    it 'returns possessive Growth for my_growth_whole_person on company_teammates' do
+      teammate = instance_double(CompanyTeammate, person: instance_double(Person, casual_name: 'Alex'))
+      allow(helper).to receive(:action_name).and_return('my_growth_whole_person')
+      allow(helper).to receive(:controller_name).and_return('company_teammates')
+      helper.instance_variable_set(:@teammate, teammate)
+      expect(helper.people_current_view_name).to eq("Alex's Growth")
+    end
+
     it 'returns Clarity Check-ins for audit action' do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')

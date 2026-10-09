@@ -16,27 +16,22 @@ RSpec.describe 'Organizations::Prompts', type: :request do
   end
 
   describe 'GET /organizations/:organization_id/prompts' do
-    it 'renders the index page' do
+    it 'redirects to the viewing teammate Whole person tab' do
       get organization_prompts_path(organization)
-      expect(response).to have_http_status(:success)
-    end
-
-    it 'breadcrumbs to My Prompts without an Observations parent' do
-      get organization_prompts_path(organization)
-      expect(response).to have_http_status(:success)
-      breadcrumb = CGI.unescapeHTML(response.body[%r{page-context-nav__breadcrumb.*?</nav>}m].to_s)
-      expect(breadcrumb).to include('My Prompts')
-      expect(breadcrumb).not_to include('>Observations<')
-      expect(breadcrumb).not_to match(/href="#{Regexp.escape(organization_observations_path(organization))}"/)
+      expect(response).to redirect_to(
+        my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+      )
     end
 
     context 'when user has prompts from inactive templates' do
       let(:inactive_template) { create(:prompt_template, :unavailable, company: organization, title: 'Old Check-in') }
       let!(:inactive_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: inactive_template) }
 
-      it 'shows a section linking to prompts from inactive templates' do
+      it 'shows inactive templates on Whole person after redirect' do
         get organization_prompts_path(organization)
+        follow_redirect!
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('Begin with the end')
         expect(response.body).to include('inactive templates')
         expect(response.body).to include('Old Check-in')
         expect(response.body).to include(edit_organization_prompt_path(organization, inactive_prompt))
@@ -70,7 +65,9 @@ RSpec.describe 'Organizations::Prompts', type: :request do
         post organization_prompts_path(organization), params: {
           template_id: 99999
         }
-        expect(response).to redirect_to(organization_prompts_path(organization))
+        expect(response).to redirect_to(
+          my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+        )
         expect(flash[:alert]).to be_present
       end
     end
@@ -365,7 +362,9 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       }
       expect(response).to have_http_status(:redirect)
       redirect_url = response.redirect_url
-      expect(redirect_url).to include(organization_prompts_path(organization))
+      expect(redirect_url).to include(
+        my_growth_whole_person_organization_company_teammate_path(organization, teammate)
+      )
       expect(redirect_url).to include("template=#{template.id}")
       expect(redirect_url).to include('status=open')
       expect(redirect_url).to include("teammate=#{teammate.id}")

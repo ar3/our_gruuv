@@ -457,8 +457,8 @@ RSpec.describe 'Vertical Navigation', type: :request do
   describe 'About Me prompts and goals active state' do
     let(:organization) { create(:organization, :company) }
 
-    it 'marks prompts nav link active when on prompts index' do
-      get organization_prompts_path(organization)
+    it 'marks prompts nav link active when on own Whole person tab' do
+      get my_growth_whole_person_organization_company_teammate_path(organization, teammate)
       expect(response).to have_http_status(:success)
       prompts_path = organization_prompts_path(organization)
       expect(response.body).to match(/\<a(?=[^>]*href="#{Regexp.escape(prompts_path)}")(?=[^>]*class="[^"]*active[^"]*")[^>]*>/)
