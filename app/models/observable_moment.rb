@@ -6,7 +6,9 @@ class ObservableMoment < ApplicationRecord
   belongs_to :processed_by_teammate, class_name: 'CompanyTeammate', optional: true
   
   has_many :observations, dependent: :nullify
-  
+  # Celebratory / bank awards keep their ledger rows; drop the moment link so the moment can be removed.
+  has_many :kudos_transactions, dependent: :nullify
+
   enum :moment_type, {
     new_hire: 'new_hire',
     seat_change: 'seat_change',

@@ -137,7 +137,12 @@ class Person < ApplicationRecord
   end
 
   def all_names_display_name
-    "#{first_name} #{middle_name} #{preferred_name.present? ? "(\"#{preferred_name}\")" : ''} #{last_name_with_suffix}"
+    [
+      first_name,
+      middle_name,
+      (preferred_name.present? ? "(\"#{preferred_name}\")" : nil),
+      last_name_with_suffix
+    ].map { |part| part.to_s.strip }.reject(&:blank?).join(" ")
   end
 
   def last_name_with_suffix

@@ -12,26 +12,29 @@ module CoachInbox
       { key: :check_ins, label: "Check-ins" },
       { key: :ogos, label: "OGOs" },
       { key: :goals, label: "Goals" },
-      { key: :expectation_alignment, label: "Expectation Alignment" }
+      { key: :expectation_alignment, label: "Expectation Alignment" },
+      { key: :milestones, label: "Milestones" }
     ].freeze
 
     OGO_COMMENT_LOOKBACK = 90.days
     MAAP_COMMENT_TYPES = %w[Assignment Position Ability].freeze
 
-    def self.call(organization:, teammates:, expanded_subtype_keys: [], routes: Rails.application.routes.url_helpers)
+    def self.call(organization:, teammates:, expanded_subtype_keys: [], viewing_teammate: nil, routes: Rails.application.routes.url_helpers)
       new(
         organization: organization,
         teammates: teammates,
         expanded_subtype_keys: expanded_subtype_keys,
+        viewing_teammate: viewing_teammate,
         routes: routes
       ).call
     end
 
-    def initialize(organization:, teammates:, expanded_subtype_keys:, routes:)
+    def initialize(organization:, teammates:, expanded_subtype_keys:, viewing_teammate:, routes:)
       @organization = organization
       @teammates = Array(teammates).compact
       @teammate_ids = @teammates.map(&:id)
       @teammates_by_id = @teammates.index_by(&:id)
+      @viewing_teammate = viewing_teammate
       @expanded = Array(expanded_subtype_keys).map(&:to_s).to_set
       @routes = routes
     end
@@ -42,7 +45,7 @@ module CoachInbox
 
     private
 
-    attr_reader :organization, :teammates, :teammate_ids, :teammates_by_id, :expanded, :routes
+    attr_reader :organization, :teammates, :teammate_ids, :teammates_by_id, :viewing_teammate, :expanded, :routes
 
     def build_section(defn)
       Section.new(
@@ -105,6 +108,59 @@ module CoachInbox
           items: maap_unresolved_comment_items
         )
       ]
+    end
+
+    def milestones_subtypes
+      [
+        subtype_summary(
+          :milestone_skipped_cosign,
+          "Skipped co-sign (needs review)",
+          items: milestone_award_items(MilestoneAward.skipped_awaiting_moderation, :milestone_skipped_cosign, "Skipped co-sign")
+        ),
+        subtype_summary(
+          :milestone_awaiting_cosign,
+          "Awaiting co-sign",
+          items: milestone_award_items(MilestoneAward.pending_cosign, :milestone_awaiting_cosign, "Awaiting co-sign")
+        ),
+        subtype_summary(
+          :milestone_requires_cosign,
+          "Requires co-sign after review",
+          items: milestone_award_items(
+            MilestoneAward.requires_cosign_after_moderation,
+            :milestone_requires_cosign,
+            "Requires co-sign"
+          )
+        )
+      ]
+    end
+
+    def milestone_award_items(scope, subtype, subtitle)
+      return [] if teammate_ids.empty? || viewing_teammate.blank?
+
+      scope
+        .where(teammate_id: teammate_ids)
+        .includes(:teammate, :ability, :certifying_teammate)
+        .filter_map do |award|
+          next unless MilestoneAwards::ModeratorAuthorization.can_moderate?(
+            teammate: viewing_teammate,
+            milestone_award: award
+          )
+
+          teammate = teammates_by_id[award.teammate_id]
+          next unless teammate
+
+          Item.new(
+            id: "milestone_award-#{award.id}-#{subtype}",
+            subtype_key: subtype,
+            teammate_id: teammate.id,
+            person_name: person_name_for(teammate),
+            title: "#{award.ability.display_name} · Milestone #{award.official_milestone_level}",
+            subtitle: "#{subtitle} · by #{award.certifying_teammate.person.display_name}",
+            url: routes.organization_teammate_ability_milestone_award_path(
+              organization, award.teammate, award.ability, award
+            )
+          )
+        end
     end
 
     # --- Check-ins ---

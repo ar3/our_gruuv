@@ -15,6 +15,8 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
     @silent_observations = query_service.silent_observations
     @feedback_expectation_mismatches = query_service.feedback_expectation_mismatches
     @feedback_requests_awaiting_response = query_service.feedback_requests_awaiting_response
+    @milestone_cosign_invites_awaiting_response = query_service.milestone_cosign_invites_awaiting_response
+    @milestone_awards_pending_for_awarder = query_service.milestone_awards_pending_for_awarder
     @goals_needing_check_in = query_service.goals_needing_check_in
     @check_ins_awaiting_input = query_service.check_ins_awaiting_input
     @total_pending = query_service.total_pending_count

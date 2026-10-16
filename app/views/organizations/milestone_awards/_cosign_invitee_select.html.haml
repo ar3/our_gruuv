@@ -1,0 +1,8 @@
+.mb-3
+  %label.form-label Select co-signer(s)
+  %select.form-select{name: "cosign_invitee_ids[]", multiple: true, required: true, size: 8}
+    - Array(groups).each do |group|
+      %optgroup{label: group.label}
+        - group.teammates.each do |teammate|
+          %option{value: teammate.id}= teammate.person.display_name
+  %small.form-text.text-muted First Yes wins. Others can still give feedback after co-sign closes.

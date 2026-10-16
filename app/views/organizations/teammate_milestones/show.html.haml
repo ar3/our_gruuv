@@ -12,6 +12,22 @@
 
 .row.justify-content-center.mt-4
   .col-lg-8
+    - award = @teammate_milestone.milestone_award
+    - if award&.skipped_awaiting_moderation?
+      .alert.alert-warning.mb-4
+        %strong Awarded without co-sign.
+        This milestone was flagged for milestone integrity review.
+        = link_to "View award / co-sign", organization_teammate_ability_milestone_award_path_for(organization, award), class: "alert-link"
+    - elsif award&.requires_cosign_after_moderation?
+      .alert.alert-danger.mb-4
+        %strong Co-sign required.
+        A moderator required a co-sign; this award does not count until co-signed.
+        = link_to "View award", organization_teammate_ability_milestone_award_path_for(organization, award), class: "alert-link"
+    - elsif award&.cosigned?
+      .alert.alert-success.mb-4
+        Co-signed by #{award.cosigning_teammate.person.display_name}.
+        = link_to "View co-sign details", organization_teammate_ability_milestone_award_path_for(organization, award), class: "alert-link"
+
     .card.mb-4
       .card-body
         .mb-3
@@ -23,6 +39,7 @@
               Show milestone details
               %i.bi.bi-chevron-down.ms-1
         
+
         / Collapsible milestone details
         .collapse.mb-3#milestoneDetails
           .card.card-body.markdown-content--bordered
@@ -126,30 +143,33 @@
           .col-12
             .card.card-body.bg-light
               %h6.mb-3 What the certifier agreed to
+              - level = @teammate_milestone.milestone_level
+              - ability_name = @teammate_milestone.ability.name
+              - casual = @teammate_milestone.teammate.person.casual_name
               %p.mb-2
                 I,
                 %strong= @teammate_milestone.certifying_teammate.person.casual_name
                 hereby certify that
-                %strong= @teammate_milestone.teammate.person.casual_name
+                %strong= casual
                 has demonstrated the criteria associated with
-                %strong= "#{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name.downcase}."
+                %strong= "#{milestone_adjective_with_level(level, ability_name.downcase)}."
                 And they have done so...
               %ul.mb-0
                 %li
                   %strong Consciously:
-                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has devoted intentional effort to (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name}"
+                  = " meaning #{casual} has devoted intentional effort to #{milestone_adjective_with_level(level, ability_name)}"
                 %li
                   %strong Comfortably:
-                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has demonstrated (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name} without being overly stretched"
+                  = " meaning #{casual} has demonstrated #{milestone_adjective_with_level(level, ability_name)} without being overly stretched"
                 %li
                   %strong Continuously:
-                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has demonstrated (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name} for a reasonable period of time"
+                  = " meaning #{casual} has demonstrated #{milestone_adjective_with_level(level, ability_name)} for a reasonable period of time"
                 %li
                   %strong Consistently:
-                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has reliably and evenly demonstrated (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name}"
+                  = " meaning #{casual} has reliably and evenly demonstrated #{milestone_adjective_with_level(level, ability_name)}"
                 %li
                   %strong Competently:
-                  = " meaning #{@teammate_milestone.teammate.person.casual_name} has met the criteria that is deserving of (#{@teammate_milestone.milestone_level_display}) #{milestone_level_display(@teammate_milestone.milestone_level)} #{@teammate_milestone.ability.name}"
+                  = " meaning #{casual} has met the criteria that is deserving of #{milestone_adjective_with_level(level, ability_name)}"
         
         .row.mt-4
           .col-12

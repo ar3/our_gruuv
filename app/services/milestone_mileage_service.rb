@@ -10,7 +10,7 @@ class MilestoneMileageService
   def total_mileage_for(teammate)
     return 0 unless teammate
 
-    teammate.teammate_milestones.sum do |milestone|
+    teammate.teammate_milestones.effective.sum do |milestone|
       milestone_points(milestone.milestone_level)
     end
   end
@@ -18,7 +18,7 @@ class MilestoneMileageService
   def mileage_for_ability(teammate, ability)
     return 0 unless teammate && ability
 
-    teammate.teammate_milestones.where(ability: ability).sum do |milestone|
+    teammate.teammate_milestones.effective.where(ability: ability).sum do |milestone|
       milestone_points(milestone.milestone_level)
     end
   end

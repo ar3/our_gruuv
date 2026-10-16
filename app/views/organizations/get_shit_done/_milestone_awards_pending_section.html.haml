@@ -1,0 +1,45 @@
+- awards_count = @milestone_awards_pending_for_awarder.count
+- section_id = 'milestoneAwardsPendingSection'
+- section_open = gsd_open_section?(section_id)
+= render 'shared/section_header',
+         title: 'Milestone awards awaiting co-sign',
+         icon: 'bi-hourglass-split',
+         description: 'Awards you started that still need a co-signer',
+         collapsible: true,
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
+         status_indicator: :warning
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(awards_count, 'award') + ' awaiting co-sign'
+
+%div{class: gsd_collapse_class(section_id), id: section_id}
+  .card.mb-4
+    .card-body
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Recipient
+              %th Ability
+              %th Status
+              %th Action
+          %tbody
+            - @milestone_awards_pending_for_awarder.each do |award|
+              %tr
+                %td= award.teammate.person.display_name
+                %td
+                  = award.ability.display_name
+                  %small.text-muted
+                    Milestone #{award.official_milestone_level}
+                %td
+                  - if award.requires_cosign_after_moderation?
+                    %span.badge.bg-warning.text-dark Requires co-sign
+                  - else
+                    %span.badge.bg-secondary Awaiting co-sign
+                %td
+                  = link_to "View",
+                            organization_teammate_ability_milestone_award_path_for(organization, award),
+                            class: "btn btn-outline-primary btn-sm"

@@ -1,0 +1,42 @@
+- invites_count = @milestone_cosign_invites_awaiting_response.count
+- section_id = 'milestoneCosignRequestsSection'
+- section_open = gsd_open_section?(section_id)
+= render 'shared/section_header',
+         title: 'Milestone co-sign requests',
+         icon: 'bi-pen',
+         description: 'Milestone awards waiting for your co-signature — respond Yes or No',
+         collapsible: true,
+         collapse_target: section_id,
+         aria_expanded: gsd_section_aria_expanded(section_id),
+         status_indicator: :warning
+
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(:warning)}#{' hidden' if section_open}", "data-bs-toggle" => "collapse", "data-bs-target" => "##{section_id}", "aria-expanded" => gsd_section_aria_expanded(section_id), "aria-controls" => section_id, style: "cursor: pointer;"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(:warning)} #{status_indicator_badge_class(:warning)} me-2"}
+    = pluralize(invites_count, 'co-sign request') + ' waiting for your response'
+
+%div{class: gsd_collapse_class(section_id), id: section_id}
+  .card.mb-4
+    .card-body
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Recipient
+              %th Ability
+              %th Awarder
+              %th Action
+          %tbody
+            - @milestone_cosign_invites_awaiting_response.each do |invite|
+              - award = invite.milestone_award
+              %tr
+                %td= award.teammate.person.display_name
+                %td
+                  = award.ability.display_name
+                  %small.text-muted
+                    Milestone #{award.official_milestone_level}
+                %td= award.certifying_teammate.person.display_name
+                %td
+                  = link_to "Respond",
+                            organization_teammate_ability_milestone_award_path_for(organization, award),
+                            class: "btn btn-primary btn-sm"

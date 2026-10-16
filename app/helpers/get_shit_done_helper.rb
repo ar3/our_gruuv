@@ -8,6 +8,8 @@ module GetShitDoneHelper
     silentObservationsSection
     feedbackExpectationMismatchesSection
     feedbackRequestsSection
+    milestoneCosignRequestsSection
+    milestoneAwardsPendingSection
   ].freeze
 
   def self.sanitize_open_section(value)

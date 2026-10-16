@@ -4,6 +4,7 @@ class AbilityMilestoneCalibrationItem < ApplicationRecord
   belongs_to :ability_milestone_calibration, inverse_of: :items
   belongs_to :ability
   belongs_to :awarded_by_teammate, class_name: 'CompanyTeammate', optional: true
+  has_one :milestone_award, dependent: :nullify
 
   validates :ability, presence: true
   validates :ability_id, uniqueness: { scope: :ability_milestone_calibration_id }
@@ -26,6 +27,28 @@ class AbilityMilestoneCalibrationItem < ApplicationRecord
       .where(employee_rating: 0..5)
       .where(manager_rating: 0..5)
   }
+  # Certified with a MilestoneAward that is still waiting on co-sign / soft-reverse.
+  scope :awaiting_cosign, -> {
+    calibration_history
+      .joins(:milestone_award)
+      .merge(MilestoneAward.pending_cosign.or(MilestoneAward.requires_cosign_after_moderation))
+  }
+  scope :earned_history, -> {
+    calibration_history
+      .left_joins(:milestone_award)
+      .where(
+        <<~SQL.squish
+          milestone_awards.id IS NULL
+          OR (
+            milestone_awards.cosigner_signed_at IS NOT NULL
+            OR (
+              milestone_awards.awarder_skipped_cosign_at IS NOT NULL
+              AND milestone_awards.moderator_requires_cosign_at IS NULL
+            )
+          )
+        SQL
+      )
+  }
   scope :awarded_positive, -> {
     where.not(awarded_at: nil).where('official_milestone_level >= 1')
   }
@@ -39,6 +62,13 @@ class AbilityMilestoneCalibrationItem < ApplicationRecord
 
   def awarded_positive?
     awarded? && !official_milestone_level.nil? && official_milestone_level >= 1
+  end
+
+  def awaiting_cosign?
+    return false unless awarded?
+    return false if milestone_award.blank?
+
+    milestone_award.pending_cosign? || milestone_award.requires_cosign_after_moderation?
   end
 
   def employee_rated?

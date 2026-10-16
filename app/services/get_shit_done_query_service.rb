@@ -98,6 +98,26 @@ class GetShitDoneQueryService
     (as_employee + as_manager).sort_by(&:check_in_started_on).reverse
   end
 
+  def milestone_cosign_invites_awaiting_response
+    return MilestoneAwardCosignInvite.none unless teammate
+
+    MilestoneAwardCosignInvite
+      .awaiting_response
+      .where(invitee_teammate_id: teammate.id)
+      .includes(milestone_award: [:ability, { teammate: :person }, { certifying_teammate: :person }])
+      .order(created_at: :desc)
+  end
+
+  def milestone_awards_pending_for_awarder
+    return MilestoneAward.none unless teammate
+
+    MilestoneAward
+      .where(certifying_teammate_id: teammate.id)
+      .merge(MilestoneAward.pending_cosign.or(MilestoneAward.requires_cosign_after_moderation))
+      .includes(:ability, teammate: :person)
+      .order(updated_at: :desc)
+  end
+
   def total_pending_count
     observable_moments.count +
       pending_acknowledgement_count +
@@ -105,6 +125,8 @@ class GetShitDoneQueryService
       silent_observations.count +
       feedback_expectation_mismatches.count +
       feedback_requests_awaiting_response.count +
+      milestone_cosign_invites_awaiting_response.count +
+      milestone_awards_pending_for_awarder.count +
       goals_needing_check_in.count +
       check_ins_awaiting_input.size
   end
@@ -119,6 +141,8 @@ class GetShitDoneQueryService
       silent_observations: silent_observations,
       feedback_expectation_mismatches: feedback_expectation_mismatches,
       feedback_requests_awaiting_response: feedback_requests_awaiting_response,
+      milestone_cosign_invites_awaiting_response: milestone_cosign_invites_awaiting_response,
+      milestone_awards_pending_for_awarder: milestone_awards_pending_for_awarder,
       goals_needing_check_in: goals_needing_check_in,
       check_ins_awaiting_input: check_ins_awaiting_input,
       total_pending: total_pending_count
@@ -137,7 +161,9 @@ class GetShitDoneQueryService
       { count: observation_drafts.count, label: "Observation Drafts" },
       { count: silent_observations.count, label: "Silent Observations" },
       { count: feedback_expectation_mismatches.count, label: "Feedback to clean up" },
-      { count: feedback_requests_awaiting_response.count, label: "Feedback Requests" }
+      { count: feedback_requests_awaiting_response.count, label: "Feedback Requests" },
+      { count: milestone_cosign_invites_awaiting_response.count, label: "Milestone co-sign requests" },
+      { count: milestone_awards_pending_for_awarder.count, label: "Milestone awards awaiting co-sign" }
     ].select { |row| row[:count].positive? }
   end
 

@@ -112,6 +112,13 @@ module PositionsHelper
     end
   end
 
+  # e.g. "Demonstrated (M1) attention to detail"
+  def milestone_adjective_with_level(level, ability_name = nil)
+    n = level.to_i
+    phrase = "#{milestone_level_display(n)} (M#{n})"
+    ability_name.present? ? "#{phrase} #{ability_name}" : phrase
+  end
+
   # Rows for Job Description "Required Abilities" section: each ability, description,
   # and each required milestone with markdown noting which Assignments require at least that level.
   # Uses the same union as MyGrowthAbilityMilestoneRows (direct + required assignments).

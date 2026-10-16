@@ -1,0 +1,30 @@
+- content_for :title, "Milestone integrity"
+
+- content_for :header do
+  %h1.mb-0 Milestone integrity
+  %p.text-muted.mb-0
+    Review awards skipped without co-sign, and track awards still awaiting a co-signer.
+
+- sections = [[:skipped_awaiting_moderation, "Skipped without co-sign", "Co-sign yourself or require the awarder to obtain a co-sign."], [:awaiting_cosign, "Awaiting co-sign", "Pending awards that have not been co-signed yet."], [:requires_cosign, "Requires co-sign", "Soft-reversed awards waiting for the awarder to invite a co-signer."]]
+
+- sections.each do |key, title, description|
+  - items = @sections[key] || []
+  .card.mb-4
+    .card-header
+      %h5.mb-0
+        = title
+        %span.badge.bg-secondary.ms-2= items.size
+      %small.text-muted= description
+    .card-body
+      - if items.empty?
+        %p.text-muted.mb-0 None right now.
+      - else
+        .list-group.list-group-flush
+          - items.each do |item|
+            = link_to item.url, class: "list-group-item list-group-item-action" do
+              .d-flex.justify-content-between.align-items-center
+                %div
+                  %strong= item.title
+                  %br
+                  %small.text-muted= item.subtitle
+                %span.badge.bg-warning.text-dark= item.status_label

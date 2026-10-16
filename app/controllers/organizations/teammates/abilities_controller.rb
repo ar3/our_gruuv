@@ -78,6 +78,13 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
     )
 
     load_associable_goals_display!(@ability, subject_teammate: @teammate)
+
+    @ability_history_entries = TeammateAbilityHistory::Builder.call(
+      teammate: @teammate,
+      ability: @ability,
+      viewer: current_company_teammate,
+      pundit_user: pundit_user
+    )
   end
 
   private

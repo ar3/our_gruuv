@@ -15,14 +15,20 @@ RSpec.describe AbilityMilestoneCalibrationAwardService do
                                                 employee_rating: 2, manager_rating: 3)
   end
 
-  it 'creates milestones 1..official and marks the item awarded' do
+  def typed_name
+    manager_teammate.person.all_names_display_name
+  end
+
+  it 'creates milestones 1..official and marks the item awarded when cosign is skipped' do
     result = described_class.call(
       item: item,
       official_level: 2,
       certifying_teammate: manager_teammate,
       created_by_person: manager_teammate.person,
       organization: organization,
-      certification_note: 'Calibration note'
+      certification_note: 'Calibration note',
+      awarder_typed_name: typed_name,
+      skip_cosign: true
     )
 
     expect(result.ok?).to eq(true)
@@ -39,7 +45,9 @@ RSpec.describe AbilityMilestoneCalibrationAwardService do
       certifying_teammate: manager_teammate,
       created_by_person: manager_teammate.person,
       organization: organization,
-      certification_note: '   '
+      certification_note: '   ',
+      awarder_typed_name: typed_name,
+      skip_cosign: true
     )
 
     expect(result.ok?).to eq(true)
@@ -59,5 +67,25 @@ RSpec.describe AbilityMilestoneCalibrationAwardService do
     expect(result.ok?).to eq(true)
     expect(item.reload.official_milestone_level).to eq(0)
     expect(employee_teammate.teammate_milestones.where(ability: ability)).to be_empty
+  end
+
+  it 'holds milestones when co-sign is requested' do
+    cosigner = create(:teammate, organization: organization)
+    result = described_class.call(
+      item: item,
+      official_level: 2,
+      certifying_teammate: manager_teammate,
+      created_by_person: manager_teammate.person,
+      organization: organization,
+      awarder_typed_name: typed_name,
+      skip_cosign: false,
+      cosign_invitee_ids: [cosigner.id]
+    )
+
+    expect(result.ok?).to eq(true)
+    expect(item.reload.awarded?).to eq(true)
+    expect(employee_teammate.teammate_milestones.where(ability: ability)).to be_empty
+    award = MilestoneAward.find_by!(ability_milestone_calibration_item: item)
+    expect(award.pending_cosign?).to eq(true)
   end
 end

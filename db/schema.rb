@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_213000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_14_141853) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1142,6 +1142,56 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_213000) do
     t.index ["token_digest"], name: "index_mcp_oauth_refresh_tokens_on_token_digest", unique: true
   end
 
+  create_table "milestone_award_cosign_invites", force: :cascade do |t|
+    t.bigint "milestone_award_id", null: false
+    t.bigint "invitee_teammate_id", null: false
+    t.datetime "declined_at"
+    t.text "decline_reason"
+    t.datetime "converted_to_feedback_at"
+    t.bigint "feedback_request_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["feedback_request_id"], name: "index_milestone_award_cosign_invites_on_feedback_request_id"
+    t.index ["invitee_teammate_id"], name: "index_milestone_award_cosign_invites_on_invitee_teammate_id"
+    t.index ["milestone_award_id", "invitee_teammate_id"], name: "index_milestone_award_cosign_invites_uniqueness", unique: true
+    t.index ["milestone_award_id"], name: "index_milestone_award_cosign_invites_on_milestone_award_id"
+  end
+
+  create_table "milestone_awards", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "official_milestone_level", null: false
+    t.string "source", null: false
+    t.bigint "certifying_teammate_id", null: false
+    t.bigint "organization_id", null: false
+    t.bigint "ability_milestone_calibration_item_id"
+    t.text "certification_note"
+    t.string "privacy_level", default: "company", null: false
+    t.string "awarder_typed_name", null: false
+    t.datetime "awarder_signed_at", null: false
+    t.datetime "cosign_requested_at"
+    t.datetime "awarder_skipped_cosign_at"
+    t.bigint "cosigning_teammate_id"
+    t.string "cosigner_typed_name"
+    t.text "cosigner_reason"
+    t.datetime "cosigner_signed_at"
+    t.datetime "moderator_requires_cosign_at"
+    t.bigint "moderator_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ability_id"], name: "index_milestone_awards_on_ability_id"
+    t.index ["ability_milestone_calibration_item_id"], name: "idx_on_ability_milestone_calibration_item_id_55521b6379"
+    t.index ["awarder_skipped_cosign_at"], name: "index_milestone_awards_on_awarder_skipped_cosign_at"
+    t.index ["certifying_teammate_id"], name: "index_milestone_awards_on_certifying_teammate_id"
+    t.index ["cosign_requested_at"], name: "index_milestone_awards_on_cosign_requested_at"
+    t.index ["cosigning_teammate_id"], name: "index_milestone_awards_on_cosigning_teammate_id"
+    t.index ["moderator_requires_cosign_at"], name: "index_milestone_awards_on_moderator_requires_cosign_at"
+    t.index ["moderator_teammate_id"], name: "index_milestone_awards_on_moderator_teammate_id"
+    t.index ["organization_id"], name: "index_milestone_awards_on_organization_id"
+    t.index ["source"], name: "index_milestone_awards_on_source"
+    t.index ["teammate_id"], name: "index_milestone_awards_on_teammate_id"
+  end
+
   create_table "missing_resource_requests", force: :cascade do |t|
     t.bigint "missing_resource_id", null: false
     t.bigint "person_id"
@@ -2157,9 +2207,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_213000) do
     t.datetime "published_at"
     t.bigint "published_by_teammate_id"
     t.datetime "public_profile_published_at"
+    t.bigint "milestone_award_id"
     t.index ["ability_id"], name: "index_teammate_milestones_on_ability_id"
     t.index ["attained_at"], name: "index_teammate_milestones_on_attained_at"
     t.index ["certifying_teammate_id"], name: "index_teammate_milestones_on_certifying_teammate_id"
+    t.index ["milestone_award_id"], name: "index_teammate_milestones_on_milestone_award_id"
     t.index ["milestone_level"], name: "index_teammate_milestones_on_milestone_level"
     t.index ["public_profile_published_at"], name: "index_teammate_milestones_on_public_profile_published_at"
     t.index ["published_at"], name: "index_teammate_milestones_on_published_at"
@@ -2439,6 +2491,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_213000) do
   add_foreign_key "mcp_oauth_refresh_tokens", "mcp_oauth_clients"
   add_foreign_key "mcp_oauth_refresh_tokens", "people"
   add_foreign_key "mcp_oauth_refresh_tokens", "teammates", column: "company_teammate_id"
+  add_foreign_key "milestone_award_cosign_invites", "feedback_requests"
+  add_foreign_key "milestone_award_cosign_invites", "milestone_awards"
+  add_foreign_key "milestone_award_cosign_invites", "teammates", column: "invitee_teammate_id"
+  add_foreign_key "milestone_awards", "abilities"
+  add_foreign_key "milestone_awards", "ability_milestone_calibration_items"
+  add_foreign_key "milestone_awards", "organizations"
+  add_foreign_key "milestone_awards", "teammates"
+  add_foreign_key "milestone_awards", "teammates", column: "certifying_teammate_id"
+  add_foreign_key "milestone_awards", "teammates", column: "cosigning_teammate_id"
+  add_foreign_key "milestone_awards", "teammates", column: "moderator_teammate_id"
   add_foreign_key "missing_resource_requests", "missing_resources"
   add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
@@ -2547,6 +2609,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_213000) do
   add_foreign_key "teammate_growth_results", "og_consultations"
   add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammate_milestones", "abilities"
+  add_foreign_key "teammate_milestones", "milestone_awards"
   add_foreign_key "teammate_milestones", "teammates"
   add_foreign_key "teammate_milestones", "teammates", column: "certifying_teammate_id"
   add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"

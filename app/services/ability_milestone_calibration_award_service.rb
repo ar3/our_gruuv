@@ -1,13 +1,23 @@
 # frozen_string_literal: true
 
-# Awards one calibration item: creates TeammateMilestone rows for levels 1..official
-# (same fill pattern as bulk award). Official 0 creates no milestones; ability stays "new".
+# Awards one calibration item: creates a MilestoneAward (co-sign or skip) for levels
+# 1..official. Official 0 creates no milestones; ability stays "new".
 class AbilityMilestoneCalibrationAwardService
   CERTIFICATION_NOTE = 'Initial ability milestone calibration'
 
   def self.call(...) = new(...).call
 
-  def initialize(item:, official_level:, certifying_teammate:, created_by_person:, organization:, certification_note: nil)
+  def initialize(
+    item:,
+    official_level:,
+    certifying_teammate:,
+    created_by_person:,
+    organization:,
+    certification_note: nil,
+    awarder_typed_name: nil,
+    skip_cosign: nil,
+    cosign_invitee_ids: []
+  )
     @item = item
     @official_level = official_level.to_i
     @certifying_teammate = certifying_teammate
@@ -15,6 +25,9 @@ class AbilityMilestoneCalibrationAwardService
     @organization = organization
     @teammate = item.ability_milestone_calibration.teammate
     @certification_note = certification_note.to_s.strip.presence || CERTIFICATION_NOTE
+    @awarder_typed_name = awarder_typed_name
+    @skip_cosign = skip_cosign
+    @cosign_invitee_ids = cosign_invitee_ids
   end
 
   def call
@@ -32,7 +45,8 @@ class AbilityMilestoneCalibrationAwardService
 
     ApplicationRecord.transaction do
       if @official_level.positive?
-        apply_milestones!
+        award_result = create_milestone_award!
+        return award_result unless award_result.ok?
       end
 
       @item.update!(
@@ -41,7 +55,6 @@ class AbilityMilestoneCalibrationAwardService
         awarded_by_teammate: @certifying_teammate
       )
 
-      EngagementHealth.schedule_refresh_for(@teammate.id) if @official_level.positive?
       Result.ok(@item.reload)
     end
   rescue ActiveRecord::RecordInvalid => e
@@ -52,43 +65,33 @@ class AbilityMilestoneCalibrationAwardService
 
   private
 
-  def apply_milestones!
+  def create_milestone_award!
     company = @organization.root_company || @organization
     ability = Ability.find_by(id: @item.ability_id, company: company)
-    raise StandardError, 'Ability not found.' unless ability
+    return Result.err('Ability not found.') unless ability
 
-    current_levels = @teammate.teammate_milestones.where(ability_id: ability.id).pluck(:milestone_level).map(&:to_i)
-    to_add = (1..@official_level).to_a - current_levels
-    return if to_add.empty?
-
-    highest_new = to_add.max
-    to_add.sort.each do |level|
-      company_visible = (level == highest_new)
-      create_milestone!(ability:, level:, company_visible:)
+    if @awarder_typed_name.blank?
+      return Result.err('Type your full name to certify this milestone.')
     end
-  end
 
-  def create_milestone!(ability:, level:, company_visible:)
-    published_at = company_visible ? Time.current : nil
-    published_by_teammate_id = company_visible ? @certifying_teammate.id : nil
+    if @skip_cosign.nil? && Array(@cosign_invitee_ids).empty?
+      return Result.err('Invite at least one co-signer, or skip co-sign.')
+    end
 
-    teammate_milestone = TeammateMilestone.create!(
+    MilestoneAwards::CreateService.call(
       teammate: @teammate,
       ability: ability,
-      milestone_level: level,
+      official_level: @official_level,
       certifying_teammate: @certifying_teammate,
-      attained_at: Date.current,
+      created_by_person: @created_by_person,
+      organization: @organization,
+      source: :calibration,
+      awarder_typed_name: @awarder_typed_name,
+      skip_cosign: @skip_cosign,
+      cosign_invitee_ids: @cosign_invitee_ids,
       certification_note: @certification_note,
-      published_at: published_at,
-      published_by_teammate_id: published_by_teammate_id
+      privacy_level: 'company',
+      calibration_item: @item
     )
-
-    return unless company_visible
-
-    om_result = ObservableMoments::CreateAbilityMilestoneMomentService.call(
-      teammate_milestone: teammate_milestone,
-      created_by: @created_by_person
-    )
-    raise StandardError, om_result.error.to_s unless om_result.ok?
   end
 end

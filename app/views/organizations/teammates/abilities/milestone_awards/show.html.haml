@@ -1,0 +1,286 @@
+- award = @milestone_award
+- recipient = @recipient
+- ability = @ability
+- casual = @teammate.person.casual_name.presence || @teammate.person.display_name
+- content_for :title, "#{casual} + #{ability.name} · Milestone #{award.official_milestone_level} award"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Growth", url: my_growth_abilities_organization_company_teammate_path(organization, @teammate) }, { label: ability.name, url: organization_teammate_ability_path(organization, @teammate, ability) }, { label: "Milestone #{award.official_milestone_level} award", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "shared/teammate_context/title_dropdown",
+               organization: organization,
+               selected_teammate: @selected_teammate,
+               viewable_teammate_groups: @viewable_teammate_groups,
+               path_for_teammate: ->(tm) { organization_teammate_ability_path(organization, tm, ability) },
+               switch_aria_label: "Switch teammate for ability milestones"
+      %span.text-muted.fw-normal.align-self-center.fs-1= "–"
+      = render "shared/teammate_context/ability_title_dropdown"
+
+- level = award.official_milestone_level
+- ability_name = ability.display_name
+- recipient_casual = recipient.person.casual_name
+- awarder_person = award.certifying_teammate.person
+
+.row
+  .col-lg-8
+    .card.mb-4
+      .card-body
+        - case award.derived_status
+        - when :pending_cosign
+          .alert.alert-warning Awaiting co-sign. Not visible as a completed award until someone co-signs or the awarder skips.
+        - when :skipped_awaiting_moderation
+          .alert.alert-warning
+            Awarded without co-sign. Flagged for milestone integrity review.
+        - when :requires_cosign
+          .alert.alert-danger
+            A moderator requires a co-sign before this award counts. The awarder must invite co-signers (skip is not allowed on this attempt).
+        - when :cosigned
+          .alert.alert-success
+            Co-signed by #{award.cosigning_teammate.person.display_name} on #{award.cosigner_signed_at.strftime('%B %d, %Y')}.
+
+        %p.mb-3
+          I,
+          %strong= awarder_person.all_names_display_name
+          , hereby certify that
+          %strong= recipient.person.all_names_display_name
+          has demonstrated the criteria associated with
+          %strong= milestone_adjective_with_level(level, ability.name.downcase)
+          \. And they have done so...
+
+        %ul.mb-4
+          %li
+            %strong Consciously:
+            = " meaning #{recipient_casual} has devoted intentional effort to #{milestone_adjective_with_level(level, ability_name)}"
+          %li
+            %strong Comfortably:
+            = " meaning #{recipient_casual} has demonstrated #{milestone_adjective_with_level(level, ability_name)} without being overly stretched"
+          %li
+            %strong Continuously:
+            = " meaning #{recipient_casual} has demonstrated #{milestone_adjective_with_level(level, ability_name)} for a reasonable period of time"
+          %li
+            %strong Consistently:
+            = " meaning #{recipient_casual} has reliably and evenly demonstrated #{milestone_adjective_with_level(level, ability_name)}"
+          %li
+            %strong Competently:
+            = " meaning #{recipient_casual} has met the criteria that is deserving of #{milestone_adjective_with_level(level, ability_name)}"
+
+        - if award.certification_note.present?
+          .mb-3
+            %h6.small.text-muted.mb-1 Awarder note
+            %p.mb-0= award.certification_note
+
+        .row.mt-2.mb-3.jd-signature-block
+          .col-md-6.mb-3.mb-md-0
+            %p.text-muted.mb-1
+              %strong Awarder signature:
+            .jd-signature-line
+              %span.jd-signature-ink= award.awarder_typed_name
+            %p.small.text-muted.mb-0.mt-1
+              = format_time_in_user_timezone(award.awarder_signed_at, format: "%B %-d, %Y")
+          .col-md-6
+            %p.text-muted.mb-1
+              %strong Co-signer signature:
+            .jd-signature-line
+              - if award.cosigned? && award.cosigner_typed_name.present?
+                %span.jd-signature-ink= award.cosigner_typed_name
+              - else
+                %span.jd-signature-blank Your signature here
+            - if award.cosigned? && award.cosigner_signed_at.present?
+              %p.small.text-muted.mb-0.mt-1
+                = format_time_in_user_timezone(award.cosigner_signed_at, format: "%B %-d, %Y")
+            - elsif award.skipped_cosign?
+              %p.small.text-muted.mb-0.mt-1 Skipped co-sign
+
+        %hr.my-4
+
+        .mb-4
+          %h6.mb-2
+            = "#{milestone_adjective_with_level(level, ability_name)} is defined as..."
+          .markdown-content.markdown-content--bordered
+            - if @milestone_description.present?
+              = render_markdown(@milestone_description)
+            - else
+              %p.text-muted.mb-0 This milestone has not been defined.
+
+        - if award.cosigned? && award.cosigner_reason.present?
+          .mb-3
+            %h6.small.text-muted.mb-1 Co-signer reason
+            %p.mb-0= award.cosigner_reason
+
+        - if award.primary_teammate_milestone
+          %p.mb-0
+            = link_to "View milestone award page",
+                      organization_teammate_milestone_path(organization, award.primary_teammate_milestone)
+
+  .col-lg-4
+    - is_awarder = current_company_teammate.present? && award.certifying_teammate_id == current_company_teammate.id
+    - award_awaiting_cosign = award.pending_cosign? || award.requires_cosign_after_moderation? || award.skipped_awaiting_moderation?
+    - show_cosign_form = policy(award).cosign? || (is_awarder && award_awaiting_cosign)
+    - show_cosign_responses = policy(award).view_cosign_responses? && award.cosign_invites.any?
+    - all_cosigners_declined = award.pending_cosign? && award.all_cosign_invitees_declined?
+    - if show_cosign_form
+      - open_invitees = award.open_cosign_invites.includes(invitee_teammate: :person).map(&:invitee_teammate)
+      - open_cosigner_names = open_invitees.map { |teammate| teammate.person.display_name }
+      - open_cosigner_casual_names = open_invitees.map { |teammate| teammate.person.casual_name }
+      - awarder_cosign_warning = open_cosigner_names.any? ? "You can't co-sign an award you created. Expected co-signers: #{open_cosigner_names.to_sentence}." : "You can't co-sign an award you created. No co-signers are invited yet."
+      - cosign_outreach_message = is_awarder ? milestone_award_cosign_outreach_message(award: award, open_invitees: open_invitees) : nil
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Co-sign this award
+        .card-body
+          %p.small
+            I,
+            %strong= current_person.all_names_display_name
+            , agree with
+            %strong= award.certifying_teammate.person.all_names_display_name
+            that
+            %strong= recipient.person.all_names_display_name
+            has demonstrated
+            %strong= milestone_adjective_with_level(award.official_milestone_level, ability.name.downcase)
+            \.
+
+          - if is_awarder
+            .mb-3
+              = label_tag :reason, "Why are you co-signing?", class: "form-label"
+              = text_area_tag :reason, nil, class: "form-control", rows: 3, disabled: true
+            .mb-3
+              = label_tag :typed_name, "Type your full name, #{current_person.all_names_display_name}", class: "form-label"
+              = text_field_tag :typed_name, nil, class: "form-control", disabled: true, autocomplete: "off"
+            .d-flex.align-items-center.gap-2
+              %button.btn.btn-primary{type: "button", disabled: true, "aria-label" => "Yes, I will co-sign"} Yes, I will co-sign
+              %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => awarder_cosign_warning, tabindex: "0", role: "img", "aria-label" => awarder_cosign_warning}
+                %i.bi.bi-exclamation-triangle
+            - if cosign_outreach_message.present?
+              .mt-3.pt-3.border-top{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy message", "clipboard-success-message-value": "Copied!" }}
+                %p.text-muted.small.mb-2
+                  Send the following to #{open_cosigner_casual_names.to_sentence}:
+                %pre.mb-2.p-2.bg-light.border.rounded.small.text-muted{style: "white-space: pre-wrap; word-break: break-word;", "data-clipboard-target": "source"}= cosign_outreach_message
+                %button.btn.btn-sm.btn-outline-secondary{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
+                  %i.bi.bi-clipboard.me-1
+                  %span{"data-clipboard-target": "buttonLabel"} Copy message
+          - else
+            = form_with url: cosign_organization_teammate_ability_milestone_award_path_for(organization, award), method: :post, local: true do |f|
+              .mb-3
+                = f.label :reason, "Why are you co-signing?", class: "form-label"
+                = text_area_tag :reason, nil, class: "form-control", rows: 3, required: true
+              .mb-3
+                = f.label :typed_name, "Type your full name, #{current_person.all_names_display_name}", class: "form-label"
+                = text_field_tag :typed_name, nil, class: "form-control", required: true, autocomplete: "off"
+              = f.submit "Yes, I will co-sign", class: "btn btn-primary"
+
+    - if show_cosign_responses
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Co-sign responses
+        .card-body
+          - if all_cosigners_declined
+            .alert.alert-danger
+              You need another co-signer.
+              - if policy(award).request_cosign?
+                = link_to "Choose other co-signers", "#request-a-cosigner", class: "alert-link ms-1"
+          %ul.list-unstyled.mb-0
+            - award.cosign_invites.sort_by { |invite| invite.invitee_teammate.person.display_name.to_s.downcase }.each do |invite|
+              - response = milestone_award_cosign_invite_response(award, invite)
+              %li.mb-3
+                .d-flex.align-items-center.flex-wrap.gap-2
+                  %span.fw-semibold= invite.invitee_teammate.person.display_name
+                  %span.badge{class: response[:badge_class]}= response[:status]
+                - if response[:reason].present?
+                  %p.small.text-muted.mb-0.mt-1= response[:reason]
+
+    - if policy(award).decline?
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Decline to co-sign
+        .card-body
+          = form_with url: decline_organization_teammate_ability_milestone_award_path_for(organization, award), method: :post, local: true do |f|
+            .mb-3
+              = f.label :reason, "Why won't you co-sign?", class: "form-label"
+              = text_area_tag :reason, nil, class: "form-control", rows: 3, required: true
+            = f.submit "No, I won't co-sign", class: "btn btn-outline-danger"
+
+    - if policy(award).request_cosign?
+      .card.mb-4#request-a-cosigner
+        .card-header
+          %h5.mb-0 Request a co-signer
+        .card-body
+          %p.small.text-muted
+            - if all_cosigners_declined
+              All invited co-signers declined. Choose one or more other people to co-sign this award.
+            - else
+              Choose one or more co-signers for this award.
+          = form_with url: request_cosign_organization_teammate_ability_milestone_award_path_for(organization, award), method: :post, local: true do |f|
+            = render "organizations/milestone_awards/cosign_invitee_select", groups: @cosign_candidate_groups
+            = f.submit "Request co-sign", class: "btn btn-primary"
+
+    - if policy(award).require_cosign?
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Moderator action
+        .card-body
+          %p.small Remove the skipped milestone until a co-sign is obtained. Or co-sign yourself using the form above.
+          = button_to "Require co-sign from awarder",
+                      require_cosign_organization_teammate_ability_milestone_award_path_for(organization, award),
+                      method: :post,
+                      class: "btn btn-warning",
+                      data: { turbo_confirm: "Require a co-sign? The awarder cannot skip again on this attempt." }
+
+.row
+  .col-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Evidence (visible to you)
+      .card-body
+        .mb-4
+          %h6.mb-2 OGOs
+          %p.small.text-muted.mb-2
+            Observations about
+            = recipient.person.casual_name
+            that rate
+            %em= ability.display_name
+            and that you can see.
+            = link_to "View all matching OGOs", @evidence[:observations_index_path], class: "ms-1"
+
+          - if @evidence[:observations].any?
+            - @evidence[:observations].each do |observation|
+              .mb-2
+                = link_to truncate(observation.story.to_s, length: 120),
+                          organization_observation_path(organization, observation)
+                %br
+                %small.text-muted= observation.observed_at.strftime('%B %d, %Y')
+          - else
+            %p.text-muted.mb-0 No relevant OGOs (about this teammate with this ability rated) are visible to you.
+
+        %div
+          %h6.mb-2 Active assignments that require this ability
+          %p.small.text-muted.mb-2
+            Current assignment tenures for
+            = recipient.person.casual_name
+            that require
+            %em= ability.display_name
+            \. Shows the last two closed check-in ratings when available.
+
+          - if @evidence[:can_view_assignment_check_ins]
+            - if @evidence[:assignment_rows].any?
+              - @evidence[:assignment_rows].each do |row|
+                .mb-3
+                  = link_to row.assignment.title, row.url, class: "fw-semibold"
+                  - if row.recent_check_ins.any?
+                    %ul.small.mb-0.mt-1
+                      - row.recent_check_ins.each do |snippet|
+                        %li
+                          = snippet.rating_label
+                          - if snippet.completed_at
+                            %span.text-muted
+                              · #{snippet.completed_at.strftime('%B %d, %Y')}
+                  - else
+                    %p.small.text-muted.mb-0.mt-1 No closed check-ins yet for this assignment.
+            - else
+              %p.text-muted.mb-0
+                = recipient.person.casual_name
+                has no active assignments that require this ability.
+          - else
+            %p.text-muted.mb-0= @evidence[:assignment_check_ins_denied_message]

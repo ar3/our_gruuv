@@ -26,6 +26,13 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       @evidence = load_evidence(@teammate, @ability)
       # Load eligible viewers for privacy selection
       @eligible_viewers = eligible_viewers_for_milestone(@teammate)
+      @cosign_candidate_groups = MilestoneAwards::CosignCandidatesQuery.call(
+        organization: organization,
+        recipient: @teammate,
+        awarder: current_company_teammate,
+        ability: @ability,
+        official_level: (@teammate.teammate_milestones.where(ability: @ability).maximum(:milestone_level) || 0) + 1
+      )
     end
   end
 
@@ -78,43 +85,45 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
                   alert: 'Invalid milestone level.'
       return
     end
-    
-    # Check if this milestone has already been awarded
-    if @teammate.teammate_milestones.exists?(ability: @ability, milestone_level: milestone_level)
-      redirect_to new_organization_teammate_milestone_path(organization,
-                                                            teammate_id: @teammate.id,
-                                                            ability_id: @ability.id),
-                  alert: 'This milestone has already been awarded.'
-      return
-    end
-    
-    # Determine privacy level and set published_at accordingly
-    privacy_level = params[:privacy_level] || 'private'
-    published_at = (privacy_level == 'company') ? Time.current : nil
-    published_by_teammate_id = (privacy_level == 'company') ? current_company_teammate.id : nil
-    
-    # Create the teammate milestone
-    teammate_milestone = TeammateMilestone.create!(
+
+    skip_cosign = ActiveModel::Type::Boolean.new.cast(params[:skip_cosign])
+    result = MilestoneAwards::CreateService.call(
       teammate: @teammate,
       ability: @ability,
-      milestone_level: milestone_level,
+      official_level: milestone_level,
       certifying_teammate: current_company_teammate,
-      attained_at: Date.current,
+      created_by_person: current_person,
+      organization: organization,
+      source: :normal,
+      awarder_typed_name: params[:awarder_typed_name],
+      skip_cosign: skip_cosign,
+      cosign_invitee_ids: params[:cosign_invitee_ids],
       certification_note: params[:certification_note],
-      published_at: published_at,
-      published_by_teammate_id: published_by_teammate_id
+      privacy_level: params[:privacy_level] || 'private'
     )
 
-    # Create observable moment
-    ObservableMoments::CreateAbilityMilestoneMomentService.call(
-      teammate_milestone: teammate_milestone,
-      created_by: current_person
-    )
+    unless result.ok?
+      redirect_to new_organization_teammate_milestone_path(
+                    organization,
+                    teammate_id: @teammate.id,
+                    ability_id: @ability.id
+                  ),
+                  alert: result.error.to_s
+      return
+    end
 
-    EngagementHealth.schedule_refresh_for(@teammate.id)
+    award = result.value
+    if award.pending_cosign?
+      redirect_to organization_teammate_ability_milestone_award_path(
+                    organization, award.teammate, award.ability, award
+                  ),
+                  notice: 'Co-sign requested. This milestone stays pending until a co-signer signs.'
+      return
+    end
 
+    teammate_milestone = award.primary_teammate_milestone
     redirect_to organization_teammate_milestone_path(organization, teammate_milestone),
-                notice: 'Milestone awarded successfully!'
+                notice: award.skipped_cosign? ? 'Milestone awarded without co-sign (flagged for moderation).' : 'Milestone awarded successfully!'
   end
 
   def show

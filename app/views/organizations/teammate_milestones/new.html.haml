@@ -89,7 +89,7 @@
             .card.mb-3{class: "#{'border-secondary' if is_disabled} #{'border-primary' if is_clickable}"}
               .card-body
                 .d-flex.align-items-center.justify-content-between.mb-2
-                  .card-title.mb-0 Milestone #{level} - #{milestone_level_display(level)} #{@ability.name.downcase}
+                  .card-title.mb-0 Milestone #{level} - #{milestone_adjective_with_level(level, @ability.name.downcase)}
                   %button.btn.btn-sm.text-muted.p-0.border-0.bg-transparent{"data-bs-toggle" => "collapse", "data-bs-target" => "#milestoneDetails_#{level}", "aria-expanded" => "false", "aria-controls" => "milestoneDetails_#{level}", type: "button", style: "font-size: 0.875rem;"}
                     Show milestone details
                     %i.bi.bi-chevron-down.ms-1
@@ -131,7 +131,7 @@
                     %p.mb-0
                       %i.bi.bi-trophy.text-success.me-2
                       %strong= @teammate_display[:casual_name]
-                      = " has been recognized for (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} on #{awarded.attained_at.strftime('%B %d, %Y')}."
+                      = " has been recognized for #{milestone_adjective_with_level(level, @ability.name)} on #{awarded.attained_at.strftime('%B %d, %Y')}."
                   - else
                     %p.mb-0.text-muted
                       %strong= @teammate_display[:casual_name]
@@ -151,25 +151,25 @@
                       hereby certify that 
                       %strong #{@teammate.person.all_names_display_name}
                       has demonstrated the criteria associated with 
-                      %strong #{milestone_level_display(level)} #{@ability.name.downcase}.
+                      %strong #{milestone_adjective_with_level(level, @ability.name.downcase)}.
                       And they have done so...
                     
                     %ul.mb-3
                       %li
                         %strong Consciously:
-                        = " meaning #{@teammate_display[:casual_name]} has devoted intentional effort to (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                        = " meaning #{@teammate_display[:casual_name]} has devoted intentional effort to #{milestone_adjective_with_level(level, @ability.name)}"
                       %li
                         %strong Comfortably:
-                        = " meaning #{@teammate_display[:casual_name]} has demonstrated (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} without being overly stretched"
+                        = " meaning #{@teammate_display[:casual_name]} has demonstrated #{milestone_adjective_with_level(level, @ability.name)} without being overly stretched"
                       %li
                         %strong Continuously:
-                        = " meaning #{@teammate_display[:casual_name]} has demonstrated (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} for a reasonable period of time"
+                        = " meaning #{@teammate_display[:casual_name]} has demonstrated #{milestone_adjective_with_level(level, @ability.name)} for a reasonable period of time"
                       %li
                         %strong Consistently:
-                        = " meaning #{@teammate_display[:casual_name]} has reliably and evenly demonstrated (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                        = " meaning #{@teammate_display[:casual_name]} has reliably and evenly demonstrated #{milestone_adjective_with_level(level, @ability.name)}"
                       %li
                         %strong Competently:
-                        = " meaning #{@teammate_display[:casual_name]} has meet the criteria that is deserving of (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                        = " meaning #{@teammate_display[:casual_name]} has meet the criteria that is deserving of #{milestone_adjective_with_level(level, @ability.name)}"
                     
                     .mb-3
                       = f.label :certification_note, "Why are you awarding this milestone? (Optional)", class: "form-label"
@@ -193,8 +193,12 @@
                                 %li
                                   %strong= viewer[:person].display_name
                                   %span.text-muted= " - #{viewer[:role]}"
+
+                    = render "organizations/milestone_awards/award_evidence_controls",
+                             cosign_candidate_groups: @cosign_candidate_groups,
+                             field_id_suffix: "level_#{level}"
                     
-                    = f.submit "Award Milestone #{level}", class: "btn btn-primary"
+                    = f.submit "Submit certification", class: "btn btn-primary"
                 - else
                   %p.mb-0.text-muted Milestone certifiations must go in order... award the previous milestone first, and then the later milesteons will become available.
 

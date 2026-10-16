@@ -59,7 +59,7 @@ RSpec.describe "Job description acknowledgement", type: :request do
       expect(response.body).to include("window.print()")
       expect(response.body).to include(">Print</a>")
       expect(response.body).to include("Samantha Cartwright")
-      expect(response.body).to include(employee.government_first_then_last_display_name)
+      expect(response.body).to include(employee.all_names_display_name)
       expect(response.body).to include("Reports To:")
       expect(response.body).to include("Job Classification:")
       expect(response.body).to include("no seat defined… correct this in")
@@ -284,12 +284,12 @@ RSpec.describe "Job description acknowledgement", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("must match your full name")
-      expect(response.body).to include(employee.government_first_then_last_display_name)
+      expect(response.body).to include(ERB::Util.html_escape(employee.all_names_display_name))
     end
 
-    it "accepts the government first-then-last display name when a preferred name differs" do
+    it "accepts the all-names display name when a preferred name differs" do
       employee.update!(preferred_name: "Sammy")
-      signed_name = employee.government_first_then_last_display_name
+      signed_name = employee.all_names_display_name
       sign_in_as_teammate_for_request(employee, organization)
 
       expect {

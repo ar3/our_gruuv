@@ -2,7 +2,9 @@
 - employee_person = teammate.person
 - employee_casual = employee_person.casual_name
 - ability_name = ability.display_name
-- default_level = [item.manager_rating, item.employee_rating].compact.first.to_i
+- form_values = (local_assigns[:form_values] || {}).with_indifferent_access
+- default_level = form_values[:official_milestone_level].presence&.to_i
+- default_level = [item.manager_rating, item.employee_rating].compact.first.to_i if default_level.blank?
 - default_level = 1 if default_level < 1
 .border.rounded.p-3.bg-light.mb-3
   %p.small.mb-2{data: { ability_milestone_calibration_certify_target: 'sentence' }}
@@ -12,34 +14,42 @@
     %strong= employee_person.all_names_display_name
     has demonstrated the criteria associated with
     %strong{data: { ability_milestone_calibration_certify_target: 'milestonePhrase' }}
-      = "#{milestone_level_display(default_level)} #{ability_name.downcase}"
+      = milestone_adjective_with_level(default_level, ability_name.downcase)
     \. And they have done so...
 
   %ul.small.mb-3{data: { ability_milestone_calibration_certify_target: 'meanings' }}
     %li
       %strong Consciously:
-      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has devoted intentional effort to (Milestone __N__) __LABEL__ #{ability_name}" }}
-        = "meaning #{employee_casual} has devoted intentional effort to (Milestone #{default_level}) #{milestone_level_display(default_level)} #{ability_name}"
+      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has devoted intentional effort to __LABEL__ (M__N__) #{ability_name}" }}
+        = "meaning #{employee_casual} has devoted intentional effort to #{milestone_adjective_with_level(default_level, ability_name)}"
     %li
       %strong Comfortably:
-      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has demonstrated (Milestone __N__) __LABEL__ #{ability_name} without being overly stretched" }}
-        = "meaning #{employee_casual} has demonstrated (Milestone #{default_level}) #{milestone_level_display(default_level)} #{ability_name} without being overly stretched"
+      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has demonstrated __LABEL__ (M__N__) #{ability_name} without being overly stretched" }}
+        = "meaning #{employee_casual} has demonstrated #{milestone_adjective_with_level(default_level, ability_name)} without being overly stretched"
     %li
       %strong Continuously:
-      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has demonstrated (Milestone __N__) __LABEL__ #{ability_name} for a reasonable period of time" }}
-        = "meaning #{employee_casual} has demonstrated (Milestone #{default_level}) #{milestone_level_display(default_level)} #{ability_name} for a reasonable period of time"
+      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has demonstrated __LABEL__ (M__N__) #{ability_name} for a reasonable period of time" }}
+        = "meaning #{employee_casual} has demonstrated #{milestone_adjective_with_level(default_level, ability_name)} for a reasonable period of time"
     %li
       %strong Consistently:
-      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has reliably and evenly demonstrated (Milestone __N__) __LABEL__ #{ability_name}" }}
-        = "meaning #{employee_casual} has reliably and evenly demonstrated (Milestone #{default_level}) #{milestone_level_display(default_level)} #{ability_name}"
+      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has reliably and evenly demonstrated __LABEL__ (M__N__) #{ability_name}" }}
+        = "meaning #{employee_casual} has reliably and evenly demonstrated #{milestone_adjective_with_level(default_level, ability_name)}"
     %li
       %strong Competently:
-      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has met the criteria that is deserving of (Milestone __N__) __LABEL__ #{ability_name}" }}
-        = "meaning #{employee_casual} has met the criteria that is deserving of (Milestone #{default_level}) #{milestone_level_display(default_level)} #{ability_name}"
+      %span{data: { ability_milestone_calibration_certify_target: 'meaning', template: "meaning #{employee_casual} has met the criteria that is deserving of __LABEL__ (M__N__) #{ability_name}" }}
+        = "meaning #{employee_casual} has met the criteria that is deserving of #{milestone_adjective_with_level(default_level, ability_name)}"
 
   %p.small.text-muted.mb-3.d-none{data: { ability_milestone_calibration_certify_target: 'zeroNote' }}
     Official Milestone 0 means no Milestone is earned for this ability yet. It stays in need of calibration until Milestone 1-5 is recognized and certified.
 
-  .mb-0
+  .mb-3
     = label_tag :certification_note, 'Why are you recognizing this Milestone? (Optional)', class: 'form-label small', for: "certification_note_#{item.id}"
-    = text_area_tag :certification_note, nil, class: 'form-control form-control-sm', rows: 2, id: "certification_note_#{item.id}", placeholder: 'Add a note explaining why you are recognizing this Milestone...'
+    = text_area_tag :certification_note, form_values[:certification_note], class: 'form-control form-control-sm', rows: 2, id: "certification_note_#{item.id}", placeholder: 'Add a note explaining why you are recognizing this Milestone...'
+
+  - groups = local_assigns[:cosign_candidate_groups]
+  - if groups
+    %div{data: { ability_milestone_calibration_certify_target: 'evidenceControls' }}
+      = render 'organizations/milestone_awards/award_evidence_controls',
+               cosign_candidate_groups: groups,
+               field_id_suffix: "calibration_#{item.id}",
+               form_values: form_values

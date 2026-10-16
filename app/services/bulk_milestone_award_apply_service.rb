@@ -89,8 +89,11 @@ class BulkMilestoneAwardApplyService
 
     moment = milestone.observable_moment
     if moment&.observed?
+      # Keep the moment (and any OGOs / kudos linked to it); detach the milestone row.
       milestone.delete
     else
+      # TeammateMilestone dependent: :destroy removes the moment; ObservableMoment
+      # nullifies kudos_transactions / observations so FK constraints are satisfied.
       milestone.destroy!
     end
   end

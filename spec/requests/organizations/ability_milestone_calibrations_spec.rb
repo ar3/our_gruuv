@@ -31,7 +31,7 @@ RSpec.describe 'Ability milestone calibration', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('One-time ability milestone calibration')
-      expect(response.body).to include('2 of 2 abilities need calibration')
+      expect(response.body).to include('2 of 2 Abilities need calibration')
       expect(response.body).to include(ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate))
     end
 
@@ -130,10 +130,11 @@ RSpec.describe 'Ability milestone calibration', type: :request do
 
       get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
       expect(response.body).to include('Your rating saved')
-      expect(response.body).to include('Waiting on other participant')
+      expect(response.body).to include("Waiting on #{manager.casual_name}")
       expect(response.body).to include('First: M2')
       expect(response.body).to include('Last change: M4')
       expect(response.body).not_to include('Employee proposal')
+      expect(response.body).not_to include("#{manager.casual_name}:")
 
       sign_in_as_teammate_for_request(manager, organization)
       patch ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate),
@@ -144,13 +145,16 @@ RSpec.describe 'Ability milestone calibration', type: :request do
         )
       )
       follow_redirect!
-      expect(response.body).to include('Ready to recognize and certify')
+      expect(response.body).to include('Ready to submit certification')
       expect(response.body).to include('Employee proposal')
-      expect(response.body).to include('Recognize and certify')
+      expect(response.body).to include('Submit certification')
       expect(response.body).to include('hereby certify that')
       expect(response.body).to include('Why are you recognizing this Milestone?')
       expect(response.body).to include('name="certification_note"')
-      expect(response.body).to include('Other participant:')
+      expect(response.body).to include('Evidence: co-sign')
+      expect(response.body).to include('name="awarder_typed_name"')
+      expect(response.body).to include('Skip co-sign')
+      expect(response.body).to include("#{employee.casual_name}:")
       expect(response.body).to include('First: M2')
       expect(response.body).to include('Click here to change your milestone selection...')
       expect(response.body).to include('or make the final Milestone certification above')
@@ -160,7 +164,12 @@ RSpec.describe 'Ability milestone calibration', type: :request do
 
       expect do
         post award_ability_milestone_calibration_item_organization_company_teammate_path(organization, employee_teammate, item),
-             params: { official_milestone_level: '2', certification_note: 'Baseline from calibration talk' }
+             params: {
+               official_milestone_level: '2',
+               certification_note: 'Baseline from calibration talk',
+               awarder_typed_name: manager.all_names_display_name,
+               skip_cosign: '1'
+             }
       end.to change { employee_teammate.teammate_milestones.where(ability: ability).count }.by(2)
 
       expect(response).to redirect_to(
@@ -177,6 +186,8 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(response.body).to include('Collapsed by default')
       expect(response.body).to include("calibration-history-#{item.id}")
       expect(response.body).to include('Official: Milestone 2')
+      expect(response.body).to include('Skipped co-sign')
+      expect(response.body).not_to include('Awaiting co-signer')
       earned = employee_teammate.teammate_milestones.find_by!(ability: ability, milestone_level: 2)
       expect(response.body).to include(organization_teammate_milestone_path(organization, earned))
       expect(response.body).to include('View Milestone 2')
@@ -187,7 +198,110 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       expect(response.body).not_to match(/class="[^"]*\bshow\b[^"]*"[^>]*id="calibration-history-#{item.id}"/)
     end
 
-    it 'shows the other participant audit under status pills once they have rated' do
+    it 'lists abilities awaiting co-sign in their own section until co-signed' do
+      calibration = AbilityMilestoneCalibrationEnsureService.call(teammate: employee_teammate, organization: organization).value
+      item = calibration.items.find_by!(ability: ability)
+      item.assign_side_rating!(role: :employee, value: 2)
+      item.assign_side_rating!(role: :manager, value: 2)
+      cosigner = create(:teammate, :assigned_employee, organization: organization)
+      create(:employment_tenure, teammate: cosigner, company: organization, started_at: 1.year.ago, ended_at: nil)
+
+      sign_in_as_teammate_for_request(manager, organization)
+      post award_ability_milestone_calibration_item_organization_company_teammate_path(organization, employee_teammate, item),
+           params: {
+             official_milestone_level: '2',
+             certification_note: 'Needs a co-signer',
+             awarder_typed_name: manager.all_names_display_name,
+             cosign_invitee_ids: [cosigner.id]
+           }
+
+      award = MilestoneAward.find_by!(ability_milestone_calibration_item_id: item.id)
+      expect(award.pending_cosign?).to eq(true)
+
+      get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Awaiting co-signer')
+      expect(response.body).to include("calibration-awaiting-#{item.id}")
+      expect(response.body).to include('View award / co-sign status')
+      expect(response.body).to include(
+        organization_teammate_ability_milestone_award_path(organization, employee_teammate, ability, award)
+      )
+      expect(response.body).not_to include("calibration-history-#{item.id}")
+
+      MilestoneAwards::CosignService.call(
+        milestone_award: award,
+        cosigning_teammate: cosigner,
+        typed_name: cosigner.person.all_names_display_name,
+        reason: 'Looks good'
+      )
+
+      get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
+      expect(response.body).not_to include('Awaiting co-signer')
+      expect(response.body).to include('Milestones earned')
+      expect(response.body).to include("calibration-history-#{item.id}")
+      expect(response.body).to include('Co-signed by')
+      expect(response.body).to include(cosigner.person.display_name)
+    end
+
+    it 'shows catalog Abilities with prior milestones as calibration-skipped in Milestones earned' do
+      prior = create(
+        :teammate_milestone,
+        teammate: employee_teammate,
+        ability: other_ability,
+        milestone_level: 1,
+        certifying_teammate: manager_teammate,
+        attained_at: 2.months.ago,
+        certification_note: 'Awarded before calibration'
+      )
+
+      sign_in_as_teammate_for_request(manager, organization)
+      get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('1 of 2 Abilities need calibration')
+      expect(response.body).to include('already have a Milestone and appear under Milestones earned')
+      expect(response.body).to include('Milestones earned')
+      expect(response.body).to include('Calibration skipped')
+      expect(response.body).to include(other_ability.display_name)
+      expect(response.body).to include("calibration-skipped-ability-#{other_ability.id}")
+      expect(response.body).to include('without going through one-time calibration')
+      expect(response.body).to include(organization_teammate_milestone_path(organization, prior))
+      expect(response.body).to include(ability.display_name)
+      expect(response.body).not_to include("calibration-skipped-ability-#{ability.id}")
+    end
+
+    it 'keeps submitted award form values after a validation error' do
+      calibration = AbilityMilestoneCalibrationEnsureService.call(teammate: employee_teammate, organization: organization).value
+      item = calibration.items.find_by!(ability: ability)
+      item.assign_side_rating!(role: :employee, value: 2)
+      item.assign_side_rating!(role: :manager, value: 3)
+      cosigner = create(:teammate, :assigned_employee, organization: organization)
+      create(:employment_tenure, teammate: cosigner, company: organization, started_at: 1.year.ago, ended_at: nil)
+
+      sign_in_as_teammate_for_request(manager, organization)
+      post award_ability_milestone_calibration_item_organization_company_teammate_path(organization, employee_teammate, item),
+           params: {
+             official_milestone_level: '3',
+             certification_note: 'Keep this note',
+             awarder_typed_name: 'Wrong Name',
+             cosign_invitee_ids: [cosigner.id]
+           }
+
+      expect(response).to redirect_to(
+        ability_milestone_calibration_organization_company_teammate_path(
+          organization, employee_teammate, anchor: "calibration-item-#{item.id}"
+        )
+      )
+      follow_redirect!
+
+      expect(response.body).to include('must match your full name').or include('full name')
+      expect(response.body).to include('value="Wrong Name"')
+      expect(response.body).to include('Keep this note')
+      expect(response.body).to match(/name="official_milestone_level"[^>]*value="3"[^>]*checked|value="3"[^>]*name="official_milestone_level"[^>]*checked/)
+      expect(response.body).to match(/value="#{cosigner.id}"[^>]*selected|selected[^>]*value="#{cosigner.id}"/)
+    end
+
+    it 'shows only a pill when the other side has rated until you complete your side' do
       calibration = AbilityMilestoneCalibrationEnsureService.call(teammate: employee_teammate, organization: organization).value
       item = calibration.items.find_by!(ability: ability)
       item.assign_side_rating!(role: :employee, value: 4)
@@ -195,9 +309,10 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       sign_in_as_teammate_for_request(manager, organization)
       get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
 
-      expect(response.body).to include('Other participant has rated')
-      expect(response.body).to include('Other participant:')
-      expect(response.body).to include('First: M4')
+      expect(response.body).to include("#{employee.casual_name} has rated")
+      expect(response.body).to include('Your rating still needed')
+      expect(response.body).not_to include("<span class=\"fw-semibold\">#{employee.casual_name}:</span>")
+      expect(response.body).not_to include('First: M4')
       expect(response.body).not_to include('Employee proposal')
     end
   end

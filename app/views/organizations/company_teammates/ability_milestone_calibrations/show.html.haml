@@ -4,6 +4,7 @@
 - manager_casual = manager_teammate&.person&.casual_name.presence || 'their manager'
 - company_name = organization.display_name
 - other_role = view_role == :employee ? :manager : :employee
+- other_casual = other_role == :employee ? employee_casual : manager_casual
 - content_for :title, "#{casual}: Ability milestone calibration"
 
 - content_for :go_back_link do
@@ -21,8 +22,11 @@
 .alert.alert-info.mb-4
   %p.mb-1
     %strong One-time calibration.
-    #{@entry_counts[:will_show]} of #{@entry_counts[:full_set]} abilities need calibration
-    (abilities in this set still at Milestone 0).
+    #{@entry_counts[:will_show]} of #{@entry_counts[:full_set]} Abilities need calibration
+    (still at Milestone 0 in this set).
+    - already_have_milestones = @entry_counts[:full_set].to_i - @entry_counts[:will_show].to_i
+    - if already_have_milestones.positive?
+      The other #{already_have_milestones} already have a Milestone and appear under Milestones earned.
   %p.mb-2.small
     - if view_role == :employee
       Both #{employee_casual} (you) and #{manager_casual} will rate what Milestone has been demonstrated so far at #{company_name} across all of the required Abilities.
@@ -31,7 +35,7 @@
   %p.mb-0.small
     Select a Milestone (0-5) to save immediately. That choice cannot be undone. Changes are kept in an audit trail.
 
-- if @items.blank? && @history_items.blank?
+- if @items.blank? && @awaiting_cosign_items.blank? && @history_items.blank? && @skipped_calibration_earned.blank?
   .alert.alert-secondary
     No abilities at Milestone 0 need rating right now.
     = link_to 'Back to Grow by Abilities', my_growth_abilities_organization_company_teammate_path(organization, @teammate), class: 'alert-link'
@@ -40,8 +44,8 @@
   - if ready_count.positive?
     .alert.alert-success.mb-4
       %p.mb-0
-        %strong #{ready_count} #{'ability'.pluralize(ready_count)} ready to recognize and certify.
-        Both of you have rated. Recognize and certify below on this page.
+        %strong #{ready_count} #{'ability'.pluralize(ready_count)} ready to submit certification.
+        Both of you have rated. Submit certification below on this page.
 
   - @items.each do |item|
     - ability = item.ability
@@ -57,12 +61,12 @@
               class: 'text-decoration-none'
           .d-flex.flex-wrap.gap-1
             - if item.ready_for_review?
-              %span.badge.bg-success Ready to recognize and certify
+              %span.badge.bg-success Ready to submit certification
             - elsif my_rated && !other_rated
               %span.badge.bg-warning.text-dark Your rating saved
-              %span.badge.bg-secondary Waiting on other participant
+              %span.badge.bg-secondary Waiting on #{other_casual}
             - elsif !my_rated && other_rated
-              %span.badge.bg-info.text-dark Other participant has rated
+              %span.badge.bg-info.text-dark #{other_casual} has rated
               %span.badge.bg-warning.text-dark Your rating still needed
             - else
               %span.badge.bg-light.text-dark.border Not rated yet
@@ -76,15 +80,14 @@
           observations: @recent_observations_by_ability_id[ability.id] || [],
           observations_total: @observation_total_by_ability_id[ability.id] || 0
 
-        - if my_rated || other_rated
+        - if my_rated
           .small.text-muted.mb-3
-            - if my_rated
-              %div
-                %span.fw-semibold You:
-                = ability_milestone_calibration_rating_audit_lines(item, role: view_role).join(' · ')
+            %div
+              %span.fw-semibold You:
+              = ability_milestone_calibration_rating_audit_lines(item, role: view_role).join(' · ')
             - if other_rated
               %div
-                %span.fw-semibold Other participant:
+                %span.fw-semibold #{other_casual}:
                 = ability_milestone_calibration_rating_audit_lines(item, role: other_role).join(' · ')
 
         - if item.ready_for_review?
@@ -106,13 +109,17 @@
                   %div.fw-semibold.text-warning Different. Talk it through.
 
           - if @can_award
+            - award_form = (@calibration_award_form.present? && @calibration_award_form[:item_id].to_i == item.id) ? @calibration_award_form : {}
             = form_with url: award_ability_milestone_calibration_item_organization_company_teammate_path(organization, @teammate, item), method: :post, local: true, data: { turbo: false, controller: 'ability-milestone-calibration-certify', ability_milestone_calibration_certify_ability_name_value: ability.display_name }, class: 'ability-milestone-calibration-award-form' do
               %label.form-label.small.mb-2 Official Milestone
               .btn-group.btn-group-sm.flex-wrap.mb-3{role: 'group', 'aria-label': "Official Milestone for #{ability.display_name}"}
                 - (0..5).each do |milestone_n|
                   - input_id = "official_milestone_#{item.id}_#{milestone_n}"
                   - btn_outline = milestone_n.zero? ? 'btn-outline-secondary' : 'btn-outline-primary'
-                  - selected = !item.manager_rating.nil? && item.manager_rating == milestone_n
+                  - selected = if award_form[:official_milestone_level].present?
+                    - award_form[:official_milestone_level].to_i == milestone_n
+                  - else
+                    - !item.manager_rating.nil? && item.manager_rating == milestone_n
                   = radio_button_tag :official_milestone_level, milestone_n, selected, class: 'btn-check js-calibration-official-milestone', id: input_id, required: true, data: { action: 'change->ability-milestone-calibration-certify#officialChanged', milestone_n: milestone_n, milestone_label: milestone_n.zero? ? 'Milestone 0' : milestone_level_display(milestone_n) }
                   = label_tag input_id, nil, class: "btn #{btn_outline}", role: 'button' do
                     = milestone_n.zero? ? '0' : milestone_n.to_s
@@ -120,12 +127,14 @@
               = render 'organizations/company_teammates/ability_milestone_calibrations/recognize_and_certify',
                 item: item,
                 teammate: @teammate,
-                ability: ability
+                ability: ability,
+                cosign_candidate_groups: (@cosign_candidate_groups_by_ability_id || {})[ability.id],
+                form_values: award_form
 
               %div
-                = submit_tag 'Recognize and certify', class: 'btn btn-primary'
+                = submit_tag 'Submit certification', class: 'btn btn-primary'
           - else
-            %p.small.text-muted.mb-0 Waiting for someone who can recognize and certify milestones to set the official Milestone.
+            %p.small.text-muted.mb-0 Waiting for someone who can submit certification to set the official Milestone.
 
           %hr.my-3
 
@@ -148,18 +157,73 @@
                 = label_tag input_id, nil, class: "btn #{btn_outline}", role: 'button' do
                   = milestone_n.zero? ? '0' : milestone_n.to_s
 
-  - if @history_items.any?
+  - if @awaiting_cosign_items.any?
+    .mt-5.pt-3.border-top
+      %h2.h5.mb-3
+        Awaiting co-signer
+        %span.text-muted.fw-normal.small
+          (#{@awaiting_cosign_items.size} #{'ability'.pluralize(@awaiting_cosign_items.size)}. Certification submitted; milestones stay pending until co-signed.)
+      - @awaiting_cosign_items.each do |item|
+        - ability = item.ability
+        - award = item.milestone_award
+        - collapse_id = "calibration-awaiting-cosign-#{item.id}"
+        - official = item.official_milestone_level
+        .card.mb-2.border-warning-subtle{id: "calibration-awaiting-#{item.id}"}
+          .card-header.py-2.bg-body-tertiary
+            %button.btn.btn-link.text-decoration-none.text-body.w-100.text-start.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.p-0{type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{collapse_id}" }, aria: { expanded: 'false', controls: collapse_id }}
+              %span
+                %i.bi.bi-chevron-down.me-1.text-muted
+                = ability.display_name
+              %span.d-flex.flex-wrap.gap-2.align-items-center
+                %span.badge.bg-warning.text-dark Awaiting co-sign
+                %span.badge{class: official.to_i.positive? ? 'bg-success' : 'bg-secondary'}
+                  Official: #{ability_milestone_calibration_rating_label(official)}
+                - if item.awarded_at.present?
+                  %span.small.text-muted
+                    Certified #{format_time_in_user_timezone(item.awarded_at)}
+          .collapse{id: collapse_id}
+            .card-body
+              .row.g-3.mb-3
+                .col-md-6
+                  .border.rounded.p-3.h-100
+                    %div.small.text-muted.mb-1 Employee proposal
+                    %div.fs-5.fw-semibold.mb-2= ability_milestone_calibration_rating_label(item.employee_rating)
+                    .small.text-muted
+                      - ability_milestone_calibration_rating_audit_lines(item, role: :employee).each do |line|
+                        %div= line
+                .col-md-6
+                  .border.rounded.p-3.h-100
+                    %div.small.text-muted.mb-1 Manager proposal
+                    %div.fs-5.fw-semibold.mb-2= ability_milestone_calibration_rating_label(item.manager_rating)
+                    .small.text-muted
+                      - ability_milestone_calibration_rating_audit_lines(item, role: :manager).each do |line|
+                        %div= line
+              - if item.awarded_by_teammate.present?
+                %p.small.text-muted.mb-2
+                  Certified by #{item.awarded_by_teammate.person.display_name}
+                  - if item.awarded_at.present?
+                    on #{format_time_in_user_timezone(item.awarded_at)}
+                  \. Awaiting co-signer.
+              - if award.present?
+                %p.mb-0
+                  = link_to organization_teammate_ability_milestone_award_path(organization, @teammate, ability, award), class: 'small' do
+                    View award / co-sign status
+                    %i.bi.bi-box-arrow-up-right.ms-1
+
+  - earned_total = @history_items.size + @skipped_calibration_earned.size
+  - if earned_total.positive?
     - history_milestones_by_key = @teammate.teammate_milestones.where(ability_id: @history_items.map(&:ability_id)).index_by { |m| [m.ability_id, m.milestone_level] }
     .mt-5.pt-3.border-top
       %h2.h5.mb-3
         Milestones earned
         %span.text-muted.fw-normal.small
-          (#{@history_items.size} #{'ability'.pluralize(@history_items.size)}. Collapsed by default.)
+          (#{earned_total} #{'Ability'.pluralize(earned_total)}. Collapsed by default.)
       - @history_items.each do |item|
         - ability = item.ability
         - collapse_id = "calibration-history-#{item.id}"
         - official = item.official_milestone_level
         - earned_milestone = official.to_i.positive? ? history_milestones_by_key[[ability.id, official.to_i]] : nil
+        - award = item.milestone_award
         .card.mb-2.border-secondary-subtle
           .card-header.py-2.bg-body-tertiary
             %button.btn.btn-link.text-decoration-none.text-body.w-100.text-start.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.p-0{type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{collapse_id}" }, aria: { expanded: 'false', controls: collapse_id }}
@@ -194,6 +258,12 @@
                   Certified by #{item.awarded_by_teammate.person.display_name}
                   - if item.awarded_at.present?
                     on #{format_time_in_user_timezone(item.awarded_at)}
+                  - if award&.cosigned? && award.cosigning_teammate.present?
+                    \. Co-signed by #{award.cosigning_teammate.person.display_name}
+                    - if award.cosigner_signed_at.present?
+                      on #{format_time_in_user_timezone(award.cosigner_signed_at)}
+                  - elsif award&.skipped_cosign?
+                    \. Skipped co-sign
               - if earned_milestone&.certification_note.present?
                 .mb-2
                   %div.small.text-muted.mb-1 Reason
@@ -203,3 +273,9 @@
                   = link_to organization_teammate_milestone_path(organization, earned_milestone), class: 'small' do
                     View Milestone #{official}
                     %i.bi.bi-box-arrow-up-right.ms-1
+
+      - @skipped_calibration_earned.each do |row|
+        = render 'organizations/company_teammates/ability_milestone_calibrations/skipped_calibration_earned_card',
+                 ability: row[:ability],
+                 milestone: row[:milestone],
+                 organization: organization

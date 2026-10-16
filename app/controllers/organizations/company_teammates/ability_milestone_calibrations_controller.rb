@@ -18,15 +18,32 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
     assign_viewable_teammates_context!(selected_teammate: @teammate)
     @items = @calibration.rateable_items.includes(:ability)
     @ready_items = @calibration.pending_award_items.includes(:ability)
-    @history_items = @calibration.history_items.includes(:ability, :awarded_by_teammate)
+    @awaiting_cosign_items = @calibration.awaiting_cosign_items
+    @history_items = @calibration.history_items
     @entry_counts = AbilityMilestoneCalibrationAbilitiesCatalog.entry_counts(
       teammate: @teammate,
       organization: organization
     )
     @sources_by_ability_id = @entry_counts[:rows].index_by { |row| row[:ability_id] }
       .transform_values { |row| row[:sources] }
+    load_skipped_calibration_earned!
     load_recent_observations_for_items!
     @can_award = can_award?
+    @calibration_award_form = flash[:calibration_award_form]&.with_indifferent_access
+    if @can_award && current_company_teammate
+      @cosign_candidate_groups_by_ability_id = {}
+      @ready_items.each do |item|
+        next if item.ability.blank?
+
+        @cosign_candidate_groups_by_ability_id[item.ability_id] = MilestoneAwards::CosignCandidatesQuery.call(
+          organization: organization,
+          recipient: @teammate,
+          awarder: current_company_teammate,
+          ability: item.ability,
+          official_level: [item.manager_rating, item.employee_rating].compact.max.to_i.clamp(1, 5)
+        )
+      end
+    end
   end
 
   def update
@@ -51,11 +68,17 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
 
     item.assign_side_rating!(role: view_role, value: value)
 
+    other_casual =
+      if view_role == :employee
+        @teammate.active_employment_tenure&.manager_teammate&.person&.casual_name.presence || 'their manager'
+      else
+        @teammate.person.casual_name
+      end
     notice =
       if item.ready_for_review?
-        "#{item.ability.display_name}: both ratings are in. Ready to recognize and certify."
+        "#{item.ability.display_name}: both ratings are in. Ready to submit certification."
       elsif item.other_rated_for?(view_role)
-        "#{item.ability.display_name}: your rating is saved. Waiting on the other participant."
+        "#{item.ability.display_name}: your rating is saved. Waiting on #{other_casual}."
       else
         "#{item.ability.display_name}: rating saved."
       end
@@ -85,16 +108,35 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
       certifying_teammate: current_company_teammate,
       created_by_person: current_person,
       organization: organization,
-      certification_note: params[:certification_note]
+      certification_note: params[:certification_note],
+      awarder_typed_name: params[:awarder_typed_name],
+      skip_cosign: params[:skip_cosign],
+      cosign_invitee_ids: params[:cosign_invitee_ids]
     )
 
     if result.ok?
       AbilityMilestoneCalibrationEnsureService.call(teammate: @teammate, organization: organization)
-      redirect_to ability_milestone_calibration_organization_company_teammate_path(
-                    organization, @teammate, anchor: "calibration-history-#{item.id}"
-                  ),
-                  notice: award_notice(item.ability, level.to_i)
+      award = MilestoneAward.find_by(ability_milestone_calibration_item_id: item.id)
+      if award&.pending_cosign?
+        redirect_to organization_teammate_ability_milestone_award_path(
+                      organization, award.teammate, award.ability, award
+                    ),
+                    notice: 'Co-sign requested. Calibration milestones stay pending until a co-signer signs.'
+      else
+        redirect_to ability_milestone_calibration_organization_company_teammate_path(
+                      organization, @teammate, anchor: "calibration-history-#{item.id}"
+                    ),
+                    notice: award_notice(item.ability, level.to_i)
+      end
     else
+      flash[:calibration_award_form] = {
+        "item_id" => item.id,
+        "official_milestone_level" => params[:official_milestone_level],
+        "certification_note" => params[:certification_note],
+        "awarder_typed_name" => params[:awarder_typed_name],
+        "skip_cosign" => params[:skip_cosign],
+        "cosign_invitee_ids" => Array(params[:cosign_invitee_ids]).reject(&:blank?)
+      }
       redirect_to ability_milestone_calibration_organization_company_teammate_path(
                     organization, @teammate, anchor: "calibration-item-#{item.id}"
                   ),
@@ -169,6 +211,35 @@ class Organizations::CompanyTeammates::AbilityMilestoneCalibrationsController < 
     else
       "#{ability.display_name} left at Milestone 0 (still needs calibration until Milestone 1-5 is recognized and certified)."
     end
+  end
+
+  # Catalog Abilities that already have milestones without a completed/awaiting calibration row.
+  def load_skipped_calibration_earned!
+    calibrated_ids = (
+      @history_items.map(&:ability_id) + @awaiting_cosign_items.map(&:ability_id)
+    ).to_set
+
+    rows = Array(@entry_counts[:rows]).select do |row|
+      row[:highest_awarded].to_i >= 1 && !calibrated_ids.include?(row[:ability_id])
+    end
+    ability_ids = rows.map { |row| row[:ability_id] }
+    milestones_by_ability = @teammate.teammate_milestones
+      .effective
+      .where(ability_id: ability_ids)
+      .includes(:certifying_teammate, :ability)
+      .group_by(&:ability_id)
+      .transform_values { |milestones| milestones.max_by { |m| [m.milestone_level.to_i, m.attained_at || Time.at(0)] } }
+
+    @skipped_calibration_earned = rows.filter_map do |row|
+      milestone = milestones_by_ability[row[:ability_id]]
+      next if milestone.blank?
+
+      {
+        ability: row[:ability],
+        milestone: milestone,
+        highest_awarded: row[:highest_awarded].to_i
+      }
+    end.sort_by { |row| row[:ability].display_name.to_s.downcase }
   end
 
   def load_recent_observations_for_items!

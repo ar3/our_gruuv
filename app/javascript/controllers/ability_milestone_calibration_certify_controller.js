@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // Keeps the miniature certify block copy aligned with the selected Official Milestone.
 export default class extends Controller {
-  static targets = ["sentence", "milestonePhrase", "meanings", "zeroNote", "meaning"]
+  static targets = ["sentence", "milestonePhrase", "meanings", "zeroNote", "meaning", "evidenceControls"]
   static values = {
     abilityName: String
   }
@@ -32,10 +32,16 @@ export default class extends Controller {
     if (this.hasMeaningsTarget) {
       this.meaningsTarget.classList.toggle("d-none", isZero)
     }
+    if (this.hasEvidenceControlsTarget) {
+      this.evidenceControlsTarget.classList.toggle("d-none", isZero)
+      this.evidenceControlsTarget.querySelectorAll("input, select, textarea").forEach((el) => {
+        el.disabled = isZero
+      })
+    }
     if (isZero) return
 
     if (this.hasMilestonePhraseTarget) {
-      this.milestonePhraseTarget.textContent = `${label} ${this.abilityNameValue.toLowerCase()}`
+      this.milestonePhraseTarget.textContent = `${label} (M${n}) ${this.abilityNameValue.toLowerCase()}`
     }
 
     this.meaningTargets.forEach((el) => {
@@ -45,3 +51,4 @@ export default class extends Controller {
     })
   }
 }
+

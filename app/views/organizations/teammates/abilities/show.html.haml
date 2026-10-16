@@ -94,6 +94,12 @@
         association_by_goal_id: @associated_goal_association_by_goal_id,
         return_url: request.url
 
+    = render "organizations/teammates/abilities/history",
+             entries: @ability_history_entries,
+             organization: @organization,
+             teammate: @teammate,
+             ability: @ability
+
     .row.mb-5.mt-4
       .col-3
       .col-6

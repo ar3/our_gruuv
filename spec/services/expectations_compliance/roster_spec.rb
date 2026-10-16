@@ -37,7 +37,7 @@ RSpec.describe ExpectationsCompliance::Roster do
     acknowledgement = JobDescriptionAcknowledgement.new(
       company_teammate: manager,
       organization: organization,
-      typed_name: manager_person.government_first_then_last_display_name,
+      typed_name: manager_person.all_names_display_name,
       signed_at: Time.current,
       document_html: "<p>ok</p>",
       snapshot: { "position_name" => "Role" }

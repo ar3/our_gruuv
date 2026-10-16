@@ -1,0 +1,29 @@
+-# Shared awarder controls: typed name + co-sign invite or skip.
+-# Locals: cosign_candidate_groups:, field_id_suffix: (optional), form_values: (optional)
+- suffix = local_assigns.fetch(:field_id_suffix, "default")
+- groups = local_assigns.fetch(:cosign_candidate_groups, [])
+- form_values = (local_assigns[:form_values] || {}).with_indifferent_access
+- selected_invitee_ids = Array(form_values[:cosign_invitee_ids]).map(&:to_i)
+- skip_checked = ActiveModel::Type::Boolean.new.cast(form_values[:skip_cosign])
+
+.border.rounded.p-3.mb-3
+  %h6.mb-3 Evidence: co-sign
+  %p.small.text-muted
+    Invite at least one co-signer, or skip and flag this award for milestone integrity review.
+
+  .mb-3
+    = label_tag "awarder_typed_name_#{suffix}", "Type your full name, #{current_person.all_names_display_name}", class: "form-label"
+    = text_field_tag :awarder_typed_name, form_values[:awarder_typed_name], class: "form-control", id: "awarder_typed_name_#{suffix}", autocomplete: "off"
+
+  .mb-3
+    %label.form-label Co-signers
+    %select.form-select{name: "cosign_invitee_ids[]", id: "cosign_invitee_ids_#{suffix}", multiple: true, size: 6}
+      - groups.each do |group|
+        %optgroup{label: group.label}
+          - group.teammates.each do |teammate|
+            %option{value: teammate.id, selected: selected_invitee_ids.include?(teammate.id)}= teammate.person.display_name
+    %small.form-text.text-muted Leave empty only if you skip co-sign below.
+
+  .form-check.mb-0
+    = check_box_tag :skip_cosign, "1", skip_checked, class: "form-check-input", id: "skip_cosign_#{suffix}"
+    = label_tag "skip_cosign_#{suffix}", "Skip co-sign (award now; flagged for moderation)", class: "form-check-label"

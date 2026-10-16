@@ -228,7 +228,12 @@ Rails.application.routes.draw do
         patch :update_view
       end
     end
-    
+
+    # Legacy flat milestone award URLs → nested teammate/ability path
+    get "milestone_awards/:id",
+        to: "organizations/milestone_awards#legacy_redirect",
+        as: :milestone_award
+
     # Check-ins health dashboard
     get :check_ins_health, to: 'organizations/check_ins_health#index'
     get :expectations_compliance, to: 'organizations/expectations_compliance#index'
@@ -248,6 +253,9 @@ Rails.application.routes.draw do
     resource :maap_cleanup_inbox,
              only: [:show],
              controller: "organizations/maap_cleanup_inbox"
+    resource :milestone_integrity_inbox,
+             only: [:show],
+             controller: "organizations/milestone_integrity_inbox"
     get "seat_suggestion",
         to: "organizations/seat_suggestions#show",
         as: :seat_suggestion
@@ -749,7 +757,18 @@ Rails.application.routes.draw do
         post :start_check_in, on: :member
         delete :destroy_open_check_in, on: :member
       end
-      resources :abilities, only: [:show], controller: 'teammates/abilities'
+      resources :abilities, only: [:show], controller: 'teammates/abilities' do
+        resources :milestone_awards,
+                  only: [:show],
+                  controller: 'teammates/abilities/milestone_awards' do
+          member do
+            post :cosign
+            post :decline
+            post :request_cosign
+            post :require_cosign
+          end
+        end
+      end
       resource :slack_ogo_check_in_consult, only: [:show, :create],
                controller: 'teammates/slack_ogo_check_in_consults'
     end

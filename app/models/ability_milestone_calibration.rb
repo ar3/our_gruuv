@@ -26,8 +26,15 @@ class AbilityMilestoneCalibration < ApplicationRecord
     items.where(awarded_at: nil).ordered_by_ability_name
   end
 
-  # Awarded rows that still have both proposals — collapsed history on the calibration page.
+  # Certified but still waiting on co-sign (or soft-reversed require-cosign).
+  def awaiting_cosign_items
+    items.awaiting_cosign.includes(:ability, :awarded_by_teammate, milestone_award: :cosigning_teammate)
+      .order(awarded_at: :desc)
+  end
+
+  # Fully released calibration history (effective award, skipped co-sign, or Milestone 0).
   def history_items
-    items.calibration_history.order(awarded_at: :desc)
+    items.earned_history.includes(:ability, :awarded_by_teammate, milestone_award: :cosigning_teammate)
+      .order(awarded_at: :desc)
   end
 end

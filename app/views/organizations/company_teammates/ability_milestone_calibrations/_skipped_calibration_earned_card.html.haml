@@ -1,0 +1,38 @@
+-# Locals: ability:, milestone:, organization:
+- ability = local_assigns.fetch(:ability)
+- milestone = local_assigns.fetch(:milestone)
+- organization = local_assigns.fetch(:organization)
+- collapse_id = "calibration-skipped-#{ability.id}"
+
+.card.mb-2.border-info-subtle{id: "calibration-skipped-ability-#{ability.id}"}
+  .card-header.py-2.bg-info-subtle
+    %button.btn.btn-link.text-decoration-none.text-body.w-100.text-start.d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.p-0{type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{collapse_id}" }, aria: { expanded: 'false', controls: collapse_id }}
+      %span
+        %i.bi.bi-chevron-down.me-1.text-muted
+        = ability.display_name
+      %span.d-flex.flex-wrap.gap-2.align-items-center
+        %span.badge.text-bg-info Calibration skipped
+        %span.badge.bg-success
+          Milestone #{milestone.milestone_level}
+        %span.small.text-muted
+          Awarded #{milestone.attained_at.strftime('%B %d, %Y')}
+  .collapse{id: collapse_id}
+    .card-body
+      .alert.alert-info.mb-3
+        %p.mb-0.small
+          This Ability already had a Milestone awarded without going through one-time calibration.
+          Calibration was skipped for this Ability.
+      %p.small.text-muted.mb-2
+        Awarded
+        - if milestone.certifying_teammate.present?
+          by #{milestone.certifying_teammate.person.display_name}
+        on #{milestone.attained_at.strftime('%B %d, %Y')}
+        as Milestone #{milestone.milestone_level}.
+      - if milestone.certification_note.present?
+        .mb-2
+          %div.small.text-muted.mb-1 Reason
+          %p.small.mb-0= milestone.certification_note
+      %p.mb-0
+        = link_to organization_teammate_milestone_path(organization, milestone), class: 'small' do
+          View Milestone #{milestone.milestone_level}
+          %i.bi.bi-box-arrow-up-right.ms-1

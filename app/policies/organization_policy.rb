@@ -119,6 +119,20 @@ class OrganizationPolicy < ApplicationPolicy
     true
   end
 
+  # Milestone integrity — manage employment, or ability maintainers (scoped in the inbox builder).
+  def milestone_integrity_inbox?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    return true if admin_bypass?
+    return true if viewing_teammate.can_manage_employment?
+    return true if ObjectMaintainer.exists?(
+      company_teammate_id: viewing_teammate.id,
+      maintainable_type: "Ability"
+    )
+
+    false
+  end
+
   # Beta Seat Suggestion chat — any employed teammate in this org.
   def seat_suggestion?
     return false unless viewing_teammate

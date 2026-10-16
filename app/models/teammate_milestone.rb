@@ -6,6 +6,7 @@ class TeammateMilestone < ApplicationRecord
   belongs_to :ability
   belongs_to :certifying_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :published_by_teammate, class_name: 'CompanyTeammate', optional: true
+  belongs_to :milestone_award, optional: true
   has_one :observable_moment, as: :momentable, dependent: :destroy
 
   # Validations
@@ -26,6 +27,21 @@ class TeammateMilestone < ApplicationRecord
   scope :published, -> { where.not(published_at: nil) }
   scope :public_profile_published, -> { where.not(public_profile_published_at: nil) }
   scope :unpublished, -> { where(published_at: nil) }
+  # Legacy rows (no award) and released awards count; pending / require-cosign do not.
+  scope :effective, lambda {
+    left_joins(:milestone_award).where(
+      <<~SQL.squish
+        milestone_awards.id IS NULL
+        OR (
+          milestone_awards.cosigner_signed_at IS NOT NULL
+          OR (
+            milestone_awards.awarder_skipped_cosign_at IS NOT NULL
+            AND milestone_awards.moderator_requires_cosign_at IS NULL
+          )
+        )
+      SQL
+    )
+  }
 
   # Instance methods
   def milestone_level_display
@@ -38,6 +54,12 @@ class TeammateMilestone < ApplicationRecord
 
   def certifier_display
     certifying_teammate.person.display_name
+  end
+
+  def effective?
+    return true if milestone_award.blank?
+
+    milestone_award.effective?
   end
 
   def published?

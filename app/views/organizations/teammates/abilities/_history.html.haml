@@ -1,0 +1,89 @@
+-# Locals: entries:, organization:, teammate:, ability:
+- entries = local_assigns.fetch(:entries, [])
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- ability = local_assigns.fetch(:ability)
+- calibration_path = ability_milestone_calibration_organization_company_teammate_path(organization, teammate)
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 History
+  .card-body
+    - if entries.blank?
+      %p.text-muted.mb-0 No calibration or award history for this ability yet.
+    - else
+      %ul.list-unstyled.mb-0
+        - entries.each do |entry|
+          %li.mb-3.pb-3.border-bottom.border-light
+            - if entry.kind == :calibration
+              - item = entry.calibration_item
+              - view_role = entry.view_role
+              - other_role = view_role == :employee ? :manager : :employee
+              - employee_casual = teammate.person.casual_name
+              - manager_casual = teammate.active_employment_tenure&.manager_teammate&.person&.casual_name.presence || "their manager"
+              - other_casual = other_role == :employee ? employee_casual : manager_casual
+              - my_rated = item.rated_for?(view_role)
+              - other_rated = item.other_rated_for?(view_role)
+              .d-flex.flex-wrap.justify-content-between.align-items-start.gap-2.mb-1
+                .fw-semibold
+                  = link_to "Calibration",
+                            "#{calibration_path}#calibration-item-#{item.id}",
+                            class: "text-decoration-none"
+                .d-flex.flex-wrap.gap-1
+                  - if item.awarded?
+                    %span.badge{class: item.official_milestone_level.to_i.positive? ? "bg-success" : "bg-secondary"}
+                      Official: #{ability_milestone_calibration_rating_label(item.official_milestone_level)}
+                  - elsif item.ready_for_review?
+                    %span.badge.bg-success Ready to submit certification
+                  - elsif my_rated && !other_rated
+                    %span.badge.bg-warning.text-dark Your rating saved
+                    %span.badge.bg-secondary Waiting on #{other_casual}
+                  - elsif !my_rated && other_rated
+                    %span.badge.bg-info.text-dark #{other_casual} has rated
+                    %span.badge.bg-warning.text-dark Your rating still needed
+                  - else
+                    %span.badge.bg-light.text-dark.border Not rated yet
+              .small.text-muted
+                - if my_rated
+                  %div
+                    %span.fw-semibold You:
+                    = ability_milestone_calibration_rating_label(item.rating_for(view_role))
+                  - if entry.reveal_other_side
+                    %div
+                      %span.fw-semibold #{other_casual}:
+                      = ability_milestone_calibration_rating_label(item.rating_for(other_role))
+                - if item.awarded_at.present?
+                  %div
+                    Certified
+                    - if item.awarded_by_teammate.present?
+                      by #{item.awarded_by_teammate.person.display_name}
+                    on #{item.awarded_at.strftime("%B %d, %Y")}
+            - else
+              - award = entry.milestone_award
+              - award_path = organization_teammate_ability_milestone_award_path(organization, teammate, ability, award)
+              .d-flex.flex-wrap.justify-content-between.align-items-start.gap-2.mb-1
+                .fw-semibold
+                  = link_to "Milestone #{award.official_milestone_level} award attempt",
+                            award_path,
+                            class: "text-decoration-none"
+                .d-flex.flex-wrap.gap-1
+                  - case award.derived_status
+                  - when :pending_cosign
+                    %span.badge.bg-warning.text-dark Awaiting co-sign
+                  - when :skipped_awaiting_moderation
+                    %span.badge.bg-warning.text-dark Skipped (awaiting moderation)
+                  - when :requires_cosign
+                    %span.badge.bg-danger Co-sign required
+                  - when :cosigned
+                    %span.badge.bg-success Co-signed
+                  - else
+                    %span.badge.bg-secondary= award.derived_status.to_s.humanize
+              .small.text-muted
+                %div
+                  Awarded by #{award.certifying_teammate.person.display_name}
+                  - if award.awarder_signed_at.present?
+                    on #{award.awarder_signed_at.strftime("%B %d, %Y")}
+                - if award.cosigned? && award.cosigning_teammate.present?
+                  %div Co-signed by #{award.cosigning_teammate.person.display_name}
+                - if award.source == "calibration"
+                  %div From calibration

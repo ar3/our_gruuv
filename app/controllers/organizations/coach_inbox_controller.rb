@@ -14,7 +14,8 @@ class Organizations::CoachInboxController < Organizations::OrganizationNamespace
     @sections = CoachInbox::Builder.call(
       organization: @organization,
       teammates: teammates,
-      expanded_subtype_keys: Array(params[:expand])
+      expanded_subtype_keys: Array(params[:expand]),
+      viewing_teammate: current_company_teammate
     )
     @current_manager_filter = params[:manager_id]
     @available_manager_filter_options = available_check_ins_health_manager_filter_options
