@@ -45,6 +45,12 @@
       - og_academy_explore_links(current_organization).each do |label, path|
         = link_to path, class: "btn btn-outline-secondary d-inline-flex align-items-center px-3" do
           = og_academy_explore_dropcap_label(label)
+  - org_name = current_organization.name.presence || "Company"
+  %p.small.text-muted.mt-2.mb-0
+    … or explore
+    = link_to "#{org_name} OG Scorecard", organization_insights_og_scorecard_path(current_organization), class: "link-secondary"
+    or the
+    = link_to "#{org_name} OG Leaderboard", organization_insights_real_og_leaders_path(current_organization), class: "link-secondary"
 
 -# ——— 2. Practice milestones ———
 = render "shared/section_header",

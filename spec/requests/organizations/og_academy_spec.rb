@@ -54,6 +54,15 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(body).to include('>ositions</span>')
       expect(body.index('Explore:')).to be > body.index('og_academy_quick_start')
       expect(body.index('Explore:')).to be < body.index('og-academy-milestones')
+      scorecard_label = "#{company.name} OG Scorecard"
+      leaderboard_label = "#{company.name} OG Leaderboard"
+      expect(body).to include('… or explore')
+      expect(body).to include(scorecard_label)
+      expect(body).to include(leaderboard_label)
+      expect(body).to include(organization_insights_og_scorecard_path(company))
+      expect(body).to include(organization_insights_real_og_leaders_path(company))
+      expect(body.index(scorecard_label)).to be > body.index('Explore:')
+      expect(body.index(scorecard_label)).to be < body.index('og-academy-milestones')
     end
   end
 
