@@ -21,6 +21,19 @@
   .card.mb-4
     .card-body
       - if @goals_needing_check_in.any?
+        - grow_by_goals_url = my_growth_goals_organization_company_teammate_path(organization, @teammate)
+        - bulk_edit_url = organization_goals_bulk_edit_path(organization, owner_id: "CompanyTeammate_#{@teammate.id}", status: ["active"])
+        .alert.alert-primary.d-flex.flex-wrap.align-items-center.justify-content-between.gap-3.mb-4.py-4.px-4
+          %p.fs-4.fw-semibold.mb-0
+            Confidence checks on all of your active goals:
+          .d-flex.flex-wrap.gap-2
+            = link_to grow_by_goals_url, class: "btn btn-primary btn-lg" do
+              %i.bi.bi-graph-up-arrow.me-2
+              Grow by Goals
+            - if policy(Goal).bulk_edit?
+              = link_to bulk_edit_url, class: "btn btn-outline-primary btn-lg" do
+                %i.bi.bi-table.me-2
+                Bulk Edit Goals
         .table-responsive
           %table.table.table-hover
             %thead

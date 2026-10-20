@@ -151,6 +151,16 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
         expect(response.body).to include('Goal confidence checks')
         expect(response.body).to include('Unique Goal Title 1')
         expect(response.body).to include('Unique Goal Title 2')
+        expect(response.body).to include('Confidence checks on all of your active goals:')
+        expect(response.body).to include('Grow by Goals')
+        expect(response.body).to include(my_growth_goals_organization_company_teammate_path(company, company_teammate))
+        bulk_edit_href = organization_goals_bulk_edit_path(
+          company,
+          owner_id: "CompanyTeammate_#{company_teammate.id}",
+          status: ["active"]
+        )
+        expect(response.body).to include(ERB::Util.html_escape(bulk_edit_href))
+        expect(response.body).to include('Bulk Edit Goals')
       else
         # When no goals, the section is hidden and listed in the completed section
         expect(response.body).to include("you've completed everything")
