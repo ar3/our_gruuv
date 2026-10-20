@@ -36,44 +36,212 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
     end
   end
 
-  describe "next item resolution (resolve_next_item)" do
-    let(:service) do
+  describe "next item resolution (your-turn first, then bucket)" do
+    def service_for(current_type:, current_id:)
       described_class.new(
         teammate: teammate,
         organization: organization,
         current_person: current_person,
-        current_type: :assignment,
-        current_id: green_assignment_id
+        current_type: current_type,
+        current_id: current_id
       )
     end
-    let(:green_assignment_id) { 200 }
-    let(:yellow_assignment_id) { 100 }
-    let(:fixture_items) do
-      [
-        { type: :assignment, id: yellow_assignment_id, name: "Yellow", bucket: described_class::BUCKET_YELLOW },
-        { type: :assignment, id: green_assignment_id, name: "Current", bucket: described_class::BUCKET_GREEN },
-        { type: :position, id: nil, name: "Position", bucket: described_class::BUCKET_GREEN }
+
+    it "excludes current and picks the first remaining your-turn item (worst bucket among incomplete my-side)" do
+      items = [
+        { type: :assignment, id: 1, name: "Yellow", bucket: described_class::BUCKET_YELLOW, my_side_completed_at: nil },
+        { type: :assignment, id: 2, name: "Current Green", bucket: described_class::BUCKET_GREEN, my_side_completed_at: nil },
+        { type: :assignment, id: 3, name: "Other Green", bucket: described_class::BUCKET_GREEN, my_side_completed_at: nil }
       ]
+      next_pick = service_for(current_type: :assignment, current_id: 2).send(:resolve_next_item, items, 1)
+      expect(next_pick[:id]).to eq(1)
     end
 
-    it "prefers a more urgent bucket over circular next in the green section" do
-      next_pick = service.send(:resolve_next_item, fixture_items, 1)
-      expect(next_pick[:id]).to eq(yellow_assignment_id)
+    it "prefers any your-turn incomplete item over a worse-bucket item that already has my-side done" do
+      # Sorted as the service would: nil my-side first (yellow, then green), then red with my-side done
+      items = [
+        { type: :assignment, id: 10, name: "Yellow your turn", bucket: described_class::BUCKET_YELLOW, my_side_completed_at: nil },
+        { type: :assignment, id: 20, name: "Green your turn", bucket: described_class::BUCKET_GREEN, my_side_completed_at: nil },
+        { type: :assignment, id: 30, name: "Red my-side done", bucket: described_class::BUCKET_RED, my_side_completed_at: 2.days.ago }
+      ]
+      next_pick = service_for(current_type: :assignment, current_id: 10).send(:resolve_next_item, items, 0)
+      expect(next_pick[:id]).to eq(20)
     end
 
-    it "uses circular order when no other item is more urgent" do
-      only_green = [
-        { type: :assignment, id: 1, name: "First", bucket: described_class::BUCKET_GREEN },
-        { type: :assignment, id: 2, name: "Second", bucket: described_class::BUCKET_GREEN }
+    it "among same-urgency your-turn items, does not skip earlier items via circular walk" do
+      items = [
+        { type: :assignment, id: 1, name: "Red A", bucket: described_class::BUCKET_RED, my_side_completed_at: nil },
+        { type: :assignment, id: 2, name: "Red B current", bucket: described_class::BUCKET_RED, my_side_completed_at: nil },
+        { type: :assignment, id: 3, name: "Red C", bucket: described_class::BUCKET_RED, my_side_completed_at: nil }
       ]
-      s2 = described_class.new(
+      next_pick = service_for(current_type: :assignment, current_id: 2).send(:resolve_next_item, items, 1)
+      expect(next_pick[:id]).to eq(1)
+    end
+
+    it "falls back to first remaining my-side-done item when no your-turn items remain" do
+      items = [
+        { type: :assignment, id: 1, name: "Current", bucket: described_class::BUCKET_GREEN, my_side_completed_at: nil },
+        { type: :assignment, id: 2, name: "Older done", bucket: described_class::BUCKET_YELLOW, my_side_completed_at: 40.days.ago },
+        { type: :assignment, id: 3, name: "Newer done", bucket: described_class::BUCKET_YELLOW, my_side_completed_at: 5.days.ago }
+      ]
+      next_pick = service_for(current_type: :assignment, current_id: 1).send(:resolve_next_item, items, 0)
+      expect(next_pick[:id]).to eq(2)
+    end
+  end
+
+  describe "end-to-end next_item scenarios" do
+    def call_for(current_type:, current_id:)
+      described_class.call(
         teammate: teammate,
         organization: organization,
         current_person: current_person,
-        current_type: :assignment,
-        current_id: 1
+        current_type: current_type,
+        current_id: current_id
       )
-      expect(s2.send(:resolve_next_item, only_green, 0)[:id]).to eq(2)
+    end
+
+    it "from a your-turn yellow, moves to your-turn green rather than red with my-side already done" do
+      yellow = create(:aspiration, company: organization, name: "Yellow Open")
+      green = create(:aspiration, company: organization, name: "Green Open")
+      red_done = create(:aspiration, company: organization, name: "Red Done")
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: yellow, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: yellow,
+        official_check_in_completed_at: (healthy_days + 5).days.ago
+      )
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: green, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: green,
+        official_check_in_completed_at: (healthy_days - 5).days.ago
+      )
+
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: red_done,
+        employee_completed_at: 3.days.ago,
+        official_check_in_completed_at: nil
+      )
+
+      result = call_for(current_type: :aspiration, current_id: yellow.id)
+
+      expect(result[:next_item][:name]).to eq("Green Open")
+      expect(result[:next_item][:my_side_completed_at]).to be_nil
+    end
+
+    it "among your-turn items, picks the worst EH bucket after excluding current" do
+      red = create(:aspiration, company: organization, name: "Needs Attention")
+      yellow = create(:aspiration, company: organization, name: "Warning")
+      green = create(:aspiration, company: organization, name: "Healthy")
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: red, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(:aspiration_check_in, teammate: teammate, aspiration: yellow, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: yellow,
+        official_check_in_completed_at: (healthy_days + 5).days.ago
+      )
+      create(:aspiration_check_in, teammate: teammate, aspiration: green, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: green,
+        official_check_in_completed_at: (healthy_days - 5).days.ago
+      )
+
+      result = call_for(current_type: :aspiration, current_id: yellow.id)
+
+      expect(result[:next_item][:name]).to eq("Needs Attention")
+    end
+
+    it "when every other item has my-side done, picks the worst-bucket remaining item" do
+      current = create(:aspiration, company: organization, name: "Current Open")
+      yellow_done = create(:aspiration, company: organization, name: "Yellow Done")
+      red_done = create(:aspiration, company: organization, name: "Red Done")
+
+      create(:aspiration_check_in, teammate: teammate, aspiration: current, employee_completed_at: nil, official_check_in_completed_at: nil)
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: current,
+        official_check_in_completed_at: (healthy_days - 5).days.ago
+      )
+
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: yellow_done,
+        employee_completed_at: 2.days.ago,
+        official_check_in_completed_at: nil
+      )
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: yellow_done,
+        official_check_in_completed_at: (healthy_days + 5).days.ago
+      )
+
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: red_done,
+        employee_completed_at: 1.day.ago,
+        official_check_in_completed_at: nil
+      )
+
+      result = call_for(current_type: :aspiration, current_id: current.id)
+
+      expect(result[:next_item][:name]).to eq("Red Done")
+    end
+
+    it "uses manager_completed_at for my-side when the viewer is not the teammate" do
+      manager = create(:person)
+      manager_ct = create(:company_teammate, organization: organization, person: manager)
+
+      open_for_employee = create(:aspiration, company: organization, name: "Employee Still Open")
+      open_for_manager = create(:aspiration, company: organization, name: "Manager Still Open")
+
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: open_for_employee,
+        employee_completed_at: nil,
+        manager_completed_at: 1.day.ago,
+        manager_completed_by_teammate: manager_ct,
+        official_check_in_completed_at: nil
+      )
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: open_for_manager,
+        employee_completed_at: 1.day.ago,
+        manager_completed_at: nil,
+        official_check_in_completed_at: nil
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: manager,
+        current_type: :aspiration,
+        current_id: open_for_employee.id
+      )
+
+      expect(result[:next_item][:name]).to eq("Manager Still Open")
+      expect(result[:next_item][:my_side_completed_at]).to be_nil
     end
   end
 
@@ -238,7 +406,7 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
   end
 
   describe "ordering by viewing side completion timing" do
-    it "orders nil my-side completion first, then oldest to newest, then type and name" do
+    it "orders nil my-side first, then my-side-done by bucket then oldest completion, then type and name" do
       position_major_level = create(:position_major_level)
       title = create(:title, company: organization, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level)
@@ -275,6 +443,46 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
         "Newer Assignment",
         position.title.external_title
       ])
+    end
+
+    it "among my-side-done items, ranks worse EH bucket before older my-side completion" do
+      red_newer = create(:aspiration, company: organization, name: "Red Newer Done")
+      yellow_older = create(:aspiration, company: organization, name: "Yellow Older Done")
+
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: red_newer,
+        employee_completed_at: 2.days.ago,
+        official_check_in_completed_at: nil
+      )
+      create(
+        :aspiration_check_in,
+        teammate: teammate,
+        aspiration: yellow_older,
+        employee_completed_at: 40.days.ago,
+        official_check_in_completed_at: nil
+      )
+      create(
+        :aspiration_check_in,
+        :finalized,
+        teammate: teammate,
+        aspiration: yellow_older,
+        official_check_in_completed_at: (healthy_days + 5).days.ago
+      )
+
+      result = described_class.call(
+        teammate: teammate,
+        organization: organization,
+        current_person: current_person,
+        current_type: :position,
+        current_id: nil
+      )
+
+      done_names = result[:ordered_items]
+        .select { |i| i[:type] == :aspiration && i[:my_side_completed_at].present? }
+        .map { |i| i[:name] }
+      expect(done_names).to eq(["Red Newer Done", "Yellow Older Done"])
     end
   end
 end

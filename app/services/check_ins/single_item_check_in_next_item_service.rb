@@ -4,6 +4,14 @@ module CheckIns
   # Returns the next single-item check-in target (aspiration, assignment, or position)
   # and whether the "Save and move to next" button should be enabled.
   #
+  # Next-item algorithm (button label + go_to_next redirect):
+  # 1. Collect all check-in targets (aspirations, active/required assignments, position).
+  # 2. Sort: open my-side incomplete first, then by EH bucket (red → yellow → green),
+  #    then type/name (and among my-side-done, bucket then oldest my-side completion).
+  # 3. Exclude the current page item.
+  # 4. If any remaining still need your side, pick the first of those (worst your-turn).
+  # 5. Otherwise pick the first remaining (bucket-ordered among my-side-done).
+  #
   # Urgency buckets match EngagementHealth Required Clarity (Healthy / Warning /
   # Needs Attention) from latest official finalization — same windows as Up Next
   # and the all-fresh banner. When every item is Healthy, next_requires_check_in
@@ -177,13 +185,14 @@ module CheckIns
         completed_at = i[:my_side_completed_at]
         type_rank = type_order[i[:type]] || 99
         name_key = i[:name].to_s.downcase
+        bucket_rank = bucket_urgency_rank(i[:bucket])
 
         if completed_at.present?
-          [1, completed_at, type_rank, name_key]
+          [1, bucket_rank, completed_at, type_rank, name_key]
         else
           [
             0,
-            bucket_urgency_rank(i[:bucket]),
+            bucket_rank,
             type_rank,
             i[:bucket_activity_at] || Time.zone.at(0),
             name_key
@@ -199,29 +208,16 @@ module CheckIns
       active_position.required_assignments.pluck(:assignment_id)
     end
 
-    # Items are sorted red → yellow → green. Prefer any other item with a more
-    # urgent bucket first; otherwise advance circularly in the list.
-    def resolve_next_item(items, current_index)
-      return items.first if items.blank? || current_index.nil?
+    # Exclude current. Prefer remaining items where open my-side is still incomplete;
+    # among that pool (or all remaining if none), take the first in sort order.
+    def resolve_next_item(items, _current_index)
+      return items.first if items.blank?
 
-      current_bucket = items[current_index][:bucket]
-      current_rank = bucket_urgency_rank(current_bucket)
+      others = items.reject { |i| same_item?(i) }
+      return items.first if others.empty?
 
-      more_urgent = items.find do |i|
-        !same_item?(i) && bucket_urgency_rank(i[:bucket]) < current_rank
-      end
-      return more_urgent if more_urgent
-
-      n = items.size
-      return items.first if n <= 1
-
-      (1...n).each do |step|
-        idx = (current_index + step) % n
-        candidate = items[idx]
-        return candidate unless same_item?(candidate)
-      end
-
-      items[(current_index + 1) % n]
+      your_turn = others.select { |i| i[:my_side_completed_at].blank? }
+      your_turn.first || others.first
     end
 
     def bucket_urgency_rank(bucket)
