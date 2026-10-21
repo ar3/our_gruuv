@@ -915,6 +915,18 @@ module ApplicationHelper
     )
   end
 
+  # Standalone Start Here page sunset (redirect to OG Academy thereafter).
+  START_HERE_RETIREMENT_DATE = Date.new(2026, 12, 1)
+
+  def start_here_retirement_date
+    START_HERE_RETIREMENT_DATE
+  end
+
+  def start_here_retirement_date_label
+    date = start_here_retirement_date
+    date.strftime("%B #{date.day}, %Y")
+  end
+
   # Returns "a" or "an" based on whether the word starts with a vowel sound
   def indefinite_article(word)
     return 'a' if word.blank?

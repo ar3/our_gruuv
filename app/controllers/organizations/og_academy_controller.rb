@@ -3,6 +3,8 @@
 class Organizations::OgAcademyController < Organizations::OrganizationNamespaceBaseController
   def show
     authorize current_organization, :show?
+    @start_here_dashboard = helpers.start_here_dashboard_service
+    @start_here_dashboard.ensure_manager_default_if_blank!
   end
 
   def quick_start

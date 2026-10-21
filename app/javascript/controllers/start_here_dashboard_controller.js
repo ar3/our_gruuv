@@ -1,19 +1,94 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Lazy-loads Start Here card bodies via JSON (partial per widget or legacy dashboard_content).
+// Optional loadOnScroll: wait until the dashboard region enters the viewport before fetching
+// (used when embedded on OG Academy so most visitors never trigger widget AJAX).
 export default class extends Controller {
-  static values = { url: String }
+  static values = {
+    url: String,
+    loadOnScroll: { type: Boolean, default: false },
+  }
 
   connect() {
     this.activeLoadAbortControllers = new Set()
     if (!this.hasUrlValue) return
     const ids = this.slotElements.map((el) => el.dataset.widgetId).filter(Boolean)
     if (ids.length === 0) return
-    this.loadWidgets(ids)
+
+    if (this.loadOnScrollValue) {
+      this.observeAndLoad(ids)
+    } else {
+      this.loadWidgets(ids)
+    }
   }
 
   disconnect() {
+    if (this._scrollObserver) {
+      this._scrollObserver.disconnect()
+      this._scrollObserver = null
+    }
+    if (this._scrollGateHandler) {
+      window.removeEventListener("scroll", this._scrollGateHandler, { passive: true })
+      this._scrollGateHandler = null
+    }
     this.abortAllLoads()
+  }
+
+  observeAndLoad(ids) {
+    // Snapshot fold position at connect. Tall viewports + short lazy placeholders above can
+    // put this region on-screen without the user scrolling — still wait for a real scroll then.
+    this._startedBelowFold =
+      this.element.getBoundingClientRect().top > window.innerHeight - 40
+    this._scrollLoadStarted = false
+
+    const readyToLoad = (isIntersecting) => {
+      if (!isIntersecting) return false
+      if (this._startedBelowFold) return true
+      return window.scrollY > 80
+    }
+
+    const beginLoad = () => {
+      if (this._scrollLoadStarted) return
+      this._scrollLoadStarted = true
+      if (this._scrollObserver) {
+        this._scrollObserver.disconnect()
+        this._scrollObserver = null
+      }
+      if (this._scrollGateHandler) {
+        window.removeEventListener("scroll", this._scrollGateHandler, { passive: true })
+        this._scrollGateHandler = null
+      }
+      this.loadWidgets(ids)
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      this._scrollGateHandler = () => {
+        const rect = this.element.getBoundingClientRect()
+        const visible = rect.top < window.innerHeight && rect.bottom > 0
+        if (readyToLoad(visible)) beginLoad()
+      }
+      window.addEventListener("scroll", this._scrollGateHandler, { passive: true })
+      this._scrollGateHandler()
+      return
+    }
+
+    this._scrollObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => readyToLoad(entry.isIntersecting))) beginLoad()
+      },
+      { root: null, rootMargin: "0px", threshold: 0 }
+    )
+    this._scrollObserver.observe(this.element)
+
+    // If already intersecting but still waiting on scrollY, re-check on scroll.
+    if (!this._startedBelowFold) {
+      this._scrollGateHandler = () => {
+        const rect = this.element.getBoundingClientRect()
+        const visible = rect.top < window.innerHeight && rect.bottom > 0
+        if (readyToLoad(visible)) beginLoad()
+      }
+      window.addEventListener("scroll", this._scrollGateHandler, { passive: true })
+    }
   }
 
   get slotElements() {

@@ -19,6 +19,7 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response.body).to include('OG Academy')
       expect(response.body).to include('Quick Start')
       expect(response.body).to include('OG Mastery milestones')
+      expect(response.body).to include('Custom dashboard')
       expect(response.body).to include('Choose your home base')
       expect(response.body).to include('Learn OurGruuv by doing... quick start now...')
       expect(response.body).to include('Welcome to OG Academy')
@@ -32,8 +33,25 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response.body).to include(organization_og_academy_milestones_path(company))
       expect(response.body).to include('Loading Quick Start')
       expect(response.body).to include('Loading OG Mastery milestones')
+      expect(response.body).to include('og-academy-lazy-frame-placeholder')
+      expect(response.body).to include('min-height: 300px')
       expect(response.body).to include('target="_top"')
       expect(response.body).not_to include('turbo-cache-control')
+    end
+
+    it 'embeds Start Here widgets below milestones with scroll-gated loading' do
+      get organization_og_academy_path(company)
+      body = response.body
+      expect(body).to include('Custom dashboard')
+      expect(body).to include('start-here-dashboard-skeleton')
+      expect(body).to include('Manage what widgets appear')
+      expect(body).to include('data-start-here-dashboard-load-on-scroll-value="true"')
+      expect(body).to include('return_to')
+      expect(body).to include('og_academy')
+      expect(body).to include('December 1, 2026')
+      expect(body).not_to include('Other ways to customize OurGruuv')
+      expect(body.index('og-academy-widgets')).to be > body.index('og-academy-milestones')
+      expect(body.index('og-academy-widgets')).to be < body.index('og-academy-home')
     end
 
     it 'renders the Explore button row between Quick Start and OG Mastery' do

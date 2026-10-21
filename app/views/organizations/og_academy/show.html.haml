@@ -67,7 +67,25 @@
                     data: { controller: "reload-turbo-frame" } do
     = render "organizations/og_academy/lazy_frame_placeholder", label: "Loading OG Mastery milestones…"
 
--# ——— 3. Home page ———
+-# ——— 3. Custom dashboard widgets (same as Start Here; AJAX only after scroll) ———
+= render "shared/section_header",
+         title: "Custom dashboard",
+         icon: "bi-grid-3x3-gap",
+         description: "Summaries of the pages you care about — scroll down to load"
+
+%section.mb-5{role: "region", "aria-labelledby": "og-academy-widgets"}
+  %span.visually-hidden#og-academy-widgets Custom dashboard
+  %p.text-muted.mb-3
+    Advanced users can pin widget summaries here. Widget content loads only when you scroll to this section.
+    The standalone
+    = link_to "Start Here", organization_start_here_path(current_organization)
+    page is retiring on #{start_here_retirement_date_label}.
+  = render "organizations/start_here/widget_dashboard",
+           dash: @start_here_dashboard,
+           load_on_scroll: true,
+           return_to: "og_academy"
+
+-# ——— 4. Home page ———
 = render "shared/section_header",
          title: "Choose your home base",
          icon: "bi-house-door",
@@ -76,8 +94,7 @@
 %section.mb-5{role: "region", "aria-labelledby": "og-academy-home"}
   %span.visually-hidden#og-academy-home Choose your home base
   %p.text-muted.mb-3
-    When you're ready for a customized day-to-day home, pick one below. Advanced users often choose
-    %strong Start Here.
+    When you're ready for a customized day-to-day landing page, pick one below.
     You can always return to OG Academy from your profile menu.
 
   - home_options = og_academy_home_options(current_organization, current_company_teammate, casual)

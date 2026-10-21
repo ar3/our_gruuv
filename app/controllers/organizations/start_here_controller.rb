@@ -13,19 +13,19 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
     authorize current_organization, :show?
     id = params.require(:widget_id).to_s
     unless StartHere::Widget::Registry.widget_ids.include?(id)
-      redirect_to organization_start_here_path(current_organization), alert: "Unknown widget."
+      redirect_to start_here_post_path, alert: "Unknown widget."
       return
     end
 
     start_here_dashboard.add!(id)
-    redirect_to organization_start_here_path(current_organization), notice: "Widget added."
+    redirect_to start_here_post_path, notice: "Widget added."
   end
 
   def remove_widget
     authorize current_organization, :show?
     id = params.require(:widget_id).to_s
     start_here_dashboard.remove!(id)
-    redirect_to organization_start_here_path(current_organization), notice: "Widget removed."
+    redirect_to start_here_post_path, notice: "Widget removed."
   end
 
   def reorder_widget
@@ -33,19 +33,19 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
     id = params.require(:widget_id).to_s
     pos = params.require(:position)
     start_here_dashboard.reorder!(id, pos)
-    redirect_to organization_start_here_path(current_organization), notice: "Order updated."
+    redirect_to start_here_post_path, notice: "Order updated."
   end
 
   def apply_preset
     authorize current_organization, :show?
     preset = params.require(:preset).to_sym
     unless StartHere::Widget::Presets.valid?(preset)
-      redirect_to organization_start_here_path(current_organization), alert: "Unknown layout preset."
+      redirect_to start_here_post_path, alert: "Unknown layout preset."
       return
     end
 
     start_here_dashboard.apply_preset!(preset)
-    redirect_to organization_start_here_path(current_organization), notice: "Start Here layout updated."
+    redirect_to start_here_post_path, notice: "Widget layout updated."
   end
 
   # JSON: { "widget_ids": ["about_me", ...] } — only ids on this user’s Start Here layout are returned.
@@ -138,5 +138,15 @@ class Organizations::StartHereController < Organizations::OrganizationNamespaceB
       company_teammate: current_company_teammate,
       person: current_person
     )
+  end
+
+  # Allowlisted return path so Academy can host the same widget controls.
+  def start_here_post_path
+    case params[:return_to].to_s
+    when "og_academy"
+      organization_og_academy_path(current_organization)
+    else
+      organization_start_here_path(current_organization)
+    end
   end
 end

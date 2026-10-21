@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Hides the "Add new widgets" trigger while the panel is open; shows it again when collapsed.
+// Hides the "Manage what widgets appear" trigger while the panel is open; shows it again when collapsed.
 export default class extends Controller {
   static targets = ["trigger"]
 

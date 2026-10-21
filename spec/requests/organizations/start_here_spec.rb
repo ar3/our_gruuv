@@ -29,6 +29,14 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       expect(response.body).to include('start-here-dashboard-skeleton')
     end
 
+    it 'shows the retirement banner with Dec 1 2026 and OG Academy link' do
+      get organization_start_here_path(company)
+      expect(response.body).to include('This page is retiring on December 1, 2026')
+      expect(response.body).to include('reach out to your OG Admin')
+      expect(response.body).to include(organization_og_academy_path(company))
+      expect(response.body).to include('alert-warning')
+    end
+
     it 'uses org label for get_shit_done when set' do
       create(:company_label_preference, company: company, label_key: 'get_shit_done', label_value: 'Action Items')
       get organization_start_here_path(company)
@@ -38,7 +46,13 @@ RSpec.describe 'Organizations::StartHere', type: :request do
     it 'includes on-page layout controls' do
       get organization_start_here_path(company)
       expect(response.body).to include('Manager default')
-      expect(response.body).to include('Add new widgets')
+      expect(response.body).to include('Manage what widgets appear')
+    end
+
+    it 'places the retirement banner after the customize section' do
+      get organization_start_here_path(company)
+      body = response.body
+      expect(body.index('This page is retiring on December 1, 2026')).to be > body.index('Other ways to customize OurGruuv')
     end
 
     it 'shows Other ways to customize section with navigation and digest info alert' do
@@ -258,6 +272,12 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       post organization_start_here_remove_widget_path(company), params: { widget_id: 'get_shit_done' }
       expect(response).to redirect_to(organization_start_here_path(company))
     end
+
+    it 'redirects to OG Academy when return_to is og_academy' do
+      post organization_start_here_remove_widget_path(company),
+           params: { widget_id: 'get_shit_done', return_to: 'og_academy' }
+      expect(response).to redirect_to(organization_og_academy_path(company))
+    end
   end
 
   describe 'POST /organizations/:organization_id/start_here/add_widget' do
@@ -265,6 +285,13 @@ RSpec.describe 'Organizations::StartHere', type: :request do
       post organization_start_here_remove_widget_path(company), params: { widget_id: 'get_shit_done' }
       post organization_start_here_add_widget_path(company), params: { widget_id: 'get_shit_done' }
       expect(response).to redirect_to(organization_start_here_path(company))
+    end
+
+    it 'redirects to OG Academy when return_to is og_academy' do
+      post organization_start_here_remove_widget_path(company), params: { widget_id: 'get_shit_done' }
+      post organization_start_here_add_widget_path(company),
+           params: { widget_id: 'get_shit_done', return_to: 'og_academy' }
+      expect(response).to redirect_to(organization_og_academy_path(company))
     end
   end
 

@@ -1,4 +1,6 @@
 - label = local_assigns.fetch(:label)
-.text-muted.py-4
+-# Reserve vertical space while the lazy turbo frame loads so sections below stay below the fold.
+-# Replaced entirely when real content arrives, so height returns to content-driven.
+.d-flex.align-items-center.text-muted.og-academy-lazy-frame-placeholder{style: "min-height: 300px"}
   %span.spinner-border.spinner-border-sm.me-2{role: "status", "aria-hidden": "true"}
   = label

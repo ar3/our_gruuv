@@ -1,0 +1,84 @@
+-# Shared Start Here widget grid + add/reorder controls.
+-# locals: dash (StartHereDashboardService), load_on_scroll (Boolean, default false), return_to (optional String)
+- dash = local_assigns.fetch(:dash)
+- load_on_scroll = local_assigns.fetch(:load_on_scroll, false)
+- return_to = local_assigns[:return_to]
+- return_params = return_to.present? ? { return_to: return_to } : {}
+- rows = dash.active_rows
+- preset_confirm = "This replaces your current widget layout. You can still add, remove, and reorder widgets afterward. Continue?"
+
+- if rows.empty?
+  .alert.alert-info.mb-4
+    You have no widgets on this page yet. Use “Manage what widgets appear” below.
+
+.row.g-4{data: { controller: "start-here-dashboard", start_here_dashboard_url_value: organization_start_here_widget_dashboards_path(current_organization), start_here_dashboard_load_on_scroll_value: (load_on_scroll ? "true" : "false") }}
+  - rows.each do |row|
+    - w = row[:widget]
+    - wid = row[:id]
+    - collapse_id = "start-here-widget-tools-#{wid}"
+    .col-12.col-sm-6.col-md-4
+      .card.h-100.border-0.shadow-sm
+        .card-body.d-flex.flex-column
+          %h5.card-title.mb-2= w.display_title
+          .mb-3.start-here-dashboard-content
+            .start-here-dashboard-slot{data: { widget_id: wid, start_here_dashboard_target: "slot" }}
+              .start-here-dashboard-skeleton.placeholder-glow
+                .placeholder.col-12.mb-2.rounded{style: "height: 0.9rem;"}
+                .placeholder.col-10.mb-2.rounded{style: "height: 0.9rem;"}
+                .placeholder.col-11.rounded{style: "height: 0.9rem;"}
+              .start-here-dashboard-body.d-none
+              .start-here-dashboard-error.alert.alert-warning.py-2.px-3.small.d-none{role: "alert"}
+                %p.mb-1.start-here-dashboard-error-message
+                %button.btn.btn-link.btn-sm.p-0.align-baseline{type: "button", data: { action: "start-here-dashboard#retry" }} Retry
+          .row.g-2.align-items-center.mt-auto
+            .col-10
+              - if w.button_path.present?
+                = link_to w.button_path, class: "btn btn-primary btn-lg w-100" do
+                  %i{class: "#{w.icon} me-2"}
+                  = w.button_label
+            .col-2.text-end
+              %button.btn.btn-link.text-muted.p-0{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": "false", "aria-controls": collapse_id}
+                %i.bi.bi-pencil.fs-5
+          .collapse.border-top.mt-3.pt-3{id: collapse_id}
+            .row.g-3.align-items-end
+              .col-12.col-md-6
+                = button_to "Remove", organization_start_here_remove_widget_path(current_organization), method: :post, params: { widget_id: wid }.merge(return_params), form: { data: { turbo: false } }, class: "btn btn-outline-danger"
+              .col-12.col-md-6
+                = form_with url: organization_start_here_reorder_widget_path(current_organization), method: :post, local: true, html: { data: { turbo: false } }, class: "d-flex flex-wrap align-items-center gap-2 justify-content-md-end" do
+                  = hidden_field_tag :widget_id, wid
+                  - if return_to.present?
+                    = hidden_field_tag :return_to, return_to
+                  %label.small.text-muted.mb-0{for: "reorder_pos_#{wid}"} Position
+                  = select_tag :position, options_for_select((1..row[:total]).to_a, row[:position]), id: "reorder_pos_#{wid}", class: "form-select form-select-sm", style: "width: auto; min-width: 4rem;", onchange: "this.form.submit()"
+
+.start-here-add-widgets-section{data: { controller: "start-here-add-widgets" }}
+  .mt-2.mb-4
+    %button.btn.btn-outline-primary.w-100.text-center{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#start-here-add-widgets", "aria-expanded": "false", "data-start-here-add-widgets-target": "trigger"}
+      Manage what widgets appear
+
+  .collapse.mb-5#start-here-add-widgets
+    .d-flex.justify-content-end.mb-2
+      %button.btn.btn-sm.btn-link.text-muted.text-decoration-none{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#start-here-add-widgets", "aria-expanded": "true", "aria-controls": "start-here-add-widgets"}
+        Hide widget options
+    .card.mb-3.border
+      .card-body
+        %p.small.text-muted.mb-2 Replace your whole layout with a starter set (you can still edit widgets afterward).
+        .d-flex.flex-wrap.gap-2
+          = button_to "Manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "manager" }.merge(return_params), form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+          = button_to "Non-manager default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "non_manager" }.merge(return_params), form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+          = button_to "OG enthusiast default", organization_start_here_apply_preset_path(current_organization), method: :post, params: { preset: "og_enthusiast" }.merge(return_params), form: { data: { turbo: false }, onsubmit: "return confirm(#{preset_confirm.to_json});" }, class: "btn btn-sm btn-outline-secondary"
+    %hr.my-3
+    %p.small.text-muted.mb-2 Add individual widgets by group.
+    - dash.inactive_widgets_by_group.each do |group_name, widgets|
+      .card.mb-3
+        .card-header.fw-semibold.small.text-uppercase.text-muted= group_name
+        .card-body
+          - if widgets.any?
+            - widgets.each do |iw|
+              .row.g-2.align-items-center.border-bottom.py-3
+                .col-12.col-md-3.fw-semibold= iw.selection_title
+                .col-12.col-md-6.text-muted.small= iw.selection_description
+                .col-12.col-md-3
+                  = button_to "Add", organization_start_here_add_widget_path(current_organization), method: :post, params: { widget_id: iw.widget_id }.merge(return_params), form: { data: { turbo: false } }, class: "btn btn-outline-primary w-100 w-md-auto"
+          - else
+            %p.small.text-muted.mb-0 All added in this group.
