@@ -17,16 +17,21 @@ class Seat < ApplicationRecord
   validate :at_least_one_title_selected
   validate :all_titles_belong_to_same_company
   validate :associated_titles_unique_for_needed_by
+  validate :state_transition_allowed, if: :will_save_change_to_state?
 
   after_save :sync_pending_title_ids
   after_commit :ensure_primary_title_associated, on: [:create, :update]
   before_validation :normalize_job_description_hr_blanks
 
   # Enums
+  # Lifecycle: draft → being_considered → open ↔ filled; open (never filled) → archived;
+  # open (previously filled) → closed ↔ open. Filled is tenure-derived, not chosen manually.
   enum :state, {
     draft: 'draft',
+    being_considered: 'being_considered',
     open: 'open',
     filled: 'filled',
+    closed: 'closed',
     archived: 'archived'
   }
 
@@ -128,38 +133,107 @@ class Seat < ApplicationRecord
   end
 
   # State management
+  def ever_filled?
+    employment_tenures.exists?
+  end
+
+  def previously_filled?
+    inactive_employment_tenures.exists?
+  end
+
+  # True when an active tenure is attached but the seat is not in filled state.
+  def active_tenure_without_filled_state?
+    employment_tenures.active.exists? && !filled?
+  end
+
+  def state_display_label
+    case state
+    when 'draft'
+      'Draft'
+    when 'being_considered'
+      'Being Considered'
+    when 'open'
+      ever_filled? ? 'Open, previously filled' : 'Open / unfilled'
+    when 'filled'
+      'Open / filled'
+    when 'closed'
+      'Closed'
+    when 'archived'
+      'Archived'
+    else
+      state.to_s.humanize
+    end
+  end
+
+  def allowed_manual_state_transitions
+    return [] if filled?
+
+    case state
+    when 'draft'
+      %w[archived being_considered]
+    when 'archived'
+      %w[draft]
+    when 'being_considered'
+      %w[draft archived open]
+    when 'open'
+      ever_filled? ? %w[closed] : %w[being_considered archived draft]
+    when 'closed'
+      %w[open]
+    else
+      []
+    end
+  end
+
+  def can_manually_transition_to?(new_state)
+    new_state = new_state.to_s
+    return true if new_state == state.to_s
+
+    allowed_manual_state_transitions.include?(new_state)
+  end
+
+  # Tenure / reconcile paths that set filled ↔ open without the manual transition graph.
+  def apply_derived_state!(new_state)
+    @allow_derived_state_change = true
+    update!(state: new_state)
+  ensure
+    @allow_derived_state_change = false
+  end
+
   def needs_reconciliation?
     # Reload to ensure we have the latest employment tenures
     reload if persisted?
-    
+
+    active = employment_tenures.active.exists?
+
     case state
     when 'filled'
-      !employment_tenures.active.exists?
+      !active
     when 'open'
-      employment_tenures.active.exists?
+      active
+    when 'closed'
+      active
     when 'archived'
-      employment_tenures.active.exists?
-    when 'draft'
-      employment_tenures.exists?
+      active || ever_filled?
+    when 'draft', 'being_considered'
+      active || ever_filled?
     else
       false
     end
   end
 
   def reconcile_state!
-    active_tenures = employment_tenures.active
-
-    if active_tenures.exists?
-      update!(state: :filled)
-    elsif employment_tenures.exists?
-      update!(state: :archived)
-    else
-      update!(state: :open)
+    if employment_tenures.active.exists?
+      apply_derived_state!(:filled)
+    elsif closed?
+      # Closed with only past tenures is a valid terminal state.
+      nil
+    elsif ever_filled? || filled?
+      apply_derived_state!(:open) unless open?
     end
   end
 
   def archivable?
-    !archived? && blocking_active_employment_tenures.none?
+    allowed_manual_state_transitions.include?('archived') && blocking_active_employment_tenures.none?
   end
 
   def blocking_active_employment_tenures
@@ -175,7 +249,7 @@ class Seat < ApplicationRecord
   end
 
   def restore!
-    update!(state: employment_tenures.active.exists? ? :filled : :open)
+    update!(state: :draft)
   end
 
   # HR text cascade: seat → title → organization
@@ -244,6 +318,18 @@ class Seat < ApplicationRecord
   end
 
   private
+
+  def state_transition_allowed
+    return if @allow_derived_state_change
+
+    from = state_in_database
+    to = state
+    return if from.blank? # create
+    return if from.to_s == to.to_s
+    return if can_manually_transition_to?(to)
+
+    errors.add(:state, "cannot change from #{from} to #{to}")
+  end
 
   def normalize_job_description_hr_blanks
     self.seat_disclaimer = seat_disclaimer.presence

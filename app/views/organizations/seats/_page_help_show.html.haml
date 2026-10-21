@@ -1,0 +1,18 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Understand this seat's status, reporting context, defense for hiring it, and the job description people would step into.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-0
+    %li
+      %strong Status
+      moves on the edit page (Draft → Being Considered → Open, then Closed or Archived by the rules). Filled is set automatically when someone is assigned via Seat Management.
+    %li
+      Only
+      %strong Open / unfilled
+      seats appear in the Seat Management seat picker.
+    %li Use the seat switcher in the header to jump between seats. Edit sits next to it.

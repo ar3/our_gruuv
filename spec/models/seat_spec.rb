@@ -161,6 +161,27 @@ RSpec.describe Seat, type: :model do
   end
 
   describe 'state management' do
+    describe 'manual state transitions' do
+      it 'starts as draft and allows only archived or being_considered' do
+        expect(seat.state).to eq('draft')
+        expect(seat.allowed_manual_state_transitions).to match_array(%w[archived being_considered])
+      end
+
+      it 'allows open (previously filled) to close, not archive' do
+        create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
+        seat.apply_derived_state!(:open)
+        expect(seat.allowed_manual_state_transitions).to eq(%w[closed])
+        expect(seat).not_to be_archivable
+      end
+
+      it 'does not allow manual changes while filled' do
+        open_seat = create(:seat, :open, title: title, seat_needed_by: Date.current + 5.months)
+        create(:employment_tenure, :with_seat, seat: open_seat, ended_at: nil)
+        expect(open_seat.reload).to be_filled
+        expect(open_seat.allowed_manual_state_transitions).to eq([])
+      end
+    end
+
     describe '#needs_reconciliation?' do
       context 'when seat is filled' do
         let(:seat) { create(:seat, :filled, title: title) }
@@ -233,29 +254,48 @@ RSpec.describe Seat, type: :model do
           create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
         end
 
-        it 'changes state to archived' do
+        it 'changes state to open (previously filled)' do
           seat.reconcile_state!
-          expect(seat.reload.state).to eq('archived')
+          expect(seat.reload.state).to eq('open')
         end
       end
 
       context 'when no employment tenures exist' do
-        it 'changes state to open' do
+        it 'leaves a draft seat as draft' do
           seat.reconcile_state!
-          expect(seat.reload.state).to eq('open')
+          expect(seat.reload.state).to eq('draft')
+        end
+      end
+
+      context 'when closed with only inactive tenures' do
+        before do
+          create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
+          seat.apply_derived_state!(:open)
+          seat.update!(state: :closed)
+        end
+
+        it 'leaves the seat closed' do
+          seat.reconcile_state!
+          expect(seat.reload.state).to eq('closed')
         end
       end
     end
 
     describe '#archivable?' do
-      it 'is true when there are no active employment tenures' do
-        create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
+      it 'is true for a never-filled draft with no active employment tenures' do
         expect(seat.archivable?).to be true
       end
 
-      it 'is false when an active employment tenure exists' do
-        create(:employment_tenure, :with_seat, seat: seat, ended_at: nil)
+      it 'is false when the seat was previously filled' do
+        create(:employment_tenure, :with_seat, seat: seat, ended_at: 1.day.ago)
+        seat.apply_derived_state!(:open)
         expect(seat.archivable?).to be false
+      end
+
+      it 'is false when an active employment tenure exists' do
+        open_seat = create(:seat, :open, title: title, seat_needed_by: Date.current + 4.months)
+        create(:employment_tenure, :with_seat, seat: open_seat, ended_at: nil)
+        expect(open_seat.reload.archivable?).to be false
       end
 
       it 'is false when already archived' do
@@ -272,10 +312,10 @@ RSpec.describe Seat, type: :model do
     end
 
     describe '#restore!' do
-      it 'restores an archived seat to open when no active tenure' do
+      it 'restores an archived seat to draft' do
         seat.update!(state: :archived)
         seat.restore!
-        expect(seat.reload.state).to eq('open')
+        expect(seat.reload.state).to eq('draft')
       end
     end
   end

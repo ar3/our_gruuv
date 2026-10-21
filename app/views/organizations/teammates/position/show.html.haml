@@ -153,6 +153,11 @@
 
 .row.justify-content-center
   .col-lg-12
+    - if @current_employment&.seat
+      = render "organizations/seats/active_tenure_state_warning",
+               organization: organization,
+               seat: @current_employment.seat
+
     / Position Details Section
     - if @current_employment
       .card.mb-4

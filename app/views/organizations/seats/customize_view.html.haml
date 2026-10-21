@@ -56,11 +56,17 @@
               = check_box_tag 'state[]', 'draft', @current_filters[:state]&.include?('draft'), class: 'form-check-input', id: 'filter_draft'
               = label_tag 'filter_draft', 'Draft', class: 'form-check-label'
             .form-check
+              = check_box_tag 'state[]', 'being_considered', @current_filters[:state]&.include?('being_considered'), class: 'form-check-input', id: 'filter_being_considered'
+              = label_tag 'filter_being_considered', 'Being Considered', class: 'form-check-label'
+            .form-check
               = check_box_tag 'state[]', 'open', @current_filters[:state]&.include?('open'), class: 'form-check-input', id: 'filter_open'
-              = label_tag 'filter_open', 'Open', class: 'form-check-label'
+              = label_tag 'filter_open', 'Open / unfilled', class: 'form-check-label'
             .form-check
               = check_box_tag 'state[]', 'filled', @current_filters[:state]&.include?('filled'), class: 'form-check-input', id: 'filter_filled'
-              = label_tag 'filter_filled', 'Filled', class: 'form-check-label'
+              = label_tag 'filter_filled', 'Open / filled', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'state[]', 'closed', @current_filters[:state]&.include?('closed'), class: 'form-check-input', id: 'filter_closed'
+              = label_tag 'filter_closed', 'Closed', class: 'form-check-label'
             .form-check
               = check_box_tag 'state[]', 'archived', @current_filters[:state]&.include?('archived'), class: 'form-check-input', id: 'filter_archived'
               = label_tag 'filter_archived', 'Archived', class: 'form-check-label'

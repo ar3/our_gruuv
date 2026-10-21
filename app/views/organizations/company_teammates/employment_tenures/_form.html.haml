@@ -40,7 +40,7 @@
     .col-md-6
       .mb-3
         = form.label :seat_id, "Seat (Optional)", class: "form-label"
-        - seats = employment_tenure.company ? employment_tenure.company.seats.includes(:title).where(state: [:open, :filled]) : []
+        - seats = employment_tenure.company ? employment_tenure.company.seats.includes(:title).where(state: :open) : []
         = form.collection_select :seat_id, seats, :id, :display_name, 
           { prompt: 'Select a seat (optional)', include_blank: 'No Specific Seat' }, { class: "form-select" }
         %small.form-text.text-muted

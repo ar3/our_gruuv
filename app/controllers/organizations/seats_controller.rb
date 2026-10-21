@@ -99,6 +99,9 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   def show
     authorize @seat
     @show_page_data = Seats::ShowPageData.new(seat: @seat, organization: organization)
+    @seats_by_department_for_switcher = SeatsByDepartmentForSwitcher.call(
+      scope: policy_scope(Seat.for_organization(organization))
+    )
     render layout: determine_layout
   end
 
@@ -167,7 +170,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     end
 
     @seat.restore!
-    redirect_to organization_seat_path(organization, @seat), notice: "Seat was successfully restored."
+    redirect_to organization_seat_path(organization, @seat), notice: "Seat was restored to Draft."
   end
 
   def reconcile

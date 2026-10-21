@@ -346,11 +346,11 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Keep flat array for backward compatibility
     @positions = positions
     
-    # Load seats for the shared seat dropdown: every status except filled.
-    # The currently selected seat is still included by seats_grouped_options_for_select when filled.
+    # Only open (unfilled) seats are assignable. The currently selected seat is still
+    # included by seats_grouped_options_for_select when it is filled or otherwise filtered out.
     @seats = company.seats
                     .includes(title: :department)
-                    .where.not(state: :filled)
+                    .where(state: :open)
                     .ordered
                     .to_a
     

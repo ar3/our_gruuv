@@ -1,114 +1,131 @@
 - content_for :title, @seat.display_name
 - content_for :body_class, "jd-print-ready"
+- page_help_id = "seatShowPageHelp"
+- organization = @organization || @seat.title.company
 
-= render "layouts/jd_print_letterhead", organization: @seat.title.company
+= render "layouts/jd_print_letterhead", organization: organization
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0= @seat.display_name
-
-- content_for :header_action do
-  .text-right.jd-print-screen-only
-    = render "organizations/seats/header_edit_dropdown", organization: organization, seat: @seat
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = render "organizations/seats/seat_switcher",
+               organization: organization,
+               seat: @seat,
+               seats_by_department: @seats_by_department_for_switcher,
+               path_for: ->(s) { organization_seat_path(organization, s) },
+               switch_aria_label: "Switch seat"
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Seat details, status, and job description. Click for details."
+      = render "organizations/seats/header_edit_dropdown",
+               organization: organization,
+               seat: @seat
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Seats", url: organization_seats_path(organization) }, { label: @seat.display_name, url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/seats/page_help_show"
+
+= render "organizations/seats/active_tenure_state_warning", organization: organization, seat: @seat
 
 - if @seat.archived?
   .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
     %h5.alert-heading
       %i.bi.bi-archive.me-2
       Archived seat
-    %p.mb-0 This seat is archived. It no longer appears as an active seat in default lists but remains viewable and its data is preserved.
+    %p.mb-0 This seat is archived. It no longer appears as an active seat in default lists but remains viewable and its data is preserved. Restore returns it to Draft.
+
+- if @seat.closed?
+  .alert.alert-warning.alert-dismissible.fade.show.mb-4{ role: "alert" }
+    %h5.alert-heading
+      %i.bi.bi-slash-circle.me-2
+      Closed seat
+    %p.mb-0 This seat was previously open and is now closed. It can be reopened to Open from the edit page.
 
 .row.justify-content-center
   .col-12
-    %p
-      %strong Titles:
-      = @seat.title_label.presence || '--Not selected--'
-      - if policy(@seat).update?
-        = link_to manage_titles_organization_seat_path(organization, @seat), class: "btn btn-sm btn-outline-primary ms-2" do
-          %i.bi.bi-tags.me-1
-          Manage titles
+    .row.g-4.mb-4.align-items-start
+      .col-lg-8
+        %dl.row.mb-0
+          %dt.col-sm-3.text-muted Status
+          %dd.col-sm-9
+            %span.badge{class: seat_state_badge_class(@seat.state)}= @seat.state_display_label
+            - active_tenure = @seat.employment_tenures.active.first
+            - if active_tenure
+              - earliest_tenure = @seat.employment_tenures.order(started_at: :asc).first
+              %span.ms-2
+                Filled by
+                = link_to active_tenure.teammate.person.display_name, internal_organization_company_teammate_path(organization, active_tenure.teammate), class: "text-decoration-none"
+                - if earliest_tenure&.started_at
+                  %span.text-muted
+                    = "(#{time_ago_in_words(earliest_tenure.started_at)} ago)"
 
-    %p
-      %strong Department:
-      = @seat.title&.department&.display_name || '--Not selected--'
+          %dt.col-sm-3.text-muted Titles
+          %dd.col-sm-9
+            - titles = @seat.associated_titles
+            - if titles.any?
+              - titles.each_with_index do |title, index|
+                - if index.positive?
+                  = ", "
+                - if policy(title).show?
+                  = link_to title.external_title, organization_title_path(organization, title), class: "text-decoration-none"
+                - else
+                  = title.external_title
+            - else
+              = "--Not selected--"
+            - if policy(@seat).update?
+              = link_to manage_titles_organization_seat_path(organization, @seat), class: "btn btn-sm btn-outline-primary ms-2" do
+                %i.bi.bi-tags.me-1
+                Manage titles
 
-    %p
-      %strong Team:
-      = @seat.team&.display_name || '--Not selected--'
+          %dt.col-sm-3.text-muted Department
+          %dd.col-sm-9
+            - department = @seat.title&.department
+            - if department
+              - if policy(department).show?
+                = link_to department.display_name, organization_department_path(organization, department), class: "text-decoration-none"
+              - else
+                = department.display_name
+            - else
+              = "--Not selected--"
 
-    %p
-      %strong Reports To:
-      - if @seat.reports_to_seat
-        = link_to @seat.reports_to_seat.display_name, organization_seat_path(organization, @seat.reports_to_seat), class: "text-decoration-none"
-      - else
-        = '--Not selected--'
+          %dt.col-sm-3.text-muted Team
+          %dd.col-sm-9
+            - if @seat.team
+              - if policy(@seat.team).show?
+                = link_to @seat.team.display_name, organization_team_path(organization, @seat.team), class: "text-decoration-none"
+              - else
+                = @seat.team.display_name
+            - else
+              = "--Not selected--"
 
-    
-    %p
-      %strong Direct Reports:
-      = @seat.reports.presence || '--Not answered yet--'
-      - if @seat.reporting_seats.any?
-        %ul.mt-2.mb-0
-          - @seat.reporting_seats.each do |reporting_seat|
-            %li
-              = link_to reporting_seat.display_name, organization_seat_path(organization, reporting_seat), class: "text-decoration-none"
+          %dt.col-sm-3.text-muted Reports To
+          %dd.col-sm-9
+            - if @seat.reports_to_seat
+              = link_to @seat.reports_to_seat.display_name, organization_seat_path(organization, @seat.reports_to_seat), class: "text-decoration-none"
+            - else
+              = "--Not selected--"
 
-    %p
-      %strong Job Classification:
-      = @seat.job_classification
+          %dt.col-sm-3.text-muted Direct Reports
+          %dd.col-sm-9
+            = @seat.reports.presence || "--Not answered yet--"
+            - if @seat.reporting_seats.any?
+              %ul.mt-2.mb-0
+                - @seat.reporting_seats.each do |reporting_seat|
+                  %li
+                    = link_to reporting_seat.display_name, organization_seat_path(organization, reporting_seat), class: "text-decoration-none"
 
-.row.justify-content-center.mt-5
-  .col-12
-    = render "organizations/seats/other_info",
-             organization: organization,
-             seat: @seat,
-             page_data: @show_page_data
+          %dt.col-sm-3.text-muted Job Classification
+          %dd.col-sm-9= @seat.job_classification
 
-.row.justify-content-center
-  .col-lg-10
-    %hr.mb-4.mt-4/
+          %dt.col-sm-3.text-muted Needed By
+          %dd.col-sm-9= @seat.seat_needed_by.strftime("%B %d, %Y")
 
-.row.justify-content-center
-  .col-12
-    %h4.mb-3
-      %strong Seat Defense
+      .col-lg-4.d-flex.flex-column.gap-4
+        = render "organizations/seats/actions_card", organization: organization, seat: @seat
 
-    %p
-      %strong State:
-      %span.badge{class: seat_state_badge_class(@seat.state)}= @seat.state.humanize
-      - active_tenure = @seat.employment_tenures.active.first
-      - if active_tenure
-        - earliest_tenure = @seat.employment_tenures.order(started_at: :asc).first
-        - if earliest_tenure && earliest_tenure.started_at
-          = " - Filled by "
-          = link_to active_tenure.teammate.person.display_name, internal_organization_company_teammate_path(organization, active_tenure.teammate), class: "text-decoration-none"
-          = " (#{time_ago_in_words(earliest_tenure.started_at)} ago)"
-
-    %p
-      %strong Needed By:
-      = @seat.seat_needed_by.strftime("%B %d, %Y")
-
-    %p
-      %strong Why do we need this role?
-      %p.markdown-content--bordered
-        = render_markdown(@seat.why_needed.presence || '--Not answered yet--')
-    
-    %p
-      %strong Why is now the time to hire for this role?
-      %p.markdown-content--bordered
-        = render_markdown(@seat.why_now.presence || '--Not answered yet--')
-    
-    %p
-      %strong What are the costs/risks if we choose not to hire for this role now?
-      %p.markdown-content--bordered
-        = render_markdown(@seat.costs_risks.presence || '--Not answered yet--')
-
-
-    / State Reconciliation Warning
-    - if @seat.needs_reconciliation?
+    - if @seat.needs_reconciliation? && !@seat.active_tenure_without_filled_state?
       .card.mb-4.border-warning
         .card-header.bg-warning.text-dark
           %h5.mb-0
@@ -116,29 +133,48 @@
             State Reconciliation Needed
         .card-body
           %p.mb-3
-            This seat's state appears to be inconsistent with its current employment tenures. 
+            This seat's state appears to be inconsistent with its employment tenures.
             Click the button below to automatically reconcile the state.
           - if policy(@seat).reconcile?
-            = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-warning" do
+            = link_to reconcile_organization_seat_path(organization, @seat), data: { turbo_method: :patch }, class: "btn btn-warning" do
               %i.bi.bi-arrow-clockwise.me-2
               Reconcile State
           - else
             .d-flex.align-items-center.gap-2
-              = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-outline-secondary", disabled: true do
+              %button.btn.btn-outline-secondary{type: "button", disabled: true}
                 %i.bi.bi-arrow-clockwise.me-2
                 Reconcile State
               %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
 
-.row.justify-content-center
-  .col-lg-10
-    %hr.mb-4.mt-4/
+    = render "organizations/seats/other_info",
+             organization: organization,
+             seat: @seat,
+             page_data: @show_page_data
 
-.row.justify-content-center
-  .col-12
+    = render "shared/section_header",
+             title: "Seat Defense",
+             icon: "bi-shield-check",
+             description: "Why this seat is needed and why now",
+             include_top_header_margin: false
 
-    %h2.mb-3
-      %strong= @seat.title_label
-      ='- Job Description'
+    .mb-4
+      %h6.text-muted Why do we need this role?
+      .markdown-content.markdown-content--bordered.mb-3
+        = render_markdown(@seat.why_needed.presence || "--Not answered yet--")
+
+      %h6.text-muted Why is now the time to hire for this role?
+      .markdown-content.markdown-content--bordered.mb-3
+        = render_markdown(@seat.why_now.presence || "--Not answered yet--")
+
+      %h6.text-muted What are the costs/risks if we choose not to hire for this role now?
+      .markdown-content.markdown-content--bordered
+        = render_markdown(@seat.costs_risks.presence || "--Not answered yet--")
+
+    = render "shared/section_header",
+             title: "#{@seat.title_label} — Job Description",
+             icon: "bi-file-text",
+             description: "Summary, assignments, and abilities for this seat",
+             include_top_header_margin: false
 
     %h4.mb-3
       %strong Summary:
@@ -151,18 +187,16 @@
                title: @seat.title,
                position: jd_summary_position
 
-    -# Required Assignments
     - if @seat.required_assignments.any?
-      %h3.mb-3
+      %h3.mb-3.mt-4
         %strong Required Assignments:
-      
+
       - @seat.required_assignments.each_with_index do |pa, index|
         - if index > 0
           %hr.my-4
-        
-        = render 'organizations/positions/assignment_job_description', pa: pa, assignment_type: 'required', organization: organization
 
-    -# Suggested Assignments
+        = render "organizations/positions/assignment_job_description", pa: pa, assignment_type: "required", organization: organization
+
     - if @seat.suggested_assignments.any?
       %hr.mb-4.mt-4/
 
@@ -175,23 +209,23 @@
           %span#suggestedCollapseText.collapsed
             %i.bi.bi-chevron-down
             %small.text-muted="(Show the #{pluralize(@seat.suggested_assignments.count, 'assignment')})"
-      
+
       .collapse#suggestedAssignments
         %p.text-muted.mb-3
           %em We are all about growth… as such, we do our best to make it possible to successfully complete required Assignments and have room for special/elective/unique-to-you Assignments. These should only be taken on if the required Assignments are being completed and we are meeting expectations across them.
-      
+
         - @seat.suggested_assignments.each_with_index do |pa, index|
           - if index > 0
             %hr.my-4
-          
-          = render 'organizations/positions/assignment_job_description', pa: pa, assignment_type: 'suggested', organization: organization
+
+          = render "organizations/positions/assignment_job_description", pa: pa, assignment_type: "suggested", organization: organization
 
     - jd_position = @seat.job_description_position
     - if jd_position
-      = render 'organizations/positions/job_description_required_abilities',
+      = render "organizations/positions/job_description_required_abilities",
                position: jd_position,
                organization: organization
-      = render 'organizations/positions/job_description_direct_milestones',
+      = render "organizations/positions/job_description_direct_milestones",
                position: jd_position,
                organization: organization
 
@@ -203,13 +237,9 @@
         %p.mb-2 This seat has no required or suggested assignments.
         = link_to "Add Assignments", edit_organization_seat_path(organization, @seat), class: "btn btn-warning btn-sm"
 
-.row.justify-content-center
-  .col-12
     %hr.mb-4.mt-4/
 
-    = render 'organizations/positions/job_description_footer',
-             organization: @seat.title.company,
+    = render "organizations/positions/job_description_footer",
+             organization: organization,
              title: @seat.title,
              seat: @seat
-
-

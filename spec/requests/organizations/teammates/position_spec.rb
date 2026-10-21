@@ -37,8 +37,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
   let(:current_tenure) do
     # Create position and seat first to ensure they match
     pos = position
-    seat_obj = create(:seat, title: pos.title, seat_needed_by: Date.current + 10.months)
-    
+    seat_obj = create(:seat, :open, title: pos.title, seat_needed_by: Date.current + 10.months)
+
     # Create employment_tenure directly to avoid factory's after(:build) hook overwriting position
     # Ensure manager_teammate is created and is a CompanyTeammate instance
     manager_ct = manager_teammate
@@ -85,7 +85,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       expect(response.body).to include(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
     end
 
-    it 'loads non-filled seats and keeps the current tenure seat selectable when filled' do
+    it 'loads only open seats and keeps the current tenure seat selectable when filled' do
       # Creating an active tenure on this seat marks it filled via after_create
       occupied_seat = create(:seat, :open, title: position.title, seat_needed_by: Date.current + 11.months)
       other_teammate = create(:teammate, person: create(:person), organization: organization)
@@ -98,8 +98,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       )
       occupied_seat.reload
       expect(occupied_seat.state).to eq('filled')
-
-      current_tenure.seat.update!(state: :filled)
+      expect(current_tenure.seat.reload.state).to eq('filled')
 
       open_seat = create(:seat, :open, title: position.title, seat_needed_by: Date.current + 12.months)
       draft_seat = create(:seat, :draft, title: position.title, seat_needed_by: Date.current + 13.months)
@@ -107,24 +106,25 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
 
       get organization_teammate_position_path(organization, employee_teammate)
 
-      expect(assigns(:seats)).to include(open_seat, draft_seat, archived_seat)
-      expect(assigns(:seats)).not_to include(occupied_seat)
-      expect(assigns(:seats)).not_to include(current_tenure.seat)
-      expect(response.body).to include("#{open_seat.display_name} (Open)")
-      expect(response.body).to include("#{draft_seat.display_name} (Draft)")
-      expect(response.body).to include("#{archived_seat.display_name} (Archived)")
+      expect(assigns(:seats)).to include(open_seat)
+      expect(assigns(:seats)).not_to include(draft_seat, archived_seat, occupied_seat, current_tenure.seat)
+      expect(response.body).to include("Open / unfilled · #{open_seat.display_name}")
+      expect(response.body).not_to include("Draft · #{draft_seat.display_name}")
+      expect(response.body).not_to include("Archived · #{archived_seat.display_name}")
       # Current tenure seat is filled but still shown as the selected option
-      expect(response.body).to include("#{current_tenure.seat.display_name} (Filled)")
-      expect(response.body).not_to include("#{occupied_seat.display_name} (Filled)")
+      expect(response.body).to include("Open / filled · #{current_tenure.seat.display_name}")
+      expect(response.body).not_to include("Open / filled · #{occupied_seat.display_name}")
+      expect(response.body).to include('may not be open yet')
+      expect(response.body).to include(organization_seats_path(organization))
     end
 
     it 'includes current tenure seat in options even when filled' do
-      current_tenure.seat.update!(state: :filled)
+      expect(current_tenure.seat.reload.state).to eq('filled')
 
       get organization_teammate_position_path(organization, employee_teammate)
 
       expect(assigns(:seats)).not_to include(current_tenure.seat)
-      expect(response.body).to include("#{current_tenure.seat.display_name} (Filled)")
+      expect(response.body).to include("Open / filled · #{current_tenure.seat.display_name}")
     end
     it 'sets @person for view switcher' do
       get organization_teammate_position_path(organization, employee_teammate)

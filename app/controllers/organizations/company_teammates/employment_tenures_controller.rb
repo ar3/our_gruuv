@@ -207,6 +207,6 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     @managers = company ? company.teammates.includes(:person).order('people.last_name, people.first_name') : []
     @positions_by_department = Position.for_select_grouped_by_department(company)
     @positions = @positions_by_department.values.flatten
-    @seats = company ? company.seats.includes(:title).where(state: [:open, :filled]) : []
+    @seats = company ? company.seats.includes(:title).where(state: :open) : []
   end
 end

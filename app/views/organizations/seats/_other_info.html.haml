@@ -5,10 +5,12 @@
 - other_groups = page_data.other_title_peer_groups
 - chart_id_prefix = "seat-#{seat.id}-org"
 
+- filler_tenures = seat.employment_tenures.sort_by { |t| t.started_at || Time.at(0) }.reverse
+
 = render "shared/section_header",
          title: "Other info about this seat",
          icon: "bi-info-circle",
-         description: "Related seats by title, plus the reporting org chart around this seat",
+         description: "Related seats by title, reporting org chart, and who has filled this seat",
          include_top_header_margin: false
 
 .mb-4
@@ -104,3 +106,26 @@
                     graph_id: "#{chart_id_prefix}-cytoscape-graph",
                     extra_graph_classes: "seat-org-cytoscape",
                     aria_label: "Interactive map of seat reporting relationships" }
+
+.mt-4.mb-2
+  %h5.mb-2 Who has filled this seat
+  %p.text-muted.small.mb-3
+    People who have held this seat, newest first. Links go to each teammate's Seat Management page.
+
+- if filler_tenures.any?
+  %ul.mb-0
+    - filler_tenures.each do |tenure|
+      - teammate = tenure.teammate
+      - person = teammate&.person
+      %li.mb-1
+        - if teammate && person
+          = link_to person.display_name, organization_teammate_position_path(organization, teammate), class: "text-decoration-none"
+        - else
+          %span.text-muted Unknown person
+        %span.text-muted.ms-1
+          (#{tenure.started_at&.strftime('%b %d, %Y') || 'N/A'}
+          – #{tenure.ended_at&.strftime('%b %d, %Y') || 'present'})
+        - if tenure.active?
+          %span.badge.bg-success.ms-1 Current
+- else
+  %p.text-muted.mb-0 No one has filled this seat yet.

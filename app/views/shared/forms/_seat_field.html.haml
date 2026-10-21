@@ -3,9 +3,14 @@
 - disabled = local_assigns.fetch(:disabled, false)
 - blank_label = local_assigns.fetch(:blank_label, 'No Seat')
 - label_text = local_assigns.fetch(:label, 'Seat (Optional)')
+- show_open_only_caption = local_assigns.fetch(:show_open_only_caption, true)
 .mb-3
   = form.label :seat_id, label_text, class: "form-label"
   = form.select :seat_id,
     seats_grouped_options_for_select(organization, seats: seats, selected_seat_id: form.object.seat_id),
     { include_blank: blank_label },
     { class: "form-select", disabled: disabled }
+  - if show_open_only_caption
+    %small.form-text.text-muted
+      If the seat you are looking for is not listed, it may not be open yet.
+      = link_to "View all seats", organization_seats_path(organization), class: "text-decoration-none"

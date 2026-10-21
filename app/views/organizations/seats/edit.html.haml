@@ -22,6 +22,35 @@
                 - @seat.errors.full_messages.each do |message|
                   %li= message
           .row
+            .col-12
+              .mb-4
+                = f.label :state, "Status", class: "form-label"
+                - if @seat.filled?
+                  - active_tenure = @seat.employment_tenures.active.includes(company_teammate: :person).first
+                  - filler = active_tenure&.teammate
+                  - casual = filler&.person&.casual_name.presence || "the person"
+                  = select_tag "seat_state_display",
+                    options_for_select([[@seat.state_display_label, @seat.state]], @seat.state),
+                    class: "form-select",
+                    disabled: true
+                  = f.hidden_field :state, value: @seat.state
+                  %small.form-text.text-muted
+                    To change the status of this seat, you have to remove
+                    - if filler
+                      = link_to casual, organization_teammate_position_path(@organization, filler), class: "text-decoration-none"
+                    - else
+                      = casual
+                    from the seat.
+                - else
+                  = f.select :state,
+                    options_for_select(seat_state_options_for_select(@seat), @seat.state),
+                    {},
+                    { class: "form-select" }
+                  %small.form-text.text-muted
+                    Seat statuses go from Draft → Considered → Open → Filled → Open → Closed.
+                    You will only see the options that can be selected.
+
+          .row
             .col-md-6
               .mb-3
                 = f.label :title_id, "Primary Title", class: "form-label"

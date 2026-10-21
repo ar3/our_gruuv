@@ -85,20 +85,18 @@ class EmploymentTenure < ApplicationRecord
   private
 
   def update_seat_state_to_filled
-    return unless seat && seat.state == 'open'
-    
-    seat.update!(state: 'filled')
+    return unless seat&.open?
+
+    seat.apply_derived_state!(:filled)
   end
 
   def update_seat_state_on_employment_end
-    return unless seat && ended_at.present?
-    
+    return unless seat&.filled? && ended_at.present?
+
     # Check if this is the only active employment tenure for this seat
     other_active_tenures = EmploymentTenure.where(seat: seat, ended_at: nil).where.not(id: id)
-    
-    if other_active_tenures.empty?
-      seat.update!(state: 'open')
-    end
+
+    seat.apply_derived_state!(:open) if other_active_tenures.empty?
   end
 
   def no_overlapping_active_tenures_for_same_teammate_and_company

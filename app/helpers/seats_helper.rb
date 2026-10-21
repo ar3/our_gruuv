@@ -43,10 +43,14 @@ module SeatsHelper
     case state.to_s
     when 'draft'
       'bg-secondary'
+    when 'being_considered'
+      'bg-info'
     when 'open'
       'bg-success'
     when 'filled'
       'bg-primary'
+    when 'closed'
+      'bg-warning text-dark'
     when 'archived'
       'bg-dark'
     else
@@ -57,16 +61,46 @@ module SeatsHelper
   def seat_state_description(state)
     case state.to_s
     when 'draft'
-      'Draft - Not ready for hiring'
+      'Draft — still putting it together'
+    when 'being_considered'
+      'Being Considered — put together, not yet approved'
     when 'open'
-      'Open - Actively seeking candidates'
+      'Open / unfilled — approved and unfilled'
     when 'filled'
-      'Filled - Position occupied'
+      'Open / filled — approved and filled'
+    when 'closed'
+      'Closed — was open, closed for now'
     when 'archived'
-      'Archived - No longer needed'
+      'Archived — never filled, no longer needed'
     else
       'Unknown state'
     end
+  end
+
+  def seat_state_option_label(seat, state)
+    case state.to_s
+    when 'draft'
+      'Draft'
+    when 'being_considered'
+      'Being Considered'
+    when 'open'
+      seat.ever_filled? ? 'Open, previously filled' : 'Open / unfilled'
+    when 'filled'
+      'Open / filled'
+    when 'closed'
+      'Closed'
+    when 'archived'
+      'Archived'
+    else
+      state.to_s.humanize
+    end
+  end
+
+  def seat_state_options_for_select(seat)
+    current = seat.state.to_s
+    ([[seat_state_option_label(seat, current), current]] +
+      seat.allowed_manual_state_transitions.map { |state| [seat_state_option_label(seat, state), state] }
+    ).uniq { |(_label, value)| value }
   end
 
   def open_seat_maap_proposals_count(seat)
@@ -112,7 +146,7 @@ module SeatsHelper
   end
 
   def seat_select_option(seat)
-    label = "#{seat.state.titleize} · #{seat.display_name}"
+    label = "#{seat.state_display_label} · #{seat.display_name}"
     person = seat.employment_tenures.find { |tenure| tenure.ended_at.nil? }&.teammate&.person
     label = "#{label} (#{person.casual_name})" if person&.casual_name.present?
     [label, seat.id]

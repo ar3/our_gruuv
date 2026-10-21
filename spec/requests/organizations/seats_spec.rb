@@ -78,8 +78,11 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include(organization_position_path(company, position))
     end
 
-    it 'renders other info section with related seats and org chart tabs' do
+    it 'renders other info section with related seats, org chart tabs, and who has filled this seat' do
       peer = create(:seat, title: title, seat_needed_by: Date.current + 1.month)
+      past_person = create(:person, first_name: 'Jordan', last_name: 'Lee')
+      past_teammate = create(:teammate, :assigned_employee, person: past_person, organization: company)
+      create(:employment_tenure, :with_seat, company: company, company_teammate: past_teammate, seat: seat, started_at: 1.year.ago, ended_at: 1.month.ago)
 
       get organization_seat_path(company, seat)
 
@@ -94,6 +97,35 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include('treegraph.js')
       expect(response.body).to include('Cytoscape')
       expect(response.body).to include('data-controller="seat-org-chart"')
+      expect(response.body).to include('Who has filled this seat')
+      expect(response.body).to include(past_person.display_name)
+      expect(response.body).to include(organization_teammate_position_path(company, past_teammate))
+    end
+
+    it 'uses the standard show layout with seat switcher, edit, actions, and page help' do
+      get organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Switch seat')
+      expect(response.body).to include('Edit Seat')
+      expect(response.body).to include('seatShowPageHelp')
+      expect(response.body).to include('Actions')
+      expect(response.body).to include('Seat Defense')
+      expect(response.body).to include(edit_organization_seat_path(company, seat))
+    end
+
+    it 'links title, department, and team in the intro' do
+      department = create(:department, company: company, name: 'Engineering')
+      team = create(:team, company: company, department: department, name: 'Platform')
+      title.update!(department: department)
+      seat.update!(team: team)
+
+      get organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(organization_title_path(company, title))
+      expect(response.body).to include(organization_department_path(company, department))
+      expect(response.body).to include(organization_team_path(company, team))
     end
   end
 
@@ -112,7 +144,9 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include(title.external_title)
       expect(response.body).to include('same department as the title')
       expect(response.body).to include(team.name)
-      expect(response.body).to include("Open · #{peer.display_name}")
+      expect(response.body).to include("Open / unfilled · #{peer.display_name}")
+      expect(response.body).to include("Status")
+      expect(response.body).to include("Draft")
     end
   end
 
@@ -207,8 +241,10 @@ RSpec.describe 'Organizations::Seats', type: :request do
       get customize_view_organization_seats_path(company)
       
       expect(response.body).to include('Draft')
-      expect(response.body).to include('Open')
-      expect(response.body).to include('Filled')
+      expect(response.body).to include('Being Considered')
+      expect(response.body).to include('Open / unfilled')
+      expect(response.body).to include('Open / filled')
+      expect(response.body).to include('Closed')
       expect(response.body).to include('Archived')
       expect(response.body).to include('Has Direct Reports')
     end

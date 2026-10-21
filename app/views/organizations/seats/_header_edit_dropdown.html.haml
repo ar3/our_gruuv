@@ -3,15 +3,12 @@
 - seat = local_assigns.fetch(:seat)
 - can_suggest = policy(MaapProposal).create?
 - can_edit = policy(seat).update?
-- can_archive = policy(seat).archive?
-- can_restore = policy(seat).restore?
-- proposed_edits_label = "View #{open_seat_maap_proposals_count(seat)} proposed edits"
 
-- if can_suggest || can_edit || can_archive || can_restore
+- if can_suggest || can_edit
   .dropdown
-    %button.btn.btn-outline-primary.dropdown-toggle{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Seat actions", title: "Seat actions"}
+    %button.btn.btn-primary.dropdown-toggle{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", "aria-label" => "Edit Seat", title: "Edit Seat"}
       %i.bi.bi-pencil
-    %ul.dropdown-menu.dropdown-menu-end
+    %ul.dropdown-menu
       %li
         - if can_suggest
           = link_to new_organization_seat_maap_proposal_path(organization, seat), class: "dropdown-item" do
@@ -34,32 +31,4 @@
           .dropdown-item.text-muted.disabled
             %i.bi.bi-pencil.me-2
             Edit
-            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}
-      %li
-        = link_to organization_seat_maap_proposals_path(organization, seat), class: "dropdown-item" do
-          %i.bi.bi-list-ul.me-2
-          = proposed_edits_label
-      %li
-        %hr.dropdown-divider
-      %li
-        - if seat.archived?
-          - if can_restore
-            = link_to restore_organization_seat_path(organization, seat),
-                      class: "dropdown-item",
-                      data: { turbo_method: :patch, turbo_confirm: "Restore this seat? It will appear in active seat lists again." } do
-              %i.bi.bi-arrow-counterclockwise.me-2
-              Restore
-          - else
-            .dropdown-item.text-muted.disabled
-              %i.bi.bi-arrow-counterclockwise.me-2
-              Restore
-              %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}
-        - elsif can_archive
-          = link_to archive_organization_seat_path(organization, seat), class: "dropdown-item text-warning" do
-            %i.bi.bi-archive.me-2
-            Archive
-        - else
-          .dropdown-item.text-muted.disabled
-            %i.bi.bi-archive.me-2
-            Archive
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}

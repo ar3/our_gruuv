@@ -8,9 +8,17 @@ FactoryBot.define do
     trait :open do
       state { :open }
     end
+
+    trait :being_considered do
+      state { :being_considered }
+    end
     
     trait :filled do
       state { :filled }
+    end
+
+    trait :closed do
+      state { :closed }
     end
     
     trait :archived do

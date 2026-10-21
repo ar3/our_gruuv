@@ -1,0 +1,20 @@
+-# locals: organization, seat, seats_by_department, path_for: (seat) -> path
+-# Optional: switch_aria_label
+- switch_aria_label = local_assigns.fetch(:switch_aria_label, "Switch seat")
+- path_for = local_assigns.fetch(:path_for)
+.dropdown.d-inline-flex.align-items-center
+  %button.btn.btn-link.dropdown-toggle.p-0.ps-1.text-body.border-0.align-items-center.gap-2.d-inline-flex.fs-1.fw-medium.text-decoration-none{type: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", "aria-label" => switch_aria_label}
+    %span{title: seat.display_name}= seat.display_name
+  %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+    - seats_by_department.each do |dept, seats_in_group|
+      %li
+        %h6.dropdown-header.mb-0.mt-1= dept&.display_name || "No department"
+      - seats_in_group.each do |s|
+        %li
+          - if s.id == seat.id
+            .dropdown-item.text-muted.d-flex.align-items-center.gap-2
+              %span.flex-grow-1.text-truncate{title: s.display_name}= s.display_name
+              %i.bi.bi-check-circle.text-success.flex-shrink-0
+          - else
+            = link_to path_for.call(s), class: "dropdown-item d-flex align-items-center gap-2" do
+              %span.text-truncate{title: s.display_name}= s.display_name

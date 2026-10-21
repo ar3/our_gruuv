@@ -27,9 +27,9 @@ RSpec.describe SeatsHelper, type: :helper do
 
       expect(html).to include('optgroup label="Product"')
       expect(html).to include('optgroup label="Company-wide"')
-      expect(html).to include("Open · #{open_seat.display_name}")
+      expect(html).to include("Open / unfilled · #{open_seat.display_name}")
       expect(html).to include("Draft · #{draft_seat.display_name}")
-      expect(html).to include("Filled · #{filled_seat.display_name} (Alex)")
+      expect(html).to include("Open / filled · #{filled_seat.display_name} (Alex)")
     end
   end
 

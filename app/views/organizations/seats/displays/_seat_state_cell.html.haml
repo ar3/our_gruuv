@@ -3,7 +3,7 @@
 - person = filler&.person
 .d-flex.align-items-center.flex-wrap.gap-1
   %span.badge{class: seat_state_badge_class(seat.state)}
-    = seat.state.titleize
+    = seat.state_display_label
     - if seat.needs_reconciliation?
       %span.badge.bg-warning.ms-1
         %i.bi.bi-exclamation-triangle
