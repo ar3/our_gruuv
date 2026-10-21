@@ -1,12 +1,15 @@
--# Locals: item, idx, editable
+-# Locals: item, idx, editable, prompt_debug (optional)
+- prompt_debug = local_assigns.fetch(:prompt_debug, false)
 - included = ActiveModel::Type::Boolean.new.cast(item[:include])
 - locked = item[:observation_id].present?
 - dismissed = item[:dismissed_at].present?
 - current_state = locked ? "included" : (dismissed ? "dismissed" : (included ? "included" : "needs_processed"))
-- field_disabled = locked || current_state != "included"
+-# Prompt-debug hone loop: edit while Reviewing; product path still unlocks only on Include.
+- field_disabled = locked || (!prompt_debug && current_state != "included")
 - confidence = item[:confidence].to_f
 - badge_class = confidence >= 0.75 ? "text-bg-success" : (confidence >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
-%tr{ data: { consult_candidate_row: true } }
+- include_label = prompt_debug ? "Would include" : "Include"
+%tr{ data: { consult_candidate_row: true, consult_prompt_debug: prompt_debug.presence } }
   %td
     = hidden_field_tag "items[#{idx}][id]", item[:id]
     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
@@ -44,26 +47,27 @@
           = radio_button_tag "items[#{idx}][state]", "needs_processed", current_state == "needs_processed", class: "btn-check", id: "consult_#{idx}_state_needs", data: { consult_state: true }
           = label_tag "consult_#{idx}_state_needs", "Reviewing", class: "btn btn-outline-secondary"
           = radio_button_tag "items[#{idx}][state]", "included", current_state == "included", class: "btn-check", id: "consult_#{idx}_state_incl", data: { consult_state: true }
-          = label_tag "consult_#{idx}_state_incl", "Include", class: "btn btn-outline-success"
+          = label_tag "consult_#{idx}_state_incl", include_label, class: "btn btn-outline-success"
           = radio_button_tag "items[#{idx}][state]", "dismissed", current_state == "dismissed", class: "btn-check", id: "consult_#{idx}_state_dismiss", data: { consult_state: true }
           = label_tag "consult_#{idx}_state_dismiss", "Dismiss", class: "btn btn-outline-danger"
-        .mt-2.d-flex.flex-column.align-items-start.gap-1
-          %span.text-muted.small ...or act on just this one now:
-          = button_tag "Create draft OGO now",
-                       type: "submit",
-                       name: "promote_item_id",
-                       value: item[:id],
-                       class: "btn btn-sm btn-link text-decoration-none p-0"
-          = button_tag "Create published OGO now (private)",
-                       type: "submit",
-                       name: "publish_item_id",
-                       value: item[:id],
-                       class: "btn btn-sm btn-link text-decoration-none p-0"
-          = button_tag "Dismiss now",
-                       type: "submit",
-                       name: "dismiss_item_id",
-                       value: item[:id],
-                       class: "btn btn-sm btn-link text-decoration-none p-0"
+        - unless prompt_debug
+          .mt-2.d-flex.flex-column.align-items-start.gap-1
+            %span.text-muted.small ...or act on just this one now:
+            = button_tag "Create draft OGO now",
+                         type: "submit",
+                         name: "promote_item_id",
+                         value: item[:id],
+                         class: "btn btn-sm btn-link text-decoration-none p-0"
+            = button_tag "Create published OGO now (private)",
+                         type: "submit",
+                         name: "publish_item_id",
+                         value: item[:id],
+                         class: "btn btn-sm btn-link text-decoration-none p-0"
+            = button_tag "Dismiss now",
+                         type: "submit",
+                         name: "dismiss_item_id",
+                         value: item[:id],
+                         class: "btn btn-sm btn-link text-decoration-none p-0"
     %hr.my-2
     - @observation_type_options.each do |label, value|
       .form-check

@@ -58,7 +58,10 @@
 
 %h2.h5.mt-4.mb-2 Transcript consults
 .mb-3
-  %p.small.text-muted.mb-0 Paste or upload a transcript, confirm teammates, run one OG consultation, then create draft OGOs.
+  %p.small.text-muted.mb-0
+    Paste or upload a transcript, confirm teammates, run one OG consultation, then create draft OGOs.
+    - if @prompt_debug_count.to_i.positive?
+      · #{pluralize(@prompt_debug_count, "prompt-debug run")}
 
 - if @consults.any?
   .table-responsive
@@ -75,7 +78,10 @@
       %tbody
         - @consults.each do |consult|
           %tr
-            %td= consult.display_name
+            %td
+              = consult.display_name
+              - if consult.prompt_debug?
+                %span.badge.text-bg-warning.ms-1 Debug
             %td
               - if consult.people_confirmed?
                 = pluralize(Array(consult.confirmed_teammate_ids).size, "teammate")

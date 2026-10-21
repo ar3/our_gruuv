@@ -1,4 +1,9 @@
 %h1.h3.mb-3 New Consult OG
+- if @consult.prompt_debug?
+  .alert.alert-warning.border.mb-3
+    %strong Prompt debug run
+    — this consult will keep AI defaults vs your labels for prompt iteration, without needing to create drafts.
+    Started via #{content_tag(:code, "?debug=true")}.
 
 - meet_coming_soon = "Coming soon. For now, download any Google Meet transcript and upload or paste it below."
 - zoom_coming_soon = "Coming soon. For now, download any Zoom transcript and upload or paste it below."
@@ -28,6 +33,8 @@
 %hr.my-4
 
 = form_with model: @consult, url: organization_possible_observation_consults_path(organization), local: true, html: { multipart: true } do |f|
+  - if @consult.prompt_debug?
+    = f.hidden_field :prompt_debug, value: "true"
   .mb-3
     = f.label :display_name, "Name", class: "form-label"
     = f.text_field :display_name, class: "form-control", required: true

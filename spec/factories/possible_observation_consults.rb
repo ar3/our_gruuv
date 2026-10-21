@@ -10,7 +10,13 @@ FactoryBot.define do
     confirmed_teammate_ids { [] }
     people_status { "suggested" }
     extraction_status { "ready" }
+    prompt_debug { false }
     extractions { { "version" => 1, "items" => [] } }
+
+    trait :prompt_debug do
+      prompt_debug { true }
+      display_name { "OG Consult debug #{SecureRandom.hex(3)}" }
+    end
 
     after(:build) do |consult|
       consult.creator_company_teammate.organization = consult.organization
@@ -22,25 +28,25 @@ FactoryBot.define do
       after(:create) do |consult|
         subject_id = Array(consult.confirmed_teammate_ids).first ||
                      create(:company_teammate, organization: consult.organization).id
+        item = {
+          "id" => SecureRandom.uuid,
+          "kind" => "kudos",
+          "confidence" => 0.9,
+          "quote" => "Summary: Pat crushed it.\n\nFull quote: great job",
+          "summary" => "Pat crushed it.",
+          "speaker_label" => "Alex",
+          "recipient_label" => "Pat",
+          "responder_company_teammate_id" => consult.creator_company_teammate_id,
+          "subject_company_teammate_id" => subject_id,
+          "include" => true
+        }
         consult.update!(
           confirmed_teammate_ids: [subject_id],
           extractions: {
             "version" => 1,
             "processed_teammate_ids" => [subject_id],
-            "items" => [
-              {
-                "id" => SecureRandom.uuid,
-                "kind" => "kudos",
-                "confidence" => 0.9,
-                "quote" => "Summary: Pat crushed it.\n\nFull quote: great job",
-                "summary" => "Pat crushed it.",
-                "speaker_label" => "Alex",
-                "recipient_label" => "Pat",
-                "responder_company_teammate_id" => consult.creator_company_teammate_id,
-                "subject_company_teammate_id" => subject_id,
-                "include" => true
-              }
-            ]
+            "items" => [item],
+            "ai_items" => [item.deep_dup]
           }
         )
       end

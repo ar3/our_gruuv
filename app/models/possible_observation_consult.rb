@@ -29,10 +29,17 @@ class PossibleObservationConsult < ApplicationRecord
   validate :source_file_constraints, if: -> { source_file.attached? }
 
   scope :recent_first, -> { order(created_at: :desc) }
+  scope :prompt_debug, -> { where(prompt_debug: true) }
 
   def extraction_items
-    hash = extractions.is_a?(Hash) ? extractions.with_indifferent_access : {}
+    hash = extractions_hash
     Array(hash[:items]).map(&:with_indifferent_access)
+  end
+
+  # Frozen AI defaults from the last completed extraction (for prompt-debug diffs).
+  def ai_extraction_items
+    hash = extractions_hash
+    Array(hash[:ai_items]).map(&:with_indifferent_access)
   end
 
   # Potential-OGO (candidate) counts for the index summary.
@@ -49,17 +56,16 @@ class PossibleObservationConsult < ApplicationRecord
   end
 
   def processed_teammate_ids
-    hash = extractions.is_a?(Hash) ? extractions.with_indifferent_access : {}
-    Array(hash[:processed_teammate_ids]).map(&:to_i).reject(&:zero?)
+    Array(extractions_hash[:processed_teammate_ids]).map(&:to_i).reject(&:zero?)
   end
 
   def replace_extraction_items!(items)
     update!(
-      extractions: {
-        "version" => EXTRACTIONS_VERSION,
-        "items" => items,
-        "processed_teammate_ids" => processed_teammate_ids
-      }
+      extractions: extractions_payload(
+        items: items,
+        ai_items: ai_extraction_items,
+        processed_teammate_ids: processed_teammate_ids
+      )
     )
   end
 
@@ -67,11 +73,7 @@ class PossibleObservationConsult < ApplicationRecord
     update!(
       extraction_status: "processing",
       extraction_error: nil,
-      extractions: {
-        "version" => EXTRACTIONS_VERSION,
-        "items" => [],
-        "processed_teammate_ids" => []
-      }
+      extractions: extractions_payload(items: [], ai_items: [], processed_teammate_ids: [])
     )
   end
 
@@ -82,22 +84,23 @@ class PossibleObservationConsult < ApplicationRecord
   # Persist candidates for teammates finished so far (status stays processing).
   def persist_partial_extractions!(items:, processed_teammate_ids:)
     update!(
-      extractions: {
-        "version" => EXTRACTIONS_VERSION,
-        "items" => items,
-        "processed_teammate_ids" => Array(processed_teammate_ids).map(&:to_i)
-      }
+      extractions: extractions_payload(
+        items: items,
+        ai_items: [],
+        processed_teammate_ids: Array(processed_teammate_ids).map(&:to_i)
+      )
     )
   end
 
   def mark_completed!(items:, extraction_note: nil, processed_teammate_ids: nil)
     ids = processed_teammate_ids.nil? ? Array(confirmed_teammate_ids).map(&:to_i) : Array(processed_teammate_ids).map(&:to_i)
+    frozen = items.map { |item| item.deep_dup }
     update!(
-      extractions: {
-        "version" => EXTRACTIONS_VERSION,
-        "items" => items,
-        "processed_teammate_ids" => ids
-      },
+      extractions: extractions_payload(
+        items: items,
+        ai_items: frozen,
+        processed_teammate_ids: ids
+      ),
       extraction_status: "completed",
       extraction_error: extraction_note
     )
@@ -163,6 +166,19 @@ class PossibleObservationConsult < ApplicationRecord
   end
 
   private
+
+  def extractions_hash
+    extractions.is_a?(Hash) ? extractions.with_indifferent_access : {}
+  end
+
+  def extractions_payload(items:, ai_items:, processed_teammate_ids:)
+    {
+      "version" => EXTRACTIONS_VERSION,
+      "items" => items,
+      "ai_items" => ai_items,
+      "processed_teammate_ids" => Array(processed_teammate_ids).map(&:to_i)
+    }
+  end
 
   def source_present
     return if source_text.to_s.strip.present? || source_file.attached?

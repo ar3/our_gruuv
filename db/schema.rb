@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_14_141853) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_21_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1782,10 +1782,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_14_141853) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "source_metadata", default: {}, null: false
+    t.boolean "prompt_debug", default: false, null: false
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_3cbc8c0c14"
     t.index ["extraction_status"], name: "index_possible_observation_consults_on_extraction_status"
     t.index ["organization_id"], name: "index_possible_observation_consults_on_organization_id"
     t.index ["people_status"], name: "index_possible_observation_consults_on_people_status"
+    t.index ["prompt_debug"], name: "index_possible_observation_consults_on_prompt_debug"
   end
 
   create_table "possible_observation_slack_search_batches", force: :cascade do |t|

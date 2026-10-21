@@ -72,6 +72,32 @@ RSpec.describe "Possible observation consults", type: :request do
     end
   end
 
+  describe "POST create with debug=true" do
+    it "stores prompt_debug on the consult" do
+      post organization_possible_observation_consults_path(organization, debug: true),
+           params: {
+             possible_observation_consult: {
+               display_name: "Debug hone",
+               source_text: "Pat did a great job shipping the launch this week.",
+               prompt_debug: "true"
+             }
+           }
+
+      consult = PossibleObservationConsult.last
+      expect(consult.prompt_debug?).to be(true)
+      expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
+    end
+  end
+
+  describe "GET new with debug=true" do
+    it "shows the prompt-debug banner" do
+      get new_organization_possible_observation_consult_path(organization, debug: true)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Prompt debug run")
+      expect(response.body).to include("?debug=true")
+    end
+  end
+
   describe "draft promote" do
     let!(:consult) do
       create(
@@ -253,12 +279,12 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(dismissed[:dismissed_by_company_teammate_id]).to eq(teammate.id)
     end
 
-    it "renders the tri-state controls and Save all on the review page" do
+    it "renders the product Include / per-row promote controls when the consult is not prompt-debug" do
       get organization_possible_observation_consult_path(organization, consult)
       expect(response.body).to include("Save all")
-      expect(response.body).to include(">Reviewing<")
+      expect(response.body).not_to include("Save labels (no drafts)")
       expect(response.body).to include(">Include<")
-      expect(response.body).to include(">Dismiss<")
+      expect(response.body).not_to include(">Would include<")
       expect(response.body).to include("Create draft OGO now")
       expect(response.body).to include("Create published OGO now (private)")
       expect(response.body).to include("Dismiss now")
@@ -285,6 +311,88 @@ RSpec.describe "Possible observation consults", type: :request do
     end
   end
 
+  describe "prompt-debug hone loop" do
+    let!(:consult) do
+      create(
+        :possible_observation_consult,
+        :extracted,
+        :prompt_debug,
+        organization: organization,
+        creator_company_teammate: teammate,
+        confirmed_teammate_ids: [other.id],
+        people_status: "confirmed"
+      )
+    end
+
+    it "renders prompt-debug hone controls on the review page" do
+      get organization_possible_observation_consult_path(organization, consult)
+      expect(response.body).to include("Prompt debug")
+      expect(response.body).to include("Save labels (no drafts)")
+      expect(response.body).to include("Save all (create drafts)")
+      expect(response.body).to include("Download prompt-debug JSON")
+      expect(response.body).to include(">Reviewing<")
+      expect(response.body).to include(">Would include<")
+      expect(response.body).to include(">Dismiss<")
+      expect(response.body).not_to include("Create draft OGO now")
+    end
+
+    it "saves labels without creating draft OGOs" do
+      item = consult.extraction_items.first
+      expect do
+        patch save_labels_organization_possible_observation_consult_path(organization, consult),
+              params: {
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "included",
+                    kind: "feedback",
+                    quote: "Corrected quote for prompt hone",
+                    responder_company_teammate_id: teammate.id,
+                    subject_company_teammate_id: other.id,
+                    confidence: item[:confidence]
+                  }
+                }
+              }
+      end.not_to change(Observation, :count)
+
+      expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
+      follow_redirect!
+      expect(response.body).to include("Labels saved (no drafts created)")
+
+      saved = consult.reload.extraction_items.first
+      expect(saved[:quote]).to eq("Corrected quote for prompt hone")
+      expect(saved[:kind]).to eq("feedback")
+      expect(saved[:include]).to eq(true)
+      expect(saved[:observation_id]).to be_blank
+      expect(consult.ai_extraction_items.first[:quote]).to eq(item[:quote])
+    end
+
+    it "downloads prompt-debug JSON with ai defaults vs labels" do
+      item = consult.extraction_items.first
+      consult.replace_extraction_items!(
+        [
+          item.to_h.stringify_keys.merge(
+            "quote" => "Human-corrected quote",
+            "include" => false,
+            "dismissed_at" => Time.current.iso8601
+          )
+        ]
+      )
+
+      get download_prompt_debug_organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("application/json")
+      payload = JSON.parse(response.body)
+      expect(payload["purpose"]).to eq("ogo_consult_prompt_debug")
+      expect(payload.dig("consult", "prompt_debug")).to be(true)
+      expect(payload["ai_items"].first["quote"]).to eq(item[:quote])
+      expect(payload["labeled_items"].first["quote"]).to eq("Human-corrected quote")
+      expect(payload["diff"].first["outcome"]).to eq("dismissed")
+      expect(payload["diff"].first["field_changes"]).to include("quote")
+    end
+  end
+
   describe "GET index" do
     it "shows pOGO total, dismissed, and promoted counts instead of status" do
       create(
@@ -306,6 +414,14 @@ RSpec.describe "Possible observation consults", type: :request do
           ]
         }
       )
+      create(
+        :possible_observation_consult,
+        :prompt_debug,
+        organization: organization,
+        creator_company_teammate: teammate,
+        display_name: "Debug hone consult",
+        source_text: "Pat crushed it."
+      )
 
       get organization_possible_observation_consults_path(organization)
 
@@ -313,6 +429,9 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("pOGOs")
       expect(response.body).to include("Dismissed")
       expect(response.body).to include("Promoted")
+      expect(response.body).to include("1 prompt-debug run")
+      expect(response.body).to include("Debug hone consult")
+      expect(response.body).to include(">Debug<")
     end
 
     it "lists the viewer's Slack searches next to transcript consults" do

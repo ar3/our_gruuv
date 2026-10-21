@@ -6,7 +6,10 @@
 
 .mb-3
   = link_to "← All consults", organization_possible_observation_consults_path(organization), class: "text-decoration-none"
-%h1.h3.mb-1= @consult.display_name
+%h1.h3.mb-1
+  = @consult.display_name
+  - if @consult.prompt_debug?
+    %span.badge.text-bg-warning.ms-2 Prompt debug
 %p.small.text-muted.mb-4
   Status:
   %span.badge.text-bg-secondary= @consult.extraction_status
@@ -85,6 +88,15 @@
         = button_to "Consult again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary ms-2"
   - else
     %h5.mb-3 Review candidate OGOs
+    - if @prompt_debug && policy(@consult).download_prompt_debug?
+      .alert.alert-warning.border.mb-3
+        %strong Prompt debug
+        — label candidates without creating drafts, then download the defaults-vs-labels JSON for prompt iteration.
+        This consult was started with #{content_tag(:code, "?debug=true")}.
+        .d-flex.flex-wrap.gap-2.mt-2
+          = link_to "Download prompt-debug JSON",
+                    download_prompt_debug_organization_possible_observation_consult_path(organization, @consult),
+                    class: "btn btn-sm btn-outline-secondary"
     = form_with url: organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true, html: { id: form_id, data: { turbo: false } } do
       - idx = 0
       - groups.each do |teammate, person_items|
@@ -102,22 +114,36 @@
                     %th Status
                 %tbody
                   - person_items.each do |item|
-                    = render "candidate_row", item: item, idx: idx, editable: true
+                    = render "candidate_row", item: item, idx: idx, editable: true, prompt_debug: @prompt_debug
                     - idx += 1
       .d-flex.flex-wrap.gap-2.mt-3
-        = submit_tag "Save all", name: "commit", value: "Save all", class: "btn btn-primary"
+        - if @prompt_debug && policy(@consult).save_labels?
+          = button_tag "Save labels (no drafts)",
+                       type: "submit",
+                       formaction: save_labels_organization_possible_observation_consult_path(organization, @consult),
+                       class: "btn btn-primary"
+          = submit_tag "Save all (create drafts)", name: "commit", value: "Save all", class: "btn btn-outline-primary"
+        - else
+          = submit_tag "Save all", name: "commit", value: "Save all", class: "btn btn-primary"
       %p.mt-3.mb-0.text-muted.small
-        Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
-        Save all actualizes every row: included candidates become draft OGOs (you are the creator),
-        dismissed candidates are hidden, and the rest stay as potential OGOs.
-        Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
-        (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
+        - if @prompt_debug
+          Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Would include")}, or #{content_tag(:strong, "Dismiss")}.
+          #{content_tag(:strong, "Save labels")} keeps your corrections for the prompt-debug download and does not create OGOs.
+          #{content_tag(:strong, "Save all (create drafts)")} is the normal promote path when you are done honing.
+          Re-run #{content_tag(:strong, "Consult OG again")} on this same transcript to compare a new prompt version.
+        - else
+          Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
+          Save all actualizes every row: included candidates become draft OGOs (you are the creator),
+          dismissed candidates are hidden, and the rest stay as potential OGOs.
+          Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
+          (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
 
     :javascript
       (function() {
         var form = document.getElementById("#{form_id}");
         if (!form) return;
         function syncRow(row) {
+          if (row.dataset.consultPromptDebug === "true") return;
           var states = row.querySelectorAll("[data-consult-state]");
           if (!states.length) return;
           var included = false;

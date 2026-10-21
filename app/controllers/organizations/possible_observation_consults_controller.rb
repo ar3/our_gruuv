@@ -6,12 +6,15 @@ module Organizations
     before_action :set_consult, only: %i[
       show update confirm_teammates extract re_extract
       extraction_status create_draft_observations
+      save_labels download_prompt_debug
     ]
     after_action :verify_authorized
 
     def index
       authorize PossibleObservationConsult
-      @consults = policy_scope(PossibleObservationConsult).recent_first.limit(50)
+      scoped = policy_scope(PossibleObservationConsult)
+      @consults = scoped.recent_first.limit(50)
+      @prompt_debug_count = scoped.prompt_debug.count
       @slack_searches = load_hub_slack_searches
       @slack_searches_polling = @slack_searches.any?(&:hub_in_flight?)
     end
@@ -27,20 +30,24 @@ module Organizations
 
     def new
       authorize PossibleObservationConsult
+      debug = prompt_debug_param?
       @consult = PossibleObservationConsult.new(
         organization: organization,
         creator_company_teammate: current_company_teammate,
-        display_name: "OG Consult #{Time.current.strftime('%Y-%m-%d %H:%M')}"
+        prompt_debug: debug,
+        display_name: default_consult_display_name(debug: debug)
       )
     end
 
     def create
       authorize PossibleObservationConsult
+      debug = prompt_debug_param?
       @consult = PossibleObservationConsult.new(consult_params.merge(
                                                   organization: organization,
                                                   creator_company_teammate: current_company_teammate,
                                                   people_status: "suggested",
-                                                  extraction_status: "ready"
+                                                  extraction_status: "ready",
+                                                  prompt_debug: debug
                                                 ))
       attach_source!(@consult)
 
@@ -145,6 +152,41 @@ module Organizations
       save_all!(items)
     end
 
+    # Prompt-debug hone loop: persist Include/Dismiss/edits without creating draft OGOs.
+    def save_labels
+      authorize @consult
+      items = normalize_items_param(params[:items])
+      if items.empty?
+        redirect_to consult_path, alert: "No candidate rows to save."
+        return
+      end
+
+      @consult.replace_extraction_items!(items)
+      dismissed_count = items.count { |item| item["dismissed_at"].present? }
+      included_count = items.count { |item| included_item?(item) }
+      notice = "Labels saved (no drafts created)."
+      notice += " #{included_count} would include." if included_count.positive?
+      notice += " #{dismissed_summary(dismissed_count)}" if dismissed_count.positive?
+      redirect_to consult_path, notice: notice
+    end
+
+    def download_prompt_debug
+      authorize @consult
+      consultation = OgConsultation.latest_for(
+        subject: @consult,
+        kind: OgConsultation::KIND_OGO_SEARCH_CONSULT
+      )
+      payload = PossibleObservationConsults::PromptDebugPayload.call(
+        consult: @consult,
+        consultation: consultation
+      )
+      filename = "ogo-consult-#{@consult.id}-prompt-debug-#{Time.current.strftime('%Y%m%d-%H%M%S')}.json"
+      send_data JSON.pretty_generate(payload),
+                filename: filename,
+                type: "application/json",
+                disposition: "attachment"
+    end
+
     def extraction_status
       authorize @consult
       consultation = OgConsultation.latest_for(
@@ -182,6 +224,20 @@ module Organizations
 
     def consult_params
       params.require(:possible_observation_consult).permit(:display_name, :source_text, :source_file)
+    end
+
+    # Opt-in hone loop: /possible_observation_consults/new?debug=true (also accepts form hidden field).
+    def prompt_debug_param?
+      cast = ActiveModel::Type::Boolean.new
+      return true if cast.cast(params[:debug])
+      return true if cast.cast(params.dig(:possible_observation_consult, :prompt_debug))
+
+      false
+    end
+
+    def default_consult_display_name(debug:)
+      stamp = Time.current.strftime("%Y-%m-%d %H:%M")
+      debug ? "OG Consult debug #{stamp}" : "OG Consult #{stamp}"
     end
 
     def attach_source!(consult)
@@ -403,6 +459,7 @@ module Organizations
         subject: @consult,
         kind: OgConsultation::KIND_OGO_SEARCH_CONSULT
       )
+      @prompt_debug = @consult.prompt_debug?
     end
 
     def normalize_items_param(raw)

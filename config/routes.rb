@@ -437,6 +437,8 @@ Rails.application.routes.draw do
         post :extract
         post :re_extract
         post :create_draft_observations
+        patch :save_labels
+        get :download_prompt_debug
       end
     end
 

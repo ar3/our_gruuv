@@ -55,6 +55,15 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
     show? && record.extraction_status == "completed"
   end
 
+  # Temporary prompt-hone helpers for consults started with ?debug=true.
+  def save_labels?
+    show? && record.extraction_status == "completed" && record.prompt_debug?
+  end
+
+  def download_prompt_debug?
+    save_labels?
+  end
+
   private
 
   def terminated?
