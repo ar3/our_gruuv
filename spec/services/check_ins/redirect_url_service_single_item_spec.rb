@@ -38,16 +38,47 @@ RSpec.describe CheckIns::RedirectUrlService do
       expect(url).to eq(Rails.application.routes.url_helpers.organization_company_teammate_finalization_path(organization, teammate))
     end
 
-    it "save_and_view_position returns the 1-by-1 position check-in path" do
+    it "save_and_view_position returns the 1-by-1 position check-in path deep-linked to history" do
       url = described_class.call(
         button_name: "save_and_view_position",
         organization: organization,
         teammate: teammate,
         params: {}
       )
-      expect(url).to eq(
-        Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(organization, teammate)
+      expected = Rails.application.routes.url_helpers.position_check_in_organization_teammate_path(organization, teammate)
+      expect(url).to eq("#{expected}#research-prior-check-ins")
+    end
+
+    it "save_and_view_assignment deep-links to assignment check-in history" do
+      assignment = create(:assignment, company: organization)
+      url = described_class.call(
+        button_name: "save_and_view_assignment_#{assignment.id}",
+        organization: organization,
+        teammate: teammate,
+        params: {}
       )
+      expected = Rails.application.routes.url_helpers.organization_teammate_assignment_path(
+        organization,
+        teammate,
+        assignment.id
+      )
+      expect(url).to eq("#{expected}#research-all-check-ins")
+    end
+
+    it "save_and_view_aspiration deep-links to aspiration check-in history" do
+      aspiration = create(:aspiration, company: organization)
+      url = described_class.call(
+        button_name: "save_and_view_aspiration_#{aspiration.id}",
+        organization: organization,
+        teammate: teammate,
+        params: {}
+      )
+      expected = Rails.application.routes.url_helpers.organization_teammate_aspiration_path(
+        organization,
+        teammate,
+        aspiration.id
+      )
+      expect(url).to eq("#{expected}#research-all-check-ins")
     end
 
     it "save_and_view_observations_position redirects to position 1-by-1 observations section" do

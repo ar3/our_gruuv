@@ -25,7 +25,7 @@
 
   .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
     .d-flex.align-items-center
-      - popover_content = last_finalized_check_in_popover_content(@latest_finalized_for_pill, @teammate.person.casual_name, @single_item_type || :position)
+      - popover_content = last_finalized_check_in_popover_content(@latest_finalized_for_pill, @teammate.person.casual_name, @single_item_type || :position, history_cta_mode: :on_page)
       = render "shared/last_finalized_pill", latest_finalized: @latest_finalized_for_pill, popover_content: popover_content
     - action_breakdown = EngagementHealth::ClarityActionMetrics.for_records(@engagement_health_records)
     - names = teammate_and_manager_short_names(@teammate, @organization)

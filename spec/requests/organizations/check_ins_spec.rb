@@ -397,7 +397,10 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(response.body).to include('data-check-in-autosave-target="status"')
         expect(response.body).to include("Clarity Check-ins")
         expect(response.body).to include("Switch teammate view")
-        expect(response.body).to include("complete clarity check-ins on as many or as few")
+        expect(response.body).to include("Complete clarity check-ins on as many or as few")
+        expect(response.body).to include("Hover Last Finalized for a skim")
+        expect(response.body).to include("bulkClarityCheckInPageHelp")
+        expect(response.body).to include("Bulk vs 1-by-1")
         expect(response.body).to include("Go to the clarity check-in status page")
         expect(response.body).to include("recent clarity check-ins in an easy to understand table")
         expect(response.body).to include(review_most_recent_organization_company_teammate_check_ins_path(organization, employee_teammate))
@@ -492,7 +495,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
               }
 
         expect(response).to redirect_to(
-          position_check_in_organization_teammate_path(organization, employee_teammate)
+          "#{position_check_in_organization_teammate_path(organization, employee_teammate)}#research-prior-check-ins"
         )
       end
 
@@ -668,13 +671,16 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include(" - Clarity check-in statuses")
       expect(response.body).to include(employee_person.casual_name)
       expect(response.body).not_to include('id="teammate_switcher"')
-      expect(response.body).to include('Start a clarity check-in on any single assignment, value, or position one at a time')
+      expect(response.body).to include('Click any name to open the 1-by-1 page at full check-in history')
       expect(response.body).to include('Go to the Bulk clarity check-in page')
-      expect(response.body).to include('complete a clarity check-in on just one item or all of them at once')
+      expect(response.body).to include('Bulk is for fast entry when you already know the answers')
+      expect(response.body).to include('clarityCheckInStatusesPageHelp')
+      expect(response.body).to include('Bulk vs 1-by-1')
       expect(response.body).to include('Clarity Check-ins (Active)')
       expect(response.body).to include('Last Reviewed')
       expect(response.body).to include("Last Check-In by #{employee_person.casual_name}")
-      expect(response.body).to include(organization_teammate_aspiration_path(organization, employee_teammate, aspiration))
+      expect(response.body).to include("#{organization_teammate_aspiration_path(organization, employee_teammate, aspiration)}#research-all-check-ins")
+      expect(response.body).to include("#{organization_teammate_assignment_path(organization, employee_teammate, assignment)}#research-all-check-ins")
       expect(response.body).to include('completed a new check-in')
       expect(response.body).to include('is waiting on')
     end

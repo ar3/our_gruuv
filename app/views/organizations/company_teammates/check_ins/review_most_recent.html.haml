@@ -1,18 +1,30 @@
 - content_for :title, teammate_context_page_title(@selected_teammate, clarity_check_in_statuses_title_label)
+- review_most_recent_page_help_id = 'clarityCheckInStatusesPageHelp'
 
 - content_for :header do
+  - trailing = capture do
+    = render 'shared/page_help/header_info_button',
+             collapse_id: review_most_recent_page_help_id,
+             tooltip: 'Clarity check-in statuses, Last Finalized hover, and 1-by-1 history. Click for details.'
   = render "shared/teammate_modality_header/switchers",
            organization: organization,
            selected_teammate: @selected_teammate,
            viewable_teammate_groups: @viewable_teammate_groups,
            path_for_teammate: ->(tm) { review_most_recent_organization_company_teammate_check_ins_path(organization, tm) },
-           switch_aria_label: "Switch teammate for clarity check-in statuses"
+           switch_aria_label: "Switch teammate for clarity check-in statuses",
+           trailing: trailing
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(organization, @teammate) }, { label: clarity_check_in_statuses_title_label, url: nil }])
 
 - employee_name = @teammate.person.casual_name
 - manager_name = @teammate.current_manager&.casual_name.presence || 'Manager'
+
+.collapse.mb-4{id: review_most_recent_page_help_id}
+  = render 'organizations/company_teammates/check_ins/review_most_recent_page_help',
+           organization: organization,
+           teammate: @teammate,
+           employee_name: employee_name
 
 .row.g-3.mb-3
   .col-12.col-lg-6
@@ -45,7 +57,10 @@
         - opn = history[:open_check_in]
         %tr
           %td
-            = link_to row[:aspiration].name, organization_teammate_aspiration_path(organization, @teammate, row[:aspiration]), class: 'text-decoration-none'
+            = link_to row[:aspiration].name,
+                      single_item_check_in_path_with_history(organization, @teammate, :aspiration, row[:aspiration]),
+                      class: 'text-decoration-none',
+                      data: { bs_toggle: 'tooltip', bs_placement: 'top', bs_title: unified_check_ins_single_item_submit_title(employee_name: employee_name, object_name: row[:aspiration].name) }
             %div.mt-1
               = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :aspiration)
           %td
@@ -79,7 +94,10 @@
         - opn = history[:open_check_in]
         %tr
           %td
-            = link_to row[:assignment].title, organization_teammate_assignment_path(organization, @teammate, row[:assignment]), class: 'text-decoration-none'
+            = link_to row[:assignment].title,
+                      single_item_check_in_path_with_history(organization, @teammate, :assignment, row[:assignment]),
+                      class: 'text-decoration-none',
+                      data: { bs_toggle: 'tooltip', bs_placement: 'top', bs_title: unified_check_ins_single_item_submit_title(employee_name: employee_name, object_name: row[:assignment].title) }
             %div.mt-1
               = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :assignment)
             - if row[:assignment].archived?
@@ -120,7 +138,11 @@
       %tbody
         %tr
           %td
-            = link_to @position_check_in.employment_tenure.position.display_name, position_check_in_organization_teammate_path(organization, @teammate), class: 'text-decoration-none'
+            - position_name = @position_check_in.employment_tenure.position.display_name
+            = link_to position_name,
+                      single_item_check_in_path_with_history(organization, @teammate, :position),
+                      class: 'text-decoration-none',
+                      data: { bs_toggle: 'tooltip', bs_placement: 'top', bs_title: unified_check_ins_single_item_submit_title(employee_name: employee_name, object_name: position_name) }
             %div.mt-1
               = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :position)
           %td

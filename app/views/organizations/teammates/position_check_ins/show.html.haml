@@ -1,16 +1,26 @@
 - content_for :title, "1-by-1 Check-in – Position – #{@teammate.person.display_name}"
+- position_single_item_page_help_id = 'positionSingleItemCheckInPageHelp'
 
 - content_for :header do
+  - trailing = capture do
+    = render 'shared/page_help/header_info_button', collapse_id: position_single_item_page_help_id
   = render "shared/teammate_modality_header/switchers",
            organization: @organization,
            selected_teammate: @selected_teammate,
            viewable_teammate_groups: @viewable_teammate_groups,
            path_for_teammate: ->(tm) { hub_organization_company_teammate_check_ins_path(@organization, tm) },
-           switch_aria_label: "Switch teammate for clarity check-ins"
+           switch_aria_label: "Switch teammate for clarity check-ins",
+           trailing: trailing
   %p.text-muted.mb-0.mt-1= @single_item_name
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: "Position Check-In", url: nil }])
+
+.collapse.mb-4{id: position_single_item_page_help_id}
+  = render 'organizations/teammates/position_check_ins/single_item_check_in_page_help',
+           organization: @organization,
+           teammate: @teammate,
+           position_name: @single_item_name
 
 - nav_title = "#{@single_item_name} Check-In"
 - research_sublinks = [{ id: "research-observations", label: "Observations", icon: "bi-eye" }, { id: "research-assignment-ratings", label: "Assignment ratings", icon: "bi-bar-chart" }]

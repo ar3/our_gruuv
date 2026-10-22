@@ -1,0 +1,21 @@
+-# Shared mental model: bulk = fast entry; 1-by-1 = dig in + full history.
+-# Locals: employee_name (optional), context (:bulk | :statuses | :one_by_one)
+- employee_name = local_assigns[:employee_name].presence || 'this person'
+- context = local_assigns.fetch(:context, :bulk).to_sym
+
+%h5.fw-semibold.mb-2 Bulk vs 1-by-1
+%p.mb-2
+  - case context
+  - when :one_by_one
+    This page is for digging into one Assignment, Value, or Position for #{employee_name} with full context and check-in history on one screen. Use bulk check-in when you already know the answers and want a fast way to enter them—you can return there anytime.
+  - when :statuses
+    Click an object name to open its 1-by-1 page at the check-in history section for #{employee_name}. Same clarity process as bulk; easy to return. Stay on bulk when you already know the answers and need a fast path.
+  - else
+    This bulk page is for when you already know the answers and need a fast way to add them for #{employee_name}. When you want full notes, history, or to focus on one object, click the name under Last Finalized—same process, deep-linked to history, easy to return here.
+%ul.mb-0
+  %li
+    %strong Last Finalized pill
+    — hover for a skim of the latest finalized check-in (long notes are shortened). Full text and history live on the 1-by-1 page.
+  %li
+    %strong Object name
+    — opens the 1-by-1 clarity check-in for that item, scrolled to history/research.

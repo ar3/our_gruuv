@@ -1,0 +1,35 @@
+-# Locals: organization, teammate, aspiration_name, employee_name (optional)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- aspiration_name = local_assigns.fetch(:aspiration_name)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Complete a clarity check-in for
+    %strong= aspiration_name
+    —how #{employee_name} is doing on this aspirational value, with full history and context on one screen.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 One value at a time
+  %p.mb-2
+    Still Step One (
+    = link_to 'Reflect Apart', organization_company_teammate_check_ins_path(organization, teammate)
+    ). Use Research for complete check-in history, then check in under Your check-in.
+  %h5.fw-semibold.mb-2 Sections on this page
+  %ul.mb-2
+    %li
+      %strong Value details
+      — description and definition.
+    %li
+      %strong Your check-in
+      — ratings and notes.
+    %li
+      %strong Research
+      — history, observations, linked goals.
+  = render 'shared/check_ins/bulk_vs_one_by_one_history_help', employee_name: employee_name, context: :one_by_one

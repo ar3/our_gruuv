@@ -1,12 +1,16 @@
 - content_for :title, "Aspirations - #{@teammate.person.display_name}"
+- aspiration_single_item_page_help_id = 'aspirationSingleItemCheckInPageHelp'
 
 - content_for :header do
+  - trailing = capture do
+    = render 'shared/page_help/header_info_button', collapse_id: aspiration_single_item_page_help_id
   = render "shared/teammate_modality_header/switchers",
            organization: @organization,
            selected_teammate: @selected_teammate,
            viewable_teammate_groups: @viewable_teammate_groups,
            path_for_teammate: ->(tm) { hub_organization_company_teammate_check_ins_path(@organization, tm) },
-           switch_aria_label: "Switch teammate for clarity check-ins"
+           switch_aria_label: "Switch teammate for clarity check-ins",
+           trailing: trailing
   %p.text-muted.mb-0.mt-1= @aspiration.name
 
 - content_for :head do
@@ -17,6 +21,12 @@
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: clarity_hub_label, url: hub_organization_company_teammate_check_ins_path(@organization, @teammate) }, { label: @aspiration.name, url: nil }])
+
+.collapse.mb-4{id: aspiration_single_item_page_help_id}
+  = render 'organizations/teammates/aspirations/single_item_check_in_page_help',
+           organization: @organization,
+           teammate: @teammate,
+           aspiration_name: @aspiration.name
 
 - nav_title = "#{@aspiration.name} Check-In"
 - research_sublinks = [{ id: "research-all-check-ins", label: "All check-ins", icon: "bi-list-check" }, { id: "research-observations", label: "Observations", icon: "bi-eye" }, { id: "research-goals", label: "Linked goals", icon: "bi-bullseye" }]

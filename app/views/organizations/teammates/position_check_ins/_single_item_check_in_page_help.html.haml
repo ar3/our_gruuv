@@ -1,0 +1,35 @@
+-# Locals: organization, teammate, position_name, employee_name (optional)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- position_name = local_assigns.fetch(:position_name)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Complete a clarity check-in for
+    %strong= position_name
+    —#{employee_name}'s overall standing in the role, with prior check-ins and context on one screen.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 One position at a time
+  %p.mb-2
+    Still Step One (
+    = link_to 'Reflect Apart', organization_company_teammate_check_ins_path(organization, teammate)
+    ). Prior check-ins live under Research; bulk check-in remains the fast path when answers are already clear.
+  %h5.fw-semibold.mb-2 Sections on this page
+  %ul.mb-2
+    %li
+      %strong Position details
+      — summary, required/optional assignments, seat.
+    %li
+      %strong Your check-in
+      — overall rating and notes.
+    %li
+      %strong Research
+      — prior check-ins, observations, assignment ratings.
+  = render 'shared/check_ins/bulk_vs_one_by_one_history_help', employee_name: employee_name, context: :one_by_one

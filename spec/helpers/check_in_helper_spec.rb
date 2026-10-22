@@ -876,4 +876,76 @@ RSpec.describe CheckInHelper, type: :helper do
       expect(sentence).to include("both Alex and Casey")
     end
   end
+
+  describe '#unified_check_ins_single_item_submit_title' do
+    it 'mentions history, same process, and bulk for fast entry' do
+      title = helper.unified_check_ins_single_item_submit_title(employee_name: 'Alex', object_name: 'Ship It')
+      expect(title).to include('full check-in history for Alex and Ship It')
+      expect(title).to include('Same process as here... dig into this one thing')
+      expect(title).not_to include('—')
+      expect(title).to include('Use bulk when you already know the answers')
+    end
+  end
+
+  describe '#last_finalized_check_in_popover_content' do
+    let(:organization) { create(:organization) }
+    let(:teammate) { create(:company_teammate, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization, title: 'Ship It') }
+    let(:long_notes) { 'A' * 250 }
+    let!(:check_in) do
+      create(
+        :assignment_check_in,
+        :finalized,
+        teammate: teammate,
+        assignment: assignment,
+        shared_notes: long_notes,
+        employee_private_notes: long_notes,
+        manager_private_notes: long_notes
+      )
+    end
+
+    it 'truncates long notes and adds the history CTA' do
+      html = helper.last_finalized_check_in_popover_content(check_in, 'Alex', :assignment)
+
+      expect(html).to include('…')
+      expect(html).not_to include(long_notes)
+      expect(html).to include('bi-info-circle')
+      expect(html).to include('Click Ship It to see the full check-in history for Alex and Ship It')
+      expect(html).to include('Bulk and the 1-by-1 pages are the same process, just two different views')
+    end
+
+    it 'uses on-page CTA copy when already on the 1-by-1 page' do
+      html = helper.last_finalized_check_in_popover_content(
+        check_in,
+        'Alex',
+        :assignment,
+        history_cta_mode: :on_page
+      )
+
+      expect(html).to include('bi-info-circle')
+      expect(html).to include('Full check-in history for Alex and Ship It is in Research below')
+      expect(html).to include('Bulk and the 1-by-1 pages are the same process, just two different views')
+      expect(html).not_to include('Click Ship It to see the full check-in history')
+    end
+  end
+
+  describe '#single_item_check_in_path_with_history' do
+    let(:organization) { create(:organization) }
+    let(:teammate) { create(:company_teammate, organization: organization) }
+    let(:assignment) { create(:assignment, company: organization) }
+
+    it 'appends the history anchor for assignments' do
+      path = helper.single_item_check_in_path_with_history(organization, teammate, :assignment, assignment)
+      expect(path).to eq(
+        "#{organization_teammate_assignment_path(organization, teammate, assignment)}#research-all-check-ins"
+      )
+    end
+
+    it 'appends the prior-check-ins anchor for position' do
+      path = helper.single_item_check_in_path_with_history(organization, teammate, :position)
+      expect(path).to eq(
+        "#{position_check_in_organization_teammate_path(organization, teammate)}#research-prior-check-ins"
+      )
+    end
+  end
 end

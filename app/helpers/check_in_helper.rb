@@ -548,9 +548,68 @@ module CheckInHelper
   end
 
   # Popover content: same sentence structure as audit page (shared partial)
-  def last_finalized_check_in_popover_content(check_in, employee_name, sentence_type)
+  def last_finalized_check_in_popover_content(check_in, employee_name, sentence_type, history_cta_mode: :open_one_by_one)
     return '' if check_in.blank?
-    render(partial: 'shared/check_in_finalized_sentences', locals: { check_in: check_in, employee_name: employee_name, sentence_type: sentence_type })
+
+    render(
+      partial: 'shared/check_in_finalized_sentences',
+      locals: {
+        check_in: check_in,
+        employee_name: employee_name,
+        sentence_type: sentence_type,
+        truncate_notes: true,
+        show_history_cta: true,
+        history_cta_mode: history_cta_mode
+      }
+    )
+  end
+
+  def check_in_object_display_name(check_in, sentence_type)
+    case sentence_type.to_sym
+    when :assignment
+      check_in.assignment&.title.presence || 'this assignment'
+    when :aspiration
+      check_in.aspiration&.name.presence || 'this value'
+    when :position
+      check_in.employment_tenure&.position&.display_name.presence || 'this position'
+    else
+      'this item'
+    end
+  end
+
+  def last_finalized_history_cta_text(employee_name:, object_name:, mode: :open_one_by_one)
+    case mode.to_sym
+    when :on_page
+      "Full check-in history for #{employee_name} and #{object_name} is in Research below. " \
+        "Bulk and the 1-by-1 pages are the same process, just two different views."
+    else
+      "Click #{object_name} to see the full check-in history for #{employee_name} and #{object_name}. " \
+        "Bulk and the 1-by-1 pages are the same process, just two different views."
+    end
+  end
+
+  def single_item_check_in_history_anchor(sentence_type)
+    case sentence_type.to_sym
+    when :position
+      'research-prior-check-ins'
+    else
+      'research-all-check-ins'
+    end
+  end
+
+  def single_item_check_in_path_with_history(organization, teammate, sentence_type, record = nil)
+    path = case sentence_type.to_sym
+    when :assignment
+      organization_teammate_assignment_path(organization, teammate, record)
+    when :aspiration
+      organization_teammate_aspiration_path(organization, teammate, record)
+    when :position
+      position_check_in_organization_teammate_path(organization, teammate)
+    else
+      raise ArgumentError, "Unknown sentence_type: #{sentence_type}"
+    end
+
+    "#{path}##{single_item_check_in_history_anchor(sentence_type)}"
   end
 
   # Popover content for latest finalized check-ins (legacy: used only when we need HTML for popover from latest)
@@ -644,9 +703,11 @@ module CheckInHelper
     single_item_check_in_waiting_for_name(check_in, teammate)
   end
 
-  # Tooltip for name/title submits on the unified check-ins page that open the single-item flow.
-  def unified_check_ins_single_item_submit_title
-    'Click here to do the same check-in process as you are doing on this page, but focusing on just this one thing at a time!'
+  # Tooltip for name/title submits/links that open the single-item flow (deep-linked to history).
+  def unified_check_ins_single_item_submit_title(employee_name:, object_name:)
+    "Click to see the full check-in history for #{employee_name} and #{object_name}. " \
+      "Same process as here... dig into this one thing with all the context on one screen, then return easily. " \
+      "Use bulk when you already know the answers and want a fast way to enter them."
   end
 
   # Review-most-recent: outline CTA when the open check-in is ready for joint finalization (both sides complete).

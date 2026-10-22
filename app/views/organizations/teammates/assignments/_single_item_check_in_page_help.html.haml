@@ -24,7 +24,7 @@
     %strong Your check-in
     (energy bars show role-wide split; link below the bars opens bulk check-in for several assignments).
   %h5.fw-semibold.mb-2 Sections on this page
-  %ul.mb-0
+  %ul.mb-2
     %li
       %strong Assignment details
       — outcomes, abilities, links.
@@ -34,3 +34,4 @@
     %li
       %strong Research
       — tenure, history, observations.
+  = render 'shared/check_ins/bulk_vs_one_by_one_history_help', employee_name: employee_name, context: :one_by_one

@@ -44,6 +44,8 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include('data-controller="check-in-autosave"')
       expect(response.body).to match(/check-in-autosave#markDirty/)
       expect(response.body).to include('data-check-in-autosave-target="status"')
+      expect(response.body).to include('positionSingleItemCheckInPageHelp')
+      expect(response.body).to include('Bulk vs 1-by-1')
     end
 
     it "shows the perspective context for the open position check-in" do

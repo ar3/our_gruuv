@@ -113,6 +113,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include('assignmentSingleItemCheckInPageHelp')
         expect(response.body).to include('What is MAAP?')
         expect(response.body).to include('Reflect Apart')
+        expect(response.body).to include('Bulk vs 1-by-1')
       end
 
       it "shows the object queue and teammate modality switchers instead of the item dropdown" do

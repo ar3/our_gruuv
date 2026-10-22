@@ -16,20 +16,29 @@ module CheckIns
       
       case action_name
       when /^view_position$/
-        position_check_in_organization_teammate_path(@organization, @teammate)
+        append_history_anchor(
+          position_check_in_organization_teammate_path(@organization, @teammate),
+          :position
+        )
       when /^view_assignment_(\d+)$/
         assignment_id = $1.to_i
-        organization_teammate_assignment_path(
-          @organization,
-          @teammate,
-          assignment_id
+        append_history_anchor(
+          organization_teammate_assignment_path(
+            @organization,
+            @teammate,
+            assignment_id
+          ),
+          :assignment
         )
       when /^view_aspiration_(\d+)$/
         aspiration_id = $1.to_i
-        organization_teammate_aspiration_path(
-          @organization,
-          @teammate,
-          aspiration_id
+        append_history_anchor(
+          organization_teammate_aspiration_path(
+            @organization,
+            @teammate,
+            aspiration_id
+          ),
+          :aspiration
         )
       when /^view_observations_assignment_(\d+)$/
         assignment_id = $1.to_i
@@ -182,6 +191,16 @@ module CheckIns
 
     def append_observations_anchor(url)
       "#{url}#current-period-observations"
+    end
+
+    def append_history_anchor(url, sentence_type)
+      anchor = case sentence_type.to_sym
+      when :position
+        'research-prior-check-ins'
+      else
+        'research-all-check-ins'
+      end
+      "#{url}##{anchor}"
     end
   end
 end

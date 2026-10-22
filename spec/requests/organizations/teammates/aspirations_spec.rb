@@ -33,6 +33,8 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response.body).to match(/check-in-autosave#markDirty/)
         expect(response.body).to include('data-check-in-autosave-target="status"')
         expect(response.body).to include(aspiration.name)
+        expect(response.body).to include('aspirationSingleItemCheckInPageHelp')
+        expect(response.body).to include('Bulk vs 1-by-1')
         expect(response.body).to include("Associated Goals")
         expect(response.body).to include(my_growth_goals_organization_company_teammate_path(organization, employee_teammate))
         expect(response.body).to include("View all of #{employee_person.casual_name}'s goals")

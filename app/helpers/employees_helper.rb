@@ -77,8 +77,11 @@ module EmployeesHelper
     }
   end
 
+  # Design default for Last Finalized hover popovers (skim-only; full notes on 1-by-1).
+  LAST_FINALIZED_POPOVER_NOTES_MAX_CHARS = 180
+
   # Returns [employee_sentence, manager_sentence, finalized_sentence] (same strings as the audit / finalized partial).
-  def aspiration_check_in_sentence_lines(check_in, employee_name)
+  def aspiration_check_in_sentence_lines(check_in, employee_name, max_notes_chars: nil)
     return [] unless check_in
 
     aspiration_name = check_in.aspiration&.name.presence || 'Aspiration'
@@ -89,9 +92,9 @@ module EmployeesHelper
     emp_rating = aspiration_rating_display(check_in.employee_rating)
     mgr_rating = aspiration_rating_display(check_in.manager_rating)
     final_rating = aspiration_rating_display(check_in.official_rating)
-    emp_notes = check_in_notes_display(check_in.employee_private_notes)
-    mgr_notes = check_in_notes_display(check_in.manager_private_notes)
-    shared_notes = check_in_notes_display(check_in.shared_notes)
+    emp_notes = check_in_notes_display(check_in.employee_private_notes, max_chars: max_notes_chars)
+    mgr_notes = check_in_notes_display(check_in.manager_private_notes, max_chars: max_notes_chars)
+    shared_notes = check_in_notes_display(check_in.shared_notes, max_chars: max_notes_chars)
 
     [
       "On #{emp_date} #{employee_name} said they were #{emp_rating} expectations for the Aspirational Value #{aspiration_name} since their last check-in. Notes: #{emp_notes}",
@@ -105,7 +108,7 @@ module EmployeesHelper
   end
 
   # Returns [employee_sentence, manager_sentence, finalized_sentence] for assignment check-ins.
-  def assignment_check_in_sentence_lines(check_in, employee_name)
+  def assignment_check_in_sentence_lines(check_in, employee_name, max_notes_chars: nil)
     return [] unless check_in
 
     assignment_name = check_in.assignment&.title.presence || 'Assignment'
@@ -117,9 +120,9 @@ module EmployeesHelper
     mgr_rating = assignment_rating_display(check_in.manager_rating)
     final_rating = assignment_rating_display(check_in.official_rating)
     energy = check_in.actual_energy_percentage.present? ? check_in.actual_energy_percentage : '—'
-    emp_notes = check_in_notes_display(check_in.employee_private_notes)
-    mgr_notes = check_in_notes_display(check_in.manager_private_notes)
-    shared_notes = check_in_notes_display(check_in.shared_notes)
+    emp_notes = check_in_notes_display(check_in.employee_private_notes, max_chars: max_notes_chars)
+    mgr_notes = check_in_notes_display(check_in.manager_private_notes, max_chars: max_notes_chars)
+    shared_notes = check_in_notes_display(check_in.shared_notes, max_chars: max_notes_chars)
 
     [
       "On #{emp_date} #{employee_name} said they were #{emp_rating} expectations for the Assignment #{assignment_name}. They also said they spent #{energy}% of their energy on this since their last check-in. Notes: #{emp_notes}",
@@ -133,7 +136,7 @@ module EmployeesHelper
   end
 
   # Returns [employee_sentence, manager_sentence, finalized_sentence] for position check-ins.
-  def position_check_in_sentence_lines(check_in, employee_name)
+  def position_check_in_sentence_lines(check_in, employee_name, max_notes_chars: nil)
     return [] unless check_in
 
     position_name = check_in.employment_tenure&.position&.display_name.presence || "Position"
@@ -144,9 +147,9 @@ module EmployeesHelper
     emp_rating = position_rating_display(check_in.employee_rating)
     mgr_rating = position_rating_display(check_in.manager_rating)
     final_rating = position_rating_display(check_in.official_rating)
-    emp_notes = check_in_notes_display(check_in.employee_private_notes)
-    mgr_notes = check_in_notes_display(check_in.manager_private_notes)
-    shared_notes = check_in_notes_display(check_in.shared_notes)
+    emp_notes = check_in_notes_display(check_in.employee_private_notes, max_chars: max_notes_chars)
+    mgr_notes = check_in_notes_display(check_in.manager_private_notes, max_chars: max_notes_chars)
+    shared_notes = check_in_notes_display(check_in.shared_notes, max_chars: max_notes_chars)
 
     [
       "On #{emp_date} #{employee_name} said they were #{emp_rating} overall for the position #{position_name} since their last check-in. Notes: #{emp_notes}",
@@ -178,8 +181,11 @@ module EmployeesHelper
     datetime.present? ? format_date_in_user_timezone(datetime, nil, format: '%Y-%m-%d') : '(not completed)'
   end
 
-  def check_in_notes_display(notes)
-    notes.present? ? notes : '--no notes--'
+  def check_in_notes_display(notes, max_chars: nil)
+    text = notes.present? ? notes.to_s : '--no notes--'
+    return text if max_chars.blank? || text == '--no notes--' || text.length <= max_chars
+
+    truncate(text, length: max_chars, omission: '…')
   end
 
   def parse_date(value)

@@ -1,0 +1,19 @@
+-# Locals: organization, teammate, employee_name (optional)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- employee_name = local_assigns[:employee_name].presence || teammate.person.casual_name
+
+.alert.alert-light.border.mb-0
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Compare the latest reviewed clarity check-ins and each side’s latest completion for #{employee_name}—then jump into any single item when you need history or to dig in.
+
+  %h3.fw-semibold.mb-2 Context
+  = render 'shared/maap/definition'
+  = render 'shared/check_ins/three_step_clarity_flow', organization: organization, teammate: teammate, employee_name: employee_name
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 Clarity check-in statuses
+  %p.mb-2
+    Rows show Last Reviewed plus the last check-in from each side. The Last Finalized pill under each name is a skim of the latest agreement.
+  = render 'shared/check_ins/bulk_vs_one_by_one_history_help', employee_name: employee_name, context: :statuses

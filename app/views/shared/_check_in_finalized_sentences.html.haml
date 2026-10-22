@@ -1,10 +1,20 @@
 -# Renders employee, manager, and finalized sentences for a single check-in (audit-style).
 -# Locals: check_in, employee_name, sentence_type (:position | :assignment | :aspiration)
+-# Optional: truncate_notes (bool), show_history_cta (bool), history_cta_mode (:open_one_by_one | :on_page)
+- truncate_notes = local_assigns.fetch(:truncate_notes, false)
+- show_history_cta = local_assigns.fetch(:show_history_cta, false)
+- history_cta_mode = local_assigns.fetch(:history_cta_mode, :open_one_by_one)
+- max_notes_chars = truncate_notes ? EmployeesHelper::LAST_FINALIZED_POPOVER_NOTES_MAX_CHARS : nil
 - sentence_lines = case sentence_type.to_sym
-- when :position then position_check_in_sentence_lines(check_in, employee_name)
-- when :assignment then assignment_check_in_sentence_lines(check_in, employee_name)
-- when :aspiration then aspiration_check_in_sentence_lines(check_in, employee_name)
+- when :position then position_check_in_sentence_lines(check_in, employee_name, max_notes_chars: max_notes_chars)
+- when :assignment then assignment_check_in_sentence_lines(check_in, employee_name, max_notes_chars: max_notes_chars)
+- when :aspiration then aspiration_check_in_sentence_lines(check_in, employee_name, max_notes_chars: max_notes_chars)
 - else []
 .check-in-finalized-sentences
   - sentence_lines.each do |line|
     %p.small.mb-2= line
+  - if show_history_cta && check_in.present?
+    - object_name = check_in_object_display_name(check_in, sentence_type)
+    %p.small.mb-0.mt-2.border-top.pt-2
+      %i.bi.bi-info-circle.me-1{aria: { hidden: true }}
+      %em= last_finalized_history_cta_text(employee_name: employee_name, object_name: object_name, mode: history_cta_mode)
