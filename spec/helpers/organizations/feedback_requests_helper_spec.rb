@@ -303,11 +303,20 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
   end
 
   describe '#feedback_request_skip_blocked_message' do
-    it 'mentions clearing drafts or saving and being done' do
+    it "points to Save and I'm Done! without asking to clear drafts" do
       message = helper.feedback_request_skip_blocked_message(2)
-      expect(message).to include('2 saved OGOs')
+      expect(message).to include("You've started some feedback")
+      expect(message).to include("don't want to lose that data")
       expect(message).to include("Save and I'm Done!")
-      expect(message).to include('keep them')
+      expect(message).not_to include('clear')
+    end
+  end
+
+  describe '#feedback_request_skip_confirm_message' do
+    it "warns unsaved content will be discarded and points to Save and I'm Done!" do
+      message = helper.feedback_request_skip_confirm_message
+      expect(message).to include('will not be saved')
+      expect(message).to include("Save and I'm Done!")
     end
   end
 end

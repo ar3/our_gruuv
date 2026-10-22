@@ -179,11 +179,14 @@ module Organizations
         .count
     end
 
-    def feedback_request_skip_blocked_message(draft_count)
-      count = draft_count.to_i
-      keep_phrase = count == 1 ? "keep it" : "keep them"
-      "You must clear your #{pluralize(count, 'saved OGO')} before you can Skip this request — " \
-        "or use Save and I'm Done! if you want to #{keep_phrase} and skip the rest."
+    def feedback_request_skip_blocked_message(_draft_count = 0)
+      "You've started some feedback and we don't want to lose that data — " \
+        "click Save and I'm Done! when you are done (you can skip the rest of the items)."
+    end
+
+    def feedback_request_skip_confirm_message
+      "Any feedback or content you've added on this page will not be saved. " \
+        "If you'd rather save what you have and skip the rest, cancel and use Save and I'm Done! instead."
     end
   end
 end

@@ -340,6 +340,8 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include(answer_organization_feedback_request_path(company, feedback_request))
       expect(response.body).to include('Skip this request')
       expect(response.body).to include(skip_organization_feedback_request_path(company, feedback_request))
+      # GSD Skip posts without confirm (unlike the answer-page Skip control).
+      expect(response.body).not_to include('will not be saved')
     end
 
     it 'links Skip to the answer page when the responder already has draft OGOs' do

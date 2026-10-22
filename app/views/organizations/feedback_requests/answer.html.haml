@@ -14,16 +14,12 @@
       Answer Feedback Request
 
 .alert.alert-light.border.mb-3.py-2{role: "status"}
-  - if draft_ogo_count.zero?
-    %span.text-muted.small Prefer not to answer?
-    = render "organizations/feedback_requests/skip_this_request_control",
-        organization: organization,
-        feedback_request: @feedback_request,
-        draft_ogo_count: draft_ogo_count,
-        style: :link
-  - else
-    %span.text-muted.small
-      = feedback_request_skip_blocked_message(draft_ogo_count)
+  %span.text-muted.small Prefer not to answer?
+  = render "organizations/feedback_requests/skip_this_request_control",
+      organization: organization,
+      feedback_request: @feedback_request,
+      draft_ogo_count: draft_ogo_count,
+      style: :link
 
 .alert.alert-light.border.mb-3{role: "status"}
   %strong Submit a new set of observations.
@@ -77,7 +73,11 @@
       - else
         %span.text-muted Generic
 
-= form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request), method: :post, local: true do |form|
+-# Skip uses its own POST form; keep it outside this form so nested forms don't submit answers.
+= form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request),
+            method: :post,
+            local: true,
+            html: { id: "feedback-request-answer-form" } do |form|
   - if flash[:alert]
     .alert.alert-danger= flash[:alert]
 
@@ -88,20 +88,23 @@
       observation_by_question_id: @observation_by_question_id,
       disabled: false
 
-  .d-flex.justify-content-between.align-items-start.pt-2.gap-3.flex-wrap
-    - cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : ogos_feedback_requests_organization_company_teammate_path(organization, "me")
-    = link_to 'Cancel', cancel_path, class: 'btn btn-secondary'
-    .d-flex.flex-column.align-items-end
-      .d-flex.flex-wrap.gap-2.justify-content-end
-        = form.submit 'Save and Keep Incomplete', name: 'save_and_keep_incomplete', class: 'btn btn-outline-primary'
-        = form.submit "Save and I'm Done!", name: 'save_and_complete', class: 'btn btn-primary'
-        = render "organizations/feedback_requests/skip_this_request_control",
-            organization: organization,
-            feedback_request: @feedback_request,
-            draft_ogo_count: draft_ogo_count,
-            style: :button
-      %p.form-text.text-muted.text-end.mb-0.mt-1{style: "max-width: 28rem;"}
-        You don’t have to respond to all of the items on this list — even one is an incredible gift.
-      - if draft_ogo_count.positive?
-        %p.form-text.text-muted.text-end.mb-0.mt-1{style: "max-width: 28rem;"}
-          = feedback_request_skip_blocked_message(draft_ogo_count)
+- cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : ogos_feedback_requests_organization_company_teammate_path(organization, "me")
+.d-flex.justify-content-between.align-items-start.pt-2.gap-3.flex-wrap
+  = link_to 'Cancel', cancel_path, class: 'btn btn-secondary'
+  .d-flex.flex-column.align-items-end
+    .d-flex.flex-wrap.gap-2.justify-content-end.align-items-center
+      = submit_tag 'Save and Keep Incomplete',
+                   name: 'save_and_keep_incomplete',
+                   class: 'btn btn-outline-primary',
+                   form: 'feedback-request-answer-form'
+      = submit_tag "Save and I'm Done!",
+                   name: 'save_and_complete',
+                   class: 'btn btn-primary',
+                   form: 'feedback-request-answer-form'
+      = render "organizations/feedback_requests/skip_this_request_control",
+          organization: organization,
+          feedback_request: @feedback_request,
+          draft_ogo_count: draft_ogo_count,
+          style: :button
+    %p.form-text.text-muted.text-end.mb-0.mt-1{style: "max-width: 28rem;"}
+      You don’t have to respond to all of the items on this list — even one is an incredible gift.

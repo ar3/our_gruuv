@@ -573,6 +573,13 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('even one is an incredible gift')
         expect(response.body).to include('submit')
         expect(response.body).to include(skip_organization_feedback_request_path(company, feedback_request))
+        expect(response.body).to include('data-turbo-confirm')
+        expect(response.body).to include('will not be saved')
+        expect(response.body).to include("Save and I&#39;m Done!")
+        # Save buttons associate to the answer form; Skip is a separate POST (not nested).
+        expect(response.body).to include('form="feedback-request-answer-form"')
+        expect(response.body).to include('id="feedback-request-answer-form"')
+        expect(response.body.scan(/action="#{Regexp.escape(skip_organization_feedback_request_path(company, feedback_request))}"/).size).to eq(2)
       end
 
       it 'shows per-question privacy selector (Visible to) including public_to_company' do
@@ -661,14 +668,18 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include(organization_observation_path(company, draft_observation))
       end
 
-      it 'shows Skip this request disabled with clear-or-keep guidance when drafts exist' do
+      it 'shows Skip this request disabled with warning-icon tooltip when drafts exist' do
         get answer_organization_feedback_request_path(company, feedback_request)
         expect(response).to have_http_status(:success)
+        expect(response.body).to include('Prefer not to answer?')
         expect(response.body).to include('Skip this request')
         expect(response.body).to include('disabled')
-        expect(response.body).to include('You must clear your 1 saved OGO')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('data-bs-toggle="tooltip"')
+        expect(response.body).to include("You&#39;ve started some feedback")
+        expect(response.body).to include("don&#39;t want to lose that data")
         expect(response.body).to include("Save and I&#39;m Done!")
-        expect(response.body).not_to include('Prefer not to answer?')
+        expect(response.body).not_to include('clear your')
       end
     end
   end
@@ -708,6 +719,19 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(Observation.where(feedback_request_question: question, observer: requestor_person).count).to eq(0)
     end
 
+    it 'ignores answer form params and does not create or update observations' do
+      post skip_organization_feedback_request_path(company, feedback_request), params: {
+        answers: {
+          question.id.to_s => { story: 'Should not be saved', privacy_level: 'observed_and_managers', rating: 'agree' }
+        },
+        save_and_complete: "Save and I'm Done!"
+      }
+
+      expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+      expect(Observation.where(feedback_request_question: question, observer: requestor_person).count).to eq(0)
+      expect(feedback_request.feedback_request_responders.find_by!(teammate_id: requestor_teammate.id).completed_at).to be_present
+    end
+
     it 'redirects to GSD when return_to is gsd' do
       post skip_organization_feedback_request_path(company, feedback_request), params: { return_to: 'gsd' }
 
@@ -731,7 +755,8 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       post skip_organization_feedback_request_path(company, feedback_request)
 
       expect(response).to redirect_to(answer_organization_feedback_request_path(company, feedback_request))
-      expect(flash[:alert]).to include('You must clear your 1 saved OGO')
+      expect(flash[:alert]).to include("You've started some feedback")
+      expect(flash[:alert]).to include("Save and I'm Done!")
       responder_record = feedback_request.feedback_request_responders.find_by!(teammate_id: requestor_teammate.id)
       expect(responder_record.completed_at).to be_nil
       expect(draft.reload).to be_persisted

@@ -5,6 +5,7 @@
 - skip_path = skip_organization_feedback_request_path(organization, feedback_request)
 - skip_params = return_to.present? ? { return_to: return_to } : {}
 - can_skip = draft_ogo_count.zero?
+- blocked_message = feedback_request_skip_blocked_message(draft_ogo_count)
 - btn_class = style == :link ? "btn btn-link btn-sm p-0 align-baseline" : "btn btn-outline-secondary"
 
 - if can_skip
@@ -13,7 +14,11 @@
               method: :post,
               params: skip_params,
               class: btn_class,
-              form: { class: "d-inline" }
+              form: { class: "d-inline", data: { turbo_confirm: feedback_request_skip_confirm_message } }
 - else
-  %button{type: "button", class: "btn btn-outline-secondary", disabled: true, title: feedback_request_skip_blocked_message(draft_ogo_count), data: { bs_toggle: "tooltip" }}
-    Skip this request
+  - disabled_btn_class = style == :link ? "btn btn-link btn-sm p-0 align-baseline disabled" : "btn btn-outline-secondary"
+  .d-inline-flex.align-items-center.gap-2
+    %button{type: "button", class: disabled_btn_class, disabled: true, style: "opacity: 0.6; cursor: not-allowed;"}
+      Skip this request
+    %span.text-warning.flex-shrink-0{"data-bs-toggle" => "tooltip", "data-bs-title" => blocked_message, tabindex: "0", role: "img", "aria-label" => "Why Skip is unavailable"}
+      %i.bi.bi-exclamation-triangle

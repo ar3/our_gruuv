@@ -508,7 +508,8 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     end
   end
 
-  # Same terminal state as Save and I'm Done! with zero answers. Blocked while drafts exist.
+  # Marks the request complete without reading/saving answer form params.
+  # Blocked while draft OGOs exist (use Save and I'm Done! to keep them).
   def skip
     authorize @feedback_request, :answer?
 
