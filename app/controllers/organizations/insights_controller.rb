@@ -368,8 +368,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       .where(person_id: observer_ids)
       .includes(employment_tenures: { position: { title: :department } })
 
-    # Aggregate kudos / feedback / mixed per observer (load observations with ratings)
-    observations_with_bucket = base_scope.includes(:observation_ratings).to_a
+    # Aggregate kudos / feedback / mixed per observer (load observations with ratings + triggers for sourcing)
+    observations_with_bucket = base_scope.includes(:observation_ratings, :observation_trigger).to_a
     @kudos_feedback_mixed_by_observer = Hash.new { |h, k| h[k] = { kudos: 0, feedback: 0, mixed: 0 } }
     observations_with_bucket.each do |obs|
       bucket = obs.kudos_or_feedback_bucket
@@ -377,6 +377,9 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     end
     @observations_type_polarity_chart_data =
       Insights::ObservationsTypePolarityMatrix.call(observations_with_bucket)
+    sourcing = Insights::ObservationsSourcingChart.call(observations_with_bucket)
+    @observations_sourcing_pie_chart_data = sourcing[:pie]
+    @observations_sourcing_total = sourcing[:total]
 
     # Aggregate count by privacy_level per observer
     @privacy_counts_by_observer = Hash.new { |h, k| h[k] = Hash.new(0) }

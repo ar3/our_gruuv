@@ -374,6 +374,12 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(observee_dept[:categories]).to eq(assigns(:observations_chart_data)[:categories])
       expect(observee_dept[:series]).to be_an(Array)
     end
+
+    it 'assigns observations sourcing pie chart data' do
+      get :observations, params: { organization_id: company.id }
+      expect(assigns(:observations_sourcing_pie_chart_data)).to be_an(Array)
+      expect(assigns(:observations_sourcing_total)).to be_a(Integer)
+    end
   end
 
   describe 'GET #observations_values_counts_download' do

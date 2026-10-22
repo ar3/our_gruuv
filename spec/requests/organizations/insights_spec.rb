@@ -184,6 +184,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('observations-type-polarity-heatmap')
       expect(response.body).to include('Rating polarity by observation type')
       expect(response.body).to include('observations-type-polarity-stacked')
+      expect(response.body).to include('Observations by source')
+      expect(response.body).to include('observations-sourcing-pie-chart')
     end
 
     it 'includes timeframe filter links (Last 90 days, Last Year, All-Time, Custom)' do
