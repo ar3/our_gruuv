@@ -1,6 +1,6 @@
 class Organizations::FeedbackRequestsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :notify_respondents, :archive, :restore]
+  before_action :set_feedback_request, only: [:show, :edit, :update, :destroy, :select_focus, :update_focus, :feedback_prompt, :update_questions, :select_respondents, :update_respondents, :add_respondent, :remove_respondent, :answer, :submit_answers, :skip, :notify_respondents, :archive, :restore]
 
   after_action :verify_authorized
 
@@ -494,7 +494,11 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       else
         ogos_feedback_requests_organization_company_teammate_path(organization, "me")
       end
-      notice = complete ? 'Your feedback has been submitted and marked complete.' : 'Your feedback has been saved and kept incomplete.'
+      notice = if complete
+        "Your feedback has been saved — you're done with this request."
+      else
+        'Your feedback has been saved and kept incomplete.'
+      end
       redirect_to redirect_path, notice: notice
     else
       load_answer_page_assigns
@@ -504,16 +508,46 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     end
   end
 
+  # Same terminal state as Save and I'm Done! with zero answers. Blocked while drafts exist.
+  def skip
+    authorize @feedback_request, :answer?
+
+    draft_count = helpers.feedback_request_draft_ogo_count(@feedback_request, current_person)
+    if draft_count.positive?
+      redirect_to answer_organization_feedback_request_path(organization, @feedback_request),
+                  alert: helpers.feedback_request_skip_blocked_message(draft_count)
+      return
+    end
+
+    responder_record = @feedback_request.feedback_request_responders
+      .find_or_create_by!(teammate_id: current_company_teammate.id)
+    responder_record.update!(completed_at: Time.current)
+
+    redirect_to after_feedback_request_skip_path,
+                notice: "You've skipped this feedback request."
+  end
+
   private
+
+  def after_feedback_request_skip_path
+    if params[:return_to].to_s == 'gsd' || request.referer.to_s.include?('get_shit_done')
+      organization_get_shit_done_path(organization)
+    elsif policy(@feedback_request).show?
+      organization_feedback_request_path(organization, @feedback_request)
+    else
+      ogos_feedback_requests_organization_company_teammate_path(organization, "me")
+    end
+  end
 
   def load_answer_page_assigns
     @questions = @feedback_request.feedback_request_questions.ordered.includes(:rateable)
     # Prefill only unpublished drafts so a new submission after complete starts blank.
-    @observation_by_question_id = @feedback_request.observations
+    draft_observations = @feedback_request.observations
       .drafts
       .where(observer: current_person)
       .includes(:observation_ratings)
-      .index_by(&:feedback_request_question_id)
+    @draft_ogo_count = draft_observations.size
+    @observation_by_question_id = draft_observations.index_by(&:feedback_request_question_id)
     @prior_published_observations = @feedback_request.observations
       .published
       .where(observer: current_person)

@@ -1,0 +1,19 @@
+-# locals: organization, feedback_request, draft_ogo_count, return_to: nil, style: :button|:link
+- draft_ogo_count = local_assigns.fetch(:draft_ogo_count, 0).to_i
+- return_to = local_assigns[:return_to]
+- style = local_assigns.fetch(:style, :button)
+- skip_path = skip_organization_feedback_request_path(organization, feedback_request)
+- skip_params = return_to.present? ? { return_to: return_to } : {}
+- can_skip = draft_ogo_count.zero?
+- btn_class = style == :link ? "btn btn-link btn-sm p-0 align-baseline" : "btn btn-outline-secondary"
+
+- if can_skip
+  = button_to "Skip this request",
+              skip_path,
+              method: :post,
+              params: skip_params,
+              class: btn_class,
+              form: { class: "d-inline" }
+- else
+  %button{type: "button", class: "btn btn-outline-secondary", disabled: true, title: feedback_request_skip_blocked_message(draft_ogo_count), data: { bs_toggle: "tooltip" }}
+    Skip this request

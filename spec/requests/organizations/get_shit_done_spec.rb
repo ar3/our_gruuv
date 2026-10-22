@@ -338,6 +338,44 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       expect(response.body).to include('Ship retro feedback')
       expect(response.body).to include('Open feedback requests waiting for your response')
       expect(response.body).to include(answer_organization_feedback_request_path(company, feedback_request))
+      expect(response.body).to include('Skip this request')
+      expect(response.body).to include(skip_organization_feedback_request_path(company, feedback_request))
+    end
+
+    it 'links Skip to the answer page when the responder already has draft OGOs' do
+      requestor = create(:company_teammate, organization: company)
+      subject_teammate = create(:company_teammate, organization: company)
+      feedback_request = create(:feedback_request, :ready_open_link,
+        company: company,
+        requestor_teammate: requestor,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Draft in progress'
+      )
+      feedback_request.feedback_request_responders.create!(teammate: teammate, completed_at: nil)
+      question = feedback_request.feedback_request_questions.first ||
+        create(:feedback_request_question,
+          feedback_request: feedback_request,
+          question_text: 'How did it go?',
+          position: 1
+        )
+      draft = create(:observation,
+        observer: person,
+        company: company,
+        story: 'Partial draft',
+        feedback_request_question: question,
+        privacy_level: :observed_and_managers,
+        published_at: nil
+      )
+      draft.observees.destroy_all
+      draft.observees.build(teammate: subject_teammate)
+      draft.save!
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Skip this request')
+      expect(response.body).to include(answer_organization_feedback_request_path(company, feedback_request))
+      expect(response.body).not_to include("action=\"#{skip_organization_feedback_request_path(company, feedback_request)}\"")
     end
 
     it 'lists silent observations (published, non-journal, no notifications, yours)' do

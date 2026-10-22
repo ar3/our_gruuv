@@ -222,6 +222,19 @@ RSpec.describe "Organizations::FeedbackRequests Routes", type: :routing do
       expect(submit_answers_organization_feedback_request_path(organization_id, feedback_request_id)).to eq("/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/submit_answers")
     end
 
+    it "routes POST /organizations/:organization_id/feedback_requests/:id/skip to organizations/feedback_requests#skip" do
+      expect(post: "/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/skip").to route_to(
+        controller: "organizations/feedback_requests",
+        action: "skip",
+        organization_id: organization_id,
+        id: feedback_request_id
+      )
+    end
+
+    it "generates the correct skip path helper" do
+      expect(skip_organization_feedback_request_path(organization_id, feedback_request_id)).to eq("/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/skip")
+    end
+
     it "routes POST /organizations/:organization_id/feedback_requests/:id/notify_respondents to organizations/feedback_requests#notify_respondents" do
       expect(post: "/organizations/#{organization_id}/feedback_requests/#{feedback_request_id}/notify_respondents").to route_to(
         controller: "organizations/feedback_requests",

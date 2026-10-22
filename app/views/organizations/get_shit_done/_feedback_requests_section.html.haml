@@ -1,6 +1,7 @@
 - requests_count = @feedback_requests_awaiting_response.count
 - section_id = 'feedbackRequestsSection'
 - section_open = gsd_open_section?(section_id)
+- draft_counts = feedback_request_draft_ogo_counts_by_id(@feedback_requests_awaiting_response, current_person)
 = render 'shared/section_header',
          title: 'Feedback Requests',
          icon: 'bi-chat-dots',
@@ -32,6 +33,7 @@
             %tbody
               - @feedback_requests_awaiting_response.each do |feedback_request|
                 - subject = feedback_request.subject_of_feedback_teammate
+                - draft_count = draft_counts[feedback_request.id].to_i
                 %tr
                   %td
                     %strong= feedback_request.subject_line.presence || 'Feedback request'
@@ -47,8 +49,22 @@
                   %td
                     %small= feedback_request.created_at.strftime('%b %d, %Y')
                   %td
-                    = link_to "Respond",
-                              answer_organization_feedback_request_path(organization, feedback_request),
-                              class: "btn btn-primary btn-sm"
+                    .d-flex.flex-wrap.gap-2
+                      = link_to "Respond",
+                                answer_organization_feedback_request_path(organization, feedback_request),
+                                class: "btn btn-primary btn-sm"
+                      - if draft_count.zero?
+                        = button_to "Skip this request",
+                                    skip_organization_feedback_request_path(organization, feedback_request),
+                                    method: :post,
+                                    params: { return_to: "gsd" },
+                                    class: "btn btn-outline-secondary btn-sm",
+                                    form: { class: "d-inline" }
+                      - else
+                        = link_to "Skip this request",
+                                  answer_organization_feedback_request_path(organization, feedback_request),
+                                  class: "btn btn-outline-secondary btn-sm",
+                                  title: feedback_request_skip_blocked_message(draft_count),
+                                  data: { bs_toggle: "tooltip" }
       - else
         %p.text-muted.mb-0 No open feedback requests waiting on you.

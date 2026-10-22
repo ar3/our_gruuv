@@ -264,4 +264,50 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
       expect(rows.second.observations_by_question_id[question.id]).to contain_exactly(first)
     end
   end
+
+  describe '#feedback_request_draft_ogo_count' do
+    let(:feedback_request) do
+      create(:feedback_request,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Drafts'
+      )
+    end
+    let(:observer) { requestor_teammate.person }
+    let!(:question) do
+      create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
+    end
+
+    it 'counts only draft observations for the observer on this request' do
+      draft = create(:observation,
+        observer: observer,
+        company: company,
+        story: 'Draft',
+        feedback_request_question: question,
+        published_at: nil
+      )
+      draft.observees.destroy_all
+      draft.observees.create!(teammate: subject_teammate)
+      published = create(:observation, :published,
+        observer: observer,
+        company: company,
+        story: 'Published',
+        feedback_request_question: question
+      )
+      published.observees.destroy_all
+      published.observees.create!(teammate: subject_teammate)
+
+      expect(helper.feedback_request_draft_ogo_count(feedback_request, observer)).to eq(1)
+    end
+  end
+
+  describe '#feedback_request_skip_blocked_message' do
+    it 'mentions clearing drafts or saving and being done' do
+      message = helper.feedback_request_skip_blocked_message(2)
+      expect(message).to include('2 saved OGOs')
+      expect(message).to include("Save and I'm Done!")
+      expect(message).to include('keep them')
+    end
+  end
 end

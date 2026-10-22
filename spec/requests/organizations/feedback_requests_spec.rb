@@ -256,7 +256,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
 
       get organization_feedback_request_path(company, feedback_request)
       expect(response.body).to include('bi-check-circle-fill')
-      expect(response.body).to include('Request completed on')
+      expect(response.body).to include('Completed on')
     end
 
     it 'renders a disabled preview of the answer questions UI' do
@@ -474,7 +474,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response.body).to include('view only')
       expect(response.body).to include('limited to named respondents')
       expect(response.body).to include('Observations about')
-      expect(response.body).not_to include('Save and Complete')
+      expect(response.body).not_to include("Save and I'm Done!")
     end
 
     it 'allows any company teammate to answer when open_to_anyone' do
@@ -564,11 +564,15 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('border-end')
       end
 
-      it 'shows Save and Keep Incomplete and Save and Complete buttons' do
+      it "shows Save and Keep Incomplete, Save and I'm Done!, Skip, and partial-contribution caption" do
         get answer_organization_feedback_request_path(company, feedback_request)
         expect(response.body).to include('Save and Keep Incomplete')
-        expect(response.body).to include('Save and Complete')
+        expect(response.body).to include("Save and I&#39;m Done!")
+        expect(response.body).to include('Skip this request')
+        expect(response.body).to include('Prefer not to answer?')
+        expect(response.body).to include('even one is an incredible gift')
         expect(response.body).to include('submit')
+        expect(response.body).to include(skip_organization_feedback_request_path(company, feedback_request))
       end
 
       it 'shows per-question privacy selector (Visible to) including public_to_company' do
@@ -656,6 +660,81 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('Incomplete draft')
         expect(response.body).to include(organization_observation_path(company, draft_observation))
       end
+
+      it 'shows Skip this request disabled with clear-or-keep guidance when drafts exist' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Skip this request')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('You must clear your 1 saved OGO')
+        expect(response.body).to include("Save and I&#39;m Done!")
+        expect(response.body).not_to include('Prefer not to answer?')
+      end
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/feedback_requests/:id/skip' do
+    let(:feedback_request) do
+      create(:feedback_request,
+        company: company,
+        requestor_teammate: requestor_teammate,
+        subject_of_feedback_teammate: subject_teammate,
+        subject_line: 'Skip me please'
+      )
+    end
+    let!(:question) do
+      create(:feedback_request_question,
+        feedback_request: feedback_request,
+        question_text: 'Anything to share?',
+        position: 1
+      )
+    end
+
+    before do
+      feedback_request.feedback_request_responders.create!(teammate: requestor_teammate)
+      sign_in_as_teammate_for_request(requestor_person, company)
+    end
+
+    it "marks the responder complete with zero answers (same as empty Save and I'm Done!)" do
+      responder_record = feedback_request.feedback_request_responders.find_by!(teammate_id: requestor_teammate.id)
+      expect(responder_record.completed_at).to be_nil
+
+      post skip_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
+      expect(flash[:notice]).to eq("You've skipped this feedback request.")
+      responder_record.reload
+      expect(responder_record.completed_at).to be_within(5.seconds).of(Time.current)
+      expect(Observation.where(feedback_request_question: question, observer: requestor_person).count).to eq(0)
+    end
+
+    it 'redirects to GSD when return_to is gsd' do
+      post skip_organization_feedback_request_path(company, feedback_request), params: { return_to: 'gsd' }
+
+      expect(response).to redirect_to(organization_get_shit_done_path(company))
+      expect(feedback_request.feedback_request_responders.find_by!(teammate_id: requestor_teammate.id).completed_at).to be_present
+    end
+
+    it 'blocks skip and keeps incomplete when draft OGOs exist' do
+      draft = create(:observation,
+        observer: requestor_person,
+        company: company,
+        story: 'Keep this draft',
+        feedback_request_question: question,
+        privacy_level: :observed_and_managers,
+        published_at: nil
+      )
+      draft.observees.destroy_all
+      draft.observees.build(teammate: subject_teammate)
+      draft.save!
+
+      post skip_organization_feedback_request_path(company, feedback_request)
+
+      expect(response).to redirect_to(answer_organization_feedback_request_path(company, feedback_request))
+      expect(flash[:alert]).to include('You must clear your 1 saved OGO')
+      responder_record = feedback_request.feedback_request_responders.find_by!(teammate_id: requestor_teammate.id)
+      expect(responder_record.completed_at).to be_nil
+      expect(draft.reload).to be_persisted
     end
   end
 
@@ -722,7 +801,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
           }
         },
         privacy_level: 'observed_and_managers',
-        save_and_complete: 'Save and Complete'
+        save_and_complete: "Save and I'm Done!"
       }
       observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
       expect(response).to redirect_to(organization_observation_path(company, observation))
@@ -737,12 +816,12 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
           questions[1].id.to_s => { story: 'Answer 2', privacy_level: 'observed_and_managers' }
         },
         privacy_level: 'observed_and_managers',
-        save_and_complete: 'Save and Complete'
+        save_and_complete: "Save and I'm Done!"
       }
       expect(response).to redirect_to(ogos_from_organization_company_teammate_path(company, "me"))
     end
 
-    it 'sets completed_at when Save and Complete is clicked' do
+    it "sets completed_at when Save and I'm Done! is clicked" do
       feedback_request.reload
       question = feedback_request.feedback_request_questions.first
       responder_record = feedback_request.feedback_request_responders.find_by(teammate_id: requestor_teammate.id)
@@ -753,7 +832,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
           question.id.to_s => { story: 'Done', privacy_level: 'observed_and_managers' }
         },
         privacy_level: 'observed_and_managers',
-        save_and_complete: 'Save and Complete'
+        save_and_complete: "Save and I'm Done!"
       }
       expect(response).to have_http_status(:redirect)
       responder_record.reload
@@ -819,7 +898,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(observation).not_to be_published
     end
 
-    it 'publishes observations when Save and Complete is clicked' do
+    it "publishes observations when Save and I'm Done! is clicked" do
       feedback_request.reload
       question = feedback_request.feedback_request_questions.first
       post submit_answers_organization_feedback_request_path(company, feedback_request), params: {
@@ -830,7 +909,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
           }
         },
         privacy_level: 'observed_and_managers',
-        save_and_complete: 'Save and Complete'
+        save_and_complete: "Save and I'm Done!"
       }
       expect(response).to have_http_status(:redirect)
       observation = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
@@ -937,7 +1016,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
           question.id.to_s => { story: 'First complete.', privacy_level: 'observed_and_managers' }
         },
         privacy_level: 'observed_and_managers',
-        save_and_complete: 'Save and Complete'
+        save_and_complete: "Save and I'm Done!"
       }
       first = Observation.find_by(feedback_request_question_id: question.id, observer_id: requestor_person.id)
       expect(first).to be_published
@@ -948,7 +1027,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
             question.id.to_s => { story: 'Second complete.', privacy_level: 'observed_and_managers' }
           },
           privacy_level: 'observed_and_managers',
-          save_and_complete: 'Save and Complete'
+          save_and_complete: "Save and I'm Done!"
         }
       }.to change { Observation.count }.by(1)
 

@@ -158,5 +158,32 @@ module Organizations
 
       ObservationRating.display_label(rating)
     end
+
+    # Draft OGOs the responder has already saved for this request (blocks Skip until cleared).
+    def feedback_request_draft_ogo_count(feedback_request, person)
+      return 0 if feedback_request.blank? || person.blank?
+
+      feedback_request.observations.drafts.where(observer: person).count
+    end
+
+    # Batch draft counts for GSD / inbox lists. Returns { feedback_request_id => count }.
+    def feedback_request_draft_ogo_counts_by_id(feedback_requests, person)
+      ids = Array(feedback_requests).map(&:id)
+      return {} if ids.empty? || person.blank?
+
+      Observation.drafts
+        .where(observer: person)
+        .joins(:feedback_request_question)
+        .where(feedback_request_questions: { feedback_request_id: ids })
+        .group("feedback_request_questions.feedback_request_id")
+        .count
+    end
+
+    def feedback_request_skip_blocked_message(draft_count)
+      count = draft_count.to_i
+      keep_phrase = count == 1 ? "keep it" : "keep them"
+      "You must clear your #{pluralize(count, 'saved OGO')} before you can Skip this request — " \
+        "or use Save and I'm Done! if you want to #{keep_phrase} and skip the rest."
+    end
   end
 end
