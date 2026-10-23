@@ -31,12 +31,21 @@ module Assistant
 
       latest_user = @result.ask_og_messages.user_messages.ordered.last
       prompt_query = latest_user&.body.presence || @result.query
+      conversation_text = @result.messages_for_prompt
+        .select(&:user?)
+        .map(&:body)
+        .compact_blank
+        .join("\n")
 
       context = ContextBuilder.call(
         organization: @consultation.organization,
         company_teammate: teammate
       )
-      tool_context = GatherSeatSuggestionContext.call(context: context, query: prompt_query)
+      tool_context = GatherSeatSuggestionContext.call(
+        context: context,
+        query: prompt_query,
+        conversation_text: conversation_text
+      )
       @result.update!(tool_context: tool_context)
 
       model_id = ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.stronger_model_id }
