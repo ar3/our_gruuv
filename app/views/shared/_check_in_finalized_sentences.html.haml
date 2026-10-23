@@ -12,7 +12,7 @@
 - else []
 .check-in-finalized-sentences
   - sentence_lines.each do |line|
-    %p.small.mb-2= line
+    .small.mb-2.markdown-content= render_markdown(line)
   - if show_history_cta && check_in.present?
     - object_name = check_in_object_display_name(check_in, sentence_type)
     %p.small.mb-0.mt-2.border-top.pt-2

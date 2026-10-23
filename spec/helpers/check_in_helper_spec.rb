@@ -904,10 +904,11 @@ RSpec.describe CheckInHelper, type: :helper do
       )
     end
 
-    it 'truncates long notes and adds the history CTA' do
+    it 'truncates long notes with a remaining-character hint and adds the history CTA' do
       html = helper.last_finalized_check_in_popover_content(check_in, 'Alex', :assignment)
 
-      expect(html).to include('…')
+      remaining = long_notes.length - EmployeesHelper::LAST_FINALIZED_POPOVER_NOTES_MAX_CHARS
+      expect(html).to include("… (+#{remaining} characters)")
       expect(html).not_to include(long_notes)
       expect(html).to include('bi-info-circle')
       expect(html).to include('Click Ship It to see the full check-in history for Alex and Ship It')

@@ -65,7 +65,7 @@
               = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :aspiration)
           %td
             - if fin.present?
-              .small{style: "white-space: pre-line;"}= aspiration_review_most_recent_last_reviewed_line(fin, employee_name)
+              .small.markdown-content= render_markdown(aspiration_review_most_recent_last_reviewed_line(fin, employee_name))
             - elsif !opn&.ready_for_finalization?
               %span.text-muted= no_completed_clarity_check_in_yet_label
             = render 'review_most_recent_joint_review', open_check_in: opn, employee_name: employee_name, manager_name: manager_name, organization: organization, teammate: @teammate
@@ -109,7 +109,7 @@
                   Active Assignment - #{row[:assignment_tenure].anticipated_energy_percentage}%
           %td
             - if fin.present?
-              .small{style: "white-space: pre-line;"}= assignment_review_most_recent_last_reviewed_line(fin, employee_name)
+              .small.markdown-content= render_markdown(assignment_review_most_recent_last_reviewed_line(fin, employee_name))
             - elsif !opn&.ready_for_finalization?
               %span.text-muted= no_completed_clarity_check_in_yet_label
             = render 'review_most_recent_joint_review', open_check_in: opn, employee_name: employee_name, manager_name: manager_name, organization: organization, teammate: @teammate
@@ -147,7 +147,7 @@
               = render 'shared/last_finalized_pill', latest_finalized: fin, popover_content: last_finalized_check_in_popover_content(fin, employee_name, :position)
           %td
             - if fin.present?
-              .small{style: "white-space: pre-line;"}= position_review_most_recent_last_reviewed_line(fin, employee_name)
+              .small.markdown-content= render_markdown(position_review_most_recent_last_reviewed_line(fin, employee_name))
             - elsif !opn&.ready_for_finalization?
               %span.text-muted= no_completed_clarity_check_in_yet_label
             = render 'review_most_recent_joint_review', open_check_in: opn, employee_name: employee_name, manager_name: manager_name, organization: organization, teammate: @teammate

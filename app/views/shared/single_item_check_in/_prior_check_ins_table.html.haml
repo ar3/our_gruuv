@@ -17,7 +17,8 @@
             - row_id = "prior_ci_#{check_in.id}"
             %tr
               %td= single_item_check_in_timespan(check_in)
-              %td= single_item_check_in_finalization_sentence(check_in, employee_name, sentence_type)
+              %td
+                .small.markdown-content= render_markdown(single_item_check_in_finalization_sentence(check_in, employee_name, sentence_type))
               %td
                 %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{row_id}_details", "aria-expanded" => "false", style: "cursor: pointer;"}
                   %span.details-collapsed
@@ -28,4 +29,4 @@
                     %i.bi.bi-chevron-up.ms-1
             %tr.collapse{id: "#{row_id}_details"}
               %td{colspan: 3, style: "padding: 0;"}
-                .p-3.bg-light.small{style: "white-space: pre-line;"}= single_item_check_in_full_sentences(check_in, employee_name, sentence_type)
+                .p-3.bg-light.small.markdown-content= render_markdown(single_item_check_in_full_sentences(check_in, employee_name, sentence_type))

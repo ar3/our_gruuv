@@ -185,7 +185,9 @@ module EmployeesHelper
     text = notes.present? ? notes.to_s : '--no notes--'
     return text if max_chars.blank? || text == '--no notes--' || text.length <= max_chars
 
-    truncate(text, length: max_chars, omission: '…')
+    visible = text[0, max_chars]
+    remaining = text.length - visible.length
+    "#{visible}… (+#{remaining} #{'character'.pluralize(remaining)})"
   end
 
   def parse_date(value)
