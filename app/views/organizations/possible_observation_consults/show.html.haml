@@ -10,10 +10,13 @@
   = @consult.display_name
   - if @consult.prompt_debug?
     %span.badge.text-bg-warning.ms-2 Prompt debug
-%p.small.text-muted.mb-4
+%p.small.text-muted.mb-3
   Status:
   %span.badge.text-bg-secondary= @consult.extraction_status
   · People: #{@consult.people_status}
+
+- if @consult.prompt_debug?
+  = render "prompt_debug_banner"
 
 - unless @consult.people_confirmed?
   .card.mb-4
@@ -89,14 +92,11 @@
   - else
     %h5.mb-3 Review candidate OGOs
     - if @prompt_debug && policy(@consult).download_prompt_debug?
-      .alert.alert-warning.border.mb-3
-        %strong Prompt debug
-        — label candidates without creating drafts, then download the defaults-vs-labels JSON for prompt iteration.
-        This consult was started with #{content_tag(:code, "?debug=true")}.
-        .d-flex.flex-wrap.gap-2.mt-2
-          = link_to "Download prompt-debug JSON",
-                    download_prompt_debug_organization_possible_observation_consult_path(organization, @consult),
-                    class: "btn btn-sm btn-outline-secondary"
+      .mb-3
+        = link_to download_prompt_debug_organization_possible_observation_consult_path(organization, @consult),
+                  class: "btn btn-sm btn-warning" do
+          %i.bi.bi-download.me-1
+          Download prompt-debug JSON
     = form_with url: organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true, html: { id: form_id, data: { turbo: false } } do
       - idx = 0
       - groups.each do |teammate, person_items|

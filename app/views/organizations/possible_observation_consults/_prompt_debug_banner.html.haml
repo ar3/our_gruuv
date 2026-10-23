@@ -1,0 +1,25 @@
+-# Persistent indicator for consults started with ?debug=true.
+.alert.alert-warning.border.border-warning.mb-3{ role: "status", "aria-live" => "polite" }
+  .d-flex.align-items-start.gap-2
+    %i.bi.bi-bug-fill.fs-4.flex-shrink-0{ "aria-hidden" => "true" }
+    %div
+      %div.fw-semibold.mb-1 Prompt debug mode is on for this consult
+      %p.mb-2.small
+        This run is for honing the transcript → OGO prompt. Behavior differs from a normal consult:
+      %ul.mb-2.small.ps-3
+        %li
+          Use
+          %strong Would include
+          /
+          %strong Dismiss
+          to label candidates (edits work while Reviewing).
+        %li
+          %strong Save labels (no drafts)
+          stores corrections without creating OGOs.
+        %li
+          After extraction, download the
+          %strong prompt-debug JSON
+          (AI defaults vs your labels) to paste into chat.
+        %li Re-run Consult OG again on this same transcript to try a new prompt version.
+      %p.mb-0.small.text-muted
+        Started via #{content_tag(:code, "?debug=true")}. Normal consults omit that param.

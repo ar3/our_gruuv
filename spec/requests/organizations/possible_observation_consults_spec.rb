@@ -93,7 +93,8 @@ RSpec.describe "Possible observation consults", type: :request do
     it "shows the prompt-debug banner" do
       get new_organization_possible_observation_consult_path(organization, debug: true)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Prompt debug run")
+      expect(response.body).to include("Prompt debug mode is on for this consult")
+      expect(response.body).to include("Save labels (no drafts)")
       expect(response.body).to include("?debug=true")
     end
   end
@@ -326,7 +327,7 @@ RSpec.describe "Possible observation consults", type: :request do
 
     it "renders prompt-debug hone controls on the review page" do
       get organization_possible_observation_consult_path(organization, consult)
-      expect(response.body).to include("Prompt debug")
+      expect(response.body).to include("Prompt debug mode is on for this consult")
       expect(response.body).to include("Save labels (no drafts)")
       expect(response.body).to include("Save all (create drafts)")
       expect(response.body).to include("Download prompt-debug JSON")
@@ -334,6 +335,13 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include(">Would include<")
       expect(response.body).to include(">Dismiss<")
       expect(response.body).not_to include("Create draft OGO now")
+    end
+
+    it "shows the prompt-debug banner before teammates are confirmed" do
+      consult.update!(people_status: "suggested", confirmed_teammate_ids: [], extraction_status: "ready")
+      get organization_possible_observation_consult_path(organization, consult)
+      expect(response.body).to include("Prompt debug mode is on for this consult")
+      expect(response.body).to include("Confirm teammates")
     end
 
     it "saves labels without creating draft OGOs" do

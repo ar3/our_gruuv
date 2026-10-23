@@ -1,9 +1,9 @@
-%h1.h3.mb-3 New Consult OG
+%h1.h3.mb-3
+  New Consult OG
+  - if @consult.prompt_debug?
+    %span.badge.text-bg-warning.ms-2 Prompt debug
 - if @consult.prompt_debug?
-  .alert.alert-warning.border.mb-3
-    %strong Prompt debug run
-    — this consult will keep AI defaults vs your labels for prompt iteration, without needing to create drafts.
-    Started via #{content_tag(:code, "?debug=true")}.
+  = render "prompt_debug_banner"
 
 - meet_coming_soon = "Coming soon. For now, download any Google Meet transcript and upload or paste it below."
 - zoom_coming_soon = "Coming soon. For now, download any Zoom transcript and upload or paste it below."
