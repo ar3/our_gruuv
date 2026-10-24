@@ -1,0 +1,134 @@
+- content_for :title, "Insights: Seats"
+
+- content_for :header do
+  %h1.mb-0 Insights: Seats
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: "Insights: Seats", url: nil }])
+
+.container-fluid
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-header.bg-primary.text-white
+          %h4.mb-0
+            %i.bi.bi-briefcase.me-2
+            Seats Analytics
+        .card-body
+          .row.mb-4
+            .col-md-4.text-center
+              .display-4.text-primary= @total_seats
+              %p.text-muted.mb-0 Total Seats
+
+          .row
+            .col-md-6
+              #seats-by-state-chart{style: "height: 400px;"}
+            .col-md-6
+              #seats-by-department-chart{style: "height: 400px;"}
+          .row.mt-4
+            .col-12
+              #seats-pipeline-by-department-chart{style: "height: 400px;"}
+
+:javascript
+  (function() {
+    var seatsByStateData = #{seats_by_state_chart_data.to_json};
+    var departmentCategories = #{department_categories.to_json};
+    var seatsActiveSeries = #{seats_active_by_department_series.to_json};
+    var pipelineCategories = #{seat_pipeline_department_categories.to_json};
+    var seatsPipelineSeries = #{seats_pipeline_by_department_series.to_json};
+
+    function initializeCharts() {
+      if (typeof Highcharts === 'undefined') return;
+      if (!document.getElementById('seats-by-state-chart')) return;
+
+      Highcharts.chart('seats-by-state-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Seats by State' },
+        accessibility: { enabled: false },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+            }
+          }
+        },
+        series: [{
+          name: 'Seats',
+          colorByPoint: true,
+          data: seatsByStateData
+        }]
+      });
+
+      Highcharts.chart('seats-by-department-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Considered, Open & Filled by Department' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: departmentCategories,
+          title: { text: 'Department' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of Seats' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: true }
+          }
+        },
+        series: seatsActiveSeries
+      });
+
+      Highcharts.chart('seats-pipeline-by-department-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Draft, Closed & Archived by Department' },
+        accessibility: { enabled: false },
+        xAxis: {
+          categories: pipelineCategories,
+          title: { text: 'Department' }
+        },
+        yAxis: {
+          min: 0,
+          title: { text: 'Number of Seats' },
+          stackLabels: { enabled: true }
+        },
+        plotOptions: {
+          column: {
+            stacking: 'normal',
+            dataLabels: { enabled: true }
+          }
+        },
+        series: seatsPipelineSeries
+      });
+    }
+
+    var attempts = 0;
+    function waitForHighcharts() {
+      if (typeof Highcharts !== 'undefined') {
+        initializeCharts();
+      } else if (attempts < 100) {
+        attempts++;
+        setTimeout(waitForHighcharts, 100);
+      } else {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+        script.onload = initializeCharts;
+        document.head.appendChild(script);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForHighcharts);
+    } else {
+      waitForHighcharts();
+    }
+
+    document.addEventListener('turbo:load', function() {
+      if (document.getElementById('seats-by-state-chart')) initializeCharts();
+    });
+  })();

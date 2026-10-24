@@ -477,7 +477,14 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Seats, Titles, Positions',
+            label: 'Seats',
+            icon: 'bi-person-workspace',
+            path: organization_insights_seats_path(current_organization),
+            policy_check: -> { policy(current_company).view_seats? },
+            coming_soon: false
+          },
+          {
+            label: 'Titles & Positions',
             icon: 'bi-briefcase',
             path: organization_insights_seats_titles_positions_path(current_organization),
             policy_check: -> { policy(current_company).view_seats? },

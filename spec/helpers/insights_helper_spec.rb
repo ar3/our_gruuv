@@ -2,71 +2,95 @@ require 'rails_helper'
 
 RSpec.describe InsightsHelper, type: :helper do
   describe '#seats_by_state_chart_data' do
-    it 'returns formatted data for seats by state chart' do
+    it 'returns all six states with short labels and colors' do
       helper.instance_variable_set(:@seats_by_state, {
         'draft' => 2,
         'open' => 5,
         'filled' => 10,
         'archived' => 1
       })
-      
+
       data = helper.seats_by_state_chart_data
-      
-      expect(data.length).to eq(4)
-      
-      draft_entry = data.find { |d| d[:name] == 'Draft' }
-      expect(draft_entry[:y]).to eq(2)
-      expect(draft_entry[:color]).to eq('#6c757d')
-      
-      open_entry = data.find { |d| d[:name] == 'Open' }
-      expect(open_entry[:y]).to eq(5)
-      expect(open_entry[:color]).to eq('#ffc107')
-      
-      filled_entry = data.find { |d| d[:name] == 'Filled' }
-      expect(filled_entry[:y]).to eq(10)
-      expect(filled_entry[:color]).to eq('#28a745')
-      
-      archived_entry = data.find { |d| d[:name] == 'Archived' }
-      expect(archived_entry[:y]).to eq(1)
-      expect(archived_entry[:color]).to eq('#dc3545')
+
+      expect(data.map { |d| d[:name] }).to eq(%w[Draft Considered Open Filled Closed Archived])
+      expect(data.find { |d| d[:name] == 'Draft' }).to include(y: 2, color: '#6c757d')
+      expect(data.find { |d| d[:name] == 'Considered' }).to include(y: 0, color: '#0dcaf0')
+      expect(data.find { |d| d[:name] == 'Open' }).to include(y: 5, color: '#ffc107')
+      expect(data.find { |d| d[:name] == 'Filled' }).to include(y: 10, color: '#28a745')
+      expect(data.find { |d| d[:name] == 'Closed' }).to include(y: 0, color: '#fd7e14')
+      expect(data.find { |d| d[:name] == 'Archived' }).to include(y: 1, color: '#dc3545')
     end
 
-    it 'handles empty data' do
+    it 'still returns all six states when empty' do
       helper.instance_variable_set(:@seats_by_state, {})
-      
+
       data = helper.seats_by_state_chart_data
-      
-      expect(data).to eq([])
+
+      expect(data.length).to eq(6)
+      expect(data.map { |d| d[:y] }).to eq([0, 0, 0, 0, 0, 0])
+    end
+  end
+
+  describe '#seats_active_by_department_series' do
+    it 'returns Considered/Open/Filled series aligned to categories' do
+      helper.instance_variable_set(:@being_considered_seats_by_department, { 'Design' => 1 })
+      helper.instance_variable_set(:@open_seats_by_department, { 'Engineering' => 3 })
+      helper.instance_variable_set(:@filled_seats_by_department, { 'Engineering' => 5, 'Product' => 2 })
+
+      expect(helper.department_categories).to eq(%w[Design Engineering Product])
+      series = helper.seats_active_by_department_series
+      expect(series.map { |s| s[:name] }).to eq(%w[Considered Open Filled])
+      expect(series.find { |s| s[:name] == 'Considered' }[:data]).to eq([1, 0, 0])
+      expect(series.find { |s| s[:name] == 'Open' }[:data]).to eq([0, 3, 0])
+      expect(series.find { |s| s[:name] == 'Filled' }[:data]).to eq([0, 5, 2])
+    end
+  end
+
+  describe '#seats_pipeline_by_department_series' do
+    it 'returns Draft/Closed/Archived series aligned to categories' do
+      helper.instance_variable_set(:@draft_seats_by_department, { 'Engineering' => 2 })
+      helper.instance_variable_set(:@closed_seats_by_department, { 'Engineering' => 3 })
+      helper.instance_variable_set(:@archived_seats_by_department, { 'Design' => 1 })
+
+      expect(helper.seat_pipeline_department_categories).to eq(%w[Design Engineering])
+      series = helper.seats_pipeline_by_department_series
+      expect(series.map { |s| s[:name] }).to eq(%w[Draft Closed Archived])
+      expect(series.find { |s| s[:name] == 'Draft' }[:data]).to eq([0, 2])
+      expect(series.find { |s| s[:name] == 'Closed' }[:data]).to eq([0, 3])
+      expect(series.find { |s| s[:name] == 'Archived' }[:data]).to eq([1, 0])
     end
   end
 
   describe '#department_categories' do
-    it 'returns unique sorted department names' do
+    it 'returns unique sorted department names including considered' do
+      helper.instance_variable_set(:@being_considered_seats_by_department, { 'Sales' => 1 })
       helper.instance_variable_set(:@open_seats_by_department, { 'Engineering' => 3, 'Product' => 2 })
       helper.instance_variable_set(:@filled_seats_by_department, { 'Engineering' => 5, 'Design' => 1 })
-      
+
       categories = helper.department_categories
-      
-      expect(categories).to eq(['Design', 'Engineering', 'Product'])
+
+      expect(categories).to eq(%w[Design Engineering Product Sales])
     end
 
     it 'returns No Data when empty' do
+      helper.instance_variable_set(:@being_considered_seats_by_department, {})
       helper.instance_variable_set(:@open_seats_by_department, {})
       helper.instance_variable_set(:@filled_seats_by_department, {})
-      
+
       categories = helper.department_categories
-      
+
       expect(categories).to eq(['No Data'])
     end
   end
 
   describe '#open_seats_data' do
     it 'returns data array matching categories order' do
+      helper.instance_variable_set(:@being_considered_seats_by_department, {})
       helper.instance_variable_set(:@open_seats_by_department, { 'Engineering' => 3, 'Design' => 0 })
       helper.instance_variable_set(:@filled_seats_by_department, { 'Engineering' => 5, 'Design' => 1 })
-      
+
       data = helper.open_seats_data
-      
+
       # Categories are sorted: Design, Engineering
       expect(data).to eq([0, 3])
     end
@@ -74,11 +98,12 @@ RSpec.describe InsightsHelper, type: :helper do
 
   describe '#filled_seats_data' do
     it 'returns data array matching categories order' do
+      helper.instance_variable_set(:@being_considered_seats_by_department, {})
       helper.instance_variable_set(:@open_seats_by_department, { 'Engineering' => 3, 'Design' => 0 })
       helper.instance_variable_set(:@filled_seats_by_department, { 'Engineering' => 5, 'Design' => 1 })
-      
+
       data = helper.filled_seats_data
-      
+
       # Categories are sorted: Design, Engineering
       expect(data).to eq([1, 5])
     end

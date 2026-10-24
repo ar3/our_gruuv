@@ -1,38 +1,97 @@
 module InsightsHelper
-  # Seats by state chart data
+  # Short labels + colors for seat lifecycle charts (Insights).
+  SEAT_INSIGHT_STATES = [
+    { key: "draft", label: "Draft", color: "#6c757d" },
+    { key: "being_considered", label: "Considered", color: "#0dcaf0" },
+    { key: "open", label: "Open", color: "#ffc107" },
+    { key: "filled", label: "Filled", color: "#28a745" },
+    { key: "closed", label: "Closed", color: "#fd7e14" },
+    { key: "archived", label: "Archived", color: "#dc3545" }
+  ].freeze
+
+  # Considered / Open / Filled — "in play" coverage by department
+  SEAT_ACTIVE_INSIGHT_STATES = SEAT_INSIGHT_STATES.select { |s| %w[being_considered open filled].include?(s[:key]) }.freeze
+  # Draft / Closed / Archived — separate statuses chart
+  SEAT_PIPELINE_INSIGHT_STATES = SEAT_INSIGHT_STATES.select { |s| %w[draft closed archived].include?(s[:key]) }.freeze
+
+  # Pie: always all six states (zeros included).
   def seats_by_state_chart_data
-    state_colors = {
-      'draft' => '#6c757d',
-      'open' => '#ffc107',
-      'filled' => '#28a745',
-      'archived' => '#dc3545'
-    }
-    
-    @seats_by_state.map do |state, count|
+    counts = @seats_by_state || {}
+    SEAT_INSIGHT_STATES.map do |state|
       {
-        name: state.titleize,
-        y: count,
-        color: state_colors[state] || '#007bff'
+        name: state[:label],
+        y: counts[state[:key]].to_i,
+        color: state[:color]
       }
     end
   end
-  
-  # Department categories for stacked bar chart
+
+  # Department categories for Considered / Open / Filled stacked bar chart
   def department_categories
-    all_depts = (@open_seats_by_department.keys + @filled_seats_by_department.keys).uniq.sort
-    all_depts.empty? ? ['No Data'] : all_depts
+    hashes = [
+      @being_considered_seats_by_department,
+      @open_seats_by_department,
+      @filled_seats_by_department
+    ]
+    all_depts = hashes.compact.flat_map(&:keys).uniq.sort
+    all_depts.empty? ? ["No Data"] : all_depts
   end
-  
-  # Open seats data array
+
+  def seats_active_by_department_series
+    categories = department_categories
+    by_state = {
+      "being_considered" => @being_considered_seats_by_department || {},
+      "open" => @open_seats_by_department || {},
+      "filled" => @filled_seats_by_department || {}
+    }
+
+    SEAT_ACTIVE_INSIGHT_STATES.map do |state|
+      {
+        name: state[:label],
+        data: categories.map { |dept| by_state[state[:key]][dept].to_i },
+        color: state[:color]
+      }
+    end
+  end
+
+  # Open seats data array (kept for helper specs / reuse)
   def open_seats_data
     categories = department_categories
-    categories.map { |dept| @open_seats_by_department[dept] || 0 }
+    categories.map { |dept| (@open_seats_by_department || {})[dept].to_i }
   end
-  
+
   # Filled seats data array
   def filled_seats_data
     categories = department_categories
-    categories.map { |dept| @filled_seats_by_department[dept] || 0 }
+    categories.map { |dept| (@filled_seats_by_department || {})[dept].to_i }
+  end
+
+  # Department categories for Draft / Closed / Archived chart
+  def seat_pipeline_department_categories
+    hashes = [
+      @draft_seats_by_department,
+      @closed_seats_by_department,
+      @archived_seats_by_department
+    ]
+    all_depts = hashes.compact.flat_map(&:keys).uniq.sort
+    all_depts.empty? ? ["No Data"] : all_depts
+  end
+
+  def seats_pipeline_by_department_series
+    categories = seat_pipeline_department_categories
+    by_state = {
+      "draft" => @draft_seats_by_department || {},
+      "closed" => @closed_seats_by_department || {},
+      "archived" => @archived_seats_by_department || {}
+    }
+
+    SEAT_PIPELINE_INSIGHT_STATES.map do |state|
+      {
+        name: state[:label],
+        data: categories.map { |dept| by_state[state[:key]][dept].to_i },
+        color: state[:color]
+      }
+    end
   end
   
   # Titles by department chart data

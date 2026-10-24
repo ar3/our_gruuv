@@ -15,49 +15,53 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
-  describe 'GET #seats_titles_positions' do
+  describe 'GET #seats' do
     it 'returns http success' do
-      get :seats_titles_positions, params: { organization_id: company.id }
+      get :seats, params: { organization_id: company.id }
       expect(response).to have_http_status(:success)
     end
 
     it 'calculates total seats' do
-      # Ensure title exists
       title
       create(:seat, title: title, seat_needed_by: Date.current)
       create(:seat, title: title, seat_needed_by: Date.current + 1.month)
-      
-      get :seats_titles_positions, params: { organization_id: company.id }
-      
+
+      get :seats, params: { organization_id: company.id }
+
       expect(assigns(:total_seats)).to eq(2)
     end
 
     it 'groups seats by state' do
-      # Ensure title exists
       title
       create(:seat, :draft, title: title, seat_needed_by: Date.current)
       create(:seat, :open, title: title, seat_needed_by: Date.current + 1.month)
       create(:seat, :filled, title: title, seat_needed_by: Date.current + 2.months)
-      
-      get :seats_titles_positions, params: { organization_id: company.id }
-      
+      create(:seat, :being_considered, title: title, seat_needed_by: Date.current + 3.months)
+      create(:seat, :closed, title: title, seat_needed_by: Date.current + 4.months)
+
+      get :seats, params: { organization_id: company.id }
+
       seats_by_state = assigns(:seats_by_state)
       expect(seats_by_state['draft']).to eq(1)
       expect(seats_by_state['open']).to eq(1)
       expect(seats_by_state['filled']).to eq(1)
+      expect(seats_by_state['being_considered']).to eq(1)
+      expect(seats_by_state['closed']).to eq(1)
+      expect(assigns(:draft_seats_by_department)).to be_a(Hash)
+      expect(assigns(:being_considered_seats_by_department)).to be_a(Hash)
+      expect(assigns(:closed_seats_by_department)).to be_a(Hash)
+      expect(assigns(:archived_seats_by_department)).to be_a(Hash)
     end
 
     it 'groups seats by department' do
       dept2 = create(:department, company: company, name: 'Product')
       title2 = create(:title, company: company, position_major_level: position_major_level, department: dept2, external_title: 'PM')
-      
-      # Ensure title exists
       title
       create(:seat, title: title, seat_needed_by: Date.current)
       create(:seat, title: title2, seat_needed_by: Date.current + 1.month)
-      
-      get :seats_titles_positions, params: { organization_id: company.id }
-      
+
+      get :seats, params: { organization_id: company.id }
+
       seats_by_dept = assigns(:seats_by_department)
       expect(seats_by_dept['Engineering']).to eq(1)
       expect(seats_by_dept['Product']).to eq(1)
@@ -66,10 +70,27 @@ RSpec.describe Organizations::InsightsController, type: :controller do
     it 'counts seats without department' do
       title_no_dept = create(:title, company: company, position_major_level: position_major_level, department: nil, external_title: 'General')
       create(:seat, title: title_no_dept, seat_needed_by: Date.current)
-      
-      get :seats_titles_positions, params: { organization_id: company.id }
-      
+
+      get :seats, params: { organization_id: company.id }
+
       expect(assigns(:seats_no_department)).to eq(1)
+    end
+  end
+
+  describe 'GET #seats_titles_positions' do
+    it 'returns http success' do
+      get :seats_titles_positions, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'does not load seat analytics' do
+      title
+      create(:seat, title: title, seat_needed_by: Date.current)
+
+      get :seats_titles_positions, params: { organization_id: company.id }
+
+      expect(assigns(:total_seats)).to be_nil
+      expect(assigns(:seats_by_state)).to be_nil
     end
 
     it 'calculates total titles' do

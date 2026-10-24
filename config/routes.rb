@@ -974,6 +974,7 @@ Rails.application.routes.draw do
       get 'og_consultations', to: 'insights#og_consultations'
       get 'prompts/download', to: 'insights#prompts_download'
       get 'prompts', to: 'insights#prompts'
+      get 'seats', to: 'insights#seats'
       get 'seats_titles_positions', to: 'insights#seats_titles_positions'
       get 'assignments', to: 'insights#assignments'
       get 'abilities', to: 'insights#abilities'

@@ -19,6 +19,7 @@ module OgAcademy
       insights/observations
       insights/feedback_requests
       insights/og_consultations
+      insights/seats
       insights/seats_titles_positions
       insights/assignments
       insights/abilities

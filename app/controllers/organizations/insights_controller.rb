@@ -85,29 +85,18 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     end
   end
 
+  def seats
+    authorize company, :view_seats?
+
+    @organization = company
+    load_seat_insights_data!
+  end
+
   def seats_titles_positions
     authorize company, :view_seats?
 
     @organization = company
 
-    # Seat statistics
-    seats = Seat.for_organization(company)
-    @total_seats = seats.count
-    @seats_by_state = seats.group(:state).count
-    
-    # Seats by department (for pie chart)
-    @seats_by_department = seats
-      .joins(title: :department)
-      .where.not(titles: { department_id: nil })
-      .group('departments.name')
-      .count
-    @seats_no_department = seats.joins(:title).where(titles: { department_id: nil }).count
-    
-    # Open vs filled seats by department
-    open_and_filled_seats = seats.where(state: [:open, :filled])
-    @open_seats_by_department = build_department_breakdown(open_and_filled_seats.where(state: :open))
-    @filled_seats_by_department = build_department_breakdown(open_and_filled_seats.where(state: :filled))
-    
     # Title statistics
     titles = Title.where(company: company)
     @total_titles = titles.count
@@ -117,11 +106,11 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       .group('departments.name')
       .count
     @titles_no_department = titles.where(department_id: nil).count
-    
+
     # Position statistics
     positions = Position.joins(:title).where(titles: { company_id: company.id })
     @total_positions = positions.count
-    
+
     # Titles by position count
     @titles_by_position_count = titles
       .left_joins(:positions)
@@ -131,7 +120,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       .tally
       .sort_by { |k, _v| k }
       .to_h
-    
+
     # Positions by required assignment count
     @positions_by_required_assignment_count = positions
       .left_joins(:position_assignments)
@@ -736,7 +725,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     links << { label: 'Who is doing what', path: organization_insights_who_is_doing_what_path(organization) } if policy(company).view_observations?
     links << { label: 'Feedback Requests', path: organization_insights_feedback_requests_path(organization) } if policy(company).view_feedback_requests?
     links << { label: 'OG Consultations', path: organization_insights_og_consultations_path(organization) } if policy(company).show?
-    links << { label: 'Seats, Titles, Positions', path: organization_insights_seats_titles_positions_path(organization) } if policy(company).view_seats?
+    links << { label: 'Seats', path: organization_insights_seats_path(organization) } if policy(company).view_seats?
+    links << { label: 'Titles & Positions', path: organization_insights_seats_titles_positions_path(organization) } if policy(company).view_seats?
     links << { label: 'Assignments', path: organization_insights_assignments_path(organization) } if policy(company).view_assignments?
     links << { label: 'Abilities', path: organization_insights_abilities_path(organization) } if policy(company).view_abilities?
     links << { label: 'Values', path: organization_insights_values_path(organization) } if policy(company).view_aspirations?
@@ -808,16 +798,37 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     sort
   end
   
+  def load_seat_insights_data!
+    seats = Seat.for_organization(company)
+    @total_seats = seats.count
+    @seats_by_state = seats.group(:state).count
+
+    @seats_by_department = seats
+      .joins(title: :department)
+      .where.not(titles: { department_id: nil })
+      .group('departments.name')
+      .count
+    @seats_no_department = seats.joins(:title).where(titles: { department_id: nil }).count
+
+    @being_considered_seats_by_department = build_department_breakdown(seats.where(state: :being_considered))
+    @open_seats_by_department = build_department_breakdown(seats.where(state: :open))
+    @filled_seats_by_department = build_department_breakdown(seats.where(state: :filled))
+
+    @draft_seats_by_department = build_department_breakdown(seats.where(state: :draft))
+    @closed_seats_by_department = build_department_breakdown(seats.where(state: :closed))
+    @archived_seats_by_department = build_department_breakdown(seats.where(state: :archived))
+  end
+
   def build_department_breakdown(seats_scope)
     result = seats_scope
       .joins(title: :department)
       .where.not(titles: { department_id: nil })
       .group('departments.name')
       .count
-    
+
     no_dept_count = seats_scope.joins(:title).where(titles: { department_id: nil }).count
     result['No Department'] = no_dept_count if no_dept_count > 0
-    
+
     result
   end
 

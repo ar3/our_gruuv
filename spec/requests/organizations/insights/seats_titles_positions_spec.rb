@@ -39,6 +39,20 @@ RSpec.describe "Organizations::Insights seats_titles_positions title paths", typ
     expect(response.body).not_to include("\"label\":\"Orphan")
   end
 
+  it "renders titles and positions analytics without seat charts" do
+    create(:title, company: organization, position_major_level: major_level, department: department, external_title: "Engineer")
+    create(:seat, :draft, title: Title.last, seat_needed_by: Date.current)
+
+    get organization_insights_seats_titles_positions_path(organization)
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include("Titles Analytics")
+    expect(response.body).to include("Positions Analytics")
+    expect(response.body).to include("Title paths")
+    expect(response.body).not_to include("Seats Analytics")
+    expect(response.body).not_to include("seats-by-state-chart")
+  end
+
   it "shows save/reset layout controls for MAAP managers when viewing all departments" do
     teammate.update!(can_manage_maap: true)
     linked = create(:title, company: organization, position_major_level: major_level, department: department, external_title: "Linked")
