@@ -1,0 +1,18 @@
+-# Shown on Grow by Abilities when the teammate has no earned milestones yet.
+-# locals: teammate:, organization:
+- casual = teammate.person.casual_name
+- manager_casual = teammate.current_manager&.casual_name.presence || 'their manager'
+- calibration_path = ability_milestone_calibration_organization_company_teammate_path(organization, teammate)
+
+.alert.alert-primary.mb-4.py-4.px-4#my-growth-abilities-pre-calibration-banner{role: 'status'}
+  %p.fs-5.mb-3
+    Grow by Abilities will be an important space in #{content_tag(:strong, "#{casual}'s")} growth once you've begun earning Ability Milestones. The Abilities listed below are the skills, knowledge, competencies, and behaviors that need to be demonstrated to show that we are qualified for specific Assignments. Breaking the big and complicated world of growth into a clear path with frequent opportunities for celebration.
+  .row.justify-content-center.mb-3
+    .col-10
+      = link_to calibration_path,
+                class: 'btn btn-light btn-lg w-100 py-3 fw-semibold text-wrap my-growth-abilities-pre-calibration-cta' do
+        But First... Let's calibrate what Abilities you've demonstrated at #{organization.display_name} thus far.
+  %p.fs-5.mb-3
+    #{casual} and #{manager_casual} will both state what they think #{casual} has demonstrated, individually. Then they'll converse about any areas that need further clarity.
+  %p.small.mb-0.opacity-75
+    Note: This banner will disappear after the first calibration is complete... but you can always find the calibration link at the bottom of this page

@@ -9,8 +9,12 @@
       %p.mb-2.small
         Establish a shared baseline once: employee and manager each rate privately, talk with ratings revealed, then recognize and certify.
         After that, milestones are earned by demonstration... not another full calibration.
+      - full_set = counts[:full_set].to_i
+      - still_need = counts[:will_show].to_i
+      - calibrated = full_set - still_need
       %p.mb-3.mb-md-2.fw-semibold
-        #{counts[:will_show]} of #{counts[:full_set]} Abilities need calibration
+        #{calibrated} of #{full_set} required Abilities have been calibrated (meaning #{still_need} of #{full_set} Abilities still need calibration)
+
       - if counts[:will_show].to_i.positive? || teammate.ability_milestone_calibration&.ready_for_review?
         = link_to ability_milestone_calibration_organization_company_teammate_path(organization, teammate), class: 'btn btn-outline-primary btn-sm' do
           - if teammate.ability_milestone_calibration&.ready_for_review?

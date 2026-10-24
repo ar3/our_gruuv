@@ -13,6 +13,11 @@
     %span.fw-bold Grow by Abilities.
     Being recognized for demonstrating the skills, knowledge, and behaviors your organization and experts deem valuable is an incredible way to showcase your growth!
 
+- unless @teammate.has_milestone_attainments?
+  = render 'organizations/company_teammates/my_growth/pre_calibration_banner',
+    teammate: @teammate,
+    organization: organization
+
 - header_row_class = @teammate.next_goal_position.blank? ? 'my-growth-experiences__header-row--elevated' : nil
 .row.mb-3{class: header_row_class}
   .col-lg-4

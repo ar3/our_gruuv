@@ -31,7 +31,7 @@ RSpec.describe 'Ability milestone calibration', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('One-time ability milestone calibration')
-      expect(response.body).to include('2 of 2 Abilities need calibration')
+      expect(response.body).to include('0 of 2 required Abilities have been calibrated (meaning 2 of 2 Abilities still need calibration)')
       expect(response.body).to include(ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate))
     end
 
@@ -258,8 +258,8 @@ RSpec.describe 'Ability milestone calibration', type: :request do
       get ability_milestone_calibration_organization_company_teammate_path(organization, employee_teammate)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('1 of 2 Abilities need calibration')
-      expect(response.body).to include('already have a Milestone and appear under Milestones earned')
+      expect(response.body).to include('1 of 2 required Abilities have been calibrated (meaning 1 of 2 Abilities still need calibration)')
+      expect(response.body).to include('already calibrated appear under Milestones earned')
       expect(response.body).to include('Milestones earned')
       expect(response.body).to include('Calibration skipped')
       expect(response.body).to include(other_ability.display_name)

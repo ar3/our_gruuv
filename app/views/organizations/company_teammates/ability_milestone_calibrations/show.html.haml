@@ -22,11 +22,12 @@
 .alert.alert-info.mb-4
   %p.mb-1
     %strong One-time calibration.
-    #{@entry_counts[:will_show]} of #{@entry_counts[:full_set]} Abilities need calibration
-    (still at Milestone 0 in this set).
-    - already_have_milestones = @entry_counts[:full_set].to_i - @entry_counts[:will_show].to_i
-    - if already_have_milestones.positive?
-      The other #{already_have_milestones} already have a Milestone and appear under Milestones earned.
+    - full_set = @entry_counts[:full_set].to_i
+    - still_need = @entry_counts[:will_show].to_i
+    - calibrated = full_set - still_need
+    #{calibrated} of #{full_set} required Abilities have been calibrated (meaning #{still_need} of #{full_set} Abilities still need calibration).
+    - if calibrated.positive?
+      The #{calibrated} already calibrated appear under Milestones earned.
   %p.mb-2.small
     - if view_role == :employee
       Both #{employee_casual} (you) and #{manager_casual} will rate what Milestone has been demonstrated so far at #{company_name} across all of the required Abilities.
