@@ -165,18 +165,17 @@ class Seat < ApplicationRecord
     end
   end
 
+  # Statuses offered on the edit form. Archive / Restore are dedicated actions, not status picks.
   def allowed_manual_state_transitions
-    return [] if filled?
+    return [] if filled? || archived?
 
     case state
     when 'draft'
-      %w[archived being_considered]
-    when 'archived'
-      %w[draft]
+      %w[being_considered]
     when 'being_considered'
-      %w[draft archived open]
+      %w[draft open]
     when 'open'
-      ever_filled? ? %w[closed] : %w[being_considered archived draft]
+      ever_filled? ? %w[closed] : %w[being_considered draft]
     when 'closed'
       %w[open]
     else
@@ -197,6 +196,13 @@ class Seat < ApplicationRecord
     update!(state: new_state)
   ensure
     @allow_derived_state_change = false
+  end
+
+  def apply_archive_or_restore_state!(new_state)
+    @allow_archive_or_restore = true
+    update!(state: new_state)
+  ensure
+    @allow_archive_or_restore = false
   end
 
   def needs_reconciliation?
@@ -233,7 +239,11 @@ class Seat < ApplicationRecord
   end
 
   def archivable?
-    allowed_manual_state_transitions.include?('archived') && blocking_active_employment_tenures.none?
+    return false if archived? || filled? || closed?
+    return false if ever_filled?
+    return false unless %w[draft being_considered open].include?(state)
+
+    blocking_active_employment_tenures.none?
   end
 
   def blocking_active_employment_tenures
@@ -245,11 +255,11 @@ class Seat < ApplicationRecord
   end
 
   def archive!
-    update!(state: :archived)
+    apply_archive_or_restore_state!(:archived)
   end
 
   def restore!
-    update!(state: :draft)
+    apply_archive_or_restore_state!(:draft)
   end
 
   # HR text cascade: seat → title → organization
@@ -320,7 +330,7 @@ class Seat < ApplicationRecord
   private
 
   def state_transition_allowed
-    return if @allow_derived_state_change
+    return if @allow_derived_state_change || @allow_archive_or_restore
 
     from = state_in_database
     to = state

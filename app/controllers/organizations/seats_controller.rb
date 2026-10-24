@@ -125,12 +125,22 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def edit
     authorize @seat
+    if @seat.archived?
+      redirect_to organization_seat_path(organization, @seat),
+                  alert: "Restore this seat to Draft before editing."
+      return
+    end
     render layout: determine_layout
   end
 
   def update
     authorize @seat
-    
+    if @seat.archived?
+      redirect_to organization_seat_path(organization, @seat),
+                  alert: "Restore this seat to Draft before editing."
+      return
+    end
+
     if @seat.update(seat_params)
       redirect_to organization_seat_path(organization, @seat), notice: 'Seat was successfully updated.'
     else
@@ -181,12 +191,22 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def manage_titles
     authorize @seat, :update?
+    if @seat.archived?
+      redirect_to organization_seat_path(organization, @seat),
+                  alert: "Restore this seat to Draft before editing."
+      return
+    end
     load_titles_for_manage_page
     render layout: "overlay"
   end
 
   def update_titles
     authorize @seat, :update?
+    if @seat.archived?
+      redirect_to organization_seat_path(organization, @seat),
+                  alert: "Restore this seat to Draft before editing."
+      return
+    end
 
     selected_ids = Array(params[:title_ids]).map(&:to_i).reject(&:zero?).uniq
     if selected_ids.empty?

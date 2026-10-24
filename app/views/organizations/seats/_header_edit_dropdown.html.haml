@@ -23,10 +23,11 @@
           = link_to edit_organization_seat_path(organization, seat), class: "dropdown-item" do
             %i.bi.bi-pencil.me-2
             Edit
-        - elsif can_edit
+        - elsif can_edit && seat.archived?
           .dropdown-item.text-muted.disabled
             %i.bi.bi-pencil.me-2
             Edit
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Restore this seat to Draft before editing"}
         - else
           .dropdown-item.text-muted.disabled
             %i.bi.bi-pencil.me-2

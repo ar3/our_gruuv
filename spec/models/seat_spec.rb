@@ -162,9 +162,10 @@ RSpec.describe Seat, type: :model do
 
   describe 'state management' do
     describe 'manual state transitions' do
-      it 'starts as draft and allows only archived or being_considered' do
+      it 'starts as draft and allows only being_considered on the status dropdown (archive is a dedicated action)' do
         expect(seat.state).to eq('draft')
-        expect(seat.allowed_manual_state_transitions).to match_array(%w[archived being_considered])
+        expect(seat.allowed_manual_state_transitions).to eq(%w[being_considered])
+        expect(seat).to be_archivable
       end
 
       it 'allows open (previously filled) to close, not archive' do
@@ -179,6 +180,11 @@ RSpec.describe Seat, type: :model do
         create(:employment_tenure, :with_seat, seat: open_seat, ended_at: nil)
         expect(open_seat.reload).to be_filled
         expect(open_seat.allowed_manual_state_transitions).to eq([])
+      end
+
+      it 'does not offer status transitions while archived' do
+        seat.archive!
+        expect(seat.allowed_manual_state_transitions).to eq([])
       end
     end
 
@@ -299,7 +305,7 @@ RSpec.describe Seat, type: :model do
       end
 
       it 'is false when already archived' do
-        seat.update!(state: :archived)
+        seat.archive!
         expect(seat.archivable?).to be false
       end
     end
@@ -313,7 +319,7 @@ RSpec.describe Seat, type: :model do
 
     describe '#restore!' do
       it 'restores an archived seat to draft' do
-        seat.update!(state: :archived)
+        seat.archive!
         seat.restore!
         expect(seat.reload.state).to eq('draft')
       end

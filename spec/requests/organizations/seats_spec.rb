@@ -112,6 +112,9 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include('Actions')
       expect(response.body).to include('Seat Defense')
       expect(response.body).to include(edit_organization_seat_path(company, seat))
+      expect(response.body).to include(archive_organization_seat_path(company, seat))
+      expect(response.body).to match(/>\s*Edit\s*</)
+      expect(response.body).to include('Archive')
     end
 
     it 'links title, department, and team in the intro' do
@@ -147,6 +150,18 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include("Open / unfilled · #{peer.display_name}")
       expect(response.body).to include("Status")
       expect(response.body).to include("Draft")
+      expect(response.body).to include("Being Considered")
+      expect(response.body).not_to include('value="archived"')
+      expect(response.body).to include('Archive / Restore on the seat page')
+    end
+
+    it 'redirects when the seat is archived' do
+      seat.archive!
+
+      get edit_organization_seat_path(company, seat)
+
+      expect(response).to redirect_to(organization_seat_path(company, seat))
+      expect(flash[:alert]).to include('Restore this seat to Draft before editing')
     end
   end
 
@@ -393,7 +408,7 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).not_to include('value="Archive seat"')
     end
 
-    it 'lists past tenures and allows archive when none are active' do
+    it 'lists past tenures but does not allow archive after the seat was ever filled' do
       past_teammate = create(:teammate, :assigned_employee, organization: company)
       create(
         :employment_tenure,
@@ -411,7 +426,28 @@ RSpec.describe 'Organizations::Seats', type: :request do
       expect(response.body).to include('No active employment tenures')
       expect(response.body).to include('Past employment on this seat')
       expect(response.body).to include(organization_teammate_position_path(company, past_teammate))
-      expect(response.body).to include('Archive seat')
+      expect(response.body).not_to include('value="Archive seat"')
+      expect(seat.reload).not_to be_archivable
+    end
+
+    it 'allows archive for a never-filled seat with no active tenures' do
+      get archive_organization_seat_path(company, seat)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('No active employment tenures')
+      expect(response.body).to include('value="Archive seat"')
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/seats/:id/restore' do
+    it 'restores an archived seat to draft' do
+      seat.archive!
+
+      patch restore_organization_seat_path(company, seat)
+
+      expect(response).to redirect_to(organization_seat_path(company, seat))
+      expect(seat.reload.state).to eq('draft')
+      expect(flash[:notice]).to include('restored to Draft')
     end
   end
 

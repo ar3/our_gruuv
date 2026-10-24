@@ -1,5 +1,6 @@
 - organization = local_assigns.fetch(:organization)
 - seat = local_assigns.fetch(:seat)
+- can_update = policy(seat).update? && !seat.archived?
 
 .card.border.d-flex.flex-column
   .card-header
@@ -8,30 +9,17 @@
       Actions
   .card-body.d-flex.flex-column.flex-grow-1
     .d-flex.flex-column.gap-2
-      - if policy(seat).update?
-        = link_to manage_titles_organization_seat_path(organization, seat), class: "btn btn-outline-primary btn-sm text-start w-100" do
-          %i.bi.bi-tags.me-2
-          Manage titles
+      - if can_update
+        = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-primary btn-sm text-start w-100" do
+          %i.bi.bi-pencil.me-2
+          Edit
       - else
         .d-flex.align-items-center.gap-2
           %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
-            %i.bi.bi-tags.me-2
-            Manage titles
-          %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}
+            %i.bi.bi-pencil.me-2
+            Edit
+          %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => (seat.archived? ? "Restore this seat to Draft before editing" : "Requires MAAP management permission")}
             %i.bi.bi-exclamation-triangle
-
-      - if policy(MaapProposal).create?
-        = link_to new_organization_seat_maap_proposal_path(organization, seat), class: "btn btn-outline-primary btn-sm text-start w-100" do
-          %i.bi.bi-lightbulb.me-2
-          Suggest edit
-      - else
-        %button.btn.btn-outline-secondary.btn-sm.text-start.w-100{type: "button", disabled: true}
-          %i.bi.bi-lightbulb.me-2
-          Suggest edit
-
-      = link_to organization_seat_maap_proposals_path(organization, seat), class: "btn btn-outline-secondary btn-sm text-start w-100" do
-        %i.bi.bi-list-ul.me-2
-        = all_proposed_seat_edits_label(seat)
 
       - if seat.archived?
         - if policy(seat).restore?
@@ -47,21 +35,43 @@
               Restore to Draft
             %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}
               %i.bi.bi-exclamation-triangle
-      - elsif seat.archivable?
-        - if policy(seat).archive?
-          = link_to archive_organization_seat_path(organization, seat), class: "btn btn-outline-warning btn-sm text-start w-100" do
+      - elsif seat.archivable? && policy(seat).archive?
+        = link_to archive_organization_seat_path(organization, seat), class: "btn btn-outline-warning btn-sm text-start w-100" do
+          %i.bi.bi-archive.me-2
+          Archive
+      - elsif !seat.archived?
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
             %i.bi.bi-archive.me-2
             Archive
-        - else
-          .d-flex.align-items-center.gap-2
-            %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
-              %i.bi.bi-archive.me-2
-              Archive
-            %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires MAAP management permission"}
-              %i.bi.bi-exclamation-triangle
+          %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => (policy(seat).archive? ? (seat.ever_filled? ? "Seats that have been filled cannot be archived — use Closed from Edit instead" : "End or reassign active employment tenures before archiving") : "Requires MAAP management permission")}
+            %i.bi.bi-exclamation-triangle
 
-    - if policy(seat).update?
+      - if can_update
+        = link_to manage_titles_organization_seat_path(organization, seat), class: "btn btn-outline-primary btn-sm text-start w-100" do
+          %i.bi.bi-tags.me-2
+          Manage titles
+      - else
+        .d-flex.align-items-center.gap-2
+          %button.btn.btn-outline-secondary.btn-sm.text-start.flex-grow-1{type: "button", disabled: true}
+            %i.bi.bi-tags.me-2
+            Manage titles
+          %span.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => (seat.archived? ? "Restore this seat to Draft before editing" : "Requires MAAP management permission")}
+            %i.bi.bi-exclamation-triangle
+
+      - if policy(MaapProposal).create?
+        = link_to new_organization_seat_maap_proposal_path(organization, seat), class: "btn btn-outline-primary btn-sm text-start w-100" do
+          %i.bi.bi-lightbulb.me-2
+          Suggest edit
+      - else
+        %button.btn.btn-outline-secondary.btn-sm.text-start.w-100{type: "button", disabled: true}
+          %i.bi.bi-lightbulb.me-2
+          Suggest edit
+
+      = link_to organization_seat_maap_proposals_path(organization, seat), class: "btn btn-outline-secondary btn-sm text-start w-100" do
+        %i.bi.bi-list-ul.me-2
+        = all_proposed_seat_edits_label(seat)
+
+    - if seat.archived?
       %p.small.text-muted.mt-3.mb-0
-        Change status on the
-        = succeed "." do
-          = link_to "edit page", edit_organization_seat_path(organization, seat), class: "text-decoration-none"
+        This seat is archived. Restore to Draft before editing.

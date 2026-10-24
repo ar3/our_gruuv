@@ -19,7 +19,7 @@
           %li Keep the seat page reachable by direct URL, with an archived banner.
           %li Preserve titles, team, reports-to, employment history, and proposals.
         %p.mb-0.text-muted
-          You must end or reassign any active employment tenures on this seat before archiving.
+          Archive is only for seats that were never filled. If someone has held this seat, use Closed instead (from Open on the edit page).
 
     .card.mb-4
       .card-header
@@ -28,7 +28,7 @@
           Requirements before archiving
       .card-body
         %ul.list-unstyled.mb-0
-          %li
+          %li.mb-2
             - if @active_employment_tenures.empty?
               %i.bi.bi-check-circle.text-success.me-2
               No active employment tenures on this seat
@@ -43,6 +43,13 @@
                     %span.text-muted.ms-1
                       — seat management
                       (started #{tenure.started_at&.strftime('%b %d, %Y') || 'N/A'})
+          %li
+            - if @seat.ever_filled?
+              %i.bi.bi-x-circle.text-danger.me-2
+              This seat has been filled before, so it cannot be archived. Restore or reopen it and use Closed instead.
+            - else
+              %i.bi.bi-check-circle.text-success.me-2
+              This seat has never been filled
 
     - if @inactive_employment_tenures.any?
       .card.mb-4
@@ -52,7 +59,7 @@
             Past employment on this seat
         .card-body
           %p.text-muted.small.mb-2
-            These tenures have ended. They do not block archiving. Links go to each teammate's seat management page.
+            Past tenures mean this seat was filled before, so Archive is not available. Links go to each teammate's seat management page.
           %ul.mb-0
             - @inactive_employment_tenures.each do |tenure|
               - teammate = tenure.teammate
@@ -75,6 +82,9 @@
         .card-body
           %p.mb-2.text-warning
             %i.bi.bi-exclamation-triangle.me-2
-            You cannot archive until all active employment tenures on this seat are ended or reassigned.
+            - if @seat.ever_filled?
+              You cannot archive a seat that has ever been filled. Use Closed from Open on the edit page instead.
+            - else
+              You cannot archive until all active employment tenures on this seat are ended or reassigned.
           %p.mb-0
             = link_to 'Back to seat', organization_seat_path(@organization, @seat), class: 'btn btn-outline-secondary'

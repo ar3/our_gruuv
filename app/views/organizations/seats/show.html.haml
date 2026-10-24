@@ -74,7 +74,7 @@
                   = title.external_title
             - else
               = "--Not selected--"
-            - if policy(@seat).update?
+            - if policy(@seat).update? && !@seat.archived?
               = link_to manage_titles_organization_seat_path(organization, @seat), class: "btn btn-sm btn-outline-primary ms-2" do
                 %i.bi.bi-tags.me-1
                 Manage titles
