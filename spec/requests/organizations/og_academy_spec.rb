@@ -106,6 +106,35 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(response.body).to include('target="_top"')
     end
 
+    it 'shows next-due / overdue check-in caption under percent clear' do
+      last_finalized = 100.days.ago.to_date
+      due_on = last_finalized + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Assignment',
+        entity_id: 42,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: {
+          'name' => 'Frontend Craft',
+          'last_event_at' => last_finalized.iso8601,
+          'never' => false,
+          'days_since_last_event' => 100
+        },
+        computed_at: Time.current
+      )
+
+      get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body).to include("Overdue as of #{due_on.strftime('%Y-%m-%d')}")
+      expect(body).to include('bi-circle-fill')
+      expect(body).to include('text-danger')
+      expect(body).to include('title="Assignment · Frontend Craft"')
+    end
+
     it 'replaces My One Thing with an expandable teammate views list' do
       get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
       expect(response).to have_http_status(:success)

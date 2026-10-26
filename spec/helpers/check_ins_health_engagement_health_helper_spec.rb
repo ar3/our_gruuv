@@ -70,4 +70,52 @@ RSpec.describe CheckInsHealthEngagementHealthHelper, type: :helper do
       expect(data[:message]).to eq("Consider checking in on: Finance (Last check-in was 75 days ago)")
     end
   end
+
+  describe "#check_ins_health_next_due_caption" do
+    it "uses Next due when the end-of-warning date is still upcoming" do
+      last = Date.current - 10.days
+      due = last + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::HEALTHY,
+        inputs: { "last_event_at" => last.iso8601, "never" => false }
+      )
+
+      expect(helper.check_ins_health_next_due_caption(item)).to eq(
+        "Next due on #{due.strftime('%Y-%m-%d')}"
+      )
+    end
+
+    it "uses Overdue as of when the end-of-warning date is past" do
+      last = Date.current - 100.days
+      due = last + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: { "last_event_at" => last.iso8601, "never" => false }
+      )
+
+      expect(helper.check_ins_health_next_due_caption(item)).to eq(
+        "Overdue as of #{due.strftime('%Y-%m-%d')}"
+      )
+    end
+
+    it "describes never-finalized items without a due date" do
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: { "never" => true, "name" => "Seat" }
+      )
+
+      expect(helper.check_ins_health_next_due_caption(item)).to eq("Overdue — first due")
+    end
+  end
+
+  describe "#check_ins_health_item_object_label" do
+    it "prefixes the entity type when useful" do
+      item = EngagementHealthStatus.new(
+        entity_type: "Assignment",
+        inputs: { "name" => "Finance" }
+      )
+
+      expect(helper.check_ins_health_item_object_label(item)).to eq("Assignment · Finance")
+    end
+  end
 end

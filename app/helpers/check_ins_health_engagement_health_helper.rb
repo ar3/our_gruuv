@@ -208,6 +208,40 @@ module CheckInsHealthEngagementHealthHelper
     ).html_safe
   end
 
+  def check_ins_health_earliest_due_item(records)
+    CheckInsHealthEngagementHealthSupport.earliest_due_item(records)
+  end
+
+  def check_ins_health_item_object_label(item)
+    return nil if item.blank?
+
+    name = item.inputs["name"].presence || item.entity_type.to_s.humanize
+    type = item.entity_type.to_s.presence
+    return name if type.blank? || name.to_s.downcase.include?(type.downcase)
+
+    "#{type} · #{name}"
+  end
+
+  # "Next due on YYYY-MM-DD" when still upcoming; "Overdue as of YYYY-MM-DD" when past.
+  # Never-finalized with no derivable date: "Overdue — first due".
+  def check_ins_health_next_due_caption(item, reference_date: Date.current)
+    return nil if item.blank?
+
+    due = CheckInsHealthEngagementHealthSupport.due_on_for(item)
+    if due.blank?
+      return "Overdue — first due" if ActiveModel::Type::Boolean.new.cast(item.inputs["never"])
+
+      return nil
+    end
+
+    date_label = due.strftime("%Y-%m-%d")
+    if due < reference_date
+      "Overdue as of #{date_label}"
+    else
+      "Next due on #{date_label}"
+    end
+  end
+
   private
 
   def check_ins_health_stacked_segment_css(status)
