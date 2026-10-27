@@ -106,7 +106,41 @@ RSpec.describe CheckInsHealthEngagementHealthHelper, type: :helper do
 
       expect(helper.check_ins_health_next_due_caption(item)).to eq("Overdue — first due")
     end
+
+    it "uses Next due during Grey Grace when grace pushes due into the future" do
+      grace_until = Date.current + 14.days
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::WARNING,
+        inputs: {
+          "never" => false,
+          "last_event_at" => 100.days.ago.iso8601,
+          "needs_attention_at" => (Date.current - 10.days).iso8601,
+          "grace_until_at" => grace_until.iso8601,
+          "clarity_check_in_grace" => true
+        }
+      )
+
+      expect(helper.check_ins_health_next_due_caption(item)).to eq(
+        "Next due on #{(grace_until + 1.day).strftime('%Y-%m-%d')}"
+      )
+    end
   end
+
+  describe "#check_ins_health_action_summary_text_class" do
+    it "uses grey text for Grey Grace items" do
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::WARNING,
+        inputs: { "clarity_check_in_grace" => true }
+      )
+
+      expect(helper.check_ins_health_action_summary_text_class(item)).to eq("text-secondary")
+    end
+
+    it "still maps EH statuses when given a status string" do
+      expect(helper.check_ins_health_action_summary_text_class(EngagementHealth::NEEDS_ATTENTION)).to eq("text-danger")
+    end
+  end
+
 
   describe "#check_ins_health_item_object_label" do
     it "prefixes the entity type when useful" do

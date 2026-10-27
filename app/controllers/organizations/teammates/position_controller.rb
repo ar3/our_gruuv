@@ -180,8 +180,38 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     end
   end
 
+  def clarity_check_in_grace_until
+    authorize @teammate, :update_clarity_check_in_grace_until?, policy_class: CompanyTeammatePolicy
+
+    raw = params.dig(:company_teammate, :clarity_check_in_grace_until).presence ||
+          params[:clarity_check_in_grace_until]
+    grace_until =
+      if raw.blank?
+        nil
+      else
+        begin
+          Date.parse(raw.to_s)
+        rescue ArgumentError
+          redirect_to organization_teammate_position_path(organization, @teammate),
+                      alert: "Clarity check-in grace until must be a valid date."
+          return
+        end
+      end
+
+    if @teammate.update(clarity_check_in_grace_until: grace_until)
+      EngagementHealth.schedule_refresh_for(@teammate.id)
+      redirect_to organization_teammate_position_path(organization, @teammate),
+                  notice: "Clarity check-in grace until was updated."
+    else
+      redirect_to organization_teammate_position_path(organization, @teammate),
+                  alert: @teammate.errors.full_messages.to_sentence.presence ||
+                         "Could not update Clarity check-in grace until."
+    end
+  end
+
   def create_employment
     authorize @teammate, :update_position?, policy_class: CompanyTeammatePolicy
+
     
     company = organization.root_company || organization
     

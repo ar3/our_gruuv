@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_21_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_27_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -2236,6 +2236,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_21_120000) do
     t.boolean "can_customize_company", default: false
     t.boolean "can_manage_kudos_rewards", default: false, null: false
     t.bigint "next_goal_position_id"
+    t.date "clarity_check_in_grace_until"
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"

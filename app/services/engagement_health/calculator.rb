@@ -149,8 +149,16 @@ module EngagementHealth
       open_ci = open_check_in_at_reference(
         PositionCheckIn.where(company_teammate: teammate)
       )
-      [clarity_item("Position", position.id, position.display_name, latest, open_check_in: open_ci)]
+      [clarity_item(
+        "Position",
+        position.id,
+        position.display_name,
+        latest,
+        open_check_in: open_ci,
+        tenure_chain_started_at: employment_tenure_chain_started_at
+      )]
     end
+
 
     def required_assignment_items
       position = position_at_reference_time
@@ -220,7 +228,8 @@ module EngagementHealth
           aspiration.id,
           aspiration.name,
           latest,
-          open_check_in: open_by_aspiration_id[aspiration.id]
+          open_check_in: open_by_aspiration_id[aspiration.id],
+          tenure_chain_started_at: employment_tenure_chain_started_at
         )
       end
     end
@@ -228,33 +237,46 @@ module EngagementHealth
     def clarity_item(entity_type, entity_id, name, last_check_in, open_check_in: nil, tenure_chain_started_at: nil)
       last_finalized_at = last_check_in&.official_check_in_completed_at
       days_since = Thresholds.days_since(last_finalized_at, reference_time: reference_time)
-      status = Thresholds.status_for_last_event(
-        last_finalized_at,
-        healthy_within: Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
-        needs_attention_at: Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS,
+      healthy_within = Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+      needs_attention_at_days = Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+
+      windows = RequiredClarityWindows.compute(
+        last_finalized_at: last_finalized_at,
+        tenure_chain_started_at: tenure_chain_started_at,
+        teammate_grace_until: teammate.clarity_check_in_grace_until,
+        healthy_within: healthy_within,
+        needs_attention_at_days: needs_attention_at_days,
         reference_time: reference_time
       )
+      status = windows[:status]
+
       inputs = {
         "name" => name,
         "last_event_at" => last_finalized_at&.iso8601,
         "days_since_last_event" => days_since,
         "never" => last_finalized_at.nil?,
-        "healthy_within_days" => Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
-        "needs_attention_at_days" => Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+        "healthy_within_days" => healthy_within,
+        "needs_attention_at_days" => needs_attention_at_days,
+        "grace_until_at" => windows[:grace_until_at]&.iso8601,
+        "healthy_until_at" => windows[:healthy_until_at]&.iso8601,
+        "warning_until_at" => windows[:warning_until_at]&.iso8601,
+        "needs_attention_at" => windows[:needs_attention_at]&.iso8601,
+        "teammate_grace_until_at" => windows[:teammate_grace_until_at]&.iso8601,
+        "new_assignment_grace" => windows[:clarity_check_in_grace],
+        "clarity_check_in_grace" => windows[:clarity_check_in_grace],
+        "new_assignment_grace_within_days" => healthy_within
       }
+      if tenure_chain_started_at.present?
+        inputs["tenure_chain_started_at"] = tenure_chain_started_at.to_date.iso8601
+        inputs["days_since_tenure_chain_start"] =
+          Thresholds.days_since(tenure_chain_started_at, reference_time: reference_time)
+        inputs["tenure_grace_until_at"] = windows[:tenure_grace_until_at]&.iso8601
+      end
       if last_check_in
         inputs["last_event_type"] = last_check_in.class.name
         inputs["last_event_id"] = last_check_in.id
         inputs["last_event_summary"] = "Finalized #{name} check-in"
       end
-
-      status = apply_new_assignment_grace!(
-        status: status,
-        inputs: inputs,
-        entity_type: entity_type,
-        last_finalized_at: last_finalized_at,
-        tenure_chain_started_at: tenure_chain_started_at
-      )
 
       inputs.merge!(
         WorkflowSnapshot.call(
@@ -268,27 +290,15 @@ module EngagementHealth
       item_row(CATEGORY_REQUIRED_CLARITY, entity_type, entity_id, status, inputs)
     end
 
-    # Assignments with no finalize yet: Warning (not NA) while consecutive >0%
-    # tenure age is under the grace window. Inputs flag the special case so UI
-    # can treat these differently later without re-deriving tenure chains.
-    def apply_new_assignment_grace!(status:, inputs:, entity_type:, last_finalized_at:, tenure_chain_started_at:)
-      return status unless entity_type == "Assignment"
-      return status unless last_finalized_at.nil?
-      return status if tenure_chain_started_at.blank?
+    def employment_tenure_chain_started_at
+      return @employment_tenure_chain_started_at if defined?(@employment_tenure_chain_started_at)
 
-      days_on_assignment = Thresholds.days_since(tenure_chain_started_at, reference_time: reference_time)
-      inputs["tenure_chain_started_at"] = tenure_chain_started_at.to_date.iso8601
-      inputs["days_since_tenure_chain_start"] = days_on_assignment
-      inputs["new_assignment_grace_within_days"] = Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
-
-      if days_on_assignment && days_on_assignment < Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
-        inputs["new_assignment_grace"] = true
-        WARNING
-      else
-        inputs["new_assignment_grace"] = false
-        status
-      end
+      @employment_tenure_chain_started_at = EmploymentTenures::HistoryMetrics.current_consecutive_stretch_started_at(
+        tenures: teammate.employment_tenures.where(company: organization),
+        reference_time: reference_time
+      )
     end
+
 
     def positive_energy_assignment_tenure_history_by_assignment_id(assignment_ids)
       teammate.assignment_tenures

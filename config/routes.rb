@@ -750,6 +750,7 @@ Rails.application.routes.draw do
         post :create_employment, on: :member
         get :confirm_termination, on: :member
         post :process_termination, on: :member
+        patch :clarity_check_in_grace_until, on: :member
       end
       resources :assignments, only: [:show], controller: 'teammates/assignments' do
         post :start_check_in, on: :member

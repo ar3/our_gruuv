@@ -5,9 +5,16 @@ module EmploymentTenures
   class HistoryMetrics
     Stretch = Data.define(:started_at, :ended_at, :duration_seconds, :open?)
     Gap = Data.define(:earlier_tenure_id, :later_tenure_id, :gap_started_at, :gap_ended_at)
+    TenureSlice = Data.define(:started_at, :ended_at, :position_id, :manager_teammate_id, :id)
 
     def self.call(tenures:)
       new(tenures: tenures).call
+    end
+
+    # Start of the consecutive employment stretch active at reference_time
+    # (same contiguity rules as the employment-history correction metrics).
+    def self.current_consecutive_stretch_started_at(tenures:, reference_time: Time.current)
+      new(tenures: tenures).current_consecutive_stretch_started_at(reference_time)
     end
 
     def initialize(tenures:)
@@ -32,7 +39,34 @@ module EmploymentTenures
       }
     end
 
+    def current_consecutive_stretch_started_at(reference_time)
+      slices = @tenures
+        .select { |tenure| tenure.started_at.present? && tenure.started_at <= reference_time }
+        .sort_by(&:started_at)
+        .map { |tenure| tenure_slice_at(tenure, reference_time) }
+      return nil if slices.empty?
+
+      consecutive_stretches(slices).reverse.find(&:open?)&.started_at
+    end
+
     private
+
+    def tenure_slice_at(tenure, reference_time)
+      ended_at =
+        if tenure.ended_at.nil? || tenure.ended_at > reference_time
+          nil
+        else
+          tenure.ended_at
+        end
+      TenureSlice.new(
+        started_at: tenure.started_at,
+        ended_at: ended_at,
+        position_id: tenure.try(:position_id),
+        manager_teammate_id: tenure.try(:manager_teammate_id),
+        id: tenure.try(:id)
+      )
+    end
+
 
     def consecutive_stretches(sorted)
       return [] if sorted.empty?

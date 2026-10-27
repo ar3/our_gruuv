@@ -72,7 +72,7 @@ module CheckInsHealthEngagementHealthHelper
 
   def check_ins_health_display_status_label(status)
     if status.to_s == CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY
-      "new (first check-in not due yet)"
+      "in clarity check-in grace"
     else
       EngagementHealth::STATUS_LABELS.fetch(status)
     end
@@ -88,13 +88,13 @@ module CheckInsHealthEngagementHealthHelper
     when EngagementHealth::NEEDS_ATTENTION
       "any required item ≥ #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS} days ago or never finalized"
     when CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY
-      "assignment with no finalized check-in in its first " \
-        "#{EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS} days of consecutive >0% energy tenure " \
+      "required item in Grey Grace from tenure start or Clarity check-in grace until " \
         "(counts as Warning in rollups)"
     else
       status.to_s.humanize
     end
   end
+
 
   def check_ins_health_engagement_alert_data(records:, organization:, teammate:)
     if records.blank?
@@ -189,7 +189,13 @@ module CheckInsHealthEngagementHealthHelper
     CheckInsHealthBarsHelper::EH_STATUS_CSS.fetch(status, "check-in-health-action-anomaly-gray")
   end
 
-  def check_ins_health_action_summary_text_class(status)
+  # Accepts an EH status string/symbol or an item (uses Grey Grace → grey text).
+  def check_ins_health_action_summary_text_class(status_or_item)
+    if status_or_item.respond_to?(:inputs) && check_ins_health_new_assignment_grace?(status_or_item)
+      return "text-secondary"
+    end
+
+    status = status_or_item.respond_to?(:status) ? status_or_item.status : status_or_item
     case status
     when EngagementHealth::HEALTHY then "text-success"
     when EngagementHealth::WARNING then "text-warning"
@@ -197,6 +203,7 @@ module CheckInsHealthEngagementHealthHelper
     else "text-muted"
     end
   end
+
 
   def check_ins_health_action_popover_html(records:, employee_name:, manager_name:)
     rows = EngagementHealth::ClarityActionMetrics.popover_rows(records)

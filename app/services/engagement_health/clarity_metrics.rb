@@ -84,12 +84,17 @@ module EngagementHealth
         EngagementHealth::HEALTHY => 0
       }
       Array(items).each do |item|
-        if ActiveModel::Type::Boolean.new.cast(item.inputs["new_assignment_grace"])
+        inputs = item.inputs
+        in_grace = ActiveModel::Type::Boolean.new.cast(
+          inputs["clarity_check_in_grace"].nil? ? inputs["new_assignment_grace"] : inputs["clarity_check_in_grace"]
+        )
+        if in_grace
           counts["new_assignment_grace"] += 1
         elsif counts.key?(item.status)
           counts[item.status] += 1
         end
       end
+
       counts
     end
 

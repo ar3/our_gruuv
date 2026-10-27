@@ -47,17 +47,26 @@ module CheckInsHealthBarsHelper
   end
 
   def check_ins_health_new_assignment_grace?(item)
-    ActiveModel::Type::Boolean.new.cast(item.inputs["new_assignment_grace"])
+    inputs = item.inputs
+    ActiveModel::Type::Boolean.new.cast(
+      inputs["clarity_check_in_grace"].nil? ? inputs["new_assignment_grace"] : inputs["clarity_check_in_grace"]
+    )
   end
 
   def check_ins_health_new_assignment_grace_summary(item)
     return nil unless check_ins_health_new_assignment_grace?(item)
 
-    day = item.inputs["days_since_tenure_chain_start"]
-    within = item.inputs["new_assignment_grace_within_days"] ||
-             EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
-    "New assignment — first check-in not due yet (day #{day} of #{within})"
+    grace_until = item.inputs["grace_until_at"].presence
+    if grace_until
+      "Clarity check-in grace until #{Date.parse(grace_until.to_s).strftime('%b %-d, %Y')}"
+    else
+      day = item.inputs["days_since_tenure_chain_start"]
+      within = item.inputs["new_assignment_grace_within_days"] ||
+               EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+      "Clarity check-in grace (day #{day} of #{within})"
+    end
   end
+
 
   def check_ins_health_item_initials(name)
     words = name.to_s.strip.split(/\s+/).reject(&:blank?)

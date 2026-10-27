@@ -326,7 +326,40 @@
               No Employment Tenures Found
             %p.mb-0 No employment tenures have been recorded yet.
 
+    / Clarity check-in grace until (leave / excused due dates)
+    - can_set_grace = policy(@teammate).update_clarity_check_in_grace_until?
+    - grace_disabled_tooltip = "You need employment management permission to set Clarity check-in grace until."
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Clarity check-in grace until
+      .card-body
+        %p.text-muted.small.mb-3
+          While this date is in the future, required Position, Assignment, and Values check-ins stay in Grey Grace
+          (Warning in rollups) instead of aging into Needs Attention — for leave or similar reasons.
+        = form_with url: clarity_check_in_grace_until_organization_teammate_position_path(@organization, @teammate),
+                    method: :patch,
+                    local: true,
+                    html: { class: "row g-3 align-items-end" } do
+          .col-md-6
+            %label.form-label{for: "clarity_check_in_grace_until"} Clarity check-in grace until
+            .input-group
+              = date_field_tag "company_teammate[clarity_check_in_grace_until]",
+                               @teammate.clarity_check_in_grace_until,
+                               class: "form-control",
+                               id: "clarity_check_in_grace_until",
+                               disabled: !can_set_grace
+              - unless can_set_grace
+                %span.input-group-text
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: grace_disabled_tooltip}, title: grace_disabled_tooltip}
+          .col-md-6
+            - if can_set_grace
+              = submit_tag "Save grace until", class: "btn btn-primary"
+            - else
+              %button.btn.btn-outline-secondary{type: "button", disabled: true} Save grace until
+              %i.bi.bi-exclamation-triangle.text-warning.ms-2{data: {bs_toggle: "tooltip", bs_title: grace_disabled_tooltip}, title: grace_disabled_tooltip}
+
     / Link to single-item position check-in page
+
     - check_in_count = @check_ins.size
     - check_in_label = check_in_count == 1 ? 'check-in' : 'check-ins'
     .text-center.my-5

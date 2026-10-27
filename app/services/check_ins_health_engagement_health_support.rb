@@ -52,13 +52,24 @@ module CheckInsHealthEngagementHealthSupport
     Array(records).map(&:computed_at).compact.max
   end
 
-  # Due date at end of Warning / Needs Attention boundary:
-  # last finalized + REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS (90).
-  # Never-finalized assignments with tenure use tenure start + the same window.
+  # Due date = first Needs Attention day (end of Warning). Prefer cache
+  # needs_attention_at. While in Grey Grace, due is at least the day after
+  # grace_until_at so captions stay on the "Next due" path until grace ends.
   def due_on_for(item)
     return nil if item.blank?
 
     inputs = item.inputs || {}
+    cached_needs_attention = parse_date(inputs["needs_attention_at"])
+    grace_until = parse_date(inputs["grace_until_at"])
+    in_grace = clarity_check_in_grace?(inputs)
+
+    if in_grace && grace_until
+      grace_due = grace_until + 1.day
+      return [cached_needs_attention, grace_due].compact.max
+    end
+
+    return cached_needs_attention if cached_needs_attention
+
     last_event = parse_date(inputs["last_event_at"])
     if last_event
       return last_event + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
@@ -70,6 +81,13 @@ module CheckInsHealthEngagementHealthSupport
     end
 
     nil
+  end
+
+  def clarity_check_in_grace?(inputs)
+    inputs ||= {}
+    ActiveModel::Type::Boolean.new.cast(
+      inputs["clarity_check_in_grace"].nil? ? inputs["new_assignment_grace"] : inputs["clarity_check_in_grace"]
+    )
   end
 
   # Earliest due among required/active clarity items. Never-finalized items

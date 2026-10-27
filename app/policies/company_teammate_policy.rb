@@ -44,6 +44,12 @@ class CompanyTeammatePolicy < ApplicationPolicy
     viewing_teammate.can_manage_employment?
   end
 
+  # Clarity check-in grace until on Seat/Position Management: employment management only.
+  def update_clarity_check_in_grace_until?
+    correct_employment_history?
+  end
+
+
   def complete_picture?
     # Can view complete picture if they can view teammate
     return true if admin_bypass?

@@ -143,10 +143,11 @@ RSpec.describe CheckInsHealthBarsHelper, type: :helper do
 
       html = helper.check_ins_health_bar_popover_html(item: item, employee_name: "Alex", manager_name: "Casey")
       expect(html).to include("Gruuv Health: Warning")
-      expect(html).to include("New assignment — first check-in not due yet (day 12 of 60)")
+      expect(html).to include("Clarity check-in grace (day 12 of 60)")
       expect(html).not_to include("Consider a check-in now")
     end
   end
+
 
   describe "#check_ins_health_bar_segment_url" do
     let(:organization) { create(:organization, :company) }

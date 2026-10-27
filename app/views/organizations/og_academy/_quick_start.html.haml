@@ -62,7 +62,7 @@
                           %p.text-muted.mb-0.small= clarity_caption
                         - if next_due_caption.present?
                           %p.text-muted.mb-0.small.mt-1{title: next_due_object_label, data: (next_due_object_label.present? ? { bs_toggle: "tooltip", bs_placement: "top" } : {})}
-                            %i.bi.bi-circle-fill.me-1{class: check_ins_health_action_summary_text_class(next_due_item.status), "aria-hidden" => "true"}
+                            %i.bi.bi-circle-fill.me-1{class: check_ins_health_action_summary_text_class(next_due_item), "aria-hidden" => "true"}
                             = next_due_caption
                       %i.bi.bi-chat-square-text.display-4.text-info.flex-shrink-0
 

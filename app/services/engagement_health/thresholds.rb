@@ -3,9 +3,9 @@
 module EngagementHealth
   # The threshold table. OGOs and goal confidence use a 30/90-day model;
   # required clarity check-ins use a stricter 60/90-day model because they
-  # are required. "Never" (no record) evaluates to Needs Attention, except
-  # assignment items in their first NEW_ASSIGNMENT_GRACE_WITHIN_DAYS of
-  # consecutive >0% energy tenure (see Calculator), which are Warning.
+  # are required. Required clarity until-dates / Grey Grace are computed in
+  # RequiredClarityWindows (tenure chain, teammate override, last finalize).
+
   module Thresholds
     OGO_HEALTHY_WITHIN_DAYS = 30
     OGO_NEEDS_ATTENTION_AT_DAYS = 90

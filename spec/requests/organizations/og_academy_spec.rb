@@ -135,6 +135,38 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       expect(body).to include('title="Assignment · Frontend Craft"')
     end
 
+    it 'shows Next due with a grey dot while the earliest item is in Grey Grace' do
+      grace_until = 14.days.from_now.to_date
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Assignment',
+        entity_id: 43,
+        status: EngagementHealth::WARNING,
+        inputs: {
+          'name' => 'On Leave Assignment',
+          'last_event_at' => 100.days.ago.iso8601,
+          'never' => false,
+          'needs_attention_at' => 10.days.ago.to_date.iso8601,
+          'grace_until_at' => grace_until.iso8601,
+          'clarity_check_in_grace' => true,
+          'new_assignment_grace' => true
+        },
+        computed_at: Time.current
+      )
+
+      get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body).to include("Next due on #{(grace_until + 1.day).strftime('%Y-%m-%d')}")
+      expect(body).to include('bi-circle-fill')
+      expect(body).to include('text-secondary')
+      expect(body).not_to include('Overdue as of')
+    end
+
+
     it 'replaces My One Thing with an expandable teammate views list' do
       get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
       expect(response).to have_http_status(:success)

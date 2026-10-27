@@ -78,7 +78,37 @@ RSpec.describe CheckInsHealthEngagementHealthSupport do
         tenure_start + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
       )
     end
+
+    it "uses the day after grace_until when in Grey Grace even if finalize-based needs-attention is past" do
+      grace_until = Date.current + 14.days
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::WARNING,
+        inputs: {
+          "never" => false,
+          "last_event_at" => 100.days.ago.iso8601,
+          "needs_attention_at" => (Date.current - 10.days).iso8601,
+          "grace_until_at" => grace_until.iso8601,
+          "clarity_check_in_grace" => true
+        }
+      )
+
+      expect(described_class.due_on_for(item)).to eq(grace_until + 1.day)
+    end
+
+    it "prefers cached needs_attention_at when not in grace" do
+      needs = Date.new(2026, 6, 1)
+      item = EngagementHealthStatus.new(
+        inputs: {
+          "last_event_at" => Date.new(2026, 1, 1).iso8601,
+          "needs_attention_at" => needs.iso8601,
+          "clarity_check_in_grace" => false
+        }
+      )
+
+      expect(described_class.due_on_for(item)).to eq(needs)
+    end
   end
+
 
   describe ".earliest_due_item" do
     it "picks the required item with the earliest due date" do

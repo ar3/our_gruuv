@@ -68,4 +68,61 @@ RSpec.describe EmploymentTenures::HistoryMetrics, type: :service do
     expect(metrics[:gaps].size).to eq(1)
     expect(metrics[:total_employed_seconds]).to be > 0
   end
+
+  describe '.current_consecutive_stretch_started_at' do
+    it 'returns the start of the open consecutive stretch at reference_time' do
+      first = create(
+        :employment_tenure,
+        teammate: teammate,
+        company: company,
+        position: position_a,
+        started_at: Time.zone.parse('2020-01-01'),
+        ended_at: Time.zone.parse('2021-01-01')
+      )
+      second = create(
+        :employment_tenure,
+        teammate: teammate,
+        company: company,
+        position: position_a,
+        started_at: Time.zone.parse('2022-06-01'),
+        ended_at: nil
+      )
+      first.update_columns(position_id: position_a.id)
+      second.update_columns(position_id: position_a.id)
+
+      started = described_class.current_consecutive_stretch_started_at(
+        tenures: [first.reload, second.reload],
+        reference_time: Time.zone.parse('2022-07-01')
+      )
+      expect(started.to_date).to eq(Date.new(2022, 6, 1))
+    end
+
+    it 'extends the stretch across contiguous tenures with no gap' do
+      first = create(
+        :employment_tenure,
+        teammate: teammate,
+        company: company,
+        position: position_a,
+        started_at: Time.zone.parse('2022-01-01'),
+        ended_at: Time.zone.parse('2023-01-01')
+      )
+      second = create(
+        :employment_tenure,
+        teammate: teammate,
+        company: company,
+        position: position_b,
+        started_at: Time.zone.parse('2023-01-01'),
+        ended_at: nil
+      )
+      first.update_columns(position_id: position_a.id)
+      second.update_columns(position_id: position_b.id)
+
+      started = described_class.current_consecutive_stretch_started_at(
+        tenures: [first.reload, second.reload],
+        reference_time: Time.zone.parse('2023-06-01')
+      )
+      expect(started.to_date).to eq(Date.new(2022, 1, 1))
+    end
+  end
 end
+

@@ -83,9 +83,51 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       expect(response.body).to include(' - Position Management')
       expect(response.body).to include('Correct employment history')
       expect(response.body).to include(organization_company_teammate_employment_history_correction_path(organization, employee_teammate))
+      expect(response.body).to include('Clarity check-in grace until')
+      expect(response.body).to include('Save grace until')
+      expect(response.body).to include('leave or similar reasons')
+      expect(response.body).not_to include('excuses')
     end
 
+
+    it 'lets employment managers update Clarity check-in grace until' do
+      allow(EngagementHealth).to receive(:schedule_refresh_for)
+
+      patch clarity_check_in_grace_until_organization_teammate_position_path(organization, employee_teammate),
+            params: { company_teammate: { clarity_check_in_grace_until: 2.weeks.from_now.to_date } }
+
+      expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
+      expect(employee_teammate.reload.clarity_check_in_grace_until).to eq(2.weeks.from_now.to_date)
+      expect(EngagementHealth).to have_received(:schedule_refresh_for).with(employee_teammate.id)
+    end
+
+    it 'forbids updating Clarity check-in grace until without employment management' do
+      teammate.update!(can_manage_employment: false)
+      # Hierarchy manager of employee can view position but not set grace until
+      current_tenure # ensure employee has manager_teammate = manager_teammate from factory setup
+      manager_viewer = create(:company_teammate, person: create(:person), organization: organization, can_manage_employment: false, first_employed_at: 1.year.ago)
+      create(:employment_tenure, teammate: manager_viewer, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+      employee_teammate.employment_tenures.active.first.update!(manager_teammate: manager_viewer)
+
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_viewer)
+      allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:current_company_teammate).and_return(manager_viewer)
+      allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager_viewer.person)
+
+      get organization_teammate_position_path(organization, employee_teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('You need employment management permission to set Clarity check-in grace until.')
+
+      patch clarity_check_in_grace_until_organization_teammate_position_path(organization, employee_teammate),
+            params: { company_teammate: { clarity_check_in_grace_until: 2.weeks.from_now.to_date } }
+
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("don't have permission")
+      expect(employee_teammate.reload.clarity_check_in_grace_until).to be_nil
+    end
+
+
     it 'loads only open seats and keeps the current tenure seat selectable when filled' do
+
       # Creating an active tenure on this seat marks it filled via after_create
       occupied_seat = create(:seat, :open, title: position.title, seat_needed_by: Date.current + 11.months)
       other_teammate = create(:teammate, person: create(:person), organization: organization)

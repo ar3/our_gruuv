@@ -362,7 +362,7 @@ RSpec.describe EngagementHealth::Calculator do
       end
     end
 
-    context 'new assignment grace' do
+    context 'required clarity Grey Grace (until-dates)' do
       let!(:employment_tenure) do
         create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
       end
@@ -372,6 +372,10 @@ RSpec.describe EngagementHealth::Calculator do
         rows_for('required_clarity', level: 'item').find do |item|
           item[:entity_type] == 'Assignment' && item[:entity_id] == assignment.id
         end
+      end
+
+      def position_item
+        rows_for('required_clarity', level: 'item').find { |item| item[:entity_type] == 'Position' }
       end
 
       it 'rates never-finalized assignments Warning during the first 60 days of consecutive >0% tenure' do
@@ -387,10 +391,12 @@ RSpec.describe EngagementHealth::Calculator do
         item = assignment_item
         expect(item[:status]).to eq(EngagementHealth::WARNING)
         expect(item[:inputs]['never']).to be(true)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(true)
         expect(item[:inputs]['new_assignment_grace']).to be(true)
         expect(item[:inputs]['days_since_tenure_chain_start']).to eq(30)
         expect(item[:inputs]['tenure_chain_started_at']).to eq(30.days.ago.to_date.iso8601)
-        expect(item[:inputs]['new_assignment_grace_within_days']).to eq(60)
+        expect(item[:inputs]['grace_until_at']).to eq((30.days.ago.to_date + 59.days).iso8601)
+        expect(item[:inputs]['healthy_until_at']).to be_nil
       end
 
       it 'keeps the tenure clock across energy reallocations with no calendar gap' do
@@ -415,7 +421,7 @@ RSpec.describe EngagementHealth::Calculator do
 
         item = assignment_item
         expect(item[:status]).to eq(EngagementHealth::WARNING)
-        expect(item[:inputs]['new_assignment_grace']).to be(true)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(true)
         expect(item[:inputs]['tenure_chain_started_at']).to eq(chain_start.iso8601)
         expect(item[:inputs]['days_since_tenure_chain_start']).to eq(45)
       end
@@ -433,7 +439,7 @@ RSpec.describe EngagementHealth::Calculator do
         item = assignment_item
         expect(item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
         expect(item[:inputs]['never']).to be(true)
-        expect(item[:inputs]['new_assignment_grace']).to be(false)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(false)
         expect(item[:inputs]['days_since_tenure_chain_start']).to eq(60)
       end
 
@@ -457,12 +463,12 @@ RSpec.describe EngagementHealth::Calculator do
 
         item = assignment_item
         expect(item[:status]).to eq(EngagementHealth::WARNING)
-        expect(item[:inputs]['new_assignment_grace']).to be(true)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(true)
         expect(item[:inputs]['tenure_chain_started_at']).to eq(20.days.ago.to_date.iso8601)
         expect(item[:inputs]['days_since_tenure_chain_start']).to eq(20)
       end
 
-      it 'does not apply grace once a check-in has been finalized' do
+      it 'prefers Healthy over grace when last finalize is still within the healthy window' do
         create(
           :assignment_tenure,
           teammate: teammate,
@@ -477,10 +483,50 @@ RSpec.describe EngagementHealth::Calculator do
         item = assignment_item
         expect(item[:status]).to eq(EngagementHealth::HEALTHY)
         expect(item[:inputs]['never']).to be(false)
-        expect(item[:inputs]).not_to have_key('new_assignment_grace')
+        expect(item[:inputs]['clarity_check_in_grace']).to be(false)
+        expect(item[:inputs]['healthy_until_at']).to eq((5.days.ago.to_date + 60.days).iso8601)
       end
 
-      it 'does not apply grace to position or aspiration never-finalized items' do
+      it 'applies always-on tenure grace over a stale finalize (Person C)' do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 10.days.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+        check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)
+        check_in.update_column(:official_check_in_completed_at, 80.days.ago)
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(true)
+        expect(item[:inputs]['grace_until_at']).to eq((10.days.ago.to_date + 59.days).iso8601)
+      end
+
+      it 'uses teammate Clarity check-in grace until for Grey Grace even when finalize is Needs Attention' do
+        create(
+          :assignment_tenure,
+          teammate: teammate,
+          assignment: assignment,
+          started_at: 1.year.ago.to_date,
+          ended_at: nil,
+          anticipated_energy_percentage: 40
+        )
+        check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)
+        check_in.update_column(:official_check_in_completed_at, 100.days.ago)
+        teammate.update!(clarity_check_in_grace_until: 14.days.from_now.to_date)
+
+        item = assignment_item
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(true)
+        expect(item[:inputs]['grace_until_at']).to eq(14.days.from_now.to_date.iso8601)
+        expect(item[:inputs]['teammate_grace_until_at']).to eq(14.days.from_now.to_date.iso8601)
+      end
+
+      it 'applies employment-stretch grace to never-finalized Position and Aspiration items' do
+        employment_tenure.update!(started_at: 20.days.ago)
         create(:aspiration, company: organization)
         create(
           :assignment_tenure,
@@ -492,16 +538,18 @@ RSpec.describe EngagementHealth::Calculator do
         )
 
         items = rows_for('required_clarity', level: 'item')
-        position_item = items.find { |item| item[:entity_type] == 'Position' }
-        aspiration_item = items.find { |item| item[:entity_type] == 'Aspiration' }
+        position = items.find { |item| item[:entity_type] == 'Position' }
+        aspiration = items.find { |item| item[:entity_type] == 'Aspiration' }
 
-        expect(position_item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
-        expect(position_item[:inputs]).not_to have_key('new_assignment_grace')
-        expect(aspiration_item[:status]).to eq(EngagementHealth::NEEDS_ATTENTION)
-        expect(aspiration_item[:inputs]).not_to have_key('new_assignment_grace')
+        expect(position[:status]).to eq(EngagementHealth::WARNING)
+        expect(position[:inputs]['clarity_check_in_grace']).to be(true)
+        expect(position[:inputs]['tenure_chain_started_at']).to eq(20.days.ago.to_date.iso8601)
+        expect(aspiration[:status]).to eq(EngagementHealth::WARNING)
+        expect(aspiration[:inputs]['clarity_check_in_grace']).to be(true)
       end
     end
   end
+
 
   describe 'milestones' do
     it 'is vacuously Healthy when there are no required abilities' do
