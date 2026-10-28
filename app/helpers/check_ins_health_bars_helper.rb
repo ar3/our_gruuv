@@ -56,6 +56,10 @@ module CheckInsHealthBarsHelper
   def check_ins_health_new_assignment_grace_summary(item)
     return nil unless check_ins_health_new_assignment_grace?(item)
 
+    if ActiveModel::Type::Boolean.new.cast(item.inputs["indefinite_assignment_grace"])
+      return "Clarity check-in grace — not due until >0% energy is assigned"
+    end
+
     grace_until = item.inputs["grace_until_at"].presence
     if grace_until
       "Clarity check-in grace until #{Date.parse(grace_until.to_s).strftime('%b %-d, %Y')}"

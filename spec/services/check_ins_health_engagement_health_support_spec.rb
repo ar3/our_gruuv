@@ -107,7 +107,21 @@ RSpec.describe CheckInsHealthEngagementHealthSupport do
 
       expect(described_class.due_on_for(item)).to eq(needs)
     end
+
+    it "has no due date during indefinite assignment Grey Grace" do
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::WARNING,
+        inputs: {
+          "never" => true,
+          "clarity_check_in_grace" => true,
+          "indefinite_assignment_grace" => true
+        }
+      )
+
+      expect(described_class.due_on_for(item)).to be_nil
+    end
   end
+
 
 
   describe ".earliest_due_item" do

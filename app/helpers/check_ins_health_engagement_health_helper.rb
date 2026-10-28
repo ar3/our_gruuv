@@ -231,12 +231,18 @@ module CheckInsHealthEngagementHealthHelper
 
   # "Next due on YYYY-MM-DD" when still upcoming; "Overdue as of YYYY-MM-DD" when past.
   # Never-finalized with no derivable date: "Overdue — first due".
+  # Indefinite assignment Grey Grace: not due until >0% energy tenure exists.
   def check_ins_health_next_due_caption(item, reference_date: Date.current)
     return nil if item.blank?
 
+    inputs = item.inputs || {}
     due = CheckInsHealthEngagementHealthSupport.due_on_for(item)
     if due.blank?
-      return "Overdue — first due" if ActiveModel::Type::Boolean.new.cast(item.inputs["never"])
+      if CheckInsHealthEngagementHealthSupport.clarity_check_in_grace?(inputs) &&
+         CheckInsHealthEngagementHealthSupport.indefinite_assignment_grace?(inputs)
+        return "Next due — after energy is assigned"
+      end
+      return "Overdue — first due" if ActiveModel::Type::Boolean.new.cast(inputs["never"])
 
       return nil
     end
@@ -248,6 +254,7 @@ module CheckInsHealthEngagementHealthHelper
       "Next due on #{date_label}"
     end
   end
+
 
   private
 

@@ -64,4 +64,33 @@ RSpec.describe EngagementHealth::RequiredClarityWindows do
     expect(result[:clarity_check_in_grace]).to be(false)
     expect(result[:needs_attention_at]).to eq((reference_time - 70.days).to_date + 90.days)
   end
+
+  it "stays in Grey Grace indefinitely when indefinite_tenure_grace and not Healthy" do
+    result = compute(
+      last_finalized_at: nil,
+      tenure_chain_started_at: nil,
+      teammate_grace_until: nil,
+      indefinite_tenure_grace: true
+    )
+
+    expect(result[:status]).to eq(EngagementHealth::WARNING)
+    expect(result[:clarity_check_in_grace]).to be(true)
+    expect(result[:indefinite_tenure_grace]).to be(true)
+    expect(result[:needs_attention_at]).to be_nil
+    expect(result[:grace_until_at]).to be_nil
+  end
+
+  it "still prefers Healthy over indefinite tenure grace when finalize is fresh" do
+    result = compute(
+      last_finalized_at: reference_time - 5.days,
+      tenure_chain_started_at: nil,
+      teammate_grace_until: nil,
+      indefinite_tenure_grace: true
+    )
+
+    expect(result[:status]).to eq(EngagementHealth::HEALTHY)
+    expect(result[:clarity_check_in_grace]).to be(false)
+    expect(result[:indefinite_tenure_grace]).to be(false)
+  end
 end
+

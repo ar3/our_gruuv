@@ -240,13 +240,15 @@ module EngagementHealth
       healthy_within = Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
       needs_attention_at_days = Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
 
+      indefinite_tenure_grace = entity_type == "Assignment" && tenure_chain_started_at.blank?
       windows = RequiredClarityWindows.compute(
         last_finalized_at: last_finalized_at,
         tenure_chain_started_at: tenure_chain_started_at,
         teammate_grace_until: teammate.clarity_check_in_grace_until,
         healthy_within: healthy_within,
         needs_attention_at_days: needs_attention_at_days,
-        reference_time: reference_time
+        reference_time: reference_time,
+        indefinite_tenure_grace: indefinite_tenure_grace
       )
       status = windows[:status]
 
@@ -264,6 +266,7 @@ module EngagementHealth
         "teammate_grace_until_at" => windows[:teammate_grace_until_at]&.iso8601,
         "new_assignment_grace" => windows[:clarity_check_in_grace],
         "clarity_check_in_grace" => windows[:clarity_check_in_grace],
+        "indefinite_assignment_grace" => windows[:indefinite_tenure_grace],
         "new_assignment_grace_within_days" => healthy_within
       }
       if tenure_chain_started_at.present?

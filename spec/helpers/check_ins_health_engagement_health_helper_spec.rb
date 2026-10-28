@@ -124,7 +124,23 @@ RSpec.describe CheckInsHealthEngagementHealthHelper, type: :helper do
         "Next due on #{(grace_until + 1.day).strftime('%Y-%m-%d')}"
       )
     end
+
+    it "explains indefinite assignment Grey Grace when no energy is assigned yet" do
+      item = EngagementHealthStatus.new(
+        status: EngagementHealth::WARNING,
+        inputs: {
+          "never" => true,
+          "clarity_check_in_grace" => true,
+          "indefinite_assignment_grace" => true
+        }
+      )
+
+      expect(helper.check_ins_health_next_due_caption(item)).to eq(
+        "Next due — after energy is assigned"
+      )
+    end
   end
+
 
   describe "#check_ins_health_action_summary_text_class" do
     it "uses grey text for Grey Grace items" do

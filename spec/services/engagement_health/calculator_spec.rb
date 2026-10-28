@@ -547,8 +547,24 @@ RSpec.describe EngagementHealth::Calculator do
         expect(aspiration[:status]).to eq(EngagementHealth::WARNING)
         expect(aspiration[:inputs]['clarity_check_in_grace']).to be(true)
       end
+
+      it 'keeps position-required assignments in indefinite Grey Grace until >0% energy tenure exists' do
+        required = create(:assignment, company: organization, title: 'Required Without Tenure')
+        create(:position_assignment, position: employment_tenure.position, assignment: required, assignment_type: 'required')
+
+        item = rows_for('required_clarity', level: 'item').find do |row|
+          row[:entity_type] == 'Assignment' && row[:entity_id] == required.id
+        end
+
+        expect(item[:status]).to eq(EngagementHealth::WARNING)
+        expect(item[:inputs]['clarity_check_in_grace']).to be(true)
+        expect(item[:inputs]['indefinite_assignment_grace']).to be(true)
+        expect(item[:inputs]['tenure_chain_started_at']).to be_nil
+        expect(item[:inputs]['needs_attention_at']).to be_nil
+      end
     end
   end
+
 
 
   describe 'milestones' do

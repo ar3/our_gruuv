@@ -68,6 +68,9 @@ module CheckInsHealthEngagementHealthSupport
       return [cached_needs_attention, grace_due].compact.max
     end
 
+    # Indefinite assignment grace (no >0% tenure yet): not due.
+    return nil if in_grace && indefinite_assignment_grace?(inputs)
+
     return cached_needs_attention if cached_needs_attention
 
     last_event = parse_date(inputs["last_event_at"])
@@ -90,17 +93,33 @@ module CheckInsHealthEngagementHealthSupport
     )
   end
 
+  def indefinite_assignment_grace?(inputs)
+    inputs ||= {}
+    ActiveModel::Type::Boolean.new.cast(inputs["indefinite_assignment_grace"])
+  end
+
   # Earliest due among required/active clarity items. Never-finalized items
-  # without a derivable due date sort first (most urgent).
+  # without a derivable due date sort first (most urgent), except indefinite
+  # Grey Grace (no energy yet), which sorts last.
   def earliest_due_item(records)
     items = items_for(records)
     return nil if items.empty?
 
     items.min_by do |item|
+      inputs = item.inputs || {}
       due = due_on_for(item)
-      [due.nil? ? 0 : 1, due || Date.new(1), item.entity_type.to_s, item.entity_id.to_i]
+      urgency =
+        if due.nil? && clarity_check_in_grace?(inputs) && indefinite_assignment_grace?(inputs)
+          2
+        elsif due.nil?
+          0
+        else
+          1
+        end
+      [urgency, due || Date.new(1), item.entity_type.to_s, item.entity_id.to_i]
     end
   end
+
 
   def parse_date(value)
     return nil if value.blank?

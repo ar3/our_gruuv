@@ -18,7 +18,9 @@ module EngagementHealth
       teammate_grace_until:,
       healthy_within: Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
       needs_attention_at_days: Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS,
-      reference_time: Time.current
+      reference_time: Time.current,
+      # Assignments with no consecutive >0% tenure: Grey Grace until energy is assigned.
+      indefinite_tenure_grace: false
     )
       ref = reference_time.to_date
       tenure_grace_until = tenure_grace_until_date(tenure_chain_started_at, healthy_within)
@@ -47,6 +49,14 @@ module EngagementHealth
         needs_attention_at: needs_attention_at
       )
 
+      if indefinite_tenure_grace && !(healthy_until_at.present? && ref <= healthy_until_at)
+        status = WARNING
+        in_grace = true
+        # No tenure clock → no Needs Attention date until >0% energy exists.
+        needs_attention_at = nil
+        warning_until_at = grace_until_at
+      end
+
       {
         grace_until_at: grace_until_at,
         healthy_until_at: healthy_until_at,
@@ -55,9 +65,11 @@ module EngagementHealth
         tenure_grace_until_at: tenure_grace_until,
         teammate_grace_until_at: override,
         status: status,
-        clarity_check_in_grace: in_grace
+        clarity_check_in_grace: in_grace,
+        indefinite_tenure_grace: indefinite_tenure_grace && in_grace
       }
     end
+
 
     def tenure_grace_until_date(tenure_chain_started_at, healthy_within)
       return nil if tenure_chain_started_at.blank?
