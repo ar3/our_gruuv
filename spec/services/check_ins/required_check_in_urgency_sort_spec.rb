@@ -10,12 +10,6 @@ RSpec.describe CheckIns::RequiredCheckInUrgencySort do
       expect((a <=> b)).to eq(-1)
     end
 
-    it "maps legacy obscured/blurred keys to EH severity" do
-      a = described_class.sort_tuple(:obscured, :assignment, 10.days.ago, nil)
-      b = described_class.sort_tuple(:blurred, :assignment, 10.days.ago, nil)
-      expect((a <=> b)).to eq(-1)
-    end
-
     it "orders aspiration before assignment when status matches" do
       t = 5.days.ago
       a = described_class.sort_tuple(EngagementHealth::NEEDS_ATTENTION, :aspiration, t, nil)

@@ -1,32 +1,17 @@
 module CheckInBehavior
   extend ActiveSupport::Concern
-  
-  CLARITY_CRYSTAL_CLEAR_DAYS = 30
-  CLARITY_CLEAR_DAYS = 60
-  CLARITY_BLURRED_DAYS = 90
 
-  # 1-by-1 next-item / dropdown urgency uses the same calendar-day windows as #clarity_level.
-  # Returns a four-step recency color:
-  # - :green  => crystal_clear (<= CLARITY_CRYSTAL_CLEAR_DAYS)
-  # - :blue   => clear (CLARITY_CRYSTAL_CLEAR_DAYS < days <= CLARITY_CLEAR_DAYS)
-  # - :yellow => blurred (CLARITY_CLEAR_DAYS < days <= CLARITY_BLURRED_DAYS)
-  # - :red    => obscured (> CLARITY_BLURRED_DAYS) or no timestamp
-  def self.recency_tricolor_bucket(last_activity_at, reference_time: Time.current)
-    return :red if last_activity_at.blank?
+  # True when the latest finalize is fresh enough to hide the open check-in
+  # form behind the "check in early" accordion (not an EH status).
+  def self.check_in_early?(finalized_at, reference_time: Time.current)
+    return false if finalized_at.blank?
 
-    days = (reference_time.to_date - last_activity_at.to_date).to_i
-    if days <= CLARITY_CRYSTAL_CLEAR_DAYS
-      :green
-    elsif days <= CLARITY_CLEAR_DAYS
-      :blue
-    elsif days <= CLARITY_BLURRED_DAYS
-      :yellow
-    else
-      :red
-    end
+    days = (reference_time.to_date - finalized_at.to_date).to_i
+    days <= EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS
   end
 
   included do
+
     # Common associations
     belongs_to :company_teammate, class_name: 'CompanyTeammate', foreign_key: 'teammate_id'
     alias_method :teammate, :company_teammate
@@ -163,33 +148,12 @@ module CheckInBehavior
     )
   end
 
-  # Clarity states based on finalized recency:
-  # - :crystal_clear => finalized within 30 days
-  # - :clear => finalized within 60 days
-  # - :blurred => finalized within 90 days
-  # - :obscured => finalized more than 90 days ago (or never)
-  def clarity_level(reference_time: Time.current)
-    finalized_at = official_check_in_completed_at
-    return :obscured if finalized_at.blank?
-
-    days_since_finalized = (reference_time.to_date - finalized_at.to_date).to_i
-
-    if days_since_finalized <= CLARITY_CRYSTAL_CLEAR_DAYS
-      :crystal_clear
-    elsif days_since_finalized <= CLARITY_CLEAR_DAYS
-      :clear
-    elsif days_since_finalized <= CLARITY_BLURRED_DAYS
-      :blurred
-    else
-      :obscured
-    end
+  def check_in_early?(reference_time: Time.current)
+    CheckInBehavior.check_in_early?(official_check_in_completed_at, reference_time: reference_time)
   end
 
-  def clarity_label(reference_time: Time.current)
-    clarity_level(reference_time: reference_time).to_s.humanize
-  end
-  
   # Completion state methods (only for OPEN check-ins)
+
   def completion_state
     return :both_complete if employee_completed? && manager_completed?
     return :manager_complete_employee_open if manager_completed? && !employee_completed?

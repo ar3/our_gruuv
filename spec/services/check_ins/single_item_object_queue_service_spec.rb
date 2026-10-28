@@ -86,7 +86,7 @@ RSpec.describe CheckIns::SingleItemObjectQueueService do
     expect(by_name["Alpha"][:viewer_state]).to eq(:your_turn)
     expect(by_name["Beta"][:viewer_state]).to eq(:waiting)
     expect(by_name["Gamma"][:viewer_state]).to eq(:review_together)
-    expect(by_name["Integrity"][:viewer_state]).to eq(:clear)
+    expect(by_name["Integrity"][:viewer_state]).to eq(:healthy)
     expect(result[:your_turn_count]).to eq(1)
     expect(result[:total_count]).to eq(4)
     expect(by_name["Alpha"][:current]).to eq(true)

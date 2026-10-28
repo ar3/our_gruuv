@@ -25,7 +25,7 @@ RSpec.describe MyEmployeesDashboardService do
     it "returns zeros when manager teammate is nil" do
       s = described_class.summary(manager_teammate: nil, organization: company)
       expect(s[:direct_report_count]).to eq(0)
-      expect(s[:crystal_clear_count]).to eq(0)
+      expect(s[:fully_healthy_count]).to eq(0)
       expect(s[:overall_pct]).to eq(0.0)
     end
 
@@ -42,7 +42,7 @@ RSpec.describe MyEmployeesDashboardService do
       it "counts direct reports and averages 0% clear without engagement health rows" do
         s = described_class.summary(manager_teammate: manager, organization: company)
         expect(s[:direct_report_count]).to eq(1)
-        expect(s[:crystal_clear_count]).to eq(0)
+        expect(s[:fully_healthy_count]).to eq(0)
         expect(s[:overall_pct]).to eq(0.0)
         expect(s[:pill_class]).to include("bg-danger")
       end
@@ -53,7 +53,7 @@ RSpec.describe MyEmployeesDashboardService do
         create_healthy_clarity_item(teammate: report, entity_type: "Aspiration", entity_id: 3, name: "Growth")
 
         s = described_class.summary(manager_teammate: manager, organization: company)
-        expect(s[:crystal_clear_count]).to eq(1)
+        expect(s[:fully_healthy_count]).to eq(1)
         expect(s[:overall_pct]).to eq(100.0)
         expect(s[:pill_class]).to include("bg-success")
       end

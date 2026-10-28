@@ -1,4 +1,4 @@
--# Last Finalized pill with optional checkmark when green (recent).
+-# Last Finalized pill with optional checkmark when Healthy (EH).
 -# Locals: latest_finalized, popover_content (HTML string for data-bs-content)
 - pill_class = last_finalized_pill_class(latest_finalized)
 - recent = last_finalized_recent?(latest_finalized)
@@ -9,17 +9,15 @@
     %span.d-flex.flex-column.text-start
       - if latest_finalized.present?
         - completed_at = latest_finalized.official_check_in_completed_at
-        - if pill_class == 'bg-info text-dark'
-          - days_ago = last_finalized_days_ago(latest_finalized)
-          - blurred_window_at = completed_at + CheckInBehavior::CLARITY_BLURRED_DAYS.days
-          %span.d-block= "Last finalized #{days_ago} days ago."
-          %small.d-block= "Consider checkin-in between now and #{time_ago_in_words(blurred_window_at)}."
+        - time_ago = time_ago_in_words(completed_at)
+        %span.d-block
+          Last Finalized
+          %span.mt-1= " #{time_ago} ago"
+        - if pill_class == 'bg-warning text-dark'
+          - needs_attention_at = completed_at + CheckInHelper::NEEDS_ATTENTION_PILL_DAYS.days
+          %small.d-block= "Consider checking in between now and #{time_ago_in_words(needs_attention_at)}."
         - else
-          - time_ago = time_ago_in_words(completed_at)
-          %span.d-block
-            Last Finalized
-            %span.mt-1= " #{time_ago} ago"
-          - next_check_in_date = completed_at + CheckInBehavior::CLARITY_CLEAR_DAYS.days
+          - next_check_in_date = completed_at + CheckInHelper::HEALTHY_PILL_DAYS.days
           - caption = next_check_in_date < Time.current ? "Consider checking-in SOON / NOW" : "Consider checking-in again in #{time_ago_in_words(next_check_in_date)}"
           %small.d-block= caption
       - else

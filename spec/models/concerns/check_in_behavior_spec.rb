@@ -158,34 +158,26 @@ RSpec.describe CheckInBehavior, type: :model do
     end
   end
 
-  describe '#clarity_level' do
-    it 'returns :obscured when never finalized' do
+  describe '#check_in_early?' do
+    it 'is false when never finalized' do
       allow(check_in).to receive(:official_check_in_completed_at).and_return(nil)
-      expect(check_in.clarity_level).to eq(:obscured)
+      expect(check_in.check_in_early?).to be(false)
     end
 
-    it 'returns :crystal_clear when finalized within 30 days' do
+    it 'is true when finalized within the check-in early window' do
       allow(check_in).to receive(:official_check_in_completed_at).and_return(10.days.ago)
-      expect(check_in.clarity_level).to eq(:crystal_clear)
+      expect(check_in.check_in_early?).to be(true)
     end
 
-    it 'returns :clear when finalized within 60 days' do
-      allow(check_in).to receive(:official_check_in_completed_at).and_return(45.days.ago)
-      expect(check_in.clarity_level).to eq(:clear)
-    end
-
-    it 'returns :blurred when finalized within 90 days' do
-      allow(check_in).to receive(:official_check_in_completed_at).and_return(75.days.ago)
-      expect(check_in.clarity_level).to eq(:blurred)
-    end
-
-    it 'returns :obscured when finalized more than 90 days ago' do
-      allow(check_in).to receive(:official_check_in_completed_at).and_return(120.days.ago)
-      expect(check_in.clarity_level).to eq(:obscured)
+    it 'is false when finalized after the check-in early window' do
+      days = EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS + 1
+      allow(check_in).to receive(:official_check_in_completed_at).and_return(days.days.ago)
+      expect(check_in.check_in_early?).to be(false)
     end
   end
 
   describe ".latest_finalized_index_by" do
+
     it "returns the most recent finalized check-in per group key" do
       teammate = create(:teammate)
       aspiration = create(:aspiration, company: teammate.organization)
@@ -217,34 +209,19 @@ RSpec.describe CheckInBehavior, type: :model do
     end
   end
 
-  describe ".recency_tricolor_bucket" do
-    it "returns :red when timestamp is blank" do
-      expect(described_class.recency_tricolor_bucket(nil)).to eq(:red)
+  describe ".check_in_early?" do
+    it "is false when timestamp is blank" do
+      expect(described_class.check_in_early?(nil)).to be(false)
     end
 
-    it "returns :green within the crystal_clear day window" do
-      t = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS.days.ago
-      expect(described_class.recency_tricolor_bucket(t)).to eq(:green)
+    it "is true within the early window" do
+      t = EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS.days.ago
+      expect(described_class.check_in_early?(t)).to be(true)
     end
 
-    it "returns :blue in the clear window (after crystal_clear, through clear days)" do
-      t = (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 1).days.ago
-      expect(described_class.recency_tricolor_bucket(t)).to eq(:blue)
-      t2 = CheckInBehavior::CLARITY_CLEAR_DAYS.days.ago
-      expect(described_class.recency_tricolor_bucket(t2)).to eq(:blue)
-    end
-
-    it "returns :yellow in the blurred window" do
-      t = (CheckInBehavior::CLARITY_CLEAR_DAYS + 1).days.ago
-      expect(described_class.recency_tricolor_bucket(t)).to eq(:yellow)
-      t2 = CheckInBehavior::CLARITY_BLURRED_DAYS.days.ago
-      expect(described_class.recency_tricolor_bucket(t2)).to eq(:yellow)
-    end
-
-    it "returns :red beyond the blurred window (obscured vs clarity_level)" do
-      t = (CheckInBehavior::CLARITY_BLURRED_DAYS + 1).days.ago
-      expect(described_class.recency_tricolor_bucket(t)).to eq(:red)
-      expect(described_class.recency_tricolor_bucket(100.days.ago)).to eq(:red)
+    it "is false after the early window" do
+      t = (EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS + 1).days.ago
+      expect(described_class.check_in_early?(t)).to be(false)
     end
   end
 end

@@ -107,11 +107,13 @@ module EngagementHealth
       (sum / teammate_ids.size).round(1)
     end
 
-    def crystal_clear_count(records_by_teammate_id, teammate_ids)
+    # Count of teammates whose every required clarity item is Healthy.
+    def fully_healthy_count(records_by_teammate_id, teammate_ids)
       teammate_ids.count do |teammate_id|
         fully_clear?(records_by_teammate_id[teammate_id] || [])
       end
     end
+
 
     def section_status_breakdown(records)
       by_type = clarity_items(records).group_by(&:entity_type)

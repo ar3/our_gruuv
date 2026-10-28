@@ -16,9 +16,13 @@ module EngagementHealth
     REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS = 60
     REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS = 90
 
-    # Assignments only: no finalized check-in + consecutive >0% tenure age
-    # strictly less than this → Warning instead of Needs Attention.
+    # UI-only: collapse the check-in form behind "check in early" when the
+    # latest finalize is this fresh. Not an Engagement Health status band.
+    CHECK_IN_EARLY_WITHIN_DAYS = 30
+
+    # Assignments only: tenure-based Grey Grace window length (same as healthy).
     NEW_ASSIGNMENT_GRACE_WITHIN_DAYS = REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+
 
     # Completed goals stay in the goal-confidence rollup for this long after
     # completion, then drop out.

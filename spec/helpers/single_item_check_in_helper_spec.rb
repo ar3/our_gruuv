@@ -32,7 +32,7 @@ RSpec.describe SingleItemCheckInHelper do
   describe "#single_item_object_queue_show_status_pills?" do
     it "shows pills for your turn and clear" do
       expect(single_item_object_queue_show_status_pills?({ viewer_state: :your_turn })).to be(true)
-      expect(single_item_object_queue_show_status_pills?({ viewer_state: :clear })).to be(true)
+      expect(single_item_object_queue_show_status_pills?({ viewer_state: :healthy })).to be(true)
     end
 
     it "hides pills when waiting or review together" do
@@ -102,7 +102,7 @@ RSpec.describe SingleItemCheckInHelper do
     it "is blank when healthy/clear" do
       expect(
         single_item_object_queue_row_next_step(
-          { viewer_state: :clear },
+          { viewer_state: :healthy },
           employee_name: "Pat",
           manager_name: "Alex",
           manager_perspective: false

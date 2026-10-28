@@ -56,7 +56,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
       expect(ready[:items].map { |i| i[:display_title] }).to eq(["Zebra Value", "Alpha Assignment"])
 
       renderer = OneOnOne::PriorityRenderer.new(priority: ready, organization: organization, teammate: teammate)
-      expect(renderer.explanation_plain).to include("crystal clear")
+      expect(renderer.explanation_plain).to include("where folks stand are clear")
       expect(renderer.primary_action[:path]).to include("finalization")
     end
 
@@ -106,7 +106,7 @@ RSpec.describe OneOnOne::PriorityCarouselBuilder, type: :service do
         :finalized,
         teammate: teammate,
         aspiration: still_healthy,
-        official_check_in_completed_at: (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 10).days.ago
+        official_check_in_completed_at: (EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS + 10).days.ago
       )
 
       warning_aspiration = create(:aspiration, company: organization, name: "Getting Stale")

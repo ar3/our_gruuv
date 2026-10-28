@@ -1,9 +1,10 @@
 module CheckInHelper
-  FRESH_PILL_DAYS = CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS
-  WARNING_PILL_DAYS = CheckInBehavior::CLARITY_BLURRED_DAYS
-  NO_ACTION_NEEDED_DAYS = CheckInBehavior::CLARITY_CLEAR_DAYS
+  # EH-aligned Last Finalized pill windows (Phase 3 may swap Thresholds source).
+  HEALTHY_PILL_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+  NEEDS_ATTENTION_PILL_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
 
   # Reference the single source of truth from EmploymentTenure
+
   def position_rating_display(rating)
     return 'Not Rated' if rating.nil?
     data = EmploymentTenure::POSITION_RATINGS[rating]
@@ -200,81 +201,50 @@ module CheckInHelper
     "Last Finalized #{time_ago_in_words(latest_check_in.official_check_in_completed_at)} ago"
   end
 
-  # Bootstrap badge class for pill by recency:
-  # green <= crystal clear days, info <= clear days, warning <= blurred days, danger after that, grey never.
+  # Bootstrap badge class for Last Finalized pill (EH Healthy / Warning / Needs Attention).
   def last_finalized_pill_class(latest_check_in)
-    return 'bg-secondary' if latest_check_in.blank?
+    return "bg-secondary" if latest_check_in.blank?
+
     days = (Time.zone.today - latest_check_in.official_check_in_completed_at.to_date).to_i
-    if days <= FRESH_PILL_DAYS
-      'bg-success'
-    elsif days <= NO_ACTION_NEEDED_DAYS
-      'bg-info text-dark'
-    elsif days <= WARNING_PILL_DAYS
-      'bg-warning text-dark'
+    if days <= HEALTHY_PILL_DAYS
+      "bg-success"
+    elsif days < NEEDS_ATTENTION_PILL_DAYS
+      "bg-warning text-dark"
     else
-      'bg-danger'
+      "bg-danger"
     end
   end
 
-  # True when the "Last Finalized" pill is green (recently finalized, no action needed).
+  # True when the "Last Finalized" pill is Healthy (green).
   def last_finalized_recent?(latest_check_in)
-    last_finalized_pill_class(latest_check_in) == 'bg-success'
+    last_finalized_pill_class(latest_check_in) == "bg-success"
   end
 
-  # Up Next queue: Bootstrap classes for the per-perspective status pill (green / yellow / red buckets).
-  def up_next_status_pill_class(bucket)
-    case bucket&.to_sym
-    when :green then "bg-success"
-    when :yellow then "bg-warning text-dark"
-    else "bg-danger"
-    end
-  end
-
-  # Up Next queue: copy for the per-perspective status pill.
-  def up_next_status_pill_message(bucket, person_name:)
-    name = person_name.presence || "They"
-    case bucket&.to_sym
-    when :green
-      "#{name} doesn't need to do anything with this right now"
-    when :yellow
-      "if #{name} wants to do an early check-in they could, but doesn't need to do anything with this right now"
-    else
-      "#{name} should do a check-in right now"
-    end
-  end
-
-  # True Day-to-Day spotlight: time until clarity deadline from last finalized (matches _last_finalized_pill branches).
+  # Complete Picture: time until the Healthy window ends (then consider checking in).
   # Returns "now" when there is no anchor finalized time or the deadline has passed.
   def complete_picture_next_check_in_word(official_check_in_completed_at)
-    return 'now' if official_check_in_completed_at.blank?
+    return "now" if official_check_in_completed_at.blank?
 
     completed_at = official_check_in_completed_at
-    pseudo = Struct.new(:official_check_in_completed_at).new(completed_at)
-    pill_class = last_finalized_pill_class(pseudo)
-
-    deadline = if pill_class == 'bg-info text-dark'
-                 completed_at + CheckInBehavior::CLARITY_BLURRED_DAYS.days
-               else
-                 completed_at + CheckInBehavior::CLARITY_CLEAR_DAYS.days
-               end
-
-    return 'now' if Time.current >= deadline
+    deadline = completed_at + HEALTHY_PILL_DAYS.days
+    return "now" if Time.current >= deadline
 
     distance_of_time_in_words(Time.current, deadline)
   end
 
-  # True when open row fields should be hidden by default because the item is fresh
-  # and no one has started the current check-in yet.
+  # True when open row fields should be hidden by default because the item was
+  # checked in early-window recently and no one has started the current check-in yet.
   def hide_fresh_open_check_in_fields?(check_in, latest_finalized, view_mode:)
     return false if check_in.blank?
     return false unless check_in.open?
-    return false unless latest_finalized&.clarity_level == :crystal_clear
+    return false unless latest_finalized&.check_in_early?
     return false if view_mode == :readonly
     return false unless other_side_incomplete_for_view?(check_in, view_mode)
     return false unless viewer_side_fields_unset_for_fresh_hide?(check_in, view_mode)
 
     true
   end
+
 
   # 1-by-1 check-in pages: same employee vs manager rule as bulk (CheckInsController#determine_view_mode).
   def single_item_check_in_view_mode(teammate, current_person)
@@ -469,11 +439,12 @@ module CheckInHelper
     )
   end
 
-  def single_item_crystal_clear_recency_phrase(latest_finalized)
+  def single_item_check_in_early_recency_phrase(latest_finalized)
     return "" if latest_finalized.blank? || latest_finalized.official_check_in_completed_at.blank?
 
     "#{time_ago_in_words(latest_finalized.official_check_in_completed_at)} ago"
   end
+
 
   def last_finalized_days_ago(latest_check_in)
     return nil if latest_check_in.blank?
@@ -660,9 +631,10 @@ module CheckInHelper
       return 'Waiting to be reviewed'
     end
     last_finalized_days_ago = latest_finalized_at ? ((Time.current - latest_finalized_at) / 1.day).to_i : 9999
-    if last_finalized_days_ago < NO_ACTION_NEEDED_DAYS
+    if last_finalized_days_ago <= HEALTHY_PILL_DAYS
       return 'Nothing to do yet'
     end
+
     employee_name = teammate.person.casual_name.presence || 'Employee'
     manager_name = teammate.current_manager&.casual_name.presence || 'Manager'
     if !check_in.employee_completed? && !check_in.manager_completed?
@@ -684,16 +656,16 @@ module CheckInHelper
   end
 
   # True when the "Make Changes" toggle should use warning styling: no finalized check-in
-  # within clear days and the current side has not marked the row complete.
-  # and the current side (employee or manager) has not marked the row complete.
+  # within the Healthy window and the current side has not marked the row complete.
   # latest_finalized: the latest finalized check-in record for this item (or nil).
   # role: :employee or :manager (which side's "Make Changes" we're rendering).
   def single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, role)
     latest_at = latest_finalized&.official_check_in_completed_at
     last_finalized_days_ago = latest_at ? ((Time.current - latest_at) / 1.day).to_i : 9999
-    return false if last_finalized_days_ago < NO_ACTION_NEEDED_DAYS
+    return false if last_finalized_days_ago <= HEALTHY_PILL_DAYS
     role == :employee ? !check_in.employee_completed? : !check_in.manager_completed?
   end
+
 
   def aspiration_check_in_status_label(check_in, latest_finalized_at, teammate)
     single_item_check_in_status_label(check_in, latest_finalized_at, teammate)

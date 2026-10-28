@@ -197,7 +197,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       end
     end
 
-    context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
+    context "when latest finalized is within the check-in early window and the open check-in is fresh on the employee side" do
       let!(:_finalized_assignment_check_in) do
         create(:assignment_check_in, :finalized,
           teammate: employee_teammate,
@@ -225,11 +225,11 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
 
       before { sign_in_as_teammate_for_request(employee_person, organization) }
 
-      it "shows the crystal-clear banner with assignment title and early check-in link" do
+      it "shows the early check-in banner with assignment title and early check-in link" do
         get assignment_show_path
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("crystal clear on where they stand")
-        expect(response.body).to include("thinking about them and #{assignment.title}")
+        expect(response.body).to include("checked in recently on")
+        expect(response.body).to include(assignment.title)
         expect(response.body).to include("click here to check in early.")
         expect(response.body).to include("fresh-single-check-in-toggle-#{_open_assignment_check_in.id}")
       end

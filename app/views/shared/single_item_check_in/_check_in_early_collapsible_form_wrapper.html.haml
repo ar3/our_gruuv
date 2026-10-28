@@ -9,7 +9,7 @@
           %i.bi.bi-check-circle-fill.check-ins-fresh-banner__icon{ aria: { hidden: true } }
         .flex-grow-1.min-w-0.ps-1
           %p.mb-0.lh-lg.text-body
-            #{teammate.person.casual_name} is crystal clear on where they stand when thinking about them and #{object_name} as of #{single_item_crystal_clear_recency_phrase(latest_finalized)}.
+            #{teammate.person.casual_name} checked in recently on #{object_name} (#{single_item_check_in_early_recency_phrase(latest_finalized)}).
             However, OG encourages continuous feedback so
             %a{ href: "#", "data-bs-toggle" => "collapse", "data-bs-target" => target_sel, "aria-expanded" => "false" } click here to check in early.
   %div{class: "collapse #{toggle_class}"}

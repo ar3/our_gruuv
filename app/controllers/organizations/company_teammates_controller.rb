@@ -2200,6 +2200,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       organization: organization,
       teammate_id: @teammate.id
     )
+    if records.empty?
+      EngagementHealth::Refresher.call(@teammate, organization)
+      records = EngagementHealth::ClarityMetrics.records_for_teammate(
+        organization: organization,
+        teammate_id: @teammate.id
+      )
+    end
     @engagement_health_by_item_key = EngagementHealth::UpNextSupport.index_items_by_key(records)
   end
 

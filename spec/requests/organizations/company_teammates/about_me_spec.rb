@@ -395,19 +395,20 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include(position_check_in_organization_teammate_path(organization, teammate))
       end
 
-      it 'shows merged clarity success alert when clear/crystal clear and neither side is ready' do
+      it 'shows merged clarity success alert when Healthy and neither side is ready' do
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to match(/#{Regexp.escape(person.casual_name)} is (crystal clear|clear) and a new check-in should be considered in/i)
+        expect(response.body).to match(/#{Regexp.escape(person.casual_name)} is Healthy and a new check-in should be considered in/i)
       end
 
       it 'shows clarity icons and tooltips in assignment/aspiration rows' do
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to include('bi-info-circle-fill')
+        expect(response.body).to include('bi-check-circle-fill')
         expect(response.body).to include('bi-x-octagon-fill')
-        expect(response.body).to include("#{person.casual_name} is clear on #{assignment.title}")
-        expect(response.body).to include("#{person.casual_name} is obscured on #{aspiration.name}")
+        expect(response.body).to include("#{person.casual_name} is Healthy on #{assignment.title}")
+        expect(response.body).to include("#{person.casual_name} is Needs Attention on #{aspiration.name}")
         expect(response.body).to include('You should consider checking in soon')
       end
+
 
       it 'shows green goal icon when an active goal is linked' do
         get about_me_organization_company_teammate_path(organization, teammate)
@@ -900,7 +901,7 @@ RSpec.describe 'About Me Page', type: :request do
         get about_me_organization_company_teammate_path(organization, teammate)
         expect(response.body).to include("#{person.casual_name} has")
         expect(response.body).to include("active goal")
-        expect(response.body).to include("with a confidence check in the past two weeks")
+        expect(response.body).to include("Healthy on Goal Confidence")
         expect(response.body).to include("completed in the last 90 days")
       end
 
@@ -919,15 +920,12 @@ RSpec.describe 'About Me Page', type: :request do
                            deleted_at: nil)
 
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to match(/start or archive/i)
         expect(response.body).to include("2 draft goals")
-        # Check for URL components
-        expect(response.body).to include("owner_type=CompanyTeammate")
-        expect(response.body).to include("owner_id=#{teammate.id}")
+        expect(response.body).to include("owner_id=CompanyTeammate_#{teammate.id}")
         expect(response.body).to include("status=draft")
       end
 
-      it 'does not show draft goals button when no draft goals exist' do
+      it 'shows zero draft goals when no draft goals exist' do
         active_goal = create(:goal,
                            owner: teammate,
                            creator: teammate,
@@ -936,8 +934,9 @@ RSpec.describe 'About Me Page', type: :request do
                            deleted_at: nil)
 
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).not_to include("start or archive")
-        expect(response.body).not_to include("draft goal")
+        expect(response.body).to include("0 draft goals")
+        expect(response.body).not_to include("1 draft goal")
+        expect(response.body).not_to include("2 draft goals")
       end
 
       it 'does not count deleted draft goals' do
@@ -1347,15 +1346,12 @@ RSpec.describe 'About Me Page', type: :request do
 
               it 'shows only goal count without started count' do
                 get about_me_organization_company_teammate_path(organization, teammate)
-                # Should show goals count in the list item
-                # Extract the list-group-item section to check goal count text
                 html = Nokogiri::HTML(response.body)
-                list_items = html.css('.list-group-item')
-                goal_count_text = list_items.find { |item| item.text.include?('goals') }&.text
-                
+                prompt_items = html.css('#promptsSection .list-group-item')
+                goal_count_text = prompt_items.find { |item| item.text.match?(/\d+\s+goals/) }&.text
+
                 expect(goal_count_text).to be_present
                 expect(goal_count_text).to match(/\d+\s+goals/)
-                # Should not have "with X started" or "with all started" pattern
                 expect(goal_count_text).not_to match(/goals\s+with\s+(\d+|all)\s+started/i)
               end
             end

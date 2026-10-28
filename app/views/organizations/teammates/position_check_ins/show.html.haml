@@ -91,7 +91,7 @@
       open_check_in: @open_check_in,
       start_check_in_path: start_position_check_in_organization_teammate_path(@organization, @teammate),
       object_name: @single_item_name do
-    = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @single_item_name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+    = render layout: "shared/single_item_check_in/check_in_early_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @single_item_name, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
       - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
       = render "shared/single_item_check_in/perspective_context",
         check_in: @open_check_in,

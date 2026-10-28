@@ -27,16 +27,17 @@ module CheckIns
 
     def normalize_status(status)
       case status.to_s.presence&.to_sym
-      when :needs_attention, :obscured
+      when :needs_attention
         EngagementHealth::NEEDS_ATTENTION
-      when :warning, :blurred
+      when :warning
         EngagementHealth::WARNING
-      when :healthy, :clear, :crystal_clear
+      when :healthy
         EngagementHealth::HEALTHY
       else
         EngagementHealth::NEEDS_ATTENTION
       end
     end
+
 
     def parse_iso8601(time_string)
       return nil if time_string.blank?

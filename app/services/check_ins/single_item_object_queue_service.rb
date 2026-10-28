@@ -78,7 +78,8 @@ module CheckIns
 
     def viewer_state_for(eh_item, item)
       status = eh_item&.status || status_from_bucket(item[:bucket])
-      return :clear if status.blank? || status == EngagementHealth::HEALTHY
+      return :healthy if status.blank? || status == EngagementHealth::HEALTHY
+
 
       inputs = eh_item&.inputs || {}
       if inputs["open_check_in_present"]

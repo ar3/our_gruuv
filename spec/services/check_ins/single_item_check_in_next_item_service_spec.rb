@@ -284,7 +284,7 @@ RSpec.describe CheckIns::SingleItemCheckInNextItemService do
         :finalized,
         teammate: teammate,
         aspiration: aspiration,
-        official_check_in_completed_at: (CheckInBehavior::CLARITY_CRYSTAL_CLEAR_DAYS + 10).days.ago
+        official_check_in_completed_at: (EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS + 10).days.ago
       )
 
       result = described_class.call(

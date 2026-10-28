@@ -148,7 +148,7 @@
   - assignment_check_in_body_html = nil
   - if @open_check_in.present?
     - assignment_check_in_body_html = capture do
-      = render layout: "shared/single_item_check_in/crystal_clear_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @assignment.title, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
+      = render layout: "shared/single_item_check_in/check_in_early_collapsible_form_wrapper", locals: { teammate: @teammate, object_name: @assignment.title, open_check_in: @open_check_in, latest_finalized: @latest_finalized } do
         - is_complete = (current_person == @teammate.person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
         = render "shared/single_item_check_in/perspective_context",
           check_in: @open_check_in,

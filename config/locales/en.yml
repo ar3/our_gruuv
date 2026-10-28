@@ -36,7 +36,8 @@ en:
     clarity_hub: "Clarity Check-Ins"
     clarity_hub_active: "Clarity Check-Ins (Active)"
     clarity_hub_description: "Clarity check-ins, spreadsheets, reviews, and finalization for this teammate."
-    clarity_hub_five_ways_intro: "Five ways to check in below to help ensure %{teammate_name} is crystal clear on where they stand."
+    clarity_hub_five_ways_intro: "Five ways to check in below to help ensure %{teammate_name} is clear on where they stand."
+
     clarity_hub_see_up_next_description: "Compare the full 1-by-1 queue for employee and manager—order, urgency pills, and what's ready to review together."
     clarity_hub_see_up_next_link: "See what's up next for %{employee_name} and %{manager_name}"
     clarity_hub_see_full_queue_and_why: "See full queue & why"
@@ -201,7 +202,8 @@ en:
     priority_review_clarity_check_ins_together:
       one: "Review 1 clarity check-in together"
       other: "Review %{count} clarity check-ins together"
-    priority_clarity_ready_for_review_explanation: "OG clarity check-ins are a three-step process: first each person reflects individually, then they review together, then the employee acknowledges the review. This ensures growth, expectations, and where folks stand are crystal clear."
+    priority_clarity_ready_for_review_explanation: "OG clarity check-ins are a three-step process: first each person reflects individually, then they review together, then the employee acknowledges the review. This ensures growth, expectations, and where folks stand are clear."
+
     priority_no_clarity_check_ins_waiting_review: "No clarity check-ins are waiting for review between %{employee} and %{manager} (or another manager)."
     priority_clarity_90_day_attention: "To achieve continuous clarity and continuous improvement, required clarity check-ins should stay Healthy (finalized within 60 days). When items are Warning or Needs Attention, complete one of the clarity check-ins listed before the next 1:1."
     priority_open_top_clarity_check_in: "Open top clarity check-in"

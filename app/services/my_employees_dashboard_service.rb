@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Start Here "My Employees" widget: direct report counts, fully-healthy count, and action-slot % clear.
+# Start Here "My Employees" widget: direct report counts, fully-Healthy count, and action-slot %.
 class MyEmployeesDashboardService
   class << self
     def summary(manager_teammate:, organization:)
@@ -16,7 +16,7 @@ class MyEmployeesDashboardService
   def summary
     empty = {
       direct_report_count: 0,
-      crystal_clear_count: 0,
+      fully_healthy_count: 0,
       overall_pct: 0.0,
       pill_class: "bg-secondary"
     }
@@ -37,7 +37,7 @@ class MyEmployeesDashboardService
       teammate_ids: direct_report_ids
     )
 
-    crystal_clear = EngagementHealth::ClarityMetrics.crystal_clear_count(
+    fully_healthy = EngagementHealth::ClarityMetrics.fully_healthy_count(
       records_by_teammate_id,
       direct_report_ids
     )
@@ -49,7 +49,7 @@ class MyEmployeesDashboardService
 
     {
       direct_report_count: direct_report_ids.size,
-      crystal_clear_count: crystal_clear,
+      fully_healthy_count: fully_healthy,
       overall_pct: overall,
       pill_class: pill_class_for_pct(overall)
     }

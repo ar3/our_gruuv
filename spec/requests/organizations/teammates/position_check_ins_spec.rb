@@ -192,7 +192,7 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       end
     end
 
-    context "when latest finalized is crystal clear and the open check-in is fresh on the employee side" do
+    context "when latest finalized is within the check-in early window and the open check-in is fresh on the employee side" do
       before { open_position_check_in.destroy! }
 
       let!(:_finalized_position_check_in) do
@@ -219,10 +219,10 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
           finalized_by_teammate: nil)
       end
 
-      it "shows the crystal-clear banner and early check-in link" do
+      it "shows the early check-in banner and early check-in link" do
         get position_check_in_organization_teammate_path(organization, teammate)
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("crystal clear on where they stand")
+        expect(response.body).to include("checked in recently on")
         expect(response.body).to include("click here to check in early.")
         expect(response.body).to include("fresh-single-check-in-toggle-#{_open_position_check_in.id}")
       end
