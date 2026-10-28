@@ -45,6 +45,11 @@
              url: up_next_organization_company_teammate_check_ins_path(organization, @teammate),
              show_bar: false
 
+= render "organizations/check_ins_health/teammate_item_bars_with_suggestion",
+         organization: organization,
+         teammate: @teammate,
+         records: @engagement_health_records
+
 .row.g-4.mb-4
   .col-12.col-lg-6
     .card.h-100.hover-lift.border-primary

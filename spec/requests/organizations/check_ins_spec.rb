@@ -759,7 +759,24 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include(audit_organization_employee_path(organization, employee_teammate))
       expect(response.body).to include("My One Thing")
     end
+
+    it "shows the same Gruuv Health item bars and suggestion as Check-ins Health" do
+      assignment = create(:assignment, company: organization, title: "Hub Health Assignment")
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago)
+      EngagementHealth::Refresher.call(employee_teammate)
+
+      get hub_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("check-ins-health-teammate-snapshot")
+      expect(response.body).to include("check-ins-health-bars")
+      expect(response.body).to include("Aspirations")
+      expect(response.body).to include("Assignments")
+      expect(response.body).to include("Position")
+      expect(response.body).to match(/Gruuv Health check-ins look good|Consider checking in on:/)
+    end
   end
+
 
   describe "GET /organizations/:org_id/company_teammates/:company_teammate_id/check_ins/up_next" do
     before do

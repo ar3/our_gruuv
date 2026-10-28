@@ -1,0 +1,43 @@
+-# Same per-item EH + action bars and suggestion line as Check-ins Health (one teammate).
+-# Locals: organization, teammate, records
+- records = Array(local_assigns[:records])
+- organization = local_assigns[:organization]
+- teammate = local_assigns[:teammate]
+.check-ins-health-teammate-snapshot.mb-4
+  - if records.any?
+    .row.g-3
+      .col-12.col-md-4
+        %small.text-muted.fw-semibold.d-block.mb-1 Aspirations
+        - aspiration_segments = check_ins_health_item_bar_segments(records: records, entity_type: "Aspiration", teammate: teammate, organization: organization)
+        .check-ins-health-bars{data: { controller: "check-ins-health-bars" }}
+          = render "organizations/check_ins_health/item_bars", segments: aspiration_segments, bar_key: :eh, height_px: 24, empty_label: "No aspirations", show_initials: true
+          = render "organizations/check_ins_health/item_bars", segments: aspiration_segments, bar_key: :action, height_px: 8, empty_label: "No aspirations"
+      .col-12.col-md-4
+        %small.text-muted.fw-semibold.d-block.mb-1 Assignments
+        - assignment_segments = check_ins_health_item_bar_segments(records: records, entity_type: "Assignment", teammate: teammate, organization: organization)
+        .check-ins-health-bars{data: { controller: "check-ins-health-bars" }}
+          = render "organizations/check_ins_health/item_bars", segments: assignment_segments, bar_key: :eh, height_px: 24, empty_label: "No assignments", show_initials: true
+          = render "organizations/check_ins_health/item_bars", segments: assignment_segments, bar_key: :action, height_px: 8, empty_label: "No assignments"
+      .col-12.col-md-4
+        %small.text-muted.fw-semibold.d-block.mb-1 Position
+        - position_segments = check_ins_health_item_bar_segments(records: records, entity_type: "Position", teammate: teammate, organization: organization)
+        .check-ins-health-bars{data: { controller: "check-ins-health-bars" }}
+          = render "organizations/check_ins_health/item_bars", segments: position_segments, bar_key: :eh, height_px: 24, empty_label: "—"
+          = render "organizations/check_ins_health/item_bars", segments: position_segments, bar_key: :action, height_px: 8, empty_label: "—"
+    - alert_data = check_ins_health_engagement_alert_data(records: records, organization: organization, teammate: teammate)
+    .mt-3
+      - if alert_data[:all_clear]
+        .alert.alert-success.py-2.mb-0.small
+          %i.bi.bi-check-circle-fill.me-1
+          = alert_data[:message]
+      - else
+        .alert.alert-warning.py-2.mb-0.small
+          %i.bi.bi-exclamation-triangle-fill.me-1
+          - if alert_data[:url].present?
+            = link_to alert_data[:message], alert_data[:url], class: "alert-link text-decoration-none"
+          - else
+            = alert_data[:message]
+  - else
+    .alert.alert-secondary.py-2.mb-0.small
+      %i.bi.bi-hourglass-split.me-1
+      Waiting for Gruuv Health data refresh.
