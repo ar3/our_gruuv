@@ -66,7 +66,7 @@ module CheckInsHealthBarsHelper
     else
       day = item.inputs["days_since_tenure_chain_start"]
       within = item.inputs["new_assignment_grace_within_days"] ||
-               EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+               EngagementHealth::Thresholds.new_assignment_grace_within_days(try(:current_organization))
       "Clarity check-in grace (day #{day} of #{within})"
     end
   end
@@ -172,7 +172,11 @@ module CheckInsHealthBarsHelper
     days_since = check_ins_health_resolved_days_since_last_event(item)
     return nil if days_since.nil?
 
-    remaining = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1 - days_since.to_i
+    healthy = EngagementHealth::Thresholds.required_clarity_healthy_within_days_from(
+      inputs: item.inputs,
+      organization: try(:current_organization)
+    )
+    remaining = healthy + 1 - days_since.to_i
     remaining.positive? ? remaining : 0
   end
 

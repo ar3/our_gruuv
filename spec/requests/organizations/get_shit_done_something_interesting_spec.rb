@@ -79,7 +79,7 @@ RSpec.describe 'Organizations::GetShitDone something_interesting', type: :reques
       assignment = create(:assignment, company: company, title: "Warning Assignment #{SecureRandom.hex(4)}")
       create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 25)
       check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)
-      offset = SomethingInterestingQueryService::WARNING_REACHED_OFFSET_DAYS
+      offset = EngagementHealth::Thresholds.required_clarity_healthy_within_days + 1
       check_in.update_column(:official_check_in_completed_at, offset.days.ago)
 
       get path

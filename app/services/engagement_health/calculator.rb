@@ -237,8 +237,8 @@ module EngagementHealth
     def clarity_item(entity_type, entity_id, name, last_check_in, open_check_in: nil, tenure_chain_started_at: nil)
       last_finalized_at = last_check_in&.official_check_in_completed_at
       days_since = Thresholds.days_since(last_finalized_at, reference_time: reference_time)
-      healthy_within = Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
-      needs_attention_at_days = Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      healthy_within = Thresholds.required_clarity_healthy_within_days(organization)
+      needs_attention_at_days = Thresholds.required_clarity_needs_attention_at_days(organization)
 
       indefinite_tenure_grace = entity_type == "Assignment" && tenure_chain_started_at.blank?
       windows = RequiredClarityWindows.compute(
@@ -287,7 +287,8 @@ module EngagementHealth
           open_check_in: open_check_in,
           last_closed_check_in: last_check_in,
           reference_time: reference_time,
-          days_since_last_event: days_since
+          days_since_last_event: days_since,
+          healthy_within_days: healthy_within
         )
       )
       item_row(CATEGORY_REQUIRED_CLARITY, entity_type, entity_id, status, inputs)

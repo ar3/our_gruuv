@@ -91,8 +91,8 @@ module CheckIns
     def bucket_for_finalized_at(finalized_at)
       status = EngagementHealth::Thresholds.status_for_last_event(
         finalized_at,
-        healthy_within: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
-        needs_attention_at: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+        healthy_within: EngagementHealth::Thresholds.required_clarity_healthy_within_days(organization),
+        needs_attention_at: EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(organization)
       )
       case status
       when EngagementHealth::HEALTHY

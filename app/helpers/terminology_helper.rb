@@ -649,7 +649,11 @@ module TerminologyHelper
   end
 
   def all_clarity_check_ins_fresh_sub_label
-    terminology(:all_clarity_check_ins_fresh_sub)
+    org = try(:current_organization)
+    terminology(
+      :all_clarity_check_ins_fresh_sub,
+      needs_attention_days: EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(org)
+    )
   end
 
   def dashboard_clarity_check_in_on_assignments_label(count:)

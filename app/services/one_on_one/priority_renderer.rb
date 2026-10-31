@@ -512,11 +512,11 @@ module OneOnOne
     end
 
     def warning_check_in_age_hint
-      "check-in #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}+ days old"
+      "check-in #{EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization) + 1}+ days old"
     end
 
     def needs_attention_check_in_age_hint
-      "check-in #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS}+ days old"
+      "check-in #{EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(@organization)}+ days old"
     end
 
     def required_clarity_attention_kind_prefix(kind)

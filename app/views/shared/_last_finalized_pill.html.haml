@@ -14,10 +14,10 @@
           Last Finalized
           %span.mt-1= " #{time_ago} ago"
         - if pill_class == 'bg-warning text-dark'
-          - needs_attention_at = completed_at + CheckInHelper::NEEDS_ATTENTION_PILL_DAYS.days
+          - needs_attention_at = completed_at + needs_attention_pill_days.days
           %small.d-block= "Consider checking in between now and #{time_ago_in_words(needs_attention_at)}."
         - else
-          - next_check_in_date = completed_at + CheckInHelper::HEALTHY_PILL_DAYS.days
+          - next_check_in_date = completed_at + healthy_pill_days.days
           - caption = next_check_in_date < Time.current ? "Consider checking-in SOON / NOW" : "Consider checking-in again in #{time_ago_in_words(next_check_in_date)}"
           %small.d-block= caption
       - else

@@ -1,7 +1,16 @@
 module CheckInHelper
-  # EH-aligned Last Finalized pill windows (Phase 3 may swap Thresholds source).
-  HEALTHY_PILL_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
-  NEEDS_ATTENTION_PILL_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+  # EH-aligned Last Finalized pill windows (org-aware via Thresholds methods).
+  def healthy_pill_days(organization = nil)
+    EngagementHealth::Thresholds.required_clarity_healthy_within_days(
+      organization || try(:current_organization)
+    )
+  end
+
+  def needs_attention_pill_days(organization = nil)
+    EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(
+      organization || try(:current_organization)
+    )
+  end
 
   # Reference the single source of truth from EmploymentTenure
 
@@ -202,13 +211,13 @@ module CheckInHelper
   end
 
   # Bootstrap badge class for Last Finalized pill (EH Healthy / Warning / Needs Attention).
-  def last_finalized_pill_class(latest_check_in)
+  def last_finalized_pill_class(latest_check_in, organization: nil)
     return "bg-secondary" if latest_check_in.blank?
 
     days = (Time.zone.today - latest_check_in.official_check_in_completed_at.to_date).to_i
-    if days <= HEALTHY_PILL_DAYS
+    if days <= healthy_pill_days(organization)
       "bg-success"
-    elsif days < NEEDS_ATTENTION_PILL_DAYS
+    elsif days < needs_attention_pill_days(organization)
       "bg-warning text-dark"
     else
       "bg-danger"
@@ -216,17 +225,17 @@ module CheckInHelper
   end
 
   # True when the "Last Finalized" pill is Healthy (green).
-  def last_finalized_recent?(latest_check_in)
-    last_finalized_pill_class(latest_check_in) == "bg-success"
+  def last_finalized_recent?(latest_check_in, organization: nil)
+    last_finalized_pill_class(latest_check_in, organization: organization) == "bg-success"
   end
 
   # Complete Picture: time until the Healthy window ends (then consider checking in).
   # Returns "now" when there is no anchor finalized time or the deadline has passed.
-  def complete_picture_next_check_in_word(official_check_in_completed_at)
+  def complete_picture_next_check_in_word(official_check_in_completed_at, organization: nil)
     return "now" if official_check_in_completed_at.blank?
 
     completed_at = official_check_in_completed_at
-    deadline = completed_at + HEALTHY_PILL_DAYS.days
+    deadline = completed_at + healthy_pill_days(organization).days
     return "now" if Time.current >= deadline
 
     distance_of_time_in_words(Time.current, deadline)
@@ -631,7 +640,7 @@ module CheckInHelper
       return 'Waiting to be reviewed'
     end
     last_finalized_days_ago = latest_finalized_at ? ((Time.current - latest_finalized_at) / 1.day).to_i : 9999
-    if last_finalized_days_ago <= HEALTHY_PILL_DAYS
+    if last_finalized_days_ago <= healthy_pill_days
       return 'Nothing to do yet'
     end
 
@@ -662,7 +671,7 @@ module CheckInHelper
   def single_item_check_in_make_changes_needs_attention?(check_in, latest_finalized, role)
     latest_at = latest_finalized&.official_check_in_completed_at
     last_finalized_days_ago = latest_at ? ((Time.current - latest_at) / 1.day).to_i : 9999
-    return false if last_finalized_days_ago <= HEALTHY_PILL_DAYS
+    return false if last_finalized_days_ago <= healthy_pill_days
     role == :employee ? !check_in.employee_completed? : !check_in.manager_completed?
   end
 

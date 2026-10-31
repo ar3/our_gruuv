@@ -449,8 +449,7 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
   def build_due_row(type, name, latest_check_in, url: nil)
     due_on = if latest_check_in&.official_check_in_completed_at
       latest_check_in.official_check_in_completed_at.to_date +
-        EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS.days
-
+        EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(organization).days
     end
     {
       type: type,

@@ -75,12 +75,12 @@ module CheckInsHealthEngagementHealthSupport
 
     last_event = parse_date(inputs["last_event_at"])
     if last_event
-      return last_event + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      return last_event + EngagementHealth::Thresholds.required_clarity_needs_attention_at_days_from(inputs: inputs)
     end
 
     tenure_start = parse_date(inputs["tenure_chain_started_at"])
     if tenure_start
-      return tenure_start + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      return tenure_start + EngagementHealth::Thresholds.required_clarity_needs_attention_at_days_from(inputs: inputs)
     end
 
     nil

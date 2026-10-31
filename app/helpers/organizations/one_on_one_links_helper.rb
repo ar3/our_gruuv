@@ -77,7 +77,7 @@ module Organizations
         if ActiveModel::Type::Boolean.new.cast(inputs["new_assignment_grace"])
           day = inputs["days_since_tenure_chain_start"]
           within = inputs["new_assignment_grace_within_days"] ||
-                   EngagementHealth::Thresholds::NEW_ASSIGNMENT_GRACE_WITHIN_DAYS
+                   EngagementHealth::Thresholds.new_assignment_grace_within_days(organization)
           return content_tag(
             :span,
             "New — no check-in yet (day #{day} of #{within})",
@@ -135,9 +135,11 @@ module Organizations
           "The teammate's Goal Confidence is the best of those item ratings (best status wins). " \
           "Never having started or completed a goal is itself Needs Attention."
       when EngagementHealth::CATEGORY_REQUIRED_CLARITY
+        healthy = EngagementHealth::Thresholds.required_clarity_healthy_within_days(organization)
+        needs = EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(organization)
         "Each required check-in item (current position, required and actively-tenured assignments, and aspirations) is rated by its last finalized check-in. " \
-          "These are required, so the thresholds are stricter: Healthy when finalized within #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days, " \
-          "Needs Attention at #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS}+ days or never; Warning in between."
+          "These are required, so the thresholds are stricter: Healthy when finalized within #{healthy} days, " \
+          "Needs Attention at #{needs}+ days or never; Warning in between."
       when EngagementHealth::CATEGORY_MILESTONES
         "Each ability required by #{casual_name}'s position or assignments is rated at its highest required milestone level. " \
           "Healthy when the required level is earned or an active goal is attached to the ability; " \

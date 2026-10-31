@@ -34,9 +34,6 @@ class SomethingInterestingQueryService
     end
   end
 
-  # First Warning day is the day after the healthy window (days 0–60 healthy).
-  WARNING_REACHED_OFFSET_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1
-
   # Header pill cache: SI queries are heavy; 1h is fine, and SI visits reset the entry.
   HEADER_PENDING_COUNT_CACHE_EXPIRES_IN = 1.hour
 
@@ -202,7 +199,8 @@ class SomethingInterestingQueryService
   def warning_reached_at(last_finalized_at)
     return nil if last_finalized_at.blank?
 
-    (last_finalized_at.to_date + WARNING_REACHED_OFFSET_DAYS).beginning_of_day
+    offset = EngagementHealth::Thresholds.required_clarity_healthy_within_days(company) + 1
+    (last_finalized_at.to_date + offset).beginning_of_day
   end
 
   def assignment_check_in_warning_events(subjects)

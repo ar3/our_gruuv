@@ -227,7 +227,10 @@ module OneOnOne
         top_check_in_path ||= review_most_recent_organization_company_teammate_check_ins_path(@organization, @teammate)
         attention_priority(
           title,
-          I18n.t("terminology.priority_clarity_90_day_attention"),
+          I18n.t(
+            "terminology.priority_clarity_90_day_attention",
+            healthy_days: EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization)
+          ),
           [],
           total_item_count: rows.count,
           cta_kind: :open_top_prioritized_check_in,
@@ -262,22 +265,22 @@ module OneOnOne
     def warning_check_in_age_hint
       I18n.t(
         "terminology.clarity_check_in_age_hint",
-        days: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1
+        days: EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization) + 1
       )
     end
 
     def needs_attention_check_in_age_hint
       I18n.t(
         "terminology.clarity_check_in_age_hint",
-        days: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+        days: EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(@organization)
       )
     end
 
     def required_clarity_status_for(finalized_at)
       EngagementHealth::Thresholds.status_for_last_event(
         finalized_at,
-        healthy_within: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
-        needs_attention_at: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+        healthy_within: EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization),
+        needs_attention_at: EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(@organization)
       )
     end
 

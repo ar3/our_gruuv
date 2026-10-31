@@ -59,13 +59,15 @@ module Insights
               "worst in-scope goal ≥ #{t::GOAL_CONFIDENCE_NEEDS_ATTENTION_AT_DAYS} days or never; or never started/completed a goal"
             end
           when EngagementHealth::CATEGORY_REQUIRED_CLARITY
+            h = t.required_clarity_healthy_within_days
+            na = t.required_clarity_needs_attention_at_days
             case status
             when EngagementHealth::HEALTHY
-              "every required item finalized ≤ #{t::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days ago"
+              "every required item finalized ≤ #{h} days ago"
             when EngagementHealth::WARNING
-              "worst required item #{t::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}–#{t::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
+              "worst required item #{h + 1}–#{na - 1} days ago"
             when EngagementHealth::NEEDS_ATTENTION
-              "any required item ≥ #{t::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS} days ago or never"
+              "any required item ≥ #{na} days ago or never"
             end
           when EngagementHealth::CATEGORY_MILESTONES
             case status
@@ -90,8 +92,8 @@ module Insights
           when EngagementHealth::CATEGORY_OGO_RECEIVED
             ogo_label(status, "been named in an OGO")
           when EngagementHealth::CATEGORY_REQUIRED_CLARITY
-            h = t::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
-            na = t::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+            h = t.required_clarity_healthy_within_days
+            na = t.required_clarity_needs_attention_at_days
             case status
             when EngagementHealth::HEALTHY
               "Teammates that have finalized all their required check-in items in the last #{h} days"

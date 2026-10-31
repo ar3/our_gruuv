@@ -120,21 +120,22 @@ module EngagementHealth
 
     def status_meaning_phrase(eh_item)
       days = eh_item.inputs["days_since_last_event"]
+      healthy = Thresholds.required_clarity_healthy_within_days_from(inputs: eh_item.inputs)
+      needs = Thresholds.required_clarity_needs_attention_at_days_from(inputs: eh_item.inputs)
       case eh_item.status
       when HEALTHY
         if days.nil?
           "recently finalized"
         else
-          "finalized within #{Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days"
+          "finalized within #{healthy} days"
         end
       when WARNING
-        "finalized #{Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}–" \
-          "#{Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
+        "finalized #{healthy + 1}–#{needs - 1} days ago"
       when NEEDS_ATTENTION
         if eh_item.inputs["never"]
           "never finalized"
         else
-          "finalized #{Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS}+ days ago"
+          "finalized #{needs}+ days ago"
         end
       else
         eh_item.status.to_s.humanize.downcase

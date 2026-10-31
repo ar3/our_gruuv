@@ -300,7 +300,7 @@ RSpec.describe SomethingInterestingQueryService do
   end
 
   describe 'check-in Warning day sections' do
-    let(:offset) { SomethingInterestingQueryService::WARNING_REACHED_OFFSET_DAYS }
+    let(:offset) { EngagementHealth::Thresholds.required_clarity_healthy_within_days + 1 }
 
     def finalize_assignment_check_in!(teammate:, assignment:, completed_at:)
       check_in = create(:assignment_check_in, :officially_completed, teammate: teammate, assignment: assignment)

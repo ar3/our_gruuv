@@ -2,6 +2,11 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
   before_action :set_company
   after_action :verify_authorized
 
+  CLARITY_THRESHOLD_KEYS = [
+    EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS_KEY,
+    EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS_KEY
+  ].freeze
+
   def edit
     authorize @company, :view_company_preferences?
     @preferences = load_preferences
@@ -24,8 +29,24 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
       render :edit, status: :unprocessable_entity
       return
     end
+
+    clarity_error = required_clarity_threshold_error
+    if clarity_error
+      @preferences = load_preferences.merge(submitted_clarity_preferences)
+      flash.now[:alert] = clarity_error
+      render :edit, status: :unprocessable_entity
+      return
+    end
+
+    clarity_changed = clarity_thresholds_changing?
     if update_preferences
-      redirect_to edit_organization_company_preference_path(@organization), notice: 'Company preferences updated successfully.'
+      enqueue_engagement_health_refresh_for_company! if clarity_changed
+      notice = if clarity_changed
+        'Company preferences updated successfully. Gruuv Health is rebuilding for this company.'
+      else
+        'Company preferences updated successfully.'
+      end
+      redirect_to edit_organization_company_preference_path(@organization), notice: notice
     else
       @preferences = load_preferences
       flash.now[:alert] = 'Failed to update company preferences.'
@@ -52,8 +73,16 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
       'prompt' => @company.company_label_preferences.find_by(label_key: 'prompt')&.label_value || '',
       'kudos_point' => @company.company_label_preferences.find_by(label_key: 'kudos_point')&.label_value || '',
       'get_shit_done' => @company.company_label_preferences.find_by(label_key: 'get_shit_done')&.label_value || '',
-      Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY => acknowledgement_explanation_for_form
+      Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY => acknowledgement_explanation_for_form,
+      EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS_KEY =>
+        preference_value(EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS_KEY),
+      EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS_KEY =>
+        preference_value(EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS_KEY)
     }
+  end
+
+  def preference_value(key)
+    @company.company_label_preferences.find_by(label_key: key)&.label_value || ''
   end
 
   def acknowledgement_explanation_for_form
@@ -107,7 +136,7 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
 
     params[:preferences]&.each do |key, value|
       preference = @company.company_label_preferences.find_or_initialize_by(label_key: key.to_s)
-      
+
       # Handle boolean preferences (checkboxes)
       # Rails checkboxes send 'true' when checked, 'false' when unchecked (via hidden field)
       if key.to_s == Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY
@@ -120,7 +149,7 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
           end
         end
       elsif value.present?
-        preference.label_value = value
+        preference.label_value = value.to_s.strip
         unless preference.save
           success = false
         end
@@ -129,13 +158,77 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
         preference.destroy if preference.persisted?
       end
     end
-    
+
     success
   end
 
   def acknowledgement_explanation_blank_or_default?(value)
     normalized = value.to_s.strip
     normalized.blank? || normalized == Organization::ACKNOWLEDGEMENT_EXPLANATION_DEFAULT
+  end
+
+  def submitted_clarity_preferences
+    prefs = params[:preferences] || {}
+    CLARITY_THRESHOLD_KEYS.index_with { |key| prefs[key].to_s }
+  end
+
+  def clarity_thresholds_changing?
+    return false if params[:preferences].blank?
+
+    CLARITY_THRESHOLD_KEYS.any? do |key|
+      next false unless params[:preferences].key?(key) || params[:preferences].key?(key.to_sym)
+
+      incoming = params[:preferences][key].to_s.strip
+      current = preference_value(key).to_s.strip
+      incoming != current
+    end
+  end
+
+  # Returns an error message when submitted Healthy/Needs Attention violate
+  # early < healthy < needs_attention. Blank fields mean "use default".
+  def required_clarity_threshold_error
+    prefs = params[:preferences]
+    return nil if prefs.blank?
+
+    healthy_key = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS_KEY
+    needs_key = EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS_KEY
+    return nil unless prefs.key?(healthy_key) || prefs.key?(needs_key) ||
+                      prefs.key?(healthy_key.to_sym) || prefs.key?(needs_key.to_sym)
+
+    healthy = parse_optional_positive_int(prefs[healthy_key])
+    needs = parse_optional_positive_int(prefs[needs_key])
+    return 'Healthy within and Needs Attention at must be whole positive numbers when set.' if healthy == :invalid || needs == :invalid
+
+    healthy ||= EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+    needs ||= EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+    early = EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS
+
+    unless early < healthy && healthy < needs
+      return "Required Clarity windows must satisfy #{early} < Healthy < Needs Attention (got Healthy=#{healthy}, Needs Attention=#{needs})."
+    end
+
+    nil
+  end
+
+  def parse_optional_positive_int(value)
+    return nil if value.blank?
+
+    int = Integer(value.to_s.strip)
+    return :invalid unless int.positive?
+
+    int
+  rescue ArgumentError, TypeError
+    :invalid
+  end
+
+  def enqueue_engagement_health_refresh_for_company!
+    teammate_ids = CompanyTeammate.employed.where(organization: @company).pluck(:id)
+    return if teammate_ids.empty?
+
+    # Batch via existing live-cache backfill (concurrency-limited per org).
+    teammate_ids.each_slice(100) do |slice|
+      EngagementHealthLiveCacheBackfillJob.perform_later(@company.id, slice)
+    end
   end
 
   def apply_logo_update

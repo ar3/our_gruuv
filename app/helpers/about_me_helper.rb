@@ -294,8 +294,12 @@ module AboutMeHelper
     label = EngagementHealth::STATUS_LABELS.fetch(eh_item.status, eh_item.status.to_s.humanize)
     finalized_at = latest_finalized&.official_check_in_completed_at
     finalized_at ||= Time.zone.parse(eh_item.inputs["last_event_at"].to_s) if eh_item.inputs["last_event_at"].present?
+    healthy_days = EngagementHealth::Thresholds.required_clarity_healthy_within_days_from(
+      inputs: eh_item.inputs,
+      organization: try(:current_organization)
+    )
     consider_at = if finalized_at.present?
-      finalized_at + EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS.days
+      finalized_at + healthy_days.days
     else
       reference_time
     end
@@ -412,15 +416,23 @@ module AboutMeHelper
     end
     return { next_level: EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::NEEDS_ATTENTION), time_until: "less than a minute" } if finalized_at.blank?
 
+    healthy_days = EngagementHealth::Thresholds.required_clarity_healthy_within_days_from(
+      inputs: eh_item&.inputs,
+      organization: try(:current_organization)
+    )
+    needs_days = EngagementHealth::Thresholds.required_clarity_needs_attention_at_days_from(
+      inputs: eh_item&.inputs,
+      organization: try(:current_organization)
+    )
     transition_at, next_level = case status
     when EngagementHealth::HEALTHY
       [
-        finalized_at + (EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1).days,
+        finalized_at + (healthy_days + 1).days,
         EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::WARNING)
       ]
     when EngagementHealth::WARNING
       [
-        finalized_at + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS.days,
+        finalized_at + needs_days.days,
         EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::NEEDS_ATTENTION)
       ]
     else

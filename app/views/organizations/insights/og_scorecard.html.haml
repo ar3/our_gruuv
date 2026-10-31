@@ -77,7 +77,13 @@
         is the 30-day Healthy window (last published ≤ 30 days as of that Sunday); Warning and Needs Attention complete the trio.
       %li
         %strong= "#{I18n.t('terminology.og_scorecard_clarity_check_ins_label')}:"
-        = I18n.t('terminology.og_scorecard_clarity_check_ins_help')
+        - healthy = EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization || organization)
+        - needs = EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(@organization || organization)
+        = I18n.t('terminology.og_scorecard_clarity_check_ins_help',
+                 healthy_days: healthy,
+                 warning_start: healthy + 1,
+                 warning_end: needs - 1,
+                 needs_attention_days: needs)
       %li
         %strong= "#{I18n.t('terminology.og_scorecard_ability_milestones_label')}:"
         = I18n.t('terminology.og_scorecard_ability_milestones_help')

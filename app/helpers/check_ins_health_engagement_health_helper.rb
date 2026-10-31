@@ -78,15 +78,17 @@ module CheckInsHealthEngagementHealthHelper
     end
   end
 
-  def check_ins_health_engagement_status_meaning(status)
+  def check_ins_health_engagement_status_meaning(status, organization: nil)
+    org = organization || try(:current_organization)
+    healthy = EngagementHealth::Thresholds.required_clarity_healthy_within_days(org)
+    needs = EngagementHealth::Thresholds.required_clarity_needs_attention_at_days(org)
     case status
     when EngagementHealth::HEALTHY
-      "every required item finalized within #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} days"
+      "every required item finalized within #{healthy} days"
     when EngagementHealth::WARNING
-      "worst required item finalized #{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1}–" \
-        "#{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS - 1} days ago"
+      "worst required item finalized #{healthy + 1}–#{needs - 1} days ago"
     when EngagementHealth::NEEDS_ATTENTION
-      "any required item ≥ #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS} days ago or never finalized"
+      "any required item ≥ #{needs} days ago or never finalized"
     when CheckInsHealthBarsHelper::NEW_ASSIGNMENT_GRACE_DISPLAY
       "required item in Grey Grace from tenure start or Clarity check-in grace until " \
         "(counts as Warning in rollups)"

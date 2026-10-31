@@ -15,22 +15,31 @@ module EngagementHealth
       anomaly_gray
     ].freeze
 
-    def self.call(status:, open_check_in:, last_closed_check_in:, reference_time: Time.current, days_since_last_event: nil)
+    def self.call(
+      status:,
+      open_check_in:,
+      last_closed_check_in:,
+      reference_time: Time.current,
+      days_since_last_event: nil,
+      healthy_within_days: Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
+    )
       new(
         status: status,
         open_check_in: open_check_in,
         last_closed_check_in: last_closed_check_in,
         reference_time: reference_time,
-        days_since_last_event: days_since_last_event
+        days_since_last_event: days_since_last_event,
+        healthy_within_days: healthy_within_days
       ).call
     end
 
-    def initialize(status:, open_check_in:, last_closed_check_in:, reference_time:, days_since_last_event:)
+    def initialize(status:, open_check_in:, last_closed_check_in:, reference_time:, days_since_last_event:, healthy_within_days:)
       @status = status
       @open_check_in = open_check_in
       @last_closed_check_in = last_closed_check_in
       @reference_time = reference_time
       @days_since_last_event = days_since_last_event
+      @healthy_within_days = healthy_within_days
     end
 
     def call
@@ -65,7 +74,7 @@ module EngagementHealth
 
     private
 
-    attr_reader :status, :open_check_in, :last_closed_check_in, :reference_time, :days_since_last_event
+    attr_reader :status, :open_check_in, :last_closed_check_in, :reference_time, :days_since_last_event, :healthy_within_days
 
     def resolve_action_bar_color(open_present:, employee_done:, manager_done:, both_done:, neither_done:, previous_acknowledged:)
       if open_present
@@ -109,7 +118,7 @@ module EngagementHealth
       return 0 unless status == HEALTHY
       return nil if days_since_last_event.nil?
 
-      remaining = Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS + 1 - days_since_last_event
+      remaining = healthy_within_days + 1 - days_since_last_event
       remaining.positive? ? remaining : 0
     end
   end

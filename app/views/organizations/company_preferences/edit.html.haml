@@ -11,150 +11,210 @@
 
 - can_customize = policy(@company).customize_company?
 
-.card.mb-4
-  .card-body
-    %p.text-muted
-      Customize terminology and labels used throughout the application for #{@company.name}. These preferences only apply to company-type organizations.
+%p.text-muted.mb-4
+  Customize how #{@company.name} appears and behaves across OurGruuv. These preferences only apply to this company.
 
 - unless can_customize
   .alert.alert-warning.mb-4
     You need Customize Company permission to modify preferences.
 
 = form_with url: organization_company_preference_path(@organization), method: :patch, local: true, html: { multipart: true } do |f|
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Prompt
-      %p.text-muted.small
-        Prompts are reflection questions that help team members think about their work, goals, and growth. They can be customized templates with multiple questions that team members answer periodically.
-    .col-6
-      = f.text_field "preferences[prompt]", 
-                     value: @preferences['prompt'],
-                     placeholder: 'Prompt',
-                     class: 'form-control',
-                     disabled: !can_customize
+  = render 'shared/section_header',
+           title: 'Terminology & labels',
+           icon: 'bi-fonts',
+           description: 'Company-specific words used in nav and copy',
+           include_top_header_margin: false
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Kudos Point
-      %p.text-muted.small
-        The label for the points or currency used in Kudos & Rewards (e.g. in balances, transactions, and rewards). Leave blank to use the default "Kudos Point".
-    .col-6
-      = f.text_field "preferences[kudos_point]",
-                     value: @preferences['kudos_point'],
-                     placeholder: 'Kudos Point',
-                     class: 'form-control',
-                     disabled: !can_customize
+  .card.mb-4
+    .card-body
+      .row.mb-4
+        .col-6
+          %h5.mb-3 Prompt
+          %p.text-muted.small.mb-0
+            Reflection questions for work, goals, and growth. Leave blank to use the default "Prompt".
+        .col-6
+          = f.text_field "preferences[prompt]",
+                         value: @preferences['prompt'],
+                         placeholder: 'Prompt',
+                         class: 'form-control',
+                         disabled: !can_customize
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 What is acknowledgement?
-      %p.text-muted.small
-        Shown to employees above the pending acknowledgements table on the audit page, and at the bottom of Check-ins Awaiting Acknowledgement on Get Shit Done. Supports Markdown. Clear the field and save to restore the default message.
-    .col-6
-      = f.text_area "preferences[#{Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY}]",
-                    value: @preferences[Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY],
-                    rows: 12,
-                    class: 'form-control font-monospace',
-                    disabled: !can_customize
+      .row.mb-4
+        .col-6
+          %h5.mb-3 Kudos Point
+          %p.text-muted.small.mb-0
+            Label for the points currency in Kudos & Rewards. Leave blank to use "Kudos Point".
+        .col-6
+          = f.text_field "preferences[kudos_point]",
+                         value: @preferences['kudos_point'],
+                         placeholder: 'Kudos Point',
+                         class: 'form-control',
+                         disabled: !can_customize
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Get Shit Done
-      %p.text-muted.small
-        The label for the "Get Shit Done" dashboard (page title, nav tooltips, and links like "Back to Get Shit Done Dashboard"). Leave blank to use the default "Get Shit Done". The URL path stays /get_shit_done.
-    .col-6
-      = f.text_field "preferences[get_shit_done]",
-                     value: @preferences['get_shit_done'],
-                     placeholder: 'Get Shit Done',
-                     class: 'form-control',
-                     disabled: !can_customize
+      .row
+        .col-6
+          %h5.mb-3 Get Shit Done
+          %p.text-muted.small.mb-0
+            Label for the Get Shit Done dashboard (title, nav, back links). URL path stays /get_shit_done.
+        .col-6
+          = f.text_field "preferences[get_shit_done]",
+                         value: @preferences['get_shit_done'],
+                         placeholder: 'Get Shit Done',
+                         class: 'form-control',
+                         disabled: !can_customize
 
-  .row.mb-4
-    .col-12
-      %h5.mb-3 Job Description HR defaults
-      %p.text-muted.small.mb-3
-        Company-wide defaults used on job descriptions. Titles and seats can override individual fields; blank on title/seat inherits these values. These defaults are required.
+  = render 'shared/section_header',
+           title: 'Clarity check-ins',
+           icon: 'bi-clipboard-check',
+           description: 'Acknowledgement copy and Required Clarity windows'
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Job Description Disclaimer
-      %p.text-muted.small
-        Shown at the bottom of job description views.
-    .col-6
-      = text_area_tag "organization[job_description_disclaimer]",
-                      @company.job_description_disclaimer,
-                      rows: 3,
-                      class: 'form-control',
-                      required: true,
-                      disabled: !can_customize
+  .card.mb-4
+    .card-body
+      .row.mb-4
+        .col-6
+          %h5.mb-3 What is acknowledgement?
+          %p.text-muted.small.mb-0
+            Shown above pending acknowledgements on the audit page and on Get Shit Done. Supports Markdown. Clear and save to restore the default.
+        .col-6
+          = f.text_area "preferences[#{Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY}]",
+                        value: @preferences[Organization::ACKNOWLEDGEMENT_EXPLANATION_LABEL_KEY],
+                        rows: 12,
+                        class: 'form-control font-monospace',
+                        disabled: !can_customize
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Work Environment
-      %p.text-muted.small
-        Default work environment language for job descriptions.
-    .col-6
-      = text_area_tag "organization[work_environment]",
-                      @company.work_environment,
-                      rows: 2,
-                      class: 'form-control',
-                      required: true,
-                      disabled: !can_customize
+      %hr.my-4
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Physical Requirements
-      %p.text-muted.small
-        Default physical requirements language for job descriptions.
-    .col-6
-      = text_area_tag "organization[physical_requirements]",
-                      @company.physical_requirements,
-                      rows: 3,
-                      class: 'form-control',
-                      required: true,
-                      disabled: !can_customize
+      %h5.mb-2 Required Clarity windows
+      %p.text-muted.small.mb-4
+        How long a finalized required clarity check-in stays Healthy before Warning, and when it becomes Needs Attention.
+        Leave blank for defaults (#{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS} / #{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS} days).
+        Must satisfy
+        %code #{EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS} &lt; Healthy &lt; Needs Attention
+        (early accordion stays fixed at #{EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS} days). Saving rebuilds Gruuv Health for everyone in this company.
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Travel Requirements
-      %p.text-muted.small
-        Default travel language for job descriptions.
-    .col-6
-      = text_area_tag "organization[travel]",
-                      @company.travel,
-                      rows: 2,
-                      class: 'form-control',
-                      required: true,
-                      disabled: !can_customize
+      .row.mb-4
+        .col-6
+          %h5.mb-3 Healthy within (days)
+          %p.text-muted.small.mb-0
+            Last day a finalized required item counts as Healthy.
+        .col-6
+          = f.number_field "preferences[#{EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS_KEY}]",
+                           value: @preferences[EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS_KEY],
+                           placeholder: EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS,
+                           min: EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS + 1,
+                           class: 'form-control',
+                           disabled: !can_customize
 
-  .row.mb-4
-    .col-12.col-md-6
-      %h5.mb-3 Company logo
-      %p.text-muted.small
-        Shown in the app header next to your organization name, and as the company avatar on goals and other circular group badges. Use a square or wide logo; PNG, JPEG, WebP, or GIF, up to 5 MB.
-    .col-12.col-md-6
-      - if @company.logo.attached?
-        .mb-2
-          = image_tag url_for(@company.logo), class: 'img-thumbnail', style: 'max-height: 96px; max-width: 100%; object-fit: contain;', alt: ''
-      - if can_customize
-        - if @company.logo.attached?
-          .form-check.mb-3
-            = check_box_tag 'organization[remove_logo]', '1', false, class: 'form-check-input', id: 'organization_remove_logo'
-            = label_tag 'organization_remove_logo', 'Remove current logo', class: 'form-check-label'
-        = file_field_tag 'organization[logo]', accept: 'image/png,image/jpeg,image/jpg,image/webp,image/gif', class: 'form-control'
-      - elsif !@company.logo.attached?
-        %p.text-muted.small.mb-0 No logo uploaded.
+      .row
+        .col-6
+          %h5.mb-3 Needs Attention at (days)
+          %p.text-muted.small.mb-0
+            First day a finalized required item counts as Needs Attention (must be greater than Healthy).
+        .col-6
+          = f.number_field "preferences[#{EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS_KEY}]",
+                           value: @preferences[EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS_KEY],
+                           placeholder: EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS,
+                           min: EngagementHealth::Thresholds::CHECK_IN_EARLY_WITHIN_DAYS + 2,
+                           class: 'form-control',
+                           disabled: !can_customize
 
-  .row.mb-4
-    .col-6
-      %h5.mb-3 Observable Moment Notifier
-      %p.text-muted.small
-        Optional. When set, this teammate is used as the default observer for birthday and work anniversary observable moments when the teammate has no manager. Leave blank for "None".
-    .col-6
-      - teammate_options = @company.teammates.includes(:person).map { |t| [t.person.display_name, t.id] }
-      = select_tag "organization[observable_moment_notifier_teammate_id]",
-                  options_for_select(teammate_options, @company.observable_moment_notifier_teammate_id),
-                  { include_blank: 'None', class: 'form-select', disabled: !can_customize }
+  = render 'shared/section_header',
+           title: 'Job description defaults',
+           icon: 'bi-file-earmark-text',
+           description: 'Company-wide HR language for job descriptions'
+
+  .card.mb-4
+    .card-body
+      %p.text-muted.small.mb-4
+        Titles and seats can override individual fields; blank on title/seat inherits these values. These defaults are required.
+
+      .row.mb-4
+        .col-6
+          %h5.mb-3 Job Description Disclaimer
+          %p.text-muted.small.mb-0
+            Shown at the bottom of job description views.
+        .col-6
+          = text_area_tag "organization[job_description_disclaimer]",
+                          @company.job_description_disclaimer,
+                          rows: 3,
+                          class: 'form-control',
+                          required: true,
+                          disabled: !can_customize
+
+      .row.mb-4
+        .col-6
+          %h5.mb-3 Work Environment
+          %p.text-muted.small.mb-0
+            Default work environment language for job descriptions.
+        .col-6
+          = text_area_tag "organization[work_environment]",
+                          @company.work_environment,
+                          rows: 2,
+                          class: 'form-control',
+                          required: true,
+                          disabled: !can_customize
+
+      .row.mb-4
+        .col-6
+          %h5.mb-3 Physical Requirements
+          %p.text-muted.small.mb-0
+            Default physical requirements language for job descriptions.
+        .col-6
+          = text_area_tag "organization[physical_requirements]",
+                          @company.physical_requirements,
+                          rows: 3,
+                          class: 'form-control',
+                          required: true,
+                          disabled: !can_customize
+
+      .row
+        .col-6
+          %h5.mb-3 Travel Requirements
+          %p.text-muted.small.mb-0
+            Default travel language for job descriptions.
+        .col-6
+          = text_area_tag "organization[travel]",
+                          @company.travel,
+                          rows: 2,
+                          class: 'form-control',
+                          required: true,
+                          disabled: !can_customize
+
+  = render 'shared/section_header',
+           title: 'Branding & notifications',
+           icon: 'bi-building',
+           description: 'Logo and default observable-moment observer'
+
+  .card.mb-4
+    .card-body
+      .row.mb-4
+        .col-12.col-md-6
+          %h5.mb-3 Company logo
+          %p.text-muted.small.mb-0
+            Shown in the app header next to your organization name, and as the company avatar on goals and other circular group badges. Use a square or wide logo; PNG, JPEG, WebP, or GIF, up to 5 MB.
+        .col-12.col-md-6
+          - if @company.logo.attached?
+            .mb-2
+              = image_tag url_for(@company.logo), class: 'img-thumbnail', style: 'max-height: 96px; max-width: 100%; object-fit: contain;', alt: ''
+          - if can_customize
+            - if @company.logo.attached?
+              .form-check.mb-3
+                = check_box_tag 'organization[remove_logo]', '1', false, class: 'form-check-input', id: 'organization_remove_logo'
+                = label_tag 'organization_remove_logo', 'Remove current logo', class: 'form-check-label'
+            = file_field_tag 'organization[logo]', accept: 'image/png,image/jpeg,image/jpg,image/webp,image/gif', class: 'form-control'
+          - elsif !@company.logo.attached?
+            %p.text-muted.small.mb-0 No logo uploaded.
+
+      .row
+        .col-6
+          %h5.mb-3 Observable Moment Notifier
+          %p.text-muted.small.mb-0
+            Optional. Default observer for birthday and work anniversary moments when the teammate has no manager. Leave blank for "None".
+        .col-6
+          - teammate_options = @company.teammates.includes(:person).map { |t| [t.person.display_name, t.id] }
+          = select_tag "organization[observable_moment_notifier_teammate_id]",
+                      options_for_select(teammate_options, @company.observable_moment_notifier_teammate_id),
+                      { include_blank: 'None', class: 'form-select', disabled: !can_customize }
 
   .d-flex.justify-content-end.gap-2.mt-4.mb-4
     = link_to dashboard_organization_path(@organization), class: "btn btn-secondary" do

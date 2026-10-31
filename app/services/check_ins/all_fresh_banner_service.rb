@@ -4,8 +4,6 @@ module CheckIns
   # Determines whether the unified check-in page should show the "all fresh" success banner.
   # Scope: required + active assignment check-ins, all company aspirations, position check-in.
   class AllFreshBannerService
-    FRESH_DAYS = EngagementHealth::Thresholds::REQUIRED_CLARITY_HEALTHY_WITHIN_DAYS
-
     Result = Struct.new(
       :show_banner,
       :show_clarity_follow_up,
@@ -51,7 +49,8 @@ module CheckIns
       check_back =
         if all_fresh && all_finalized_recent && earliest
           days_since = (Time.zone.today - earliest.to_date).to_i
-          [0, FRESH_DAYS - days_since].max
+          fresh_days = EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization)
+          [0, fresh_days - days_since].max
         end
 
       Result.new(
@@ -93,7 +92,8 @@ module CheckIns
       ts = latest_finalized_timestamp(item)
       return false if ts.blank?
 
-      (Time.zone.today - ts.to_date).to_i <= FRESH_DAYS
+      (Time.zone.today - ts.to_date).to_i <=
+        EngagementHealth::Thresholds.required_clarity_healthy_within_days(@organization)
     end
 
     def latest_finalized_timestamp(item)
