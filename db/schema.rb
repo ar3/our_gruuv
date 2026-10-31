@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_31_150000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_31_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1988,6 +1988,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_150000) do
     t.index ["subject_company_teammate_id"], name: "idx_slack_ogo_extraction_memos_on_subject_id"
   end
 
+  create_table "slack_possible_observations", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "subject_company_teammate_id", null: false
+    t.string "channel_id", null: false
+    t.string "message_ts", null: false
+    t.string "visibility", default: "private_or_dm", null: false
+    t.jsonb "discoverer_company_teammate_ids", default: [], null: false
+    t.bigint "possible_observation_slack_search_id"
+    t.bigint "possible_observation_slack_search_batch_id"
+    t.string "extraction_item_id"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "dismissed_at"
+    t.bigint "dismissed_by_company_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dismissed_at"], name: "index_slack_possible_observations_on_dismissed_at"
+    t.index ["organization_id"], name: "index_slack_possible_observations_on_organization_id"
+    t.index ["subject_company_teammate_id", "channel_id", "message_ts"], name: "idx_slack_possible_observations_uniq", unique: true
+    t.index ["subject_company_teammate_id"], name: "idx_slack_possible_observations_on_subject_id"
+    t.index ["visibility"], name: "index_slack_possible_observations_on_visibility"
+  end
+
   create_table "solid_cache_entries", force: :cascade do |t|
     t.binary "key", null: false
     t.binary "value", null: false
@@ -2598,6 +2620,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_150000) do
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
   add_foreign_key "slack_ogo_extraction_memos", "teammates", column: "subject_company_teammate_id"
+  add_foreign_key "slack_possible_observations", "organizations"
+  add_foreign_key "slack_possible_observations", "possible_observation_slack_search_batches"
+  add_foreign_key "slack_possible_observations", "possible_observation_slack_searches"
+  add_foreign_key "slack_possible_observations", "teammates", column: "dismissed_by_company_teammate_id"
+  add_foreign_key "slack_possible_observations", "teammates", column: "subject_company_teammate_id"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

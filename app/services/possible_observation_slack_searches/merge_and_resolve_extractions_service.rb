@@ -56,9 +56,15 @@ module PossibleObservationSlackSearches
 
     def enrich_from_raw_messages(raw)
       out = raw.stringify_keys
-      return out if out["channel_id"].present? && out["ts"].present?
+      if out["channel_id"].present? && out["ts"].present?
+        # Ids already present: only attach channel visibility metadata (do not
+        # overwrite blank slack_user_id — callers may intentionally omit it).
+        match = find_source_message_by_key(out)
+        copy_channel_visibility!(out, match) if match
+        return out
+      end
 
-      match = find_source_message(out)
+      match = find_source_message_by_quote(out)
       return out unless match
 
       out["channel_id"] = match[:channel_id].to_s if out["channel_id"].blank?
@@ -66,10 +72,27 @@ module PossibleObservationSlackSearches
       out["permalink"] = match[:permalink].to_s if out["permalink"].blank?
       out["slack_user_id"] = match[:user].to_s if out["slack_user_id"].blank?
       out["speaker_label"] = match[:username].to_s if out["speaker_label"].blank?
+      copy_channel_visibility!(out, match)
       out
     end
 
-    def find_source_message(raw)
+    def copy_channel_visibility!(out, match)
+      %w[channel_is_private channel_is_mpim match_type channel_name].each do |key|
+        next if out.key?(key) && !out[key].nil?
+        next unless match.key?(key) || match.key?(key.to_sym)
+
+        out[key] = match[key]
+      end
+    end
+
+    def find_source_message_by_key(raw)
+      key = "#{raw['channel_id']}|#{raw['ts']}"
+      @search.raw_messages.find do |message|
+        PossibleObservationSlackSearchBatch.message_key(message) == key
+      end
+    end
+
+    def find_source_message_by_quote(raw)
       quote = (raw["full_quote"].presence || raw["short_quote"].presence || raw["quote"]).to_s
       return nil if quote.blank?
 
@@ -116,6 +139,10 @@ module PossibleObservationSlackSearches
         "ts" => raw["ts"].to_s,
         "permalink" => raw["permalink"].to_s,
         "slack_user_id" => raw["slack_user_id"].to_s,
+        "channel_is_private" => raw["channel_is_private"],
+        "channel_is_mpim" => raw["channel_is_mpim"],
+        "match_type" => raw["match_type"].to_s.presence,
+        "channel_name" => raw["channel_name"].to_s,
         "suggested_rateable_type" => suggestion[:rateable_type],
         "suggested_rateable_id" => suggestion[:rateable_id],
         "suggested_rateable_name" => suggestion[:rateable_name],

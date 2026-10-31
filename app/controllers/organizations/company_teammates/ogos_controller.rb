@@ -33,6 +33,11 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
                             .recent_first
                             .includes(:message_batches, creator_company_teammate: :person)
                             .limit(25)
+    @slack_possible_observations = PossibleObservationSlackSearches::VisibleSlackPossibleObservations.call(
+      subject: @teammate,
+      viewer: current_company_teammate,
+      organization: organization
+    )
     render :source_from_slack
   end
 

@@ -665,6 +665,14 @@ Rails.application.routes.draw do
           end
         end
       end
+
+      resources :slack_possible_observations,
+                controller: 'company_teammates/slack_possible_observations',
+                only: [] do
+        member do
+          post :dismiss
+        end
+      end
       
       resources :job_description_acknowledgements,
                 controller: 'company_teammates/job_description_acknowledgements',

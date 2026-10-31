@@ -64,6 +64,11 @@ class CompanyTeammate < ApplicationRecord
            foreign_key: :subject_company_teammate_id,
            dependent: :destroy,
            inverse_of: :subject_company_teammate
+  has_many :slack_possible_observations_as_subject,
+           class_name: 'SlackPossibleObservation',
+           foreign_key: :subject_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :subject_company_teammate
   has_many :observations_created,
            class_name: 'Observation',
            foreign_key: :creator_company_teammate_id,

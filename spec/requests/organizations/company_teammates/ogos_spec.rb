@@ -87,6 +87,7 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("Beta")
       expect(response.body).to include("sourceFromSlackPageHelp")
       expect(response.body).to include("missed reinforcement is partly on you")
+      expect(response.body).to include("Slack moments about #{person.casual_name}")
       expect(response.body).not_to include("OGO health (last 30 days)")
     end
 
@@ -106,6 +107,45 @@ RSpec.describe "Teammate OGOs page", type: :request do
         expect(response.body).to include("Disconnect")
         expect(response.body).to include("Run a new search")
       end
+    end
+
+    it "lists durable Slack moments the viewer can see and supports dismiss" do
+      moment = create(
+        :slack_possible_observation,
+        organization: organization,
+        subject_company_teammate: teammate,
+        discoverer_company_teammate_ids: [teammate.id],
+        payload: {
+          "summary" => "Launch praise worth capturing",
+          "quote" => "Pat crushed the timeline",
+          "confidence" => 0.92,
+          "channel_name" => "general",
+          "permalink" => "https://example.slack.com/p1"
+        }
+      )
+      private_other = create(
+        :slack_possible_observation,
+        :private_or_dm,
+        organization: organization,
+        subject_company_teammate: teammate,
+        discoverer_company_teammate_ids: [create(:company_teammate, organization: organization).id],
+        payload: { "summary" => "Secret DM praise", "confidence" => 0.8 }
+      )
+
+      get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Launch praise worth capturing")
+      expect(response.body).to include("Pat crushed the timeline")
+      expect(response.body).to include("Dismiss")
+      expect(response.body).not_to include("Secret DM praise")
+
+      post dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate, moment)
+      expect(response).to redirect_to(ogos_source_from_slack_organization_company_teammate_path(organization, teammate))
+      expect(moment.reload).to be_dismissed
+
+      get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
+      expect(response.body).not_to include("Launch praise worth capturing")
+      expect(private_other.reload).not_to be_dismissed
     end
   end
 

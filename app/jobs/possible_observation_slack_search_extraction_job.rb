@@ -118,6 +118,11 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
       end
 
     batch.mark_extraction_completed!(items: items, extraction_note: explanation, model_id: model_id)
+    PossibleObservationSlackSearches::UpsertSlackPossibleObservations.call(
+      search: search,
+      batch: batch,
+      items: items
+    )
     complete_consultation!(consultation, items_count: items.size)
   rescue StandardError => e
     fail_consultation!(consultation, e.message)

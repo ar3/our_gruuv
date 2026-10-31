@@ -27,11 +27,17 @@ RSpec.describe PossibleObservationSlackSearches::RunSearchService do
     subject.update!(first_employed_at: 1.year.ago)
   end
 
-  def match_hash(id:, text:, channel_id: "C1", ts: nil)
+  def match_hash(id:, text:, channel_id: "C1", ts: nil, is_private: false, is_mpim: false, type: "message")
     {
       "iid" => id.to_s,
       "team" => "T1",
-      "channel" => { "id" => channel_id, "name" => "eng" },
+      "type" => type,
+      "channel" => {
+        "id" => channel_id,
+        "name" => "eng",
+        "is_private" => is_private,
+        "is_mpim" => is_mpim
+      },
       "user" => "U1",
       "username" => "alex",
       "ts" => ts || "1710000000.000#{id}",
@@ -98,6 +104,11 @@ RSpec.describe PossibleObservationSlackSearches::RunSearchService do
       "Great work Pat",
       "Pat again",
       "I shipped the fix"
+    )
+    expect(search.raw_messages.first).to include(
+      channel_is_private: false,
+      channel_is_mpim: false,
+      match_type: "message"
     )
     expect(search.query).to include("about:")
     expect(search.query).to include("from:")
