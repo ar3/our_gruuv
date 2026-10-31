@@ -17,20 +17,34 @@
       %i.bi.bi-slack.me-1
       Refresh pOGOs for my direct reports (30 days)
 
-- if @slack_searches.any?
-  %h2.h5.mt-4.mb-2
-    %i.bi.bi-slack.me-1
-    Slack searches
+.mb-3
   %p.small.text-muted.mb-2
-    Open a search to review candidates on that teammate’s Slack search page.
+    Transcript consults and Slack searches in one list.
+    - if @prompt_debug_count.to_i.positive?
+      · #{pluralize(@prompt_debug_count, "prompt-debug run")}
     - if @slack_searches_polling
-      In-flight runs update automatically.
+      · In-flight Slack runs update automatically.
+  .d-flex.flex-wrap.gap-2.align-items-center
+    %span.small.text-muted Type
+    .btn-group.btn-group-sm{ role: "group", "aria-label" => "Filter consultation type" }
+      = link_to "All",
+                organization_possible_observation_consults_path(organization),
+                class: "btn #{@type_filter.blank? ? 'btn-secondary' : 'btn-outline-secondary'}"
+      = link_to "Transcript",
+                organization_possible_observation_consults_path(organization, type: "transcript"),
+                class: "btn #{@type_filter == 'transcript' ? 'btn-secondary' : 'btn-outline-secondary'}"
+      = link_to "Slack",
+                organization_possible_observation_consults_path(organization, type: "slack"),
+                class: "btn #{@type_filter == 'slack' ? 'btn-secondary' : 'btn-outline-secondary'}"
+
+- if @hub_rows.any?
   .table-responsive{ "data-controller" => (@slack_searches_polling ? "hub-slack-search-status" : nil),
                      "data-hub-slack-search-status-url-value" => (@slack_searches_polling ? slack_search_statuses_organization_possible_observation_consults_path(organization) : nil) }
     %table.table.table-striped.align-middle
       %thead
         %tr
-          %th Name / teammate
+          %th Type
+          %th Name
           %th Status
           %th.text-end pOGOs
           %th.text-end Dismissed
@@ -38,60 +52,52 @@
           %th Created
           %th
       %tbody
-        - @slack_searches.each do |search|
-          - subject = search.subject_company_teammate
-          %tr{ "data-hub-slack-search-status-row" => true, "data-search-id" => search.id }
-            %td
-              .fw-semibold= search.display_name
-              .small.text-muted= subject&.person&.display_name
-            %td
-              %span.badge.text-bg-secondary{ "data-hub-phase" => true }= search.hub_phase
-            %td.text-end{ "data-hub-pogo-count" => true }= search.pogo_count
-            %td.text-end{ "data-hub-dismissed-count" => true }= search.dismissed_pogo_count
-            %td.text-end{ "data-hub-promoted-count" => true }= search.promoted_pogo_count
-            %td= l(search.created_at, format: :short)
-            %td
-              - if policy(search).show?
-                = link_to "Open",
-                          organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),
-                          class: "btn btn-sm btn-outline-primary"
-
-%h2.h5.mt-4.mb-2 Transcript consults
-.mb-3
-  %p.small.text-muted.mb-0
-    Paste or upload a transcript, confirm teammates, run one OG consultation, then create draft OGOs.
-    - if @prompt_debug_count.to_i.positive?
-      · #{pluralize(@prompt_debug_count, "prompt-debug run")}
-
-- if @consults.any?
-  .table-responsive
-    %table.table.table-striped.align-middle
-      %thead
-        %tr
-          %th Name
-          %th People
-          %th.text-end pOGOs
-          %th.text-end Dismissed
-          %th.text-end Promoted
-          %th Created
-          %th
-      %tbody
-        - @consults.each do |consult|
-          %tr
-            %td
-              = consult.display_name
-              - if consult.prompt_debug?
-                %span.badge.text-bg-warning.ms-1 Debug
-            %td
-              - if consult.people_confirmed?
-                = pluralize(Array(consult.confirmed_teammate_ids).size, "teammate")
-              - else
-                %span.text-muted Confirm teammates
-            %td.text-end= consult.pogo_count
-            %td.text-end= consult.dismissed_pogo_count
-            %td.text-end= consult.promoted_pogo_count
-            %td= l(consult.created_at, format: :short)
-            %td
-              = link_to "Open", organization_possible_observation_consult_path(organization, consult), class: "btn btn-sm btn-outline-primary"
+        - @hub_rows.each do |row|
+          - if row[:type] == :slack
+            - search = row[:record]
+            - subject = search.subject_company_teammate
+            %tr{ "data-hub-slack-search-status-row" => true, "data-search-id" => search.id }
+              %td
+                %span.badge.text-bg-dark Slack
+              %td
+                .fw-semibold= search.display_name
+                .small.text-muted= subject&.person&.display_name
+              %td
+                %span.badge.text-bg-secondary{ "data-hub-phase" => true }= search.hub_phase
+              %td.text-end{ "data-hub-pogo-count" => true }= search.pogo_count
+              %td.text-end{ "data-hub-dismissed-count" => true }= search.dismissed_pogo_count
+              %td.text-end{ "data-hub-promoted-count" => true }= search.promoted_pogo_count
+              %td= l(search.created_at, format: :short)
+              %td
+                - if policy(search).show?
+                  = link_to "Open",
+                            organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),
+                            class: "btn btn-sm btn-outline-primary"
+          - else
+            - consult = row[:record]
+            %tr
+              %td
+                %span.badge.text-bg-primary Transcript
+              %td
+                .fw-semibold
+                  = consult.display_name
+                  - if consult.prompt_debug?
+                    %span.badge.text-bg-warning.ms-1 Debug
+                .small.text-muted= consult.hub_teammate_caption
+              %td
+                %span.badge.text-bg-secondary= consult.hub_step_label
+              %td.text-end= consult.pogo_count
+              %td.text-end= consult.dismissed_pogo_count
+              %td.text-end= consult.promoted_pogo_count
+              %td= l(consult.created_at, format: :short)
+              %td
+                = link_to "Open", organization_possible_observation_consult_path(organization, consult), class: "btn btn-sm btn-outline-primary"
 - else
-  %p.text-muted No transcript consults yet. Start by pasting or uploading a transcript.
+  %p.text-muted
+    - case @type_filter
+    - when "transcript"
+      No transcript consults yet. Start by pasting or uploading a transcript.
+    - when "slack"
+      No Slack searches yet. Refresh pOGOs for your direct reports to start one.
+    - else
+      No consultations yet. Start by pasting or uploading a transcript, or refresh Slack pOGOs for your direct reports.

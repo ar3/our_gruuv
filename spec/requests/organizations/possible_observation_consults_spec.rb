@@ -632,7 +632,7 @@ RSpec.describe "Possible observation consults", type: :request do
   end
 
   describe "GET index" do
-    it "shows pOGO total, dismissed, and promoted counts instead of status" do
+    it "shows a merged table with type, step status, and teammate caption for transcripts" do
       create(
         :possible_observation_consult,
         organization: organization,
@@ -658,21 +658,28 @@ RSpec.describe "Possible observation consults", type: :request do
         organization: organization,
         creator_company_teammate: teammate,
         display_name: "Debug hone consult",
-        source_text: "Pat crushed it."
+        source_text: "Pat crushed it.",
+        suggested_teammate_ids: [other.id]
       )
 
       get organization_possible_observation_consults_path(organization)
 
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Type")
+      expect(response.body).to include(">Transcript<")
+      expect(response.body).to include("Step 3 of 3")
+      expect(response.body).to include("1 teammate")
+      expect(response.body).to include("fw-semibold")
       expect(response.body).to include("pOGOs")
       expect(response.body).to include("Dismissed")
       expect(response.body).to include("Promoted")
       expect(response.body).to include("1 prompt-debug run")
       expect(response.body).to include("Debug hone consult")
       expect(response.body).to include(">Debug<")
+      expect(response.body).to include("Step 2 of 3")
     end
 
-    it "lists the viewer's Slack searches next to transcript consults" do
+    it "lists Slack searches in the same table and filters by type" do
       create(:teammate_identity, :slack_search, teammate: teammate)
       search = create(
         :possible_observation_slack_search,
@@ -682,15 +689,31 @@ RSpec.describe "Possible observation consults", type: :request do
         subject_company_teammate: other,
         display_name: "Slack search about Pat (last 30 days)"
       )
+      create(
+        :possible_observation_consult,
+        organization: organization,
+        creator_company_teammate: teammate,
+        display_name: "Weekly sync transcript",
+        source_text: "Pat crushed it."
+      )
 
       get organization_possible_observation_consults_path(organization)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Slack searches")
+      expect(response.body).to include(">Slack<")
       expect(response.body).to include(search.display_name)
+      expect(response.body).to include("Weekly sync transcript")
       expect(response.body).to include(
         organization_company_teammate_possible_observation_slack_search_path(organization, other, search)
       )
+
+      get organization_possible_observation_consults_path(organization, type: "slack")
+      expect(response.body).to include(search.display_name)
+      expect(response.body).not_to include("Weekly sync transcript")
+
+      get organization_possible_observation_consults_path(organization, type: "transcript")
+      expect(response.body).to include("Weekly sync transcript")
+      expect(response.body).not_to include(search.display_name)
     end
   end
 

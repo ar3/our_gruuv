@@ -57,6 +57,26 @@ class PossibleObservationConsult < ApplicationRecord
     extraction_items.count { |item| item[:observation_id].present? }
   end
 
+  # Hub index status: mirrors the 3-step consult spine on the show page.
+  # Step 1 is done once the consult exists; remaining work is step 2 or 3.
+  def hub_step_label
+    return "Step 3 of 3" if extraction_status == "completed" || people_confirmed?
+
+    "Step 2 of 3"
+  end
+
+  def hub_teammate_caption
+    ids = if people_confirmed?
+            Array(confirmed_teammate_ids)
+          else
+            Array(suggested_teammate_ids).presence || Array(confirmed_teammate_ids)
+          end
+    count = ids.map(&:to_i).reject(&:zero?).uniq.size
+    return "No teammates yet" if count.zero?
+
+    "#{count} teammate#{'s' unless count == 1}"
+  end
+
   def processed_teammate_ids
     Array(extractions_hash[:processed_teammate_ids]).map(&:to_i).reject(&:zero?)
   end

@@ -13,10 +13,17 @@ module Organizations
     def index
       authorize PossibleObservationConsult
       scoped = policy_scope(PossibleObservationConsult)
-      @consults = scoped.recent_first.limit(50)
       @prompt_debug_count = scoped.prompt_debug.count
-      @slack_searches = load_hub_slack_searches
-      @slack_searches_polling = @slack_searches.any?(&:hub_in_flight?)
+      @type_filter = params[:type].to_s.presence_in(%w[transcript slack])
+      consults = scoped.recent_first.limit(50).to_a
+      slack_searches = load_hub_slack_searches.to_a
+      @slack_searches_polling = slack_searches.any?(&:hub_in_flight?)
+
+      rows = []
+      consults.each { |consult| rows << { type: :transcript, record: consult, created_at: consult.created_at } }
+      slack_searches.each { |search| rows << { type: :slack, record: search, created_at: search.created_at } }
+      rows.select! { |row| row[:type].to_s == @type_filter } if @type_filter
+      @hub_rows = rows.sort_by { |row| -row[:created_at].to_f }
     end
 
     def slack_search_statuses
