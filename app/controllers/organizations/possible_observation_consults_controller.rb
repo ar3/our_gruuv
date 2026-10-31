@@ -6,7 +6,7 @@ module Organizations
     before_action :set_consult, only: %i[
       show update confirm_teammates extract re_extract
       extraction_status create_draft_observations
-      save_labels download_prompt_debug
+      save_labels download_prompt_debug update_speaker_map rebuild_speaker_map
     ]
     after_action :verify_authorized
 
@@ -187,6 +187,51 @@ module Organizations
                 disposition: "attachment"
     end
 
+    def update_speaker_map
+      authorize @consult
+      rows = normalize_speaker_map_param(params[:speaker_map])
+      labels = @consult.speaker_map_labels.deep_dup
+      rows.each do |raw_label, attrs|
+        entry = (labels[raw_label] || {}).stringify_keys
+        status = attrs["status"].to_s
+        status = "unknown" unless %w[resolved unknown ignore].include?(status)
+        teammate_id = attrs["company_teammate_id"].presence&.to_i
+        teammate_id = nil if teammate_id&.zero?
+        if status == "ignore"
+          teammate_id = nil
+        elsif teammate_id.present?
+          status = "resolved"
+        end
+        entry.merge!(
+          "raw_label" => raw_label,
+          "status" => status,
+          "company_teammate_id" => teammate_id,
+          "manual" => true
+        )
+        labels[raw_label] = entry
+      end
+      @consult.update!(speaker_map: { "version" => 1, "labels" => labels })
+
+      if @consult.extraction_status == "completed" && @consult.extraction_items.any?
+        remapped = PossibleObservationConsults::ApplySpeakerMapToItems.call(
+          items: @consult.extraction_items,
+          speaker_map: @consult.speaker_map
+        )
+        @consult.replace_extraction_items!(remapped)
+      end
+
+      redirect_to consult_path, notice: "Speaker map saved."
+    end
+
+    def rebuild_speaker_map
+      authorize @consult, :update_speaker_map?
+      PossibleObservationConsults::BuildSpeakerMapService.call(
+        consult: @consult,
+        preserve_overrides: false
+      )
+      redirect_to consult_path, notice: "Speaker map rebuilt from transcript labels."
+    end
+
     def extraction_status
       authorize @consult
       consultation = OgConsultation.latest_for(
@@ -251,6 +296,10 @@ module Organizations
         plaintext: consult.plaintext
       )
       consult.update!(suggested_teammate_ids: suggested.map(&:id))
+      if consult.prompt_debug?
+        PossibleObservationConsults::BuildSpeakerMapService.call(consult: consult)
+        notice = "#{notice} Speaker map ready — resolve any ? labels before running OG Consult."
+      end
       redirect_to organization_possible_observation_consult_path(organization, consult), notice: notice
     end
 
@@ -460,6 +509,46 @@ module Organizations
         kind: OgConsultation::KIND_OGO_SEARCH_CONSULT
       )
       @prompt_debug = @consult.prompt_debug?
+      return unless @prompt_debug
+
+      @transcript_cues = Transcripts::ParseCuesService.call(raw: @consult.source_raw)
+      @speaker_map_labels = @consult.speaker_map_labels
+      if @consult.extraction_items.any?
+        @cue_links_by_item = PossibleObservationConsults::MatchCuesToItems.call(
+          cues: @transcript_cues,
+          items: @consult.extraction_items
+        )
+        @item_ids_by_cue = Hash.new { |h, k| h[k] = [] }
+        @cue_links_by_item.each do |item_id, cue_ids|
+          Array(cue_ids).each { |cue_id| @item_ids_by_cue[cue_id] << item_id }
+        end
+      else
+        @cue_links_by_item = {}
+        @item_ids_by_cue = {}
+      end
+    end
+
+    def normalize_speaker_map_param(raw)
+      return {} if raw.blank?
+
+      hash =
+        case raw
+        when ActionController::Parameters then raw.to_unsafe_h
+        when Hash then raw
+        else {}
+        end
+
+      hash.each_with_object({}) do |(label, attrs), memo|
+        next if label.blank?
+
+        row =
+          if attrs.respond_to?(:permit)
+            attrs.permit(:status, :company_teammate_id).to_h
+          else
+            attrs.to_h
+          end
+        memo[label.to_s] = row.stringify_keys
+      end
     end
 
     def normalize_items_param(raw)

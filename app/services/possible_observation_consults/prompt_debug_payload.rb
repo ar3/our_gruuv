@@ -42,9 +42,16 @@ module PossibleObservationConsults
           source_text_preview: source_preview
         },
         consultation: consultation_meta,
+        speaker_map: @consult.speaker_map,
+        cues: cues,
+        cue_links_by_item: cue_links,
         counts: {
           ai_items: ai_items.size,
           labeled_items: labeled.size,
+          cues: cues.size,
+          speaker_labels: @consult.speaker_map_labels.size,
+          unsure_speakers: @consult.speaker_map_labels.count { |_k, v| v[:status].to_s == "unknown" },
+          ignored_speakers: @consult.speaker_map_labels.count { |_k, v| v[:status].to_s == "ignore" },
           would_include: labeled.count { |item| ActiveModel::Type::Boolean.new.cast(item[:include]) },
           dismissed: labeled.count { |item| item[:dismissed_at].present? },
           still_reviewing: labeled.count do |item|
@@ -74,6 +81,14 @@ module PossibleObservationConsults
       return "" if text.blank?
 
       text.truncate(2_000)
+    end
+
+    def cues
+      @cues ||= Transcripts::ParseCuesService.call(raw: @consult.source_raw)
+    end
+
+    def cue_links
+      @cue_links ||= MatchCuesToItems.call(cues: cues, items: @consult.extraction_items)
     end
 
     def consultation_meta

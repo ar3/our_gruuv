@@ -1,0 +1,74 @@
+-# Locals: form_id, groups, prompt_debug, cue_links_by_item
+- prompt_debug = local_assigns.fetch(:prompt_debug, false)
+- cue_links_by_item = local_assigns.fetch(:cue_links_by_item, {})
+
+= form_with url: organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true, html: { id: form_id, data: { turbo: false } } do
+  - idx = 0
+  - groups.each do |teammate, person_items|
+    .mb-4
+      %h6.mb-2= teammate.person.display_name
+      - if person_items.empty?
+        %p.small.text-muted.mb-0 No candidates for this person.
+      - else
+        .table-responsive
+          %table.table.table-bordered.align-middle
+            %thead.table-light
+              %tr
+                %th Quote
+                %th Actions
+                %th Status
+            %tbody
+              - person_items.each do |item|
+                = render "candidate_row",
+                         item: item,
+                         idx: idx,
+                         editable: true,
+                         prompt_debug: prompt_debug,
+                         linked_cue_ids: Array(cue_links_by_item[item[:id].to_s])
+                - idx += 1
+  .d-flex.flex-wrap.gap-2.mt-3
+    - if prompt_debug && policy(@consult).save_labels?
+      = button_tag "Save labels (no drafts)",
+                   type: "submit",
+                   formaction: save_labels_organization_possible_observation_consult_path(organization, @consult),
+                   class: "btn btn-primary"
+      = submit_tag "Save all (create drafts)", name: "commit", value: "Save all", class: "btn btn-outline-primary"
+    - else
+      = submit_tag "Save all", name: "commit", value: "Save all", class: "btn btn-primary"
+  %p.mt-3.mb-0.text-muted.small
+    - if prompt_debug
+      Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Would include")}, or #{content_tag(:strong, "Dismiss")}.
+      Click a candidate to highlight its transcript cues (and vice versa).
+      #{content_tag(:strong, "Save labels")} keeps your corrections for the prompt-debug download and does not create OGOs.
+      #{content_tag(:strong, "Save all (create drafts)")} is the normal promote path when you are done honing.
+      Re-run #{content_tag(:strong, "Consult OG again")} on this same transcript to compare a new prompt version.
+    - else
+      Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
+      Save all actualizes every row: included candidates become draft OGOs (you are the creator),
+      dismissed candidates are hidden, and the rest stay as potential OGOs.
+      Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
+      (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
+
+:javascript
+  (function() {
+    var form = document.getElementById("#{form_id}");
+    if (!form) return;
+    function syncRow(row) {
+      if (row.dataset.consultPromptDebug === "true") return;
+      var states = row.querySelectorAll("[data-consult-state]");
+      if (!states.length) return;
+      var included = false;
+      states.forEach(function(el) {
+        if (el.checked && el.value === "included") included = true;
+      });
+      row.querySelectorAll("[data-consult-row-field]").forEach(function(field) {
+        field.disabled = !included;
+      });
+    }
+    form.querySelectorAll("[data-consult-candidate-row]").forEach(function(row) {
+      syncRow(row);
+      row.querySelectorAll("[data-consult-state]").forEach(function(el) {
+        el.addEventListener("change", function() { syncRow(row); });
+      });
+    });
+  })();

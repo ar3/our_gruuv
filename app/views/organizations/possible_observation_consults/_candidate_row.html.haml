@@ -1,5 +1,6 @@
--# Locals: item, idx, editable, prompt_debug (optional)
+-# Locals: item, idx, editable, prompt_debug (optional), linked_cue_ids (optional)
 - prompt_debug = local_assigns.fetch(:prompt_debug, false)
+- linked_cue_ids = Array(local_assigns[:linked_cue_ids])
 - included = ActiveModel::Type::Boolean.new.cast(item[:include])
 - locked = item[:observation_id].present?
 - dismissed = item[:dismissed_at].present?
@@ -9,7 +10,9 @@
 - confidence = item[:confidence].to_f
 - badge_class = confidence >= 0.75 ? "text-bg-success" : (confidence >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
 - include_label = prompt_debug ? "Would include" : "Include"
-%tr{ data: { consult_candidate_row: true, consult_prompt_debug: prompt_debug.presence } }
+- row_data = { consult_candidate_row: true, consult_prompt_debug: prompt_debug.presence }
+- row_data = row_data.merge(prompt_debug_transcript_target: "item", item_id: item[:id], cue_ids: linked_cue_ids.join(",")) if prompt_debug
+%tr{ data: row_data }
   %td
     = hidden_field_tag "items[#{idx}][id]", item[:id]
     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
@@ -30,6 +33,12 @@
     = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
     .mb-2.fs-6
       %span.badge.me-2{ class: badge_class }= "#{format('%.0f%%', confidence * 100)} confident in this suggestion"
+      - if prompt_debug && linked_cue_ids.any?
+        %span.badge.text-bg-success.me-2 #{linked_cue_ids.size} cue#{'s' unless linked_cue_ids.one?}
+        %button.btn.btn-link.btn-sm.p-0.align-baseline{
+            type: "button",
+            data: { action: "prompt-debug-transcript#highlightFromItem", item_id: item[:id], cue_ids: linked_cue_ids.join(",") }
+          } Show in transcript
       - if item[:suggested_rating].present?
         - rating_label = ObservationRating.display_label(item[:suggested_rating]) if item[:suggested_rating].present?
         Suggested:

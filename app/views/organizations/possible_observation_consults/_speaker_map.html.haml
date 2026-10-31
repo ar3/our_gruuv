@@ -1,0 +1,54 @@
+-# Locals: consult, labels, selectable_teammates, organization
+- labels = local_assigns.fetch(:labels, {})
+- return if labels.blank?
+
+.card.mb-4.border-warning
+  .card-body
+    .d-flex.flex-wrap.justify-content-between.align-items-start.gap-2.mb-2
+      %div
+        %h5.mb-1 Speaker map
+        %p.small.text-muted.mb-0
+          Resolve Zoom/Meet labels before (or after) extraction.
+          %code Audio shared by…
+          defaults to Ignore. Use
+          %strong ?
+          rows when the match is unsure.
+      = button_to "Rebuild from transcript",
+                  rebuild_speaker_map_organization_possible_observation_consult_path(organization, consult),
+                  method: :post,
+                  class: "btn btn-sm btn-outline-secondary",
+                  form: { data: { turbo: false } }
+    = form_with url: update_speaker_map_organization_possible_observation_consult_path(organization, consult),
+                method: :patch,
+                local: true,
+                html: { data: { turbo: false } } do
+      .table-responsive
+        %table.table.table-sm.align-middle.mb-3
+          %thead.table-light
+            %tr
+              %th Label in transcript
+              %th Cues
+              %th Status
+              %th Teammate
+          %tbody
+            - labels.each do |raw_label, entry|
+              - entry = entry.with_indifferent_access
+              - status = entry[:status].to_s.presence || "unknown"
+              - unsure = status == "unknown"
+              %tr{ class: (unsure ? "table-warning" : nil) }
+                %td
+                  %code.small= raw_label
+                  - if entry[:kind] == "audio_share"
+                    %span.badge.text-bg-secondary.ms-1 Audio share
+                  - if entry[:normalized_label].present? && entry[:normalized_label] != raw_label
+                    .small.text-muted → #{entry[:normalized_label]}
+                %td= entry[:cue_count]
+                %td
+                  - status_options = options_for_select([["Resolved", "resolved"], ["Unsure (?)", "unknown"], ["Ignore", "ignore"]], status)
+                  = select_tag "speaker_map[#{raw_label}][status]", status_options, class: "form-select form-select-sm"
+                %td
+                  - if unsure
+                    %span.badge.text-bg-warning.me-1 ?
+                  - teammate_options = options_for_select([["—", ""]] + selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, entry[:company_teammate_id])
+                  = select_tag "speaker_map[#{raw_label}][company_teammate_id]", teammate_options, class: "form-select form-select-sm"
+      = submit_tag "Save speaker map", class: "btn btn-sm btn-warning"

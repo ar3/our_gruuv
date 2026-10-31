@@ -439,6 +439,8 @@ Rails.application.routes.draw do
         post :create_draft_observations
         patch :save_labels
         get :download_prompt_debug
+        patch :update_speaker_map
+        post :rebuild_speaker_map
       end
     end
 

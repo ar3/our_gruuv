@@ -8,18 +8,26 @@
         This run is for honing the transcript → OGO prompt. Behavior differs from a normal consult:
       %ul.mb-2.small.ps-3
         %li
+          Fix the
+          %strong Speaker map
+          first (Ignore audio-share labels; resolve
+          %strong ?
+          rows).
+        %li
+          After extraction, use the transcript pane — click cues or
+          %strong Show in transcript
+          on a pOGO.
+        %li
           Use
           %strong Would include
           /
           %strong Dismiss
-          to label candidates (edits work while Reviewing).
-        %li
+          +
           %strong Save labels (no drafts)
-          stores corrections without creating OGOs.
+          (no OGOs created).
         %li
-          After extraction, download the
+          Download the
           %strong prompt-debug JSON
-          (AI defaults vs your labels) to paste into chat.
-        %li Re-run Consult OG again on this same transcript to try a new prompt version.
+          and re-run Consult OG again on this same transcript.
       %p.mb-0.small.text-muted
         Started via #{content_tag(:code, "?debug=true")}. Normal consults omit that param.

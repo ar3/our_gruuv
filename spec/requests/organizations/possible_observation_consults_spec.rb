@@ -73,18 +73,25 @@ RSpec.describe "Possible observation consults", type: :request do
   end
 
   describe "POST create with debug=true" do
-    it "stores prompt_debug on the consult" do
+    it "stores prompt_debug on the consult and builds a speaker map" do
       post organization_possible_observation_consults_path(organization, debug: true),
            params: {
              possible_observation_consult: {
                display_name: "Debug hone",
-               source_text: "Pat did a great job shipping the launch this week.",
+               source_text: <<~VTT,
+                 WEBVTT
+
+                 1
+                 00:01:00.000 --> 00:01:02.000
+                 Pat Subject: Pat did a great job shipping the launch this week.
+               VTT
                prompt_debug: "true"
              }
            }
 
       consult = PossibleObservationConsult.last
       expect(consult.prompt_debug?).to be(true)
+      expect(consult.speaker_map_labels).to have_key("Pat Subject")
       expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
     end
   end
@@ -313,6 +320,20 @@ RSpec.describe "Possible observation consults", type: :request do
   end
 
   describe "prompt-debug hone loop" do
+    let(:vtt_source) do
+      <<~VTT
+        WEBVTT
+
+        1
+        00:12:22.880 --> 00:12:35.829
+        Corbin Dodson: I just want to shout out Brett. He's been super helpful.
+
+        2
+        00:12:36.160 --> 00:12:47.399
+        Corbin Dodson: Brett has answered any and every question during training.
+      VTT
+    end
+
     let!(:consult) do
       create(
         :possible_observation_consult,
@@ -321,7 +342,35 @@ RSpec.describe "Possible observation consults", type: :request do
         organization: organization,
         creator_company_teammate: teammate,
         confirmed_teammate_ids: [other.id],
-        people_status: "confirmed"
+        people_status: "confirmed",
+        source_text: vtt_source,
+        speaker_map: {
+          "version" => 1,
+          "labels" => {
+            "Corbin Dodson" => {
+              "raw_label" => "Corbin Dodson",
+              "status" => "unknown",
+              "company_teammate_id" => nil,
+              "cue_count" => 2,
+              "kind" => "speech",
+              "manual" => false
+            }
+          }
+        }
+      )
+    end
+
+    before do
+      item = consult.extraction_items.first.to_h.merge(
+        "full_quote" => "Brett has answered any and every question during training.",
+        "speaker_label" => "Corbin Dodson",
+        "quote" => "Brett has answered any and every question during training."
+      )
+      consult.update!(
+        extractions: consult.extractions.merge(
+          "items" => [item],
+          "ai_items" => [item.deep_dup]
+        )
       )
     end
 
@@ -331,17 +380,41 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Save labels (no drafts)")
       expect(response.body).to include("Save all (create drafts)")
       expect(response.body).to include("Download prompt-debug JSON")
+      expect(response.body).to include("Speaker map")
+      expect(response.body).to include("Transcript")
+      expect(response.body).to include("Show in transcript")
+      expect(response.body).to include("Corbin Dodson")
       expect(response.body).to include(">Reviewing<")
       expect(response.body).to include(">Would include<")
       expect(response.body).to include(">Dismiss<")
       expect(response.body).not_to include("Create draft OGO now")
     end
 
-    it "shows the prompt-debug banner before teammates are confirmed" do
+    it "shows the prompt-debug banner and speaker map before teammates are confirmed" do
       consult.update!(people_status: "suggested", confirmed_teammate_ids: [], extraction_status: "ready")
       get organization_possible_observation_consult_path(organization, consult)
       expect(response.body).to include("Prompt debug mode is on for this consult")
+      expect(response.body).to include("Speaker map")
       expect(response.body).to include("Confirm teammates")
+    end
+
+    it "saves speaker map resolutions" do
+      patch update_speaker_map_organization_possible_observation_consult_path(organization, consult),
+            params: {
+              speaker_map: {
+                "Corbin Dodson" => {
+                  status: "resolved",
+                  company_teammate_id: teammate.id
+                }
+              }
+            }
+
+      expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
+      entry = consult.reload.speaker_map_labels["Corbin Dodson"]
+      expect(entry[:status]).to eq("resolved")
+      expect(entry[:company_teammate_id]).to eq(teammate.id)
+      expect(entry[:manual]).to eq(true)
+      expect(consult.extraction_items.first[:responder_company_teammate_id].to_i).to eq(teammate.id)
     end
 
     it "saves labels without creating draft OGOs" do

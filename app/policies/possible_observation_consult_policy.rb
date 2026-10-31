@@ -61,7 +61,15 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
   end
 
   def download_prompt_debug?
-    save_labels?
+    show? && record.prompt_debug?
+  end
+
+  def update_speaker_map?
+    show? && record.prompt_debug?
+  end
+
+  def rebuild_speaker_map?
+    update_speaker_map?
   end
 
   private

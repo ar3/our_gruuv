@@ -1,0 +1,43 @@
+-# Locals: cues, speaker_map_labels, item_ids_by_cue
+- cues = Array(local_assigns[:cues])
+- labels = local_assigns.fetch(:speaker_map_labels, {})
+- item_ids_by_cue = local_assigns.fetch(:item_ids_by_cue, {})
+
+.card.h-100
+  .card-header.py-2
+    %strong Transcript
+    %span.small.text-muted.ms-1 #{cues.size} cues · click a line to highlight linked pOGOs
+  .card-body.p-0
+    .overflow-auto{ style: "max-height: 70vh;" }
+      - if cues.empty?
+        %p.small.text-muted.p-3.mb-0 No timed cues found. Paste/upload a VTT for the best debug experience.
+      - else
+        %ul.list-group.list-group-flush
+          - cues.each do |cue|
+            - cue = cue.with_indifferent_access
+            - mapping = labels[cue[:speaker_label].to_s]
+            - mapping = mapping&.with_indifferent_access
+            - status = mapping&.dig(:status).to_s
+            - linked = Array(item_ids_by_cue[cue[:id].to_s])
+            - ignored = status == "ignore" || cue[:kind] == "audio_share"
+            %li.list-group-item.list-group-item-action.py-2{
+                 data: {
+                   prompt_debug_transcript_target: "cue",
+                   cue_id: cue[:id],
+                   item_ids: linked.join(","),
+                   action: "click->prompt-debug-transcript#highlightFromCue"
+                 },
+                 class: [ignored ? "text-muted" : nil, linked.any? ? "border-start border-3 border-success" : nil].compact
+               }
+              .d-flex.justify-content-between.gap-2.small.mb-1
+                %div
+                  - if cue[:start].present?
+                    %span.text-muted.me-1= cue[:start]
+                  - if mapping.blank? || status == "unknown"
+                    %span.badge.text-bg-warning.me-1{ title: "Speaker unsure — fix in Speaker map" } ?
+                  - elsif status == "ignore"
+                    %span.badge.text-bg-secondary.me-1 Ignore
+                  %strong= cue[:speaker_label].presence || "Unknown speaker"
+                - if linked.any?
+                  %span.badge.text-bg-success #{linked.size} pOGO
+              .small= cue[:text]

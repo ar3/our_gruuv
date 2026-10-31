@@ -93,7 +93,7 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
       all_items.concat(person_items)
       processed_teammate_ids << teammate.id
       consult.persist_partial_extractions!(
-        items: all_items,
+        items: apply_speaker_map(consult, all_items),
         processed_teammate_ids: processed_teammate_ids
       )
     end
@@ -105,7 +105,7 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
       end
 
     consult.mark_completed!(
-      items: all_items,
+      items: apply_speaker_map(consult, all_items),
       extraction_note: note,
       processed_teammate_ids: processed_teammate_ids
     )
@@ -119,6 +119,16 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
   end
 
   private
+
+  def apply_speaker_map(consult, items)
+    return items unless consult.prompt_debug?
+    return items if consult.speaker_map_labels.blank?
+
+    PossibleObservationConsults::ApplySpeakerMapToItems.call(
+      items: items,
+      speaker_map: consult.speaker_map
+    )
+  end
 
   def complete_consultation!(consultation, items_count:)
     return if consultation.nil?

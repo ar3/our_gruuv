@@ -134,6 +134,23 @@ class PossibleObservationConsult < ApplicationRecord
     end
   end
 
+  # Raw upload/paste body (keeps VTT timing + speaker labels for debug cue parsing).
+  def source_raw
+    if source_file.attached?
+      raw = source_file.download.force_encoding("UTF-8")
+      raw.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    else
+      source_text.to_s
+    end
+  end
+
+  def speaker_map_labels
+    hash = speaker_map.is_a?(Hash) ? speaker_map.with_indifferent_access : {}
+    (hash[:labels] || {}).each_with_object({}) do |(key, value), memo|
+      memo[key.to_s] = value.with_indifferent_access
+    end
+  end
+
   def people_confirmed?
     people_status == "confirmed" && Array(confirmed_teammate_ids).any?
   end
