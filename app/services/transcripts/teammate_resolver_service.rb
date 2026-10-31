@@ -4,15 +4,22 @@ module Transcripts
   class TeammateResolverService
     MAX_ALTERNATES = 3
 
-    def self.call(organization:, label:, teammates: nil, parent: nil)
-      new(organization: organization, label: label, teammates: teammates, parent: parent).call
+    def self.call(organization:, label:, teammates: nil, parent: nil, allow_llm: true)
+      new(
+        organization: organization,
+        label: label,
+        teammates: teammates,
+        parent: parent,
+        allow_llm: allow_llm
+      ).call
     end
 
-    def initialize(organization:, label:, teammates:, parent: nil)
+    def initialize(organization:, label:, teammates:, parent: nil, allow_llm: true)
       @organization = organization
       @label = label.to_s.strip
       @teammates = teammates
       @parent = parent
+      @allow_llm = allow_llm
     end
 
     # Returns { company_teammate_id:, unknown:, alternates: [{ company_teammate_id, name }] }
@@ -34,6 +41,8 @@ module Transcripts
           alternates: sure ? [] : alternates
         }
       end
+
+      return blank_result unless @allow_llm
 
       llm_match(teammates) || blank_result
     end

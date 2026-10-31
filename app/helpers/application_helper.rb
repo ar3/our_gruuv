@@ -170,6 +170,35 @@ module ApplicationHelper
     OgCandidateReview::DefaultObserverToViewer.apply(items, viewer: viewer)
   end
 
+  # Step 3: flatten candidates into transcript time order (same spine as Step 2).
+  def consult_step3_review_bundle(items, cues:)
+    prepared = candidate_items_for_review(items)
+    cue_links = PossibleObservationConsults::MatchCuesToItems.call(cues: cues, items: prepared)
+    cue_by_id = Array(cues).each_with_object({}) do |cue, memo|
+      cue = cue.with_indifferent_access
+      memo[cue[:id].to_s] = cue
+    end
+    sorted = prepared.sort_by do |item|
+      starts = Array(cue_links[item[:id].to_s]).filter_map { |id| cue_by_id[id]&.[](:start_ms)&.to_i }
+      [starts.min || Float::INFINITY, item[:id].to_s]
+    end
+    { items: sorted, cue_links: cue_links, cue_by_id: cue_by_id }
+  end
+
+  def consult_item_timestamp_label(item, cue_links_by_item:, cue_by_id:)
+    item = item.with_indifferent_access
+    cues = Array(cue_links_by_item[item[:id].to_s]).filter_map { |id| cue_by_id[id]&.with_indifferent_access }
+    return nil if cues.empty?
+
+    first = cues.min_by { |cue| cue[:start_ms].to_i }
+    last = cues.max_by { |cue| cue[:end_ms].presence&.to_i || cue[:start_ms].to_i }
+    start_label = first[:start].presence
+    end_label = last[:end].presence
+    return start_label if end_label.blank? || end_label == start_label
+
+    "#{start_label} – #{end_label}"
+  end
+
   # Human-readable timeframe for the observations card empty state (anchored to last check-in or milestone when present).
   # since_date: start of range (anchor date or long ago), has_finalized: true when an anchor event exists (check-in or milestone).
   def observations_timeframe_description(since_date, has_finalized)

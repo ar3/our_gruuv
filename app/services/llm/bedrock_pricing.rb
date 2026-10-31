@@ -8,6 +8,9 @@ module Llm
 
     # Rates as dollars per million tokens.
     RATES = {
+      /nova-2-lite/i => Rate.new(0.30, 2.50, 0.03, 0.375),
+      /nova-lite/i => Rate.new(0.06, 0.24, 0.015, 0.06),
+      /nova-micro/i => Rate.new(0.035, 0.14, 0.00875, 0.035),
       /haiku-4-5/i => Rate.new(1.0, 5.0, 0.10, 1.25),
       /haiku/i => Rate.new(0.80, 4.0, 0.08, 1.0),
       /sonnet-4/i => Rate.new(3.0, 15.0, 0.30, 3.75),

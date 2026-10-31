@@ -5,7 +5,7 @@ module Organizations
     before_action :authenticate_person!
     before_action :set_consult, only: %i[
       show update confirm_teammates extract re_extract
-      extraction_status create_draft_observations
+      extraction_status first_pass_status create_draft_observations
       save_labels download_prompt_debug update_speaker_map rebuild_speaker_map
     ]
     after_action :verify_authorized
@@ -47,6 +47,7 @@ module Organizations
                                                   creator_company_teammate: current_company_teammate,
                                                   people_status: "suggested",
                                                   extraction_status: "ready",
+                                                  first_pass_status: "pending",
                                                   prompt_debug: debug
                                                 ))
       attach_source!(@consult)
@@ -77,13 +78,24 @@ module Organizations
 
     def confirm_teammates
       authorize @consult
-      ids = Array(params[:confirmed_teammate_ids]).map(&:to_i).reject(&:zero?).uniq
+      if params[:speaker_map].present? || params[:cue_annotations].present?
+        PossibleObservationConsults::PersistPeopleMapService.call(
+          consult: @consult,
+          speaker_map_params: params[:speaker_map],
+          cue_annotations_params: params[:cue_annotations]
+        )
+        @consult.reload
+        ids = PossibleObservationConsults::DeriveConfirmedTeammateIds.call(consult: @consult)
+      else
+        ids = Array(params[:confirmed_teammate_ids]).map(&:to_i).reject(&:zero?).uniq
+      end
+
       org_ids = organization.self_and_descendants.map(&:id)
       valid_ids = CompanyTeammate.where(id: ids, organization_id: org_ids).pluck(:id)
 
       if valid_ids.empty?
         redirect_to organization_possible_observation_consult_path(organization, @consult),
-                    alert: "Select at least one teammate."
+                    alert: "Resolve at least one observer or observee to a teammate before running OG Consult."
         return
       end
 
@@ -94,34 +106,22 @@ module Organizations
         extraction_error: nil,
         extractions: {}
       )
-      if stronger_model_requested?
-        PossibleObservationConsultExtractionJob.perform_later(
-          @consult.id,
-          model_id: Llm::MultiTeammateMomentsExtractor.stronger_model_id
-        )
-        redirect_to consult_path,
-                    notice: "OG Consult started with a slower, more powerful model — finding potential OGOs for the confirmed teammates."
-      else
-        PossibleObservationConsultExtractionJob.perform_later(@consult.id)
-        redirect_to consult_path,
-                    notice: "OG Consult started — finding potential OGOs for the confirmed teammates."
-      end
+      PossibleObservationConsultExtractionJob.perform_later(
+        @consult.id,
+        model_id: Llm::MultiTeammateMomentsExtractor.model_id
+      )
+      redirect_to consult_path,
+                  notice: "Step 3 started — drafting OGOs for the confirmed people."
     end
 
     def extract
       authorize @consult
       @consult.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-      if stronger_model_requested?
-        PossibleObservationConsultExtractionJob.perform_later(
-          @consult.id,
-          model_id: Llm::MultiTeammateMomentsExtractor.stronger_model_id
-        )
-        redirect_to consult_path,
-                    notice: "OG Consult started again with a slower, more powerful model."
-      else
-        PossibleObservationConsultExtractionJob.perform_later(@consult.id)
-        redirect_to consult_path, notice: "OG Consult started again."
-      end
+      PossibleObservationConsultExtractionJob.perform_later(
+        @consult.id,
+        model_id: Llm::MultiTeammateMomentsExtractor.model_id
+      )
+      redirect_to consult_path, notice: "OG Consult started again."
     end
 
     def re_extract
@@ -189,30 +189,13 @@ module Organizations
 
     def update_speaker_map
       authorize @consult
-      rows = normalize_speaker_map_param(params[:speaker_map])
-      labels = @consult.speaker_map_labels.deep_dup
-      rows.each do |raw_label, attrs|
-        entry = (labels[raw_label] || {}).stringify_keys
-        status = attrs["status"].to_s
-        status = "unknown" unless %w[resolved unknown ignore].include?(status)
-        teammate_id = attrs["company_teammate_id"].presence&.to_i
-        teammate_id = nil if teammate_id&.zero?
-        if status == "ignore"
-          teammate_id = nil
-        elsif teammate_id.present?
-          status = "resolved"
-        end
-        entry.merge!(
-          "raw_label" => raw_label,
-          "status" => status,
-          "company_teammate_id" => teammate_id,
-          "manual" => true
-        )
-        labels[raw_label] = entry
-      end
-      @consult.update!(speaker_map: { "version" => 1, "labels" => labels })
+      PossibleObservationConsults::PersistPeopleMapService.call(
+        consult: @consult,
+        speaker_map_params: params[:speaker_map],
+        cue_annotations_params: params[:cue_annotations]
+      )
 
-      if @consult.extraction_status == "completed" && @consult.extraction_items.any?
+      if @consult.reload.extraction_status == "completed" && @consult.extraction_items.any?
         remapped = PossibleObservationConsults::ApplySpeakerMapToItems.call(
           items: @consult.extraction_items,
           speaker_map: @consult.speaker_map
@@ -220,16 +203,15 @@ module Organizations
         @consult.replace_extraction_items!(remapped)
       end
 
-      redirect_to consult_path, notice: "Speaker map saved."
+      redirect_to consult_path, notice: "People map saved."
     end
 
     def rebuild_speaker_map
       authorize @consult, :update_speaker_map?
-      PossibleObservationConsults::BuildSpeakerMapService.call(
-        consult: @consult,
-        preserve_overrides: false
-      )
-      redirect_to consult_path, notice: "Speaker map rebuilt from transcript labels."
+      @consult.update!(first_pass_status: "pending", first_pass_error: nil, people_status: "suggested",
+                       confirmed_teammate_ids: [], extraction_status: "ready", extractions: {})
+      PossibleObservationConsultFirstPassJob.perform_later(@consult.id)
+      redirect_to consult_path, notice: "Re-running first pass to see who is observing whom…"
     end
 
     def extraction_status
@@ -261,6 +243,16 @@ module Organizations
       render json: payload
     end
 
+    def first_pass_status
+      authorize @consult
+      render json: {
+        status: @consult.first_pass_status,
+        error: @consult.first_pass_error,
+        polling: @consult.first_pass_in_flight?,
+        reload: @consult.first_pass_completed? || @consult.first_pass_status == "failed"
+      }
+    end
+
     private
 
     def set_consult
@@ -290,16 +282,13 @@ module Organizations
       consult.source_file.attach(file) if file.present?
     end
 
-    def after_source_saved!(consult, notice: "Content saved. Confirm which teammates to include, then run OG Consult.")
+    def after_source_saved!(consult, notice: "Transcript saved. Doing the first pass to see who is observing whom…")
       suggested = PossibleObservationConsults::SuggestTeammatesFromText.call(
         organization: organization,
         plaintext: consult.plaintext
       )
-      consult.update!(suggested_teammate_ids: suggested.map(&:id))
-      if consult.prompt_debug?
-        PossibleObservationConsults::BuildSpeakerMapService.call(consult: consult)
-        notice = "#{notice} Speaker map ready — resolve any ? labels before running OG Consult."
-      end
+      consult.update!(suggested_teammate_ids: suggested.map(&:id), first_pass_status: "pending", first_pass_error: nil)
+      PossibleObservationConsultFirstPassJob.perform_later(consult.id)
       redirect_to organization_possible_observation_consult_path(organization, consult), notice: notice
     end
 
@@ -329,10 +318,6 @@ module Organizations
 
     def consult_path
       organization_possible_observation_consult_path(organization, @consult)
-    end
-
-    def stronger_model_requested?
-      params[:model].to_s == "stronger"
     end
 
     def included_item?(item)
@@ -509,13 +494,14 @@ module Organizations
         kind: OgConsultation::KIND_OGO_SEARCH_CONSULT
       )
       @prompt_debug = @consult.prompt_debug?
-      return unless @prompt_debug
-
-      @transcript_cues = Transcripts::ParseCuesService.call(raw: @consult.source_raw)
+      @caption_cues = Transcripts::ParseCuesService.call(raw: @consult.source_raw)
+      @transcript_cues = @consult.moment_cues
       @speaker_map_labels = @consult.speaker_map_labels
-      if @consult.extraction_items.any?
+      @cue_annotation_rows = @consult.cue_annotation_rows
+      if @prompt_debug && @consult.extraction_items.any?
+        # Link candidates to caption atoms (not merged moments) for the debug transcript pane.
         @cue_links_by_item = PossibleObservationConsults::MatchCuesToItems.call(
-          cues: @transcript_cues,
+          cues: @caption_cues,
           items: @consult.extraction_items
         )
         @item_ids_by_cue = Hash.new { |h, k| h[k] = [] }

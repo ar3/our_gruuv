@@ -8,6 +8,7 @@ class LlmInvocationsController < ApplicationController
     position_clarity
     teammate_growth
     transcript_chunk
+    transcript_cue_first_pass
     slack_chunk
     teammate_resolve
     abilities_hr_enrich
@@ -16,7 +17,7 @@ class LlmInvocationsController < ApplicationController
     ogo_quality
   ].freeze
 
-  PER_PURPOSE_LIMIT = 10
+  PER_PURPOSE_LIMIT = 25
 
   def show
     authorize LlmInvocation, :show?

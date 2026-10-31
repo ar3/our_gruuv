@@ -36,7 +36,12 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
   end
 
   def confirm_teammates?
-    show? && record.extraction_status.in?(%w[ready failed])
+    show? && !record.people_confirmed? && record.first_pass_completed? &&
+      record.extraction_status.in?(%w[ready failed])
+  end
+
+  def first_pass_status?
+    show?
   end
 
   def extract?
@@ -65,7 +70,7 @@ class PossibleObservationConsultPolicy < ApplicationPolicy
   end
 
   def update_speaker_map?
-    show? && record.prompt_debug?
+    show?
   end
 
   def rebuild_speaker_map?

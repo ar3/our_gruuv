@@ -1,31 +1,33 @@
--# Locals: form_id, groups, prompt_debug, cue_links_by_item
+-# Locals: form_id, items, prompt_debug, identities_locked, cue_links_by_item,
+-#         timestamp_cue_links_by_item, cue_by_id
 - prompt_debug = local_assigns.fetch(:prompt_debug, false)
+- identities_locked = local_assigns.fetch(:identities_locked, false)
 - cue_links_by_item = local_assigns.fetch(:cue_links_by_item, {})
+- timestamp_cue_links_by_item = local_assigns.fetch(:timestamp_cue_links_by_item, cue_links_by_item)
+- cue_by_id = local_assigns.fetch(:cue_by_id, {})
+- items = Array(local_assigns[:items])
 
 = form_with url: organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true, html: { id: form_id, data: { turbo: false } } do
-  - idx = 0
-  - groups.each do |teammate, person_items|
-    .mb-4
-      %h6.mb-2= teammate.person.display_name
-      - if person_items.empty?
-        %p.small.text-muted.mb-0 No candidates for this person.
-      - else
-        .table-responsive
-          %table.table.table-bordered.align-middle
-            %thead.table-light
-              %tr
-                %th Quote
-                %th Actions
-                %th Status
-            %tbody
-              - person_items.each do |item|
-                = render "candidate_row",
-                         item: item,
-                         idx: idx,
-                         editable: true,
-                         prompt_debug: prompt_debug,
-                         linked_cue_ids: Array(cue_links_by_item[item[:id].to_s])
-                - idx += 1
+  - if items.empty?
+    %p.small.text-muted.mb-0 No candidates yet.
+  - else
+    .table-responsive
+      %table.table.table-bordered.align-middle
+        %thead.table-light
+          %tr
+            %th Quote
+            %th Actions
+            %th Status
+        %tbody
+          - items.each_with_index do |item, idx|
+            = render "candidate_row",
+                     item: item,
+                     idx: idx,
+                     editable: true,
+                     prompt_debug: prompt_debug,
+                     identities_locked: identities_locked,
+                     linked_cue_ids: Array(cue_links_by_item[item[:id].to_s]),
+                     timestamp_label: consult_item_timestamp_label(item, cue_links_by_item: timestamp_cue_links_by_item, cue_by_id: cue_by_id)
   .d-flex.flex-wrap.gap-2.mt-3
     - if prompt_debug && policy(@consult).save_labels?
       = button_tag "Save labels (no drafts)",
@@ -37,15 +39,14 @@
       = submit_tag "Save all", name: "commit", value: "Save all", class: "btn btn-primary"
   %p.mt-3.mb-0.text-muted.small
     - if prompt_debug
-      Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Would include")}, or #{content_tag(:strong, "Dismiss")}.
+      Each candidate is either #{content_tag(:strong, "Keep Reviewing")}, #{content_tag(:strong, "Would create draft OGO")}, or #{content_tag(:strong, "Dismiss")}.
       Click a candidate to highlight its transcript cues (and vice versa).
       #{content_tag(:strong, "Save labels")} keeps your corrections for the prompt-debug download and does not create OGOs.
       #{content_tag(:strong, "Save all (create drafts)")} is the normal promote path when you are done honing.
-      Re-run #{content_tag(:strong, "Consult OG again")} on this same transcript to compare a new prompt version.
     - else
-      Each candidate is either #{content_tag(:strong, "Reviewing")}, #{content_tag(:strong, "Include")}, or #{content_tag(:strong, "Dismiss")}.
-      Save all actualizes every row: included candidates become draft OGOs (you are the creator),
-      dismissed candidates are hidden, and the rest stay as potential OGOs.
+      Each candidate is either #{content_tag(:strong, "Keep Reviewing")}, #{content_tag(:strong, "Create Draft OGO")}, or #{content_tag(:strong, "Dismiss")}.
+      Save all actualizes every row: Create Draft OGO candidates become draft OGOs (you are the creator),
+      dismissed candidates are hidden, and Keep Reviewing stays as potential OGOs.
       Use the per-row buttons to act on one candidate immediately: Create draft OGO now, Create published OGO now (private)
       (publishes only when you are the observer; otherwise it stays a draft), or Dismiss now.
 

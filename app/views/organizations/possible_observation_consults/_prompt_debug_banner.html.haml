@@ -8,18 +8,14 @@
         This run is for honing the transcript → OGO prompt. Behavior differs from a normal consult:
       %ul.mb-2.small.ps-3
         %li
-          Fix the
-          %strong Speaker map
-          first (Ignore audio-share labels; resolve
-          %strong ?
-          rows).
+          Map observers/observees on the cue table, then run OG Consult as usual.
         %li
           After extraction, use the transcript pane — click cues or
           %strong Show in transcript
           on a pOGO.
         %li
           Use
-          %strong Would include
+          %strong Would create draft OGO
           /
           %strong Dismiss
           +
@@ -28,6 +24,6 @@
         %li
           Download the
           %strong prompt-debug JSON
-          and re-run Consult OG again on this same transcript.
+          when you are done labeling.
       %p.mb-0.small.text-muted
         Started via #{content_tag(:code, "?debug=true")}. Normal consults omit that param.

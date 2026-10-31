@@ -14,6 +14,7 @@ class PossibleObservationConsult < ApplicationRecord
   ].freeze
   PEOPLE_STATUSES = %w[suggested confirmed].freeze
   EXTRACTION_STATUSES = %w[ready pending processing completed failed].freeze
+  FIRST_PASS_STATUSES = %w[ready pending processing completed failed].freeze
 
   belongs_to :organization
   belongs_to :creator_company_teammate, class_name: "CompanyTeammate",
@@ -25,6 +26,7 @@ class PossibleObservationConsult < ApplicationRecord
   validates :display_name, presence: true, length: { maximum: 255 }
   validates :people_status, inclusion: { in: PEOPLE_STATUSES }
   validates :extraction_status, inclusion: { in: EXTRACTION_STATUSES }
+  validates :first_pass_status, inclusion: { in: FIRST_PASS_STATUSES }
   validate :source_present
   validate :source_file_constraints, if: -> { source_file.attached? }
 
@@ -151,8 +153,44 @@ class PossibleObservationConsult < ApplicationRecord
     end
   end
 
+  def cue_annotation_rows
+    hash = cue_annotations.is_a?(Hash) ? cue_annotations.with_indifferent_access : {}
+    (hash[:cues] || {}).each_with_object({}) do |(key, value), memo|
+      memo[key.to_s] = value.with_indifferent_access
+    end
+  end
+
+  # Step 2 / first-pass moments (merged captions + collapsed same-speaker ignores).
+  # Falls back to live parse+merge before first pass has stored moments.
+  def moment_cues
+    hash = cue_annotations.is_a?(Hash) ? cue_annotations.with_indifferent_access : {}
+    stored = Array(hash[:moments])
+    return stored.map(&:with_indifferent_access) if stored.any?
+
+    Transcripts::MomentCuesService.call(raw: source_raw)
+  end
+
   def people_confirmed?
     people_status == "confirmed" && Array(confirmed_teammate_ids).any?
+  end
+
+  def first_pass_in_flight?
+    first_pass_status.in?(%w[pending processing])
+  end
+
+  def first_pass_completed?
+    first_pass_status == "completed"
+  end
+
+  # Step 3 keeps observer/observee editable so misses from Step 2 can be fixed
+  # without going back. Rows that already became draft OGOs stay locked in the UI
+  # via observation_id on the candidate row.
+  def identities_locked?
+    false
+  end
+
+  def mark_first_pass_pending!
+    update!(first_pass_status: "pending", first_pass_error: nil)
   end
 
   def google_meet_source?

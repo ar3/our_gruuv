@@ -20,7 +20,7 @@ RSpec.describe "Possible observation consults", type: :request do
   end
 
   describe "POST create" do
-    it "saves paste content and suggests teammates by name" do
+    it "saves paste content, suggests teammates, and enqueues the first-pass job" do
       expect do
         post organization_possible_observation_consults_path(organization),
              params: {
@@ -30,11 +30,13 @@ RSpec.describe "Possible observation consults", type: :request do
                }
              }
       end.to change(PossibleObservationConsult, :count).by(1)
+        .and have_enqueued_job(PossibleObservationConsultFirstPassJob)
 
       consult = PossibleObservationConsult.last
       expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
       expect(consult.suggested_teammate_ids).to include(other.id)
       expect(consult.people_status).to eq("suggested")
+      expect(consult.first_pass_status).to eq("pending")
     end
   end
 
@@ -44,54 +46,97 @@ RSpec.describe "Possible observation consults", type: :request do
         :possible_observation_consult,
         organization: organization,
         creator_company_teammate: teammate,
-        source_text: "Pat crushed it.",
+        source_text: <<~VTT,
+          WEBVTT
+
+          1
+          00:12:00.000 --> 00:12:05.000
+          Pat Subject: Pat crushed it this week.
+        VTT
         suggested_teammate_ids: [other.id]
       )
     end
 
-    it "confirms people and enqueues extraction" do
+    before do
+      consult.update!(first_pass_status: "completed")
+      PossibleObservationConsults::BuildSpeakerMapService.call(consult: consult)
+    end
+
+    it "confirms people from the cue map and enqueues extraction" do
+      cue_id = Transcripts::MomentCuesService.call(raw: consult.source_raw).first.fetch("id")
       expect do
         patch confirm_teammates_organization_possible_observation_consult_path(organization, consult),
-              params: { confirmed_teammate_ids: [other.id] }
+              params: {
+                speaker_map: {
+                  "Pat Subject" => { certainty: "certain", company_teammate_id: other.id }
+                },
+                cue_annotations: {
+                  cue_id => {
+                    ogo_worthy: "1",
+                    observee_certainty: "certain",
+                    observee_company_teammate_id: other.id
+                  }
+                }
+              }
       end.to have_enqueued_job(PossibleObservationConsultExtractionJob)
 
       consult.reload
       expect(consult.people_status).to eq("confirmed")
       expect(consult.confirmed_teammate_ids).to eq([other.id])
       expect(consult.extraction_status).to eq("pending")
+      expect(consult.speaker_map_labels["Pat Subject"][:certainty]).to eq("certain")
+      expect(consult.cue_annotation_rows[cue_id][:cue_status]).to eq("ogo_worthy")
+      expect(consult.cue_annotation_rows[cue_id][:observee_company_teammate_id]).to eq(other.id)
     end
 
-    it "confirms people and runs the stronger model when model=stronger" do
+    it "enqueues Step 3 extraction with Sonnet" do
+      cue_id = Transcripts::MomentCuesService.call(raw: consult.source_raw).first.fetch("id")
       expect do
         patch confirm_teammates_organization_possible_observation_consult_path(organization, consult),
-              params: { confirmed_teammate_ids: [other.id], model: "stronger" }
+              params: {
+                speaker_map: {
+                  "Pat Subject" => { certainty: "certain", company_teammate_id: other.id }
+                },
+                cue_annotations: {
+                  cue_id => { ogo_worthy: "1", observee_certainty: "uncertain" }
+                }
+              }
       end.to have_enqueued_job(PossibleObservationConsultExtractionJob)
-        .with(consult.id, model_id: Llm::MultiTeammateMomentsExtractor.stronger_model_id)
+        .with(consult.id, model_id: Llm::MultiTeammateMomentsExtractor.model_id)
 
+      expect(Llm::MultiTeammateMomentsExtractor.model_id).to include("claude-sonnet-4-5")
       expect(consult.reload.extraction_status).to eq("pending")
+    end
+
+    it "still accepts legacy checkbox confirmed_teammate_ids" do
+      patch confirm_teammates_organization_possible_observation_consult_path(organization, consult),
+            params: { confirmed_teammate_ids: [other.id] }
+      expect(consult.reload.confirmed_teammate_ids).to eq([other.id])
     end
   end
 
   describe "POST create with debug=true" do
-    it "stores prompt_debug on the consult and builds a speaker map" do
-      post organization_possible_observation_consults_path(organization, debug: true),
-           params: {
-             possible_observation_consult: {
-               display_name: "Debug hone",
-               source_text: <<~VTT,
-                 WEBVTT
+    it "stores prompt_debug and enqueues first pass" do
+      expect do
+        post organization_possible_observation_consults_path(organization, debug: true),
+             params: {
+               possible_observation_consult: {
+                 display_name: "Debug hone",
+                 source_text: <<~VTT,
+                   WEBVTT
 
-                 1
-                 00:01:00.000 --> 00:01:02.000
-                 Pat Subject: Pat did a great job shipping the launch this week.
-               VTT
-               prompt_debug: "true"
+                   1
+                   00:01:00.000 --> 00:01:02.000
+                   Pat Subject: Pat did a great job shipping the launch this week.
+                 VTT
+                 prompt_debug: "true"
+               }
              }
-           }
+      end.to have_enqueued_job(PossibleObservationConsultFirstPassJob)
 
       consult = PossibleObservationConsult.last
       expect(consult.prompt_debug?).to be(true)
-      expect(consult.speaker_map_labels).to have_key("Pat Subject")
+      expect(consult.first_pass_status).to eq("pending")
       expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
     end
   end
@@ -291,17 +336,99 @@ RSpec.describe "Possible observation consults", type: :request do
       get organization_possible_observation_consult_path(organization, consult)
       expect(response.body).to include("Save all")
       expect(response.body).not_to include("Save labels (no drafts)")
-      expect(response.body).to include(">Include<")
-      expect(response.body).not_to include(">Would include<")
+      expect(response.body).to include(">Keep Reviewing<")
+      expect(response.body).to include(">Create Draft OGO<")
+      expect(response.body).not_to include(">Would create draft OGO<")
+      expect(response.body).to include("What we&#39;ll do when we Save all at the end")
+      expect(response.body).to include("…or act on just this one right now")
+      expect(response.body).to include("data-bs-toggle=\"collapse\"")
       expect(response.body).to include("Create draft OGO now")
       expect(response.body).to include("Create published OGO now (private)")
       expect(response.body).to include("Dismiss now")
-      expect(response.body).to include("Consult OG again")
-      expect(response.body).to include("Faster, but less powerful model")
-      expect(response.body).to include("Slower, but more powerful model")
+      expect(response.body).not_to include("Consult OG again")
+      expect(response.body).to include("confident in this suggestion")
+      expect(response.body).to include('rows="11"')
+      expect(response.body).not_to include("Faster, but less powerful model")
+      expect(response.body).not_to include("Slower, but more powerful model")
     end
 
-    it "renders clickable observer identity hints when the stored candidate is unsure" do
+    it "lists completed step 3 candidates in transcript time order without person headings" do
+      third_person = create(:person, full_name: "Late Subject", preferred_name: "Late")
+      third = create(:company_teammate, person: third_person, organization: organization)
+      create(:employment_tenure, teammate: third, company: organization, started_at: 1.year.ago, ended_at: nil)
+      third.update!(first_employed_at: 1.year.ago)
+
+      early_text = "Early shout out with enough overlapping text for cue matching"
+      late_text = "Later shout out with enough overlapping text for cue matching"
+      consult.update!(
+        confirmed_teammate_ids: [other.id, third.id],
+        cue_annotations: {
+          "moments" => [
+            {
+              "id" => "late-cue",
+              "start" => "00:10:00.000",
+              "end" => "00:10:05.000",
+              "start_ms" => 600_000,
+              "end_ms" => 605_000,
+              "text" => late_text
+            },
+            {
+              "id" => "early-cue",
+              "start" => "00:01:00.000",
+              "end" => "00:01:05.000",
+              "start_ms" => 60_000,
+              "end_ms" => 65_000,
+              "text" => early_text
+            }
+          ]
+        },
+        extractions: {
+          "version" => 1,
+          "processed_teammate_ids" => [other.id, third.id],
+          "items" => [
+            {
+              "id" => "late-item",
+              "kind" => "kudos",
+              "confidence" => 0.8,
+              "quote" => late_text,
+              "full_quote" => late_text,
+              "suggested_rating" => "exceeded",
+              "suggested_rateable_type" => "Ability",
+              "suggested_rateable_name" => "Delivery",
+              "responder_company_teammate_id" => teammate.id,
+              "subject_company_teammate_id" => third.id,
+              "include" => false
+            },
+            {
+              "id" => "early-item",
+              "kind" => "kudos",
+              "confidence" => 0.7,
+              "quote" => early_text,
+              "full_quote" => early_text,
+              "suggested_rating" => "met",
+              "suggested_rateable_type" => "Ability",
+              "suggested_rateable_name" => "Delivery",
+              "responder_company_teammate_id" => teammate.id,
+              "subject_company_teammate_id" => other.id,
+              "include" => false
+            }
+          ]
+        }
+      )
+
+      get organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Step 3 · Review candidate OGOs")
+      expect(response.body).not_to include("Results so far")
+      expect(response.body).to include("00:01:00.000")
+      expect(response.body).to include("confident in this suggestion")
+      expect(response.body).to include("Suggested:")
+      expect(response.body).to include('rows="11"')
+      expect(response.body.index(early_text)).to be < response.body.index(late_text)
+    end
+
+    it "keeps observer and subject editable on step 3 review" do
       item = consult.extraction_items.first.to_h.merge(
         "observer_unknown" => true,
         "observer_alternates" => [
@@ -314,8 +441,10 @@ RSpec.describe "Possible observation consults", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Might also be")
-      expect(response.body).to include(other.person.display_name)
       expect(response.body).to include("ogo-identity-alternates")
+      expect(response.body).to include('name="items[0][responder_company_teammate_id]"')
+      expect(response.body).to include("form-select")
+      expect(response.body).to include(other.person.display_name)
     end
   end
 
@@ -349,7 +478,7 @@ RSpec.describe "Possible observation consults", type: :request do
           "labels" => {
             "Corbin Dodson" => {
               "raw_label" => "Corbin Dodson",
-              "status" => "unknown",
+              "certainty" => "uncertain",
               "company_teammate_id" => nil,
               "cue_count" => 2,
               "kind" => "speech",
@@ -380,22 +509,50 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Save labels (no drafts)")
       expect(response.body).to include("Save all (create drafts)")
       expect(response.body).to include("Download prompt-debug JSON")
-      expect(response.body).to include("Speaker map")
       expect(response.body).to include("Transcript")
       expect(response.body).to include("Show in transcript")
       expect(response.body).to include("Corbin Dodson")
-      expect(response.body).to include(">Reviewing<")
-      expect(response.body).to include(">Would include<")
+      expect(response.body).to include(">Keep Reviewing<")
+      expect(response.body).to include(">Would create draft OGO<")
       expect(response.body).to include(">Dismiss<")
       expect(response.body).not_to include("Create draft OGO now")
     end
 
-    it "shows the prompt-debug banner and speaker map before teammates are confirmed" do
-      consult.update!(people_status: "suggested", confirmed_teammate_ids: [], extraction_status: "ready")
+    it "shows the prompt-debug banner and step-2 cue map when first pass is complete" do
+      consult.update!(
+        people_status: "suggested",
+        confirmed_teammate_ids: [],
+        extraction_status: "ready",
+        first_pass_status: "completed"
+      )
+      PossibleObservationConsults::BuildSpeakerMapService.call(consult: consult)
       get organization_possible_observation_consult_path(organization, consult)
       expect(response.body).to include("Prompt debug mode is on for this consult")
-      expect(response.body).to include("Speaker map")
-      expect(response.body).to include("Confirm teammates")
+      expect(response.body).to include("Step 1 • Upload, Paste, Connect meeting transcript")
+      expect(response.body).to include("bi-check-circle-fill")
+      expect(response.body).to include("Step 2 • Who is observing whom")
+      expect(response.body).to include("OG tried to figure out who was talking and who they were talking about")
+      expect(response.body).to include("but we need you to verify")
+      expect(response.body).to include("Step 3 • Review the content and create the OGOs")
+      expect(response.body).to include("associate the right Abilities, Assignments, or Values")
+      expect(response.body).to include("OGO-worthy")
+      expect(response.body).to include("merged into one cue")
+      expect(response.body).to include("Confirm people and continue to Step 3")
+    end
+
+    it "shows the first-pass waiting banner while the cheap pass runs" do
+      consult.update!(
+        people_status: "suggested",
+        confirmed_teammate_ids: [],
+        extraction_status: "ready",
+        first_pass_status: "processing"
+      )
+      get organization_possible_observation_consult_path(organization, consult)
+      expect(response.body).to include("Step 1 • Upload, Paste, Connect meeting transcript")
+      expect(response.body).to include("Step 2 • Who is observing whom")
+      expect(response.body).to include("First pass in progress")
+      expect(response.body).to include("Step 3 • Review the content and create the OGOs")
+      expect(response.body).to include("Doing the first pass to see who is observing whom")
     end
 
     it "saves speaker map resolutions" do
@@ -403,7 +560,7 @@ RSpec.describe "Possible observation consults", type: :request do
             params: {
               speaker_map: {
                 "Corbin Dodson" => {
-                  status: "resolved",
+                  certainty: "certain",
                   company_teammate_id: teammate.id
                 }
               }
@@ -411,7 +568,7 @@ RSpec.describe "Possible observation consults", type: :request do
 
       expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
       entry = consult.reload.speaker_map_labels["Corbin Dodson"]
-      expect(entry[:status]).to eq("resolved")
+      expect(entry[:certainty]).to eq("certain")
       expect(entry[:company_teammate_id]).to eq(teammate.id)
       expect(entry[:manual]).to eq(true)
       expect(consult.extraction_items.first[:responder_company_teammate_id].to_i).to eq(teammate.id)
@@ -623,6 +780,39 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(json["status"]).to eq("processing")
       expect(json["processed_teammates_count"]).to eq(1)
       expect(json["confirmed_teammates_count"]).to eq(2)
+    end
+  end
+
+  describe "GET first_pass_status" do
+    let!(:consult) do
+      create(
+        :possible_observation_consult,
+        organization: organization,
+        creator_company_teammate: teammate,
+        first_pass_status: "processing"
+      )
+    end
+
+    it "signals the poller to keep waiting while in flight" do
+      get first_pass_status_organization_possible_observation_consult_path(organization, consult),
+          headers: { "Accept" => "application/json" }
+
+      expect(response).to have_http_status(:ok)
+      json = response.parsed_body
+      expect(json["status"]).to eq("processing")
+      expect(json["polling"]).to eq(true)
+      expect(json["reload"]).to eq(false)
+    end
+
+    it "signals reload when the first pass completes" do
+      consult.update!(first_pass_status: "completed")
+      get first_pass_status_organization_possible_observation_consult_path(organization, consult),
+          headers: { "Accept" => "application/json" }
+
+      json = response.parsed_body
+      expect(json["status"]).to eq("completed")
+      expect(json["polling"]).to eq(false)
+      expect(json["reload"]).to eq(true)
     end
   end
 

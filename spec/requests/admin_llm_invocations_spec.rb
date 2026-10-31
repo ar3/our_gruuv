@@ -31,7 +31,7 @@ RSpec.describe 'Admin LLM Invocations', type: :request do
 
       before do
         sign_in_as_teammate_for_request(person, organization)
-        11.times { |i| create_invocation!(purpose: 'ability_clarity', input_tokens: 1_000 + i) }
+        26.times { |i| create_invocation!(purpose: 'ability_clarity', input_tokens: 1_000 + i) }
         create_invocation!(purpose: 'slack_chunk')
       end
 
@@ -40,11 +40,12 @@ RSpec.describe 'Admin LLM Invocations', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Admin: LLM Invocations')
+        expect(response.body).to include('Last 25 invocations per purpose')
         expect(response.body).to include('Ability Clarity')
         expect(response.body).to include('Slack Chunk')
         expect(response.body).to include('Anticipated')
-        expect(response.body).to include('in 1,010')
-        # Oldest of 11 ability_clarity rows (1,000 in) should be omitted
+        expect(response.body).to include('in 1,025')
+        # Oldest of 26 ability_clarity rows (1,000 in) should be omitted
         expect(response.body).not_to include('in 1,000 /')
       end
     end

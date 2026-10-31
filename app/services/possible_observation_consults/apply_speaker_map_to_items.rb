@@ -25,17 +25,14 @@ module PossibleObservationConsults
         mapping = @labels[label]
         next item unless mapping
 
-        case mapping[:status].to_s
-        when "ignore"
+        if mapping[:company_teammate_id].present?
+          item["responder_company_teammate_id"] = mapping[:company_teammate_id].to_i
+          item["observer_unknown"] = mapping[:certainty].to_s != "certain" && mapping[:status].to_s != "resolved"
+          item["observer_alternates"] = Array(mapping[:alternates])
+        elsif mapping[:status].to_s == "ignore" || mapping[:kind].to_s == "audio_share"
           item["responder_company_teammate_id"] = nil
           item["observer_unknown"] = true
           item["observer_alternates"] = []
-        when "resolved", "unknown"
-          if mapping[:company_teammate_id].present?
-            item["responder_company_teammate_id"] = mapping[:company_teammate_id].to_i
-            item["observer_unknown"] = mapping[:status].to_s != "resolved"
-            item["observer_alternates"] = Array(mapping[:alternates])
-          end
         end
         item
       end

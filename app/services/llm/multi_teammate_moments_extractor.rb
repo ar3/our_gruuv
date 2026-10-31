@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-# Thin multi-subject adapter: same SlackMomentsExtractor prompt/models per confirmed teammate.
+# Thin multi-subject adapter: same SlackMomentsExtractor prompt per confirmed teammate.
+# Consult Step 3 always uses Sonnet (no Haiku/faster toggle).
 module Llm
   class MultiTeammateMomentsExtractor
     def self.model_id
-      SlackMomentsExtractor.model_id
+      SlackMomentsExtractor.stronger_model_id
     end
 
     def self.stronger_model_id

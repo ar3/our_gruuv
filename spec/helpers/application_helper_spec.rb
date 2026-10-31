@@ -158,4 +158,44 @@ RSpec.describe ApplicationHelper, type: :helper do
       end
     end
   end
+
+  describe '#consult_step3_review_bundle' do
+    it 'sorts candidates by matched cue start time, not by person' do
+      early_text = 'Early shout out with enough overlapping text for cue matching'
+      late_text = 'Later shout out with enough overlapping text for cue matching'
+      cues = [
+        {
+          'id' => 'late-cue',
+          'start' => '00:10:00.000',
+          'end' => '00:10:05.000',
+          'start_ms' => 600_000,
+          'end_ms' => 605_000,
+          'text' => late_text
+        },
+        {
+          'id' => 'early-cue',
+          'start' => '00:01:00.000',
+          'end' => '00:01:05.000',
+          'start_ms' => 60_000,
+          'end_ms' => 65_000,
+          'text' => early_text
+        }
+      ]
+      items = [
+        { 'id' => 'late-item', 'quote' => late_text, 'full_quote' => late_text },
+        { 'id' => 'early-item', 'quote' => early_text, 'full_quote' => early_text }
+      ]
+
+      bundle = helper.consult_step3_review_bundle(items, cues: cues)
+
+      expect(bundle[:items].map { |item| item[:id] }).to eq(%w[early-item late-item])
+      expect(
+        helper.consult_item_timestamp_label(
+          bundle[:items].first,
+          cue_links_by_item: bundle[:cue_links],
+          cue_by_id: bundle[:cue_by_id]
+        )
+      ).to eq('00:01:00.000 – 00:01:05.000')
+    end
+  end
 end 

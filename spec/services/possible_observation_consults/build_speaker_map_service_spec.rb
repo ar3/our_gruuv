@@ -26,13 +26,17 @@ RSpec.describe PossibleObservationConsults::BuildSpeakerMapService do
     )
   end
 
-  it "resolves people and ignores audio-share labels" do
+  it "resolves people and marks audio-share cues as ignore" do
     described_class.call(consult: consult)
     labels = consult.reload.speaker_map_labels
+    cues = consult.cue_annotation_rows
 
-    expect(labels["Natalie Morgan"][:status]).to eq("resolved")
+    expect(labels["Natalie Morgan"][:certainty]).to eq("certain")
     expect(labels["Natalie Morgan"][:company_teammate_id]).to eq(natalie_tm.id)
-    expect(labels["Audio shared by Natalie Morgan"][:status]).to eq("ignore")
     expect(labels["Audio shared by Natalie Morgan"][:kind]).to eq("audio_share")
+    expect(labels["Audio shared by Natalie Morgan"][:company_teammate_id]).to be_nil
+    expect(cues.values.count { |row| row[:cue_status] == "ignore" }).to be >= 1
+    expect(cues.values.count { |row| row[:cue_status] == "ogo_worthy" }).to be >= 1
   end
 end
+

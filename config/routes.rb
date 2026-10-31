@@ -434,6 +434,7 @@ Rails.application.routes.draw do
       member do
         patch :confirm_teammates
         get :extraction_status
+        get :first_pass_status
         post :extract
         post :re_extract
         post :create_draft_observations

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_31_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_31_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1784,8 +1784,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_120000) do
     t.jsonb "source_metadata", default: {}, null: false
     t.boolean "prompt_debug", default: false, null: false
     t.jsonb "speaker_map", default: {}, null: false
+    t.jsonb "cue_annotations", default: {}, null: false
+    t.string "first_pass_status", default: "ready", null: false
+    t.text "first_pass_error"
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_3cbc8c0c14"
     t.index ["extraction_status"], name: "index_possible_observation_consults_on_extraction_status"
+    t.index ["first_pass_status"], name: "index_possible_observation_consults_on_first_pass_status"
     t.index ["organization_id"], name: "index_possible_observation_consults_on_organization_id"
     t.index ["people_status"], name: "index_possible_observation_consults_on_people_status"
     t.index ["prompt_debug"], name: "index_possible_observation_consults_on_prompt_debug"

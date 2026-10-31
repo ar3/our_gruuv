@@ -20,4 +20,14 @@ RSpec.describe Llm::BedrockCostCalculator do
     )
     expect(cost).to eq(100_000) # $0.10
   end
+
+  it 'computes microdollar cost for Nova 2 Lite token usage' do
+    cost = described_class.cost_micros(
+      model_id: 'us.amazon.nova-2-lite-v1:0',
+      input_tokens: 1_000_000,
+      output_tokens: 1_000_000
+    )
+    # $0.30 input + $2.50 output = $2.80 = 2_800_000 micros
+    expect(cost).to eq(2_800_000)
+  end
 end

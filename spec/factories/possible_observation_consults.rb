@@ -10,6 +10,7 @@ FactoryBot.define do
     confirmed_teammate_ids { [] }
     people_status { "suggested" }
     extraction_status { "ready" }
+    first_pass_status { "completed" }
     prompt_debug { false }
     extractions { { "version" => 1, "items" => [] } }
 
@@ -17,6 +18,11 @@ FactoryBot.define do
       prompt_debug { true }
       display_name { "OG Consult debug #{SecureRandom.hex(3)}" }
     end
+
+    trait :first_pass_pending do
+      first_pass_status { "pending" }
+    end
+
 
     after(:build) do |consult|
       consult.creator_company_teammate.organization = consult.organization

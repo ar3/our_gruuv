@@ -1,8 +1,18 @@
 - extraction_status_url = extraction_status_organization_possible_observation_consult_path(organization, @consult)
+- first_pass_status_url = first_pass_status_organization_possible_observation_consult_path(organization, @consult)
 - form_id = "ogo-consult-candidates-form"
 - processing = %w[pending processing].include?(@consult.extraction_status)
 - completed = @consult.extraction_status == "completed"
+- first_pass_waiting = !@consult.people_confirmed? && @consult.first_pass_in_flight?
+- step2_ready = !@consult.people_confirmed? && @consult.first_pass_completed?
 - groups = @consult.extraction_groups_by_processed_teammate(teammates: @confirmed_teammates).map { |tm, items| [tm, candidate_items_for_review(items)] }
+
+- step2_done = @consult.people_confirmed?
+- step2_current = !step2_done
+- step3_done = completed
+- step3_current = step2_done && !step3_done
+- step2_detail = first_pass_waiting ? "First pass in progress — figuring out who was talking and who they were talking about…" : "OG tried to figure out who was talking and who they were talking about… but we need you to verify"
+- step3_detail = processing ? "Drafting OGOs…" : (@consult.extraction_status == "failed" ? "Drafting failed — try again" : "OG will try to associate the right Abilities, Assignments, or Values to this potential OGO… and you'll create it, and the observer can then publish it")
 
 .mb-3
   = link_to "← All consults", organization_possible_observation_consults_path(organization), class: "text-decoration-none"
@@ -10,43 +20,73 @@
   = @consult.display_name
   - if @consult.prompt_debug?
     %span.badge.text-bg-warning.ms-2 Prompt debug
-%p.small.text-muted.mb-3
-  Status:
-  %span.badge.text-bg-secondary= @consult.extraction_status
-  · People: #{@consult.people_status}
+
+%ol.list-unstyled.d-flex.flex-column.gap-2.mb-4{ aria: { label: "Consult progress" } }
+  %li.d-flex.align-items-start.gap-2
+    %i.bi.bi-check-circle-fill.text-success.mt-1{ aria: { hidden: true } }
+    %div
+      %div.fw-semibold
+        Step 1 • Upload, Paste, Connect meeting transcript
+      %div.small.text-muted Transcript ready
+  %li.d-flex.align-items-start.gap-2{ class: (step2_current ? nil : "text-muted") }
+    - if step2_done
+      %i.bi.bi-check-circle-fill.text-success.mt-1{ aria: { hidden: true } }
+    - elsif first_pass_waiting
+      %span.spinner-border.spinner-border-sm.text-secondary.mt-1{ role: "status" }
+        %span.visually-hidden Loading
+    - else
+      %span.rounded-circle.border.border-secondary.d-inline-block.mt-1{ style: "width: 1rem; height: 1rem;", aria: { hidden: true } }
+    %div
+      %div{ class: (step2_current ? "fw-semibold" : nil) }
+        Step 2 • Who is observing whom
+      %div.small{ class: (step2_current ? "text-muted" : nil) }= step2_detail
+  %li.d-flex.align-items-start.gap-2{ class: (step3_current || step3_done ? nil : "text-muted") }
+    - if step3_done
+      %i.bi.bi-check-circle-fill.text-success.mt-1{ aria: { hidden: true } }
+    - elsif step3_current && processing
+      %span.spinner-border.spinner-border-sm.text-secondary.mt-1{ role: "status" }
+        %span.visually-hidden Loading
+    - else
+      %span.rounded-circle.border.border-secondary.d-inline-block.mt-1{ style: "width: 1rem; height: 1rem;", aria: { hidden: true } }
+    %div
+      %div{ class: (step3_current || step3_done ? "fw-semibold" : nil) }
+        Step 3 • Review the content and create the OGOs
+      %div.small{ class: (step3_current || step3_done ? "text-muted" : nil) }= step3_detail
 
 - if @consult.prompt_debug?
   = render "prompt_debug_banner"
-  - if @speaker_map_labels.present?
-    = render "speaker_map",
-             consult: @consult,
-             labels: @speaker_map_labels,
-             selectable_teammates: @selectable_teammates,
-             organization: organization
 
-- unless @consult.people_confirmed?
-  .card.mb-4
-    .card-body
-      %h5.mb-2 Confirm teammates
-      %p.small.text-muted
-        Names detected in the content are pre-checked. Adjust the list, then start OG Consult.
-      = form_with url: confirm_teammates_organization_possible_observation_consult_path(organization, @consult), method: :patch, local: true do
-        - preselected = Array(@consult.suggested_teammate_ids).map(&:to_i)
-        .row
-          - @selectable_teammates.each do |tm|
-            .col-md-4.mb-2
-              .form-check
-                = check_box_tag "confirmed_teammate_ids[]", tm.id, preselected.include?(tm.id), class: "form-check-input", id: "tm_#{tm.id}"
-                = label_tag "tm_#{tm.id}", tm.person.display_name, class: "form-check-label"
-        .btn-group.mt-3{ role: "group" }
-          = button_tag "Confirm teammates and run OG Consult", type: "submit", class: "btn btn-primary"
-          %button.btn.btn-primary.dropdown-toggle.dropdown-toggle-split{ type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false" }
-            %span.visually-hidden Choose model
-          %ul.dropdown-menu
-            %li
-              = button_tag "Faster, but less powerful model", type: "submit", class: "dropdown-item"
-            %li
-              = button_tag "Slower, but more powerful model", type: "submit", name: "model", value: "stronger", class: "dropdown-item"
+- if first_pass_waiting
+  .alert.alert-secondary.mb-3{
+      data: {
+        controller: "first-pass-status-poll",
+        first_pass_status_poll_url_value: first_pass_status_url
+      }
+    }
+    .d-flex.align-items-center.gap-2
+      .spinner-border.spinner-border-sm{ role: "status" }
+        %span.visually-hidden Loading
+      %div
+        %strong Doing the first pass to see who is observing whom…
+        %div.small.text-muted
+          Organizing into OGO-worthiness and getting clear on who is the observer and who is the observee. This page will refresh when ready.
+
+- if @consult.first_pass_status == "failed" && !@consult.people_confirmed?
+  .alert.alert-danger
+    = @consult.first_pass_error.presence || "First pass failed."
+    = button_to "Try first pass again",
+                rebuild_speaker_map_organization_possible_observation_consult_path(organization, @consult),
+                method: :post,
+                class: "btn btn-sm btn-outline-primary ms-2"
+
+- if step2_ready
+  = render "cue_people_map",
+           consult: @consult,
+           cues: @transcript_cues,
+           speaker_map_labels: @speaker_map_labels,
+           cue_annotation_rows: @cue_annotation_rows,
+           selectable_teammates: @selectable_teammates,
+           organization: organization
 
 - if @consult.people_confirmed? && processing
   = render "shared/og_consultations/status_banner",
@@ -63,22 +103,6 @@
     - if policy(@consult).re_extract?
       = button_to "Try again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary ms-2"
 
-- if completed && policy(@consult).extract?
-  - latest_model = @latest_consultation&.model_id
-  - stronger_ran = latest_model.present? && latest_model == Llm::MultiTeammateMomentsExtractor.stronger_model_id
-  - faster_label = stronger_ran ? "Try: Faster, but less powerful model" : "Re-run: Faster, but less powerful model"
-  - stronger_label = stronger_ran ? "Re-run: Slower, but more powerful model" : "Try: Slower, but more powerful model"
-  .d-flex.flex-wrap.gap-2.mb-3
-    .btn-group{ role: "group" }
-      %button.btn.btn-sm.btn-outline-primary.dropdown-toggle{ type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false" }
-        %i.bi.bi-stars.me-1
-        Consult OG again
-      %ul.dropdown-menu
-        %li
-          = button_to faster_label, extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "dropdown-item"
-        %li
-          = button_to stronger_label, extract_organization_possible_observation_consult_path(organization, @consult, model: "stronger"), method: :post, class: "dropdown-item"
-
 - if processing && groups.any?
   - confirmed_n = Array(@consult.confirmed_teammate_ids).size
   - processed_n = @consult.processed_teammate_ids.size
@@ -89,14 +113,13 @@
   = render "candidate_groups_readonly", groups: groups
 
 - if completed
-  - items = @consult.extraction_items
-  - if items.empty? && groups.empty?
+  - review_bundle = consult_step3_review_bundle(@consult.extraction_items, cues: @transcript_cues)
+  - review_items = review_bundle[:items]
+  - if review_items.empty? && groups.empty?
     .alert.alert-warning
       = @consult.extraction_error.presence || "No candidates found."
-      - if policy(@consult).re_extract?
-        = button_to "Consult again", re_extract_organization_possible_observation_consult_path(organization, @consult), method: :post, class: "btn btn-sm btn-outline-primary ms-2"
   - else
-    %h5.mb-3 Review candidate OGOs
+    %h5.mb-3 Step 3 · Review candidate OGOs
     - if @prompt_debug && policy(@consult).download_prompt_debug?
       .mb-3
         = link_to download_prompt_debug_organization_possible_observation_consult_path(organization, @consult),
@@ -109,18 +132,24 @@
         .row.g-3
           .col-lg-5
             = render "transcript_pane",
-                     cues: @transcript_cues,
+                     cues: @caption_cues,
                      speaker_map_labels: @speaker_map_labels,
                      item_ids_by_cue: @item_ids_by_cue
           .col-lg-7
             = render "candidate_review_form",
                      form_id: form_id,
-                     groups: groups,
+                     items: review_items,
                      prompt_debug: @prompt_debug,
-                     cue_links_by_item: @cue_links_by_item
+                     identities_locked: @consult.identities_locked?,
+                     cue_links_by_item: @cue_links_by_item,
+                     timestamp_cue_links_by_item: review_bundle[:cue_links],
+                     cue_by_id: review_bundle[:cue_by_id]
       - else
         = render "candidate_review_form",
                  form_id: form_id,
-                 groups: groups,
+                 items: review_items,
                  prompt_debug: false,
-                 cue_links_by_item: {}
+                 identities_locked: @consult.identities_locked?,
+                 cue_links_by_item: review_bundle[:cue_links],
+                 timestamp_cue_links_by_item: review_bundle[:cue_links],
+                 cue_by_id: review_bundle[:cue_by_id]
