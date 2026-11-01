@@ -31,16 +31,17 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
       window_days: window_days,
       display_name: default_display_name(window_days),
       search_status: "pending",
-      extraction_status: "ready"
+      extraction_status: "ready",
+      auto_extract_after_search: true
     )
 
     if search.save
       PossibleObservationSlackSearchJob.perform_later(search.id)
-      redirect_to organization_company_teammate_possible_observation_slack_search_path(
+      redirect_to ogos_slack_search_run_organization_company_teammate_path(
         organization,
         @teammate,
         search
-      ), notice: "Slack search started. Results will appear when the run finishes."
+      ), notice: "Slack search started. New moments land on the shared list as consult finishes."
     else
       redirect_to ogos_source_from_slack_organization_company_teammate_path(organization, @teammate),
                   alert: search.errors.full_messages.to_sentence

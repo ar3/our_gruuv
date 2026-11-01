@@ -1,0 +1,75 @@
+- casual = @teammate.person.casual_name
+- stats = @stats
+
+.mb-3
+  = link_to ogos_slack_search_runs_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "btn btn-outline-secondary btn-sm" do
+    %i.bi.bi-arrow-left.me-1
+    All search runs
+
+%h1.h3.mb-2= @search.display_name
+%p.text-muted.mb-4
+  Run by #{@search.creator_company_teammate&.person&.casual_name}
+  · #{l(@search.created_at, format: :long)}
+  · Status: #{@search.search_status}
+
+.row.g-3.mb-4
+  .col-6.col-md-4.col-lg-2
+    .card.border-0.shadow-sm.h-100
+      .card-body
+        .small.text-muted Messages consulted
+        .fs-4.fw-semibold= stats.messages_consulted
+  .col-6.col-md-4.col-lg-2
+    .card.border-0.shadow-sm.h-100
+      .card-body
+        .small.text-muted Already consulted
+        .fs-4.fw-semibold= stats.messages_already_memoized
+  .col-6.col-md-4.col-lg-2
+    .card.border-0.shadow-sm.h-100
+      .card-body
+        .small.text-muted Reviewing
+        .fs-4.fw-semibold= stats.pogos_reviewing
+  .col-6.col-md-4.col-lg-2
+    .card.border-0.shadow-sm.h-100
+      .card-body
+        .small.text-muted Dismissed
+        .fs-4.fw-semibold= stats.pogos_dismissed
+  .col-6.col-md-4.col-lg-2
+    .card.border-0.shadow-sm.h-100
+      .card-body
+        .small.text-muted Published
+        .fs-4.fw-semibold= stats.pogos_published
+  .col-6.col-md-4.col-lg-2
+    .card.border-0.shadow-sm.h-100
+      .card-body
+        .small.text-muted Not OGO-worthy
+        .fs-4.fw-semibold= stats.messages_not_ogo_worthy
+
+.d-flex.flex-wrap.gap-2.mb-4
+  = link_to "View these moments on Slack moments",
+            ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate), search_id: @search.id),
+            class: "btn btn-primary"
+  - if policy(@search).show?
+    = link_to "Legacy batch review",
+              organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
+              class: "btn btn-outline-secondary"
+
+.card.border-0.shadow-sm
+  .card-header.bg-transparent.border-0
+    %h5.mb-0 Open pOGOs from this run
+  .card-body
+    - if @moments.any?
+      .list-group.list-group-flush
+        - @moments.each do |moment|
+          .list-group-item.px-0
+            - if moment.summary.present?
+              %p.mb-1= moment.summary
+            - if moment.quote.present?
+              %blockquote.blockquote.mb-1.small
+                %p.mb-0= moment.quote
+            .small.text-muted
+              = "#{format('%.0f%%', moment.confidence * 100)} confident"
+              - if moment.permalink.present?
+                ·
+                = link_to "Open in Slack", moment.permalink, target: "_blank", rel: "noopener"
+    - else
+      %p.mb-0.text-muted No open pOGOs from this run (dismissed, published, or none found).

@@ -39,6 +39,8 @@ class Organizations::Teammates::AbilitiesController < Organizations::Organizatio
     latest_milestone = @teammate_milestones.max_by(&:attained_at)
     since_date = latest_milestone&.attained_at || 10.years.ago
     @observations_since_date = since_date
+    @consult_og_since_date = latest_milestone&.attained_at ||
+                             CheckIns::SlackOgoConsult::DEFAULT_FIRST_CHECK_IN_WINDOW_DAYS.days.ago
     @observations_has_finalized_check_in = latest_milestone.present?
     observations_params = {
       observee_ids: [@teammate.id],

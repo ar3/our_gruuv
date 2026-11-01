@@ -51,6 +51,8 @@ class PossibleObservationSlackSearchExtractionJob < ApplicationJob
       model_id: model_id,
       messages: messages
     )
+    search.increment!(:memo_hit_count, memo_lookup.hits_by_key.size)
+    search.increment!(:memo_miss_count, memo_lookup.miss_messages.size)
 
     miss_messages = memo_lookup.miss_messages
     chunks = miss_messages.empty? ? [] : PossibleObservationSlackSearches::ChunkMessagesService.call(miss_messages)

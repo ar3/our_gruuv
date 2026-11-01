@@ -11,7 +11,7 @@ RSpec.describe CheckIns::SlackOgoConsult::Starter do
 
   before { create(:teammate_identity, :slack_search, teammate: viewer) }
 
-  it "creates a 90-day search with auto-extract and enqueues the search job" do
+  it "creates a 30-day search by default (first check-in) with auto-extract" do
     expect {
       result = described_class.call(
         organization: organization,
@@ -20,10 +20,22 @@ RSpec.describe CheckIns::SlackOgoConsult::Starter do
         mode: "fresh"
       )
       expect(result.ok?).to eq(true)
-      expect(result.search.window_days).to eq(90)
+      expect(result.search.window_days).to eq(30)
       expect(result.search.auto_extract_after_search).to eq(true)
     }.to change(PossibleObservationSlackSearch, :count).by(1)
       .and have_enqueued_job(PossibleObservationSlackSearchJob)
+  end
+
+  it "snaps the search window to cover since the last finalized check-in" do
+    result = described_class.call(
+      organization: organization,
+      viewer: viewer,
+      subject_teammate: subject_teammate,
+      mode: "fresh",
+      since: 45.days.ago
+    )
+    expect(result.ok?).to eq(true)
+    expect(result.search.window_days).to eq(90)
   end
 
   it "re-runs extraction on all batches" do

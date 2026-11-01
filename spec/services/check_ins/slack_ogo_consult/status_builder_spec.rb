@@ -34,7 +34,8 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
       organization: organization,
       subject_teammate: subject_teammate,
       object_name: assignment.title,
-      helpers: helpers
+      helpers: helpers,
+      viewer: viewer
     )
   end
 
@@ -90,29 +91,28 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
     expect(payload[:stale_warning]).to be_nil
   end
 
-  it "serializes summary for the check-in match list, not short quote" do
-    batch.update!(
-      extraction_status: "completed",
-      extractions: {
-        "version" => 1,
-        "items" => [
-          {
-            "id" => "match-1",
-            "kind" => "kudos",
-            "confidence" => 0.9,
-            "include" => true,
-            "summary" => "This is a story about when Pat shipped early.",
-            "short_quote" => "shipped early",
-            "full_quote" => "Pat shipped early and crushed the launch.",
-            "suggested_rateable_type" => "Assignment",
-            "suggested_rateable_id" => assignment.id
-          }
-        ]
+  it "serializes summary from durable Slack moments for the check-in match list" do
+    create(
+      :slack_possible_observation,
+      organization: organization,
+      subject_company_teammate: subject_teammate,
+      discoverer_company_teammate_ids: [viewer.id],
+      message_ts: 2.days.ago.to_f.to_s,
+      payload: {
+        "kind" => "kudos",
+        "confidence" => 0.9,
+        "summary" => "This is a story about when Pat shipped early.",
+        "short_quote" => "shipped early",
+        "full_quote" => "Pat shipped early and crushed the launch.",
+        "suggested_rateable_type" => "Assignment",
+        "suggested_rateable_id" => assignment.id
       }
     )
 
     match = build_payload[:object_matches].first
     expect(match[:summary]).to eq("This is a story about when Pat shipped early.")
     expect(match).not_to have_key(:short_quote)
+    expect(match[:slack_possible_observation_id]).to be_present
   end
 end
+

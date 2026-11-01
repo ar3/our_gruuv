@@ -10,12 +10,13 @@ module CheckIns
         new(...).call
       end
 
-      def initialize(organization:, viewer:, subject_teammate:, mode:, existing_search: nil)
+      def initialize(organization:, viewer:, subject_teammate:, mode:, existing_search: nil, since: nil)
         @organization = organization
         @viewer = viewer
         @subject_teammate = subject_teammate
         @mode = mode.to_s
         @existing_search = existing_search
+        @since = since
       end
 
       def call
@@ -40,12 +41,13 @@ module CheckIns
       end
 
       def start_new_search
+        window_days = WindowDays.call(since: @since)
         search = PossibleObservationSlackSearch.create!(
           organization: @organization,
           creator_company_teammate: @viewer,
           subject_company_teammate: @subject_teammate,
-          window_days: WINDOW_DAYS,
-          display_name: default_display_name,
+          window_days: window_days,
+          display_name: default_display_name(window_days),
           search_status: "pending",
           extraction_status: "ready",
           auto_extract_after_search: true
@@ -72,9 +74,9 @@ module CheckIns
         Result.new(ok?: true, search: search, error: nil, needs_slack_oauth: false)
       end
 
-      def default_display_name
+      def default_display_name(window_days)
         casual = @subject_teammate.person.casual_name
-        "Slack search about #{casual} (last #{WINDOW_DAYS} days) — #{Time.current.strftime('%Y-%m-%d %H:%M')}"
+        "Slack search about #{casual} (last #{window_days} days) — #{Time.current.strftime('%Y-%m-%d %H:%M')}"
       end
     end
   end

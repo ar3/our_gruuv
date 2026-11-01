@@ -1,0 +1,63 @@
+- casual = @teammate.person.casual_name
+- page_help_id = "slackSearchRunsPageHelp"
+
+.d-flex.align-items-center.flex-wrap.gap-2.mb-3
+  %h1.h3.mb-0 Search runs about #{casual}
+  = render "shared/page_help/header_info_button",
+           collapse_id: page_help_id,
+           tooltip: "Each run searched Slack and consulted OG. Click for details."
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p.mb-3 See every Slack search/consult run about #{casual}, with counts for messages already known vs new finds.
+    %h3.fw-semibold.mb-2 Context
+    %p.mb-3 Potential OGOs live on the shared Slack moments list. Runs are the history of how those moments were discovered.
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-0
+      %li Open a run for stats and the pOGOs that run contributed.
+      %li Filter the main Slack moments list to a single run from that page.
+
+.mb-3
+  = link_to ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "btn btn-outline-secondary btn-sm" do
+    %i.bi.bi-arrow-left.me-1
+    Slack moments about #{casual}
+
+.card.border-0.shadow-sm
+  .card-body
+    - if @searches.any?
+      .table-responsive
+        %table.table.table-hover.align-middle.mb-0
+          %thead
+            %tr
+              %th Run
+              %th By
+              %th Status
+              %th Consulted
+              %th Already known
+              %th Reviewing
+              %th Dismissed
+              %th Published
+              %th Not OGO-worthy
+              %th When
+              %th
+          %tbody
+            - @searches.each do |search|
+              - stats = @run_stats_by_id[search]
+              %tr
+                %td
+                  %strong= search.display_name
+                %td= search.creator_company_teammate&.person&.casual_name
+                %td
+                  %span.badge.text-bg-secondary= search.search_status
+                %td= stats.messages_consulted
+                %td= stats.messages_already_memoized
+                %td= stats.pogos_reviewing
+                %td= stats.pogos_dismissed
+                %td= stats.pogos_published
+                %td= stats.messages_not_ogo_worthy
+                %td.text-muted= l(search.created_at, format: :short)
+                %td.text-end
+                  = link_to "Open", ogos_slack_search_run_organization_company_teammate_path(organization, teammate_route_param(@teammate), search), class: "btn btn-sm btn-outline-primary"
+    - else
+      %p.mb-0.text-muted No Slack search runs about #{casual} yet.

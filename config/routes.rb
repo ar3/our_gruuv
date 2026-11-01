@@ -618,6 +618,12 @@ Rails.application.routes.draw do
         get 'ogos/from', to: 'company_teammates/ogos#from', as: :ogos_from
         get 'ogos/feedback_requests', to: 'company_teammates/ogos#feedback_requests', as: :ogos_feedback_requests
         get 'ogos/source_from_slack', to: 'company_teammates/ogos#source_from_slack', as: :ogos_source_from_slack
+        get 'ogos/slack_search_runs',
+            to: 'company_teammates/possible_observation_slack_search_runs#index',
+            as: :ogos_slack_search_runs
+        get 'ogos/slack_search_runs/:search_id',
+            to: 'company_teammates/possible_observation_slack_search_runs#show',
+            as: :ogos_slack_search_run
         get 'maap_teammate_growth', to: 'company_teammates/maap_teammate_growth#show', as: :maap_teammate_growth
         post 'maap_teammate_growth/run', to: 'company_teammates/maap_teammate_growth#run', as: :run_maap_teammate_growth
         get 'maap_teammate_growth/status', to: 'company_teammates/maap_teammate_growth#status', as: :maap_teammate_growth_status

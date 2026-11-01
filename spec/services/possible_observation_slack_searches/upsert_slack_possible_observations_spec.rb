@@ -85,6 +85,7 @@ RSpec.describe PossibleObservationSlackSearches::UpsertSlackPossibleObservations
     public_row = SlackPossibleObservation.find_by!(channel_id: "Cpublic", message_ts: "1710000000.000100")
     expect(public_row.visibility).to eq(SlackPossibleObservation::VISIBILITY_PUBLIC)
     expect(public_row.discoverer_ids).to eq([creator.id])
+    expect(public_row.discovery_search_id_list).to eq([search.id])
     expect(public_row.subject_company_teammate).to eq(subject_teammate)
 
     private_row = SlackPossibleObservation.find_by!(channel_id: "Gprivate", message_ts: "1710000000.000200")
@@ -128,5 +129,6 @@ RSpec.describe PossibleObservationSlackSearches::UpsertSlackPossibleObservations
 
     row = SlackPossibleObservation.find_by!(channel_id: "Cpublic", message_ts: "1710000000.000100")
     expect(row.discoverer_ids).to contain_exactly(creator.id, other_creator.id)
+    expect(row.discovery_search_id_list).to contain_exactly(search.id, second_search.id)
   end
 end

@@ -56,6 +56,7 @@
           - if row[:type] == :slack
             - search = row[:record]
             - subject = search.subject_company_teammate
+            - slack_stats = PossibleObservationSlackSearches::RunStats.call(search: search)
             %tr{ "data-hub-slack-search-status-row" => true, "data-search-id" => search.id }
               %td
                 %span.badge.text-bg-dark Slack
@@ -64,15 +65,14 @@
                 .small.text-muted= subject&.person&.display_name
               %td
                 %span.badge.text-bg-secondary{ "data-hub-phase" => true }= search.hub_phase
-              %td.text-end{ "data-hub-pogo-count" => true }= search.pogo_count
-              %td.text-end{ "data-hub-dismissed-count" => true }= search.dismissed_pogo_count
-              %td.text-end{ "data-hub-promoted-count" => true }= search.promoted_pogo_count
+              %td.text-end{ "data-hub-pogo-count" => true }= slack_stats.pogos_reviewing + slack_stats.pogos_dismissed + slack_stats.pogos_published
+              %td.text-end{ "data-hub-dismissed-count" => true }= slack_stats.pogos_dismissed
+              %td.text-end{ "data-hub-promoted-count" => true }= slack_stats.pogos_published
               %td= l(search.created_at, format: :short)
               %td
-                - if policy(search).show?
-                  = link_to "Open",
-                            organization_company_teammate_possible_observation_slack_search_path(organization, subject, search),
-                            class: "btn btn-sm btn-outline-primary"
+                = link_to "Open",
+                          ogos_slack_search_run_organization_company_teammate_path(organization, subject, search),
+                          class: "btn btn-sm btn-outline-primary"
           - else
             - consult = row[:record]
             %tr

@@ -47,7 +47,7 @@ RSpec.describe "Possible observation Slack searches", type: :request do
     context "when Slack (search) is connected" do
       before { create(:teammate_identity, :slack_search, teammate: teammate) }
 
-      it "enqueues a search job and redirects to show" do
+      it "enqueues a search job with auto-extract and redirects to the search run page" do
         expect {
           post organization_company_teammate_possible_observation_slack_searches_path(organization, subject),
                params: { possible_observation_slack_search: { window_days: 90 } }
@@ -58,8 +58,9 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(search.subject_company_teammate).to eq(subject)
         expect(search.creator_company_teammate).to eq(teammate)
         expect(search.search_status).to eq("pending")
+        expect(search.auto_extract_after_search).to eq(true)
         expect(response).to redirect_to(
-          organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+          ogos_slack_search_run_organization_company_teammate_path(organization, subject, search)
         )
       end
 
@@ -636,18 +637,17 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "lists prior searches with a single Open to the unified search page" do
+    it "lists recent search runs linking to the search-run page" do
       expect(prior_search.message_batches.count).to eq(1)
 
       get ogos_source_from_slack_organization_company_teammate_path(organization, subject)
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Run a new search")
       expect(response.body).to include("Prior search about Pat")
-      expect(response.body).to include("1 fetched · 1 for consultation")
+      expect(response.body).to include("Search runs")
       expect(response.body).to include(
-        organization_company_teammate_possible_observation_slack_search_path(organization, subject, prior_search)
+        ogos_slack_search_run_organization_company_teammate_path(organization, subject, prior_search)
       )
-      expect(response.body).to match(/1\s+consultation/)
       expect(response.body).not_to include("Consultation 1 of 1; Newest")
     end
   end

@@ -22,6 +22,18 @@ class SlackPossibleObservation < ApplicationRecord
   scope :for_subject, ->(teammate) { where(subject_company_teammate_id: teammate.id) }
   scope :not_dismissed, -> { where(dismissed_at: nil) }
   scope :recent_first, -> { order(Arel.sql("COALESCE((payload->>'confidence')::float, 0) DESC"), created_at: :desc) }
+  scope :discovered_by_search, lambda { |search_id|
+    where("discovery_search_ids @> ?", [search_id.to_i].to_json)
+  }
+
+  def discovery_search_id_list
+    Array(discovery_search_ids).map(&:to_i).uniq
+  end
+
+  def discovered_in_search?(search_id)
+    discovery_search_id_list.include?(search_id.to_i)
+  end
+
 
   def public_channel?
     visibility == VISIBILITY_PUBLIC

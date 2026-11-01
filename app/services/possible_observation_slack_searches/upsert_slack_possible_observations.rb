@@ -52,40 +52,46 @@ module PossibleObservationSlackSearches
         record.organization = @search.organization
         record.visibility = visibility
         record.discoverer_company_teammate_ids = [discoverer_id].compact
+        record.discovery_search_ids = [@search.id]
         record.payload = payload
         record.possible_observation_slack_search = @search
         record.possible_observation_slack_search_batch = @batch
         record.extraction_item_id = item["id"].to_s.presence
         record.save!
       else
-        ids = record.discoverer_ids
-        ids << discoverer_id if discoverer_id.present? && !ids.include?(discoverer_id)
-        attrs = { discoverer_company_teammate_ids: ids }
-        # Never widen private → public from a later run; allow private → public only if we
-        # previously defaulted conservatively and now know it's public.
-        if record.private_or_dm? && visibility == SlackPossibleObservation::VISIBILITY_PUBLIC
-          attrs[:visibility] = visibility
-        end
-        # Keep first payload unless empty; refresh provenance for audit.
-        attrs[:payload] = payload if record.payload_hash.blank?
-        attrs[:possible_observation_slack_search_id] ||= @search.id
-        attrs[:possible_observation_slack_search_batch_id] ||= @batch.id
-        record.update!(attrs)
+        record.update!(merge_existing_attrs(record, discoverer_id, visibility, payload))
       end
 
       true
     rescue ActiveRecord::RecordNotUnique
-      # Race with another extract: re-find and append discoverer.
+      # Race with another extract: re-find and append discoverer + search.
       record = SlackPossibleObservation.find_by!(
         subject_company_teammate_id: subject.id,
         channel_id: channel_id,
         message_ts: message_ts
       )
-      ids = record.discoverer_ids
-      return true if discoverer_id.blank? || ids.include?(discoverer_id)
-
-      record.update!(discoverer_company_teammate_ids: ids + [discoverer_id])
+      record.update!(merge_existing_attrs(record, discoverer_id, visibility, payload))
       true
+    end
+
+    def merge_existing_attrs(record, discoverer_id, visibility, payload)
+      ids = record.discoverer_ids
+      ids << discoverer_id if discoverer_id.present? && !ids.include?(discoverer_id)
+      search_ids = record.discovery_search_id_list
+      search_ids << @search.id unless search_ids.include?(@search.id)
+
+      attrs = {
+        discoverer_company_teammate_ids: ids,
+        discovery_search_ids: search_ids
+      }
+      if record.private_or_dm? && visibility == SlackPossibleObservation::VISIBILITY_PUBLIC
+        attrs[:visibility] = visibility
+      end
+      attrs[:payload] = payload if record.payload_hash.blank?
+      attrs[:possible_observation_slack_search_id] = record.possible_observation_slack_search_id || @search.id
+      attrs[:possible_observation_slack_search_batch_id] =
+        record.possible_observation_slack_search_batch_id || @batch.id
+      attrs
     end
 
     def build_payload(item, source)

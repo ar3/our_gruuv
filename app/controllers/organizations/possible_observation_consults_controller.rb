@@ -311,15 +311,18 @@ module Organizations
 
     def hub_slack_search_payload(search)
       batches = search.message_batches.to_a
+      stats = PossibleObservationSlackSearches::RunStats.call(search: search)
       {
         id: search.id,
         phase: search.hub_phase,
         search_status: search.search_status,
         batches_total: batches.size,
         batches_completed: batches.count { |b| b.extraction_status == "completed" },
-        pogo_count: search.pogo_count,
-        dismissed_pogo_count: search.dismissed_pogo_count,
-        promoted_pogo_count: search.promoted_pogo_count
+        pogo_count: stats.pogos_reviewing + stats.pogos_dismissed + stats.pogos_published,
+        dismissed_pogo_count: stats.pogos_dismissed,
+        promoted_pogo_count: stats.pogos_published,
+        reviewing_pogo_count: stats.pogos_reviewing,
+        memo_hit_count: stats.messages_already_memoized
       }
     end
 

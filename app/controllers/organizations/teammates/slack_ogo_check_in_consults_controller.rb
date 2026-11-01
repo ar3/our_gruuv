@@ -9,11 +9,6 @@ class Organizations::Teammates::SlackOgoCheckInConsultsController < Organization
   def show
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
     search = find_search_for_status
-    if search.nil?
-      render json: idle_payload
-      return
-    end
-
     render json: status_payload(search)
   end
 
@@ -43,7 +38,8 @@ class Organizations::Teammates::SlackOgoCheckInConsultsController < Organization
       viewer: viewer,
       subject_teammate: @teammate,
       mode: mode,
-      existing_search: existing
+      existing_search: existing,
+      since: check_in_since
     )
 
     if result.needs_slack_oauth
@@ -111,7 +107,8 @@ class Organizations::Teammates::SlackOgoCheckInConsultsController < Organization
       subject_teammate: @teammate,
       object_name: @object_name,
       helpers: self,
-      since: check_in_since,
+      viewer: current_company_teammate,
+      since: effective_since,
       until_time: Time.current
     )
   end
@@ -119,23 +116,15 @@ class Organizations::Teammates::SlackOgoCheckInConsultsController < Organization
   # Current check-in window start (from the 1-by-1 page). Bounds surfaced candidates.
   def check_in_since
     raw = params[:since]
-    return nil if raw.blank?
+    return CheckIns::SlackOgoConsult::DEFAULT_FIRST_CHECK_IN_WINDOW_DAYS.days.ago if raw.blank?
 
     Time.zone.parse(raw.to_s)
   rescue ArgumentError
-    nil
+    CheckIns::SlackOgoConsult::DEFAULT_FIRST_CHECK_IN_WINDOW_DAYS.days.ago
   end
 
-  def idle_payload
-    {
-      phase: "idle",
-      search_id: nil,
-      object_matches: [],
-      other_count: 0,
-      polling: false,
-      can_refresh_search: false,
-      can_stronger_model: false
-    }
+  def effective_since
+    check_in_since
   end
 
   def slack_oauth_url

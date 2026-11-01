@@ -3,12 +3,13 @@
 module CheckIns
   module SlackOgoConsult
     # JSON payload for progressive check-in Consult OG polling.
+    # Candidates come from durable SlackPossibleObservations; search drives phase only.
     class StatusBuilder
       def self.call(...)
         new(...).call
       end
 
-      def initialize(search:, rateable_type:, rateable_id:, organization:, subject_teammate:, object_name:, helpers:, since: nil, until_time: nil)
+      def initialize(search:, rateable_type:, rateable_id:, organization:, subject_teammate:, object_name:, helpers:, viewer:, since: nil, until_time: nil)
         @search = search
         @rateable_type = rateable_type
         @rateable_id = rateable_id
@@ -16,14 +17,17 @@ module CheckIns
         @subject_teammate = subject_teammate
         @object_name = object_name
         @helpers = helpers
+        @viewer = viewer
         @since = since
         @until = until_time
       end
 
       def call
-        batches = @search.message_batches.in_position_order.to_a
-        filtered = CandidateFilter.call(
-          search: @search,
+        batches = @search ? @search.message_batches.in_position_order.to_a : []
+        filtered = DurableCandidateFilter.call(
+          subject: @subject_teammate,
+          viewer: @viewer,
+          organization: @organization,
           rateable_type: @rateable_type,
           rateable_id: @rateable_id,
           since: @since,
@@ -39,11 +43,11 @@ module CheckIns
         latest_consult_at = latest_consultations.map(&:created_at).max
 
         {
-          search_id: @search.id,
+          search_id: @search&.id,
           phase: phase,
-          search_status: @search.search_status,
-          search_error: @search.search_error,
-          messages_count_summary: @search.search_status == "completed" ? @search.messages_count_summary : nil,
+          search_status: @search&.search_status,
+          search_error: @search&.search_error,
+          messages_count_summary: @search&.search_status == "completed" ? @search.messages_count_summary : nil,
           batches_total: batches.size,
           batches_completed: batches.count { |b| b.extraction_status == "completed" },
           batches_failed: batches.count { |b| b.extraction_status == "failed" },
@@ -66,6 +70,7 @@ module CheckIns
       private
 
       def can_refresh_search?(latest_consult_at)
+        return true if @search.nil?
         return false if latest_consult_at.blank?
 
         latest_consult_at < REFRESH_SEARCH_AFTER.ago
@@ -84,6 +89,8 @@ module CheckIns
       end
 
       def derive_phase(batches)
+        return "idle" if @search.nil?
+
         case @search.search_status
         when "pending", "processing"
           "searching"
@@ -117,22 +124,23 @@ module CheckIns
       end
 
       def serialize_match(match)
-        item = match.item
+        record = match.record
         {
-          id: item[:id],
-          confidence: item[:confidence].to_f,
-          confidence_pct: (item[:confidence].to_f * 100).round,
-          kind: item[:kind],
-          quote_preview: item[:quote].to_s.truncate(280),
-          summary: item[:summary].presence || item[:short_quote].presence || item[:full_quote].to_s.truncate(160),
-          permalink: item[:permalink],
-          batch_id: match.batch.id,
-          batch_url: batch_url(match.batch)
+          id: record.id,
+          confidence: record.confidence,
+          confidence_pct: (record.confidence * 100).round,
+          kind: record.payload_hash[:kind],
+          quote_preview: record.quote.to_s.truncate(280),
+          summary: record.summary.presence || record.quote.to_s.truncate(160),
+          permalink: record.permalink,
+          slack_possible_observation_id: record.id,
+          batch_id: record.possible_observation_slack_search_batch_id,
+          batch_url: moments_url
         }
       end
 
       def empty_object_message(phase, filtered)
-        return nil unless phase == "completed"
+        return nil unless %w[completed idle].include?(phase)
         return nil if filtered[:object_matches].any?
 
         casual = @subject_teammate.person.casual_name
@@ -144,19 +152,13 @@ module CheckIns
       end
 
       def full_results_url
-        @helpers.organization_company_teammate_possible_observation_slack_search_path(
-          @organization,
-          @subject_teammate,
-          @search
-        )
+        moments_url
       end
 
-      def batch_url(batch)
-        @helpers.organization_company_teammate_possible_observation_slack_search_batch_path(
+      def moments_url
+        @helpers.ogos_source_from_slack_organization_company_teammate_path(
           @organization,
-          @subject_teammate,
-          @search,
-          batch
+          @subject_teammate
         )
       end
 

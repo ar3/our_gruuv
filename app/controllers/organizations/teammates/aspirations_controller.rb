@@ -60,6 +60,8 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
 
     since_date = @latest_finalized&.official_check_in_completed_at || 10.years.ago
     @observations_since_date = since_date
+    @consult_og_since_date = @latest_finalized&.official_check_in_completed_at ||
+                             CheckIns::SlackOgoConsult::DEFAULT_FIRST_CHECK_IN_WINDOW_DAYS.days.ago
     @observations_has_finalized_check_in = @latest_finalized.present?
     observations_params = {
       observee_ids: [@teammate.id],

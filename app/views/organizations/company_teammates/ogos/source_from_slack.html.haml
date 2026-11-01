@@ -12,11 +12,19 @@
 = render "tabs"
 
 .card.border-0.shadow-sm.mb-4
-  .card-header.bg-transparent.border-0
+  .card-header.bg-transparent.border-0.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
     %h5.mb-0
       %i.bi.bi-chat-quote.me-2
       Slack moments about #{@casual_name}
+    = link_to ogos_slack_search_runs_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "btn btn-sm btn-outline-secondary" do
+      %i.bi.bi-clock-history.me-1
+      Search runs
   .card-body
+    - if @filter_search
+      .alert.alert-info.border.mb-3
+        Filtered to run:
+        %strong= @filter_search.display_name
+        = link_to "Clear filter", ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "ms-2"
     - moments = @slack_possible_observations || []
     - if moments.any?
       .list-group.list-group-flush
@@ -111,42 +119,20 @@
 
 .card.border-0.shadow-sm
   .card-header.bg-transparent.border-0
-    %h5.mb-0 Prior searches about #{@casual_name}
+    %h5.mb-0 Search history
   .card-body
-    - searches = @prior_slack_searches || []
-    - if searches.any?
-      .table-responsive
-        %table.table.table-hover.align-middle.mb-0
-          %thead
-            %tr
-              %th Search
-              %th Run by
-              %th Status
-              %th Messages
-              %th When
-              %th
-          %tbody
-            - searches.each do |search|
-              %tr
-                %td
-                  %strong= search.display_name
-                  - if search.search_status == "completed" && search.message_batches.any?
-                    .small.text-muted.mt-1
-                      #{search.message_batches.size}
-                      = "consultation".pluralize(search.message_batches.size)
-                %td= search.creator_company_teammate&.person&.casual_name
-                %td
-                  %span.badge.text-bg-secondary= search.search_status
-                %td
-                  - if search.search_status == "completed"
-                    = search.messages_count_summary
-                  - else
-                    —
-                %td.text-muted= l(search.created_at, format: :short)
-                %td.text-end
-                  - if policy(search).show?
-                    = link_to "Open", organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), search), class: "btn btn-sm btn-outline-primary"
-                  - else
-                    %span.text-muted Creator only
+    %p.mb-2.text-muted
+      pOGOs are shared across runs. Open
+      = link_to "Search runs", ogos_slack_search_runs_organization_company_teammate_path(organization, teammate_route_param(@teammate))
+      for per-run stats (messages consulted, already known, dismissed / reviewing / published / not OGO-worthy).
+    - recent = (@prior_slack_searches || []).first(5)
+    - if recent.any?
+      %ul.list-unstyled.mb-0
+        - recent.each do |search|
+          %li.mb-1
+            = link_to search.display_name, ogos_slack_search_run_organization_company_teammate_path(organization, teammate_route_param(@teammate), search)
+            %span.small.text-muted
+              · #{search.search_status}
+              · #{l(search.created_at, format: :short)}
     - else
-      %p.mb-0.text-muted No Slack searches about #{@casual_name} yet.
+      %p.mb-0.text-muted No Slack search runs about #{@casual_name} yet.

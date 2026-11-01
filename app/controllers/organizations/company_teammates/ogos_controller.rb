@@ -33,10 +33,19 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
                             .recent_first
                             .includes(:message_batches, creator_company_teammate: :person)
                             .limit(25)
+    @filter_search_id = params[:search_id].presence
+    @filter_search =
+      if @filter_search_id
+        PossibleObservationSlackSearch
+          .for_subject(@teammate)
+          .where(organization: organization)
+          .find_by(id: @filter_search_id)
+      end
     @slack_possible_observations = PossibleObservationSlackSearches::VisibleSlackPossibleObservations.call(
       subject: @teammate,
       viewer: current_company_teammate,
-      organization: organization
+      organization: organization,
+      search_id: @filter_search&.id
     )
     render :source_from_slack
   end

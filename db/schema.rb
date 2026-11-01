@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_31_160000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_31_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1831,6 +1831,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_160000) do
     t.integer "filtered_messages_count", default: 0, null: false
     t.boolean "auto_extract_after_search", default: false, null: false
     t.string "auto_extract_model_id"
+    t.integer "memo_hit_count", default: 0, null: false
+    t.integer "memo_miss_count", default: 0, null: false
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_27e60c973a"
     t.index ["extraction_status"], name: "index_possible_observation_slack_searches_on_extraction_status"
     t.index ["organization_id"], name: "index_possible_observation_slack_searches_on_organization_id"
@@ -2003,6 +2005,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_160000) do
     t.bigint "dismissed_by_company_teammate_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "discovery_search_ids", default: [], null: false
+    t.index ["discovery_search_ids"], name: "index_slack_possible_observations_on_discovery_search_ids", using: :gin
     t.index ["dismissed_at"], name: "index_slack_possible_observations_on_dismissed_at"
     t.index ["organization_id"], name: "index_slack_possible_observations_on_organization_id"
     t.index ["subject_company_teammate_id", "channel_id", "message_ts"], name: "idx_slack_possible_observations_uniq", unique: true

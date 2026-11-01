@@ -4,26 +4,24 @@ module PossibleObservationSlackSearches
   # Subject list: not dismissed, visible to viewer, auto-hide when an OGO already
   # exists for the same Slack message.
   class VisibleSlackPossibleObservations
-    def self.call(subject:, viewer:, organization:)
-      new(subject: subject, viewer: viewer, organization: organization).call
+    def self.call(subject:, viewer:, organization:, search_id: nil)
+      new(subject: subject, viewer: viewer, organization: organization, search_id: search_id).call
     end
 
-    def initialize(subject:, viewer:, organization:)
+    def initialize(subject:, viewer:, organization:, search_id: nil)
       @subject = subject
       @viewer = viewer
       @organization = organization
+      @search_id = search_id
     end
 
     def call
       return [] if @viewer.nil? || @subject.nil?
 
-      rows = SlackPossibleObservation
-             .for_subject(@subject)
-             .not_dismissed
-             .recent_first
-             .to_a
-             .select { |row| row.visible_to?(@viewer) }
+      scope = SlackPossibleObservation.for_subject(@subject).not_dismissed.recent_first
+      scope = scope.discovered_by_search(@search_id) if @search_id.present?
 
+      rows = scope.to_a.select { |row| row.visible_to?(@viewer) }
       rows.reject { |row| observation_exists_for?(row) }
     end
 

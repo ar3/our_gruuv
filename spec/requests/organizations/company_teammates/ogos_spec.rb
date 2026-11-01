@@ -88,8 +88,17 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("sourceFromSlackPageHelp")
       expect(response.body).to include("missed reinforcement is partly on you")
       expect(response.body).to include("Slack moments about #{person.casual_name}")
+      expect(response.body).to include("Search runs")
       expect(response.body).not_to include("OGO health (last 30 days)")
     end
+
+    it "renders the Search runs index with page help" do
+      get ogos_slack_search_runs_organization_company_teammate_path(organization, teammate)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Search runs about #{person.casual_name}")
+      expect(response.body).to include("slackSearchRunsPageHelp")
+    end
+
 
     it "prompts the viewer to connect Slack (search) when not connected" do
       get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
