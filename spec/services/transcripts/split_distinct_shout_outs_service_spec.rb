@@ -69,4 +69,32 @@ RSpec.describe Transcripts::SplitDistinctShoutOutsService do
     expect(segments[2]).to include("last shout out for the Evaluate team")
     expect(segments[2]).to include("Hannah, Michelle, Mick, and Brendan")
   end
+
+  it "splits award, read-aloud shout-outs, and floor reopen into separate cues" do
+    text = <<~TEXT.squish
+      Kay Shockey! I thought Kayla was gonna win for the third month in a row, and I'm like, maybe I should take you off the
+      wheel, Kayla, but Kay Shockey won this time. Congratulations, Kay! And thank you for everyone for, participating and kind
+      of building this muscle of feedback and kudos. So, kudos to everyone for that, but Kay, we will follow up with you and get
+      you your prize. Cool! Okay, I think those were the tasks I had to do today. I do want to remind anyone who wants to play a
+      game of werewolves, I'm gonna host a game after this meeting. Otherwise, I think we can roll into shoutouts and gratitude
+      to end the week, and I'll start with the mic, because I have a few I'm going to read for folks here. I have one… for, from
+      Gabe, who is on a partner call that's running late, wanted to give a shout out to Jesus for his Hand in Stone conference
+      attendance. He blew our goals out of the water. So, nice job. Well done! And then I also have one on behalf of Clint, who
+      is flying today, but he had one for Christina Merida. He had the entire Massage Lux FBC team come up to him and tell him
+      how much they loved working with Christina. And some nice work, Christina! All right, if you have a shoutout, let me know,
+      I think. Let's see, Kayla, you were up first. Go ahead.
+    TEXT
+
+    segments = described_class.split_text(text)
+    expect(segments.size).to eq(5)
+    expect(segments[0]).to include("Kay Shockey won this time")
+    expect(segments[0]).not_to include("werewolves")
+    expect(segments[1]).to include("werewolves")
+    expect(segments[1]).not_to include("shout out to Jesus")
+    expect(segments[2]).to include("shout out to Jesus")
+    expect(segments[2]).to include("from Gabe")
+    expect(segments[3]).to include("Christina Merida")
+    expect(segments[3]).to include("on behalf of Clint")
+    expect(segments[4]).to include("if you have a shoutout, let me know")
+  end
 end

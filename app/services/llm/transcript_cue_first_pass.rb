@@ -11,7 +11,8 @@ module Llm
     # 1.20261031.2 — split multi-shout-out turns into moments[] when observees clearly change
     # 1.20261031.3 — moments use verbatim anchors; excerpts sliced from cue text only
     # 1.20261102.4 — ordinal / "this shout-out is for" transition delimiters
-    PROMPT_VERSION = "1.20261102.4"
+    # 1.20261102.5 — read-aloud "I have one/on behalf of", award vs later shout-outs, floor reopen = ignore
+    PROMPT_VERSION = "1.20261102.5"
     BATCH_SIZE = 30
     TEXT_LIMIT = 4_000
     MIN_ANCHOR_CHARS = 12
@@ -90,20 +91,28 @@ module Llm
       system = <<~SYS
         You label meeting transcript cues for an observation product (OurGruuv Observations / OGOs).
         An OGO-worthy moment is celebration (kudos/shout-out) or constructive criticism about a person's work or behavior.
-        Ignore: music/lyrics, screen-share audio, logistics, host transitions, values roll-call without praise/critique, pure small talk.
+        Ignore: music/lyrics, screen-share audio, logistics, host transitions, agenda/reminders, party-game invites,
+        values roll-call without praise/critique, pure small talk, and reopening the floor ("if you have a shoutout, let me know" / "you were up first, go ahead").
 
         STAY FAITHFUL TO THE TRANSCRIPT. Never invent, paraphrase, summarize, or borrow wording from another cue.
         Default: one moment per cue.
-        Split into multiple moments ONLY when the speaker clearly starts a separate shout-out/critique about a different person or distinct group.
-        Treat transition / ordinal phrases as delimiters between moments, including:
-        "first one is for…", "Second shout-out was for…", "last shout out for…",
-        "this shout-out/feedback/kudos is for…", "which is Amy…", "couple more", "next".
+        Split into multiple moments when the speaker clearly starts a separate shout-out/critique about a different person or distinct group —
+        OR when praise/critique ends and the speaker switches to logistics / hosting (emit that tail as its own moment with ogo_worthy:false).
+        Treat these as delimiters between moments:
+        - ordinals: "first one is for…", "Second shout-out was for…", "last shout out for…"
+        - pivots: "this shout-out/feedback/kudos is for…", "which is Amy…", "couple more", "next"
+        - read-aloud: "I have one… from Gabe…", "I also have one on behalf of Clint…", "he had one for Christina…"
+        - leave celebration / reopen floor: "Okay, I think those were the tasks…", "All right, if you have a shoutout, let me know…"
+        Award-winner announcements (e.g. "Kay Shockey won… Congratulations, Kay!") are their own worthy moment — do not merge them
+        with later "I'm going to read for folks" shout-outs about other people.
+        When the mic holder reads a shout-out written by someone else ("from Gabe", "on behalf of Clint"), set observer_label to that author
+        (Gabe / Clint) and observee_labels to who is being praised (Jesus / Christina). The reader is not the observer unless they also speak as themselves.
         Keep joint shout-outs together (Kayla and Nicole praised as a pair = one moment).
-        Do NOT split every name mention, pronouns, or restating the same people. Prefer under-splitting over over-splitting.
+        Do NOT split every name mention, pronouns, or restating the same people. Prefer under-splitting over over-splitting — except for the delimiter phrases above.
 
         For each moment return:
         - anchor: a VERBATIM contiguous substring copied from that cue's text (#{MIN_ANCHOR_CHARS}+ characters) that starts this moment. Must appear in the cue text (same words/punctuation). Do not rewrite.
-        - observer_label: who is speaking (usually the cue speaker)
+        - observer_label: who is giving the observation (author of the shout-out/feedback; often the cue speaker, or the "from"/"on behalf of" person when read aloud)
         - observee_labels: who that moment is about (empty if team/none/unclear)
         - observer_company_teammate_id / observee_company_teammate_ids: roster ids; null/[] if unsure. Never invent ids.
         Prefer precision over recall for ogo_worthy.
