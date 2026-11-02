@@ -48,6 +48,7 @@ RSpec.describe PossibleObservationConsults::ApplyFirstPassResults do
     row = consult.cue_annotation_rows[cue_id]
     expect(row[:ogo_worthy]).to eq(true)
     expect(row[:cue_status]).to eq("ogo_worthy")
+    expect(row[:observer_company_teammate_id]).to eq(natalie_tm.id)
     expect(row[:observee_company_teammate_id]).to eq(brett_tm.id)
     expect(row[:observee_company_teammate_ids]).to eq([brett_tm.id])
     expect(consult.moment_cues.map { |c| c[:id] }).to eq([cue_id])

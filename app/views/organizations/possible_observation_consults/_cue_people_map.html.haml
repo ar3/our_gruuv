@@ -53,13 +53,14 @@
               - cues.each do |cue|
                 - cue = cue.with_indifferent_access
                 - speaker = cue[:speaker_label].to_s
-                - observer = (labels[speaker] || {}).with_indifferent_access
-                - observer_certainty = observer[:certainty].presence || "uncertain"
+                - speaker_observer = (labels[speaker] || {}).with_indifferent_access
                 - annotation = (annotations[cue[:id].to_s] || {}).with_indifferent_access
                 - worthy = annotation.key?(:ogo_worthy) ? ActiveModel::Type::Boolean.new.cast(annotation[:ogo_worthy]) : annotation[:cue_status].to_s == "ogo_worthy"
+                - observer_id = annotation[:observer_company_teammate_id].presence || speaker_observer[:company_teammate_id]
+                - observer_certainty = annotation[:observer_certainty].presence || (observer_id.present? ? "certain" : "uncertain")
                 - observee_certainty = annotation[:observee_certainty].presence || "uncertain"
                 - observee_id = annotation[:observee_company_teammate_id]
-                - observer_name = teammate_by_id[observer[:company_teammate_id].to_i]&.person&.display_name
+                - observer_name = teammate_by_id[observer_id.to_i]&.person&.display_name
                 - observee_name = teammate_by_id[observee_id.to_i]&.person&.display_name
                 %tr{ class: (worthy ? nil : "text-muted") }
                   %td.text-center
@@ -83,30 +84,34 @@
                   %td{ style: "min-width: 180px;" }
                     .small.mb-1
                       %code= speaker.presence || "—"
+                      - if annotation[:observer_label].present? && annotation[:observer_label].to_s != speaker
+                        %span.text-muted · from #{annotation[:observer_label]}
                     %div.mb-1
                       %span.badge{
                           class: (observer_certainty == "certain" ? "text-bg-info" : "text-bg-warning"),
-                          data: { cue_people_map_target: "observerPill", speaker_label: speaker }
+                          data: { cue_people_map_target: "observerPill", cue_id: cue[:id] }
                         }= observer_certainty == "certain" ? "Certain" : "Uncertain"
-                      - if observer_name.present?
-                        %span.ms-1.small= observer_name
-                    = hidden_field_tag "speaker_map[#{speaker}][certainty]",
+                      %span.ms-1.small{
+                          class: (observer_name.present? ? nil : "d-none"),
+                          data: { cue_people_map_target: "observerName", cue_id: cue[:id] }
+                        }= observer_name
+                    = hidden_field_tag "cue_annotations[#{cue[:id]}][observer_certainty]",
                                        observer_certainty,
-                                       data: { cue_people_map_target: "observerCertainty", speaker_label: speaker }
-                    = select_tag "speaker_map[#{speaker}][company_teammate_id]",
-                                 options_for_select(teammate_options, observer[:company_teammate_id]),
+                                       data: { cue_people_map_target: "observerCertainty", cue_id: cue[:id] }
+                    = select_tag "cue_annotations[#{cue[:id]}][observer_company_teammate_id]",
+                                 options_for_select(teammate_options, observer_id),
                                  class: "form-select form-select-sm",
-                                 data: { cue_people_map_target: "observerTeammate", speaker_label: speaker, action: "change->cue-people-map#syncObserver" }
+                                 data: { cue_people_map_target: "observerTeammate", cue_id: cue[:id], action: "change->cue-people-map#observerChanged" }
                   %td{ style: "min-width: 180px;" }
                     %div.mb-1
                       %span.badge{
                           class: (observee_certainty == "certain" ? "text-bg-info" : "text-bg-warning"),
                           data: { cue_people_map_target: "observeePill", cue_id: cue[:id] }
                         }= observee_certainty == "certain" ? "Certain" : "Uncertain"
-                      - if observee_name.present?
-                        %span.ms-1.small= observee_name
-                      - elsif Array(annotation[:observee_labels]).any?
-                        %span.ms-1.small.text-muted= Array(annotation[:observee_labels]).join(", ")
+                      %span.ms-1.small{
+                          class: (observee_name.present? ? nil : "d-none"),
+                          data: { cue_people_map_target: "observeeName", cue_id: cue[:id] }
+                        }= observee_name.presence || Array(annotation[:observee_labels]).join(", ")
                     = hidden_field_tag "cue_annotations[#{cue[:id]}][observee_certainty]",
                                        observee_certainty,
                                        data: { cue_people_map_target: "observeeCertainty", cue_id: cue[:id] }

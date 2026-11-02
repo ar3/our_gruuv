@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_31_210000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -483,6 +483,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_210000) do
     t.index ["notification_id"], name: "idx_on_notification_id_0b2ce78a91"
     t.index ["organization_id", "hour_marker", "employee_teammate_id", "manager_teammate_id", "action_taker_teammate_id"], name: "idx_check_in_completion_batches_unique_key", unique: true
     t.index ["organization_id"], name: "idx_on_organization_id_8c776f246c"
+  end
+
+  create_table "check_in_period_brief_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_check_in_period_brief_results_on_og_consultation_id", unique: true
   end
 
   create_table "comments", force: :cascade do |t|
@@ -2468,6 +2477,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_210000) do
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "action_taker_teammate_id"
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "employee_teammate_id"
   add_foreign_key "check_in_completion_notification_batches", "teammates", column: "manager_teammate_id"
+  add_foreign_key "check_in_period_brief_results", "og_consultations"
   add_foreign_key "comments", "organizations"
   add_foreign_key "comments", "people", column: "creator_id"
   add_foreign_key "comments", "position_suggestions"

@@ -121,12 +121,13 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
   private
 
   def apply_speaker_map(consult, items)
-    return items unless consult.prompt_debug?
-    return items if consult.speaker_map_labels.blank?
+    return items if consult.speaker_map_labels.blank? && consult.cue_annotation_rows.blank?
 
     PossibleObservationConsults::ApplySpeakerMapToItems.call(
       items: items,
-      speaker_map: consult.speaker_map
+      speaker_map: consult.speaker_map,
+      cue_annotations: consult.cue_annotations,
+      cues: consult.moment_cues
     )
   end
 

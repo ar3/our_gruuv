@@ -41,6 +41,12 @@ module PossibleObservationConsults
       end
 
       cues = @consult.cue_annotation_rows.deep_dup
+      moments = Array((@consult.cue_annotations.is_a?(Hash) ? @consult.cue_annotations.with_indifferent_access : {})[:moments])
+      moment_by_id = moments.each_with_object({}) do |moment, memo|
+        moment = moment.with_indifferent_access
+        memo[moment[:id].to_s] = moment
+      end
+
       # Checkboxes omit unchecked ids — default all submitted map keys, then force
       # non-submitted existing cues to ignore when the form includes ogo_worthy flags.
       submitted_worthy = {}
@@ -58,19 +64,39 @@ module PossibleObservationConsults
           end
         submitted_worthy[cue_id.to_s] = worthy
 
-        teammate_id = attrs["observee_company_teammate_id"].presence&.to_i
-        teammate_id = nil if teammate_id&.zero?
-        certainty = attrs["observee_certainty"].to_s
-        certainty = teammate_id.present? ? "certain" : "uncertain" unless CERTAINTIES.include?(certainty)
-        certainty = "uncertain" if teammate_id.blank?
+        observer_id = sanitize_id(attrs["observer_company_teammate_id"])
+        observer_certainty = attrs["observer_certainty"].to_s
+        observer_certainty = observer_id.present? ? "certain" : "uncertain" unless CERTAINTIES.include?(observer_certainty)
+        observer_certainty = "uncertain" if observer_id.blank?
+
+        observee_id = sanitize_id(attrs["observee_company_teammate_id"])
+        observee_certainty = attrs["observee_certainty"].to_s
+        observee_certainty = observee_id.present? ? "certain" : "uncertain" unless CERTAINTIES.include?(observee_certainty)
+        observee_certainty = "uncertain" if observee_id.blank?
+
         entry.merge!(
           "ogo_worthy" => worthy,
           "cue_status" => worthy ? "ogo_worthy" : "ignore",
-          "observee_certainty" => certainty,
-          "observee_company_teammate_id" => teammate_id
+          "observer_certainty" => observer_certainty,
+          "observer_company_teammate_id" => observer_id,
+          "observee_certainty" => observee_certainty,
+          "observee_company_teammate_id" => observee_id
         )
         entry.delete("observee_status")
         cues[cue_id.to_s] = entry
+
+        # Keep speaker_map in sync as a soft default for this speaker label.
+        speaker = moment_by_id[cue_id.to_s]&.[](:speaker_label).to_s
+        if speaker.present? && observer_id.present?
+          speaker_entry = (labels[speaker] || {}).stringify_keys
+          speaker_entry.merge!(
+            "raw_label" => speaker,
+            "certainty" => observer_certainty,
+            "company_teammate_id" => observer_id,
+            "manual" => true
+          )
+          labels[speaker] = speaker_entry
+        end
       end
 
       if submitted_worthy.any?
@@ -98,11 +124,19 @@ module PossibleObservationConsults
 
     private
 
+    def sanitize_id(raw)
+      id = raw.presence&.to_i
+      id = nil if id&.zero?
+      id
+    end
+
     def stringify(attrs)
       if attrs.respond_to?(:permit)
         attrs.permit(
           :certainty, :company_teammate_id,
-          :cue_status, :ogo_worthy, :observee_certainty, :observee_company_teammate_id
+          :cue_status, :ogo_worthy,
+          :observer_certainty, :observer_company_teammate_id,
+          :observee_certainty, :observee_company_teammate_id
         ).to_h.stringify_keys
       else
         attrs.to_h.stringify_keys

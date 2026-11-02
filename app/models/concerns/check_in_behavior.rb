@@ -18,7 +18,8 @@ module CheckInBehavior
     alias_method :teammate=, :company_teammate=
     belongs_to :finalized_by_teammate, class_name: 'CompanyTeammate', optional: true
     belongs_to :maap_snapshot, optional: true
-    
+    has_many :og_consultations, as: :subject, dependent: :nullify
+
     # Common validations
     validates :check_in_started_on, presence: true
     
@@ -46,6 +47,10 @@ module CheckInBehavior
     scope :awaiting_employee_acknowledgement, -> {
       closed.where(employee_acknowledged_at: nil).with_acknowledgement_relevant_rating
     }
+    def latest_period_brief_consultation
+      OgConsultation.latest_for(subject: self, kind: OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF)
+    end
+
     scope :employee_acknowledged, -> {
       where.not(employee_acknowledged_at: nil)
     }

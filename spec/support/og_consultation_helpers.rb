@@ -172,6 +172,30 @@ module OgConsultationSpecHelpers
     consultation.update!(result: result)
     consultation
   end
+
+  def create_check_in_period_brief_consultation!(check_in:, status: 'pending', payload: {}, output_text: nil, **attrs)
+    organization_id = check_in.company_teammate.organization_id
+    consultation = OgConsultation.create!(
+      {
+        kind: OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF,
+        subject: check_in,
+        organization_id: organization_id,
+        status: status,
+        billable: true,
+        prompt_version: CheckIns::PeriodBriefPrompts::PROMPT_VERSION,
+        units_total: 1,
+        units_completed: status == 'completed' ? 1 : 0,
+        completed_at: (status == 'completed' ? Time.current : nil)
+      }.merge(attrs.slice(*CONSULTATION_ATTRS))
+    )
+    result = CheckInPeriodBriefResult.create!(
+      og_consultation: consultation,
+      payload: payload,
+      output_text: output_text
+    )
+    consultation.update!(result: result)
+    consultation
+  end
 end
 
 RSpec.configure do |config|

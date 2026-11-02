@@ -205,7 +205,9 @@ module Organizations
       if @consult.reload.extraction_status == "completed" && @consult.extraction_items.any?
         remapped = PossibleObservationConsults::ApplySpeakerMapToItems.call(
           items: @consult.extraction_items,
-          speaker_map: @consult.speaker_map
+          speaker_map: @consult.speaker_map,
+          cue_annotations: @consult.cue_annotations,
+          cues: @consult.moment_cues
         )
         @consult.replace_extraction_items!(remapped)
       end

@@ -97,7 +97,9 @@
         check_in: @open_check_in,
         teammate: @teammate,
         object_name: @single_item_name,
-        is_complete: is_complete
+        is_complete: is_complete,
+        check_in_kind: "position",
+        period_brief_consultation: @period_brief_consultation
       = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,
         data: { controller: "check-in-autosave",
                 check_in_autosave_debounce_ms_value: 2500,

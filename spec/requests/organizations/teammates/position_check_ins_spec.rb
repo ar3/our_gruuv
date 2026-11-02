@@ -56,6 +56,19 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       expect(response.body).to include("draft")
     end
 
+    it "renders Consult OG period brief in the perspective callout above the form" do
+      get position_check_in_organization_teammate_path(organization, teammate)
+      expect(response).to have_http_status(:success)
+      summarize_label = "Consult OG to summarize #{person.casual_name} and Position #{title.external_title} for this period"
+      expect(response.body).to include(summarize_label)
+      expect(response.body).to include('data-controller="check-in-period-brief-consult"')
+      perspective_idx = response.body.index("check-in-perspective-notes")
+      brief_idx = response.body.index(summarize_label)
+      form_idx = response.body.index('data-controller="check-in-autosave"')
+      expect(perspective_idx).to be < brief_idx
+      expect(brief_idx).to be < form_idx
+    end
+
     it "links the 1-by-1 clarity check-in text to the up next explainer page" do
       get position_check_in_organization_teammate_path(organization, teammate)
 

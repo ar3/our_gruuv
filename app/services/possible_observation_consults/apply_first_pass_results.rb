@@ -109,6 +109,15 @@ module PossibleObservationConsults
             "ogo_worthy" => ogo_worthy,
             "first_pass_reason" => llm["reason"].to_s,
             "observer_label" => observer_label,
+            "observer_certainty" =>
+              if observer_resolution[:company_teammate_id].blank?
+                "uncertain"
+              elsif observer_resolution[:unknown]
+                "uncertain"
+              else
+                "certain"
+              end,
+            "observer_company_teammate_id" => observer_resolution[:company_teammate_id],
             "observee_labels" => observee_labels,
             "observee_certainty" =>
               if observee_resolution[:company_teammate_id].blank?

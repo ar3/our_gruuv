@@ -1,60 +1,55 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Syncs observer teammate + certainty across cues that share a speaker label,
-// and flips certainty pills when the user picks someone.
+// Per-cue observer / observee selects. Observer is stored on the cue annotation
+// (not shared by speaker label) so read-aloud shout-outs can have different authors.
 export default class extends Controller {
   static targets = [
     "observerTeammate",
     "observerCertainty",
     "observerPill",
+    "observerName",
     "observeeTeammate",
     "observeeCertainty",
     "observeePill",
+    "observeeName",
     "cueStatus"
   ]
 
-  syncObserver(event) {
-    const label = event.currentTarget.dataset.speakerLabel
-    if (!label) return
-
-    const teammateEl = this.observerTeammateTargets.find((el) => el.dataset.speakerLabel === label)
-    const certaintyEl = this.observerCertaintyTargets.find((el) => el.dataset.speakerLabel === label)
-    if (!teammateEl || !certaintyEl) return
-
-    if (event.currentTarget === teammateEl) {
-      certaintyEl.value = teammateEl.value ? "certain" : "uncertain"
-    }
-
-    const teammateValue = teammateEl.value
-    const certaintyValue = certaintyEl.value
-
-    this.observerTeammateTargets.forEach((el) => {
-      if (el.dataset.speakerLabel !== label) return
-      el.value = teammateValue
-    })
-    this.observerCertaintyTargets.forEach((el) => {
-      if (el.dataset.speakerLabel !== label) return
-      el.value = certaintyValue
-    })
-    this.observerPillTargets.forEach((el) => {
-      if (el.dataset.speakerLabel !== label) return
-      this.applyPill(el, certaintyValue)
+  observerChanged(event) {
+    this.syncPersonFields(event.currentTarget, {
+      certaintyTargets: this.observerCertaintyTargets,
+      pillTargets: this.observerPillTargets,
+      nameTargets: this.observerNameTargets,
+      idKey: "cueId"
     })
   }
 
   observeeChanged(event) {
-    const cueId = event.currentTarget.dataset.cueId
+    this.syncPersonFields(event.currentTarget, {
+      certaintyTargets: this.observeeCertaintyTargets,
+      pillTargets: this.observeePillTargets,
+      nameTargets: this.observeeNameTargets,
+      idKey: "cueId"
+    })
+  }
+
+  syncPersonFields(source, { certaintyTargets, pillTargets, nameTargets, idKey }) {
+    const cueId = source.dataset[idKey]
     if (!cueId) return
 
-    const teammateEl = this.observeeTeammateTargets.find((el) => el.dataset.cueId === cueId)
-    const certaintyEl = this.observeeCertaintyTargets.find((el) => el.dataset.cueId === cueId)
-    const pillEl = this.observeePillTargets.find((el) => el.dataset.cueId === cueId)
-    if (!teammateEl || !certaintyEl) return
+    const certaintyEl = certaintyTargets.find((el) => el.dataset.cueId === cueId)
+    const pillEl = pillTargets.find((el) => el.dataset.cueId === cueId)
+    const nameEl = nameTargets.find((el) => el.dataset.cueId === cueId)
+    if (!certaintyEl) return
 
-    if (event.currentTarget === teammateEl) {
-      certaintyEl.value = teammateEl.value ? "certain" : "uncertain"
+    const certaintyValue = source.value ? "certain" : "uncertain"
+    certaintyEl.value = certaintyValue
+    if (pillEl) this.applyPill(pillEl, certaintyValue)
+    if (nameEl) {
+      const selectedName = this.selectedOptionLabel(source)
+      nameEl.textContent = selectedName
+      nameEl.classList.toggle("d-none", !selectedName)
     }
-    if (pillEl) this.applyPill(pillEl, certaintyEl.value)
   }
 
   applyPill(el, certainty) {
@@ -62,5 +57,11 @@ export default class extends Controller {
     el.textContent = certain ? "Certain" : "Uncertain"
     el.classList.toggle("text-bg-info", certain)
     el.classList.toggle("text-bg-warning", !certain)
+  }
+
+  selectedOptionLabel(selectEl) {
+    if (!selectEl?.options || selectEl.selectedIndex < 0) return ""
+    const text = selectEl.options[selectEl.selectedIndex]?.text?.trim() || ""
+    return text === "—" ? "" : text
   }
 }

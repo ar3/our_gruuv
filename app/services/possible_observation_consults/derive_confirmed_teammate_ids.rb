@@ -22,10 +22,12 @@ module PossibleObservationConsults
         annotation = (annotations[cue[:id].to_s] || {}).with_indifferent_access
         next unless annotation[:cue_status].to_s == "ogo_worthy"
 
-        observer = (labels[cue[:speaker_label].to_s] || {}).with_indifferent_access
-        if observer[:company_teammate_id].present?
-          ids << observer[:company_teammate_id].to_i
+        observer_id = annotation[:observer_company_teammate_id].presence
+        if observer_id.blank?
+          observer = (labels[cue[:speaker_label].to_s] || {}).with_indifferent_access
+          observer_id = observer[:company_teammate_id]
         end
+        ids << observer_id.to_i if observer_id.present?
         if annotation[:observee_company_teammate_id].present?
           ids << annotation[:observee_company_teammate_id].to_i
         end

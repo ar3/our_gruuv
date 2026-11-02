@@ -154,7 +154,9 @@
           check_in: @open_check_in,
           teammate: @teammate,
           object_name: @assignment.title,
-          is_complete: is_complete
+          is_complete: is_complete,
+          check_in_kind: "assignment",
+          period_brief_consultation: @period_brief_consultation
         - if assignment_energy_panel_html.present?
           != assignment_energy_panel_html
         = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true,

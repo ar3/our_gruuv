@@ -98,6 +98,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
     )
 
     load_associable_goals_display!(@aspiration, subject_teammate: @teammate)
+    @period_brief_consultation = @open_check_in&.latest_period_brief_consultation
   end
 
   def start_check_in

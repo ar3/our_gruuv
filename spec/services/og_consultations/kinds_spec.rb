@@ -53,6 +53,17 @@ RSpec.describe OgConsultations::Kinds do
     expect(entry.billable).to be(true)
   end
 
+  it 'registers check-in period brief as billable with a job and runner' do
+    entry = described_class.fetch(OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF)
+
+    expect(entry.label).to eq('Check-in period brief')
+    expect(entry.result_class).to eq(CheckInPeriodBriefResult)
+    expect(entry.job_class).to eq(CheckInPeriodBriefJob)
+    expect(entry.runner_class).to eq(CheckIns::PeriodBriefRunner)
+    expect(entry.llm_purpose).to eq('check_in_period_brief')
+    expect(entry.billable).to be(true)
+  end
+
   it 'raises a clear error for unknown kinds' do
     expect { described_class.fetch('not_a_kind') }.to raise_error(KeyError, /Unknown OgConsultation kind/)
   end

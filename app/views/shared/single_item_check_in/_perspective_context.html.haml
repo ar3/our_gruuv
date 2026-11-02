@@ -21,3 +21,10 @@
   - if is_complete
     .text-center.mt-3
       = link_to '... Or go to the "review together" page', organization_company_teammate_finalization_path(organization, teammate), class: "btn btn-outline-primary btn-lg px-5"
+  - if local_assigns[:check_in_kind].present?
+    = render "shared/single_item_check_in/consult_og_period_brief",
+             organization: organization,
+             teammate: teammate,
+             check_in: check_in,
+             check_in_kind: check_in_kind,
+             consult: local_assigns[:period_brief_consultation]

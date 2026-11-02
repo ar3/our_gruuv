@@ -49,4 +49,21 @@ RSpec.describe PossibleObservationConsults::DeriveConfirmedTeammateIds do
   it "includes people from OGO-worthy cues only" do
     expect(described_class.call(consult: consult)).to contain_exactly(observer.id, observee.id)
   end
+
+  it "prefers per-cue observer over the shared speaker-map observer" do
+    author = create(:company_teammate, organization: organization, first_employed_at: 1.year.ago)
+    consult.update!(
+      cue_annotations: consult.cue_annotations.deep_merge(
+        "cues" => {
+          "cue-1" => {
+            "cue_status" => "ogo_worthy",
+            "observer_company_teammate_id" => author.id,
+            "observee_company_teammate_id" => observee.id
+          }
+        }
+      )
+    )
+
+    expect(described_class.call(consult: consult)).to contain_exactly(author.id, observee.id)
+  end
 end

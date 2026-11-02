@@ -56,6 +56,19 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(body.index("research-observations")).to be < body.index("Consult OG for evidence")
         expect(body.index("check-in-get-evidence-manually")).to be < body.index("Associated Goals")
       end
+
+      it "renders Consult OG period brief in the perspective callout above the form" do
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+        summarize_label = "Consult OG to summarize #{employee_person.casual_name} and Value #{aspiration.name} for this period"
+        expect(response.body).to include(summarize_label)
+        expect(response.body).to include('data-controller="check-in-period-brief-consult"')
+        perspective_idx = response.body.index("check-in-perspective-notes")
+        brief_idx = response.body.index(summarize_label)
+        form_idx = response.body.index('data-controller="check-in-autosave"')
+        expect(perspective_idx).to be < brief_idx
+        expect(brief_idx).to be < form_idx
+      end
     end
 
     context "when there are no check-ins yet (department aspiration)" do

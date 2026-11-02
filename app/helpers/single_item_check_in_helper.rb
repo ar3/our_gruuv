@@ -259,4 +259,25 @@ module SingleItemCheckInHelper
       focus_body: focus_body
     )
   end
+
+  def check_in_period_brief_object_label(check_in:, check_in_kind:)
+    case check_in_kind.to_s
+    when "assignment"
+      "Assignment #{check_in.assignment.title}"
+    when "aspiration"
+      "Value #{check_in.aspiration.name}"
+    when "position"
+      title = check_in.employment_tenure&.position&.title&.external_title.presence || "Position"
+      "Position #{title}"
+    else
+      "this check-in"
+    end
+  end
+
+  def check_in_period_brief_summarize_link_label(teammate:, check_in:, check_in_kind:)
+    casual_name = teammate.person.casual_name
+    object_label = check_in_period_brief_object_label(check_in: check_in, check_in_kind: check_in_kind)
+    "Consult OG to summarize #{casual_name} and #{object_label} for this period"
+  end
 end
+

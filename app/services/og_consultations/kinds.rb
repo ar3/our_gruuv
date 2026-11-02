@@ -135,6 +135,15 @@ module OgConsultations
         runner_class_name: 'Observations::OgoQualityRunner',
         llm_purpose: 'ogo_quality',
         billable: true
+      ),
+      OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF => Entry.new(
+        kind: OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF,
+        label: 'Check-in period brief',
+        result_class_name: 'CheckInPeriodBriefResult',
+        job_class_name: 'CheckInPeriodBriefJob',
+        runner_class_name: 'CheckIns::PeriodBriefRunner',
+        llm_purpose: 'check_in_period_brief',
+        billable: true
       )
     }.freeze
 

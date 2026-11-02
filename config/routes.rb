@@ -797,6 +797,8 @@ Rails.application.routes.draw do
       end
       resource :slack_ogo_check_in_consult, only: [:show, :create],
                controller: 'teammates/slack_ogo_check_in_consults'
+      resource :check_in_period_brief_consult, only: [:show, :create],
+               controller: 'teammates/check_in_period_brief_consults'
     end
     
     # Positions management

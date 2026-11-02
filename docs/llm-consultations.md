@@ -26,6 +26,7 @@ Zoom and Google Meet **Connect** buttons are **Coming soon** (paste/upload remai
 The old Beta **Meeting transcripts** upload → feedback-request path (`PossibleObservationTranscript`) was **removed** (Phase 1); use this hub instead.
 
 **Check-in entry:** Assignment / Aspiration / Ability 1-by-1 pages can start a 90-day Slack search with `auto_extract_after_search`, then poll progressive ≥75% object-matched candidates via `CheckIns::SlackOgoConsult`.
+**Check-in period brief:** Assignment / Values (Aspiration) / Position 1-by-1 Notes caption runs billable `check_in_period_brief` (`CheckIns::StartPeriodBriefConsult`) — viewer-scoped period summary in a results panel for copy/paste into Notes; never recommends a rating.
 **Not billable consultations:** HR enrich/match and teammate resolve go through `Llm::Client` (invocations only). **Ask OG** is the same for charging (`billable: false`) — still an LLM call (and keeps an `OgConsultation` shell for status/threads), but Value Billing does not count it.
 
 **Seat Suggestion** is **billable** (`billable: true`): one Value Billing unit per conversation (`OgConsultation` row). Multi-turn replies reuse the same row — not charged per reply.

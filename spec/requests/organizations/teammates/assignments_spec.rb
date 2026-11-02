@@ -99,6 +99,22 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("draft")
       end
 
+      it "renders Consult OG period brief in the perspective callout above the form" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        summarize_label = "Consult OG to summarize #{employee_person.casual_name} and Assignment #{assignment.title} for this period"
+        expect(response.body).to include(summarize_label)
+        expect(response.body).to include('data-controller="check-in-period-brief-consult"')
+        expect(response.body).to include("OG recommends copying and pasting")
+        expect(response.body).to include("Re-Run Consultation")
+        expect(response.body).not_to include(">Run consultation<")
+        perspective_idx = response.body.index("check-in-perspective-notes")
+        brief_idx = response.body.index(summarize_label)
+        form_idx = response.body.index('data-controller="check-in-autosave"')
+        expect(perspective_idx).to be < brief_idx
+        expect(brief_idx).to be < form_idx
+      end
+
       it "shows assignment energy allocation bars and bulk check-in link for the employee" do
         get assignment_show_path
         expect(response).to have_http_status(:success)
