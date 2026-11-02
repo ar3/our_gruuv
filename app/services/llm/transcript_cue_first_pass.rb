@@ -10,7 +10,8 @@ module Llm
     # 1.20261031.1 — same call maps labels to company_teammate_ids from roster
     # 1.20261031.2 — split multi-shout-out turns into moments[] when observees clearly change
     # 1.20261031.3 — moments use verbatim anchors; excerpts sliced from cue text only
-    PROMPT_VERSION = "1.20261031.3"
+    # 1.20261102.4 — ordinal / "this shout-out is for" transition delimiters
+    PROMPT_VERSION = "1.20261102.4"
     BATCH_SIZE = 30
     TEXT_LIMIT = 4_000
     MIN_ANCHOR_CHARS = 12
@@ -93,7 +94,10 @@ module Llm
 
         STAY FAITHFUL TO THE TRANSCRIPT. Never invent, paraphrase, summarize, or borrow wording from another cue.
         Default: one moment per cue.
-        Split into multiple moments ONLY when the speaker clearly starts a separate shout-out/critique about a different person or distinct group — e.g. "First, for Kayla…" then later "which is Amy…" / "couple more" / "next".
+        Split into multiple moments ONLY when the speaker clearly starts a separate shout-out/critique about a different person or distinct group.
+        Treat transition / ordinal phrases as delimiters between moments, including:
+        "first one is for…", "Second shout-out was for…", "last shout out for…",
+        "this shout-out/feedback/kudos is for…", "which is Amy…", "couple more", "next".
         Keep joint shout-outs together (Kayla and Nicole praised as a pair = one moment).
         Do NOT split every name mention, pronouns, or restating the same people. Prefer under-splitting over over-splitting.
 

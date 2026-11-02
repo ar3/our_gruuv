@@ -18,7 +18,12 @@ module Transcripts
       /\bNext up\b/i,
       /\bMoving on[,.]?\s+(?:to|I)\b/i,
       /\bAlright,?\s+(?:one more|another|a few more)\b/i,
-      /\bAnd then,?\s+(?:for|I want to shout|shout out)\b/i,
+      /\bAnd then,?\s+(?:for|I want to shout|shout out|last)\b/i,
+      # Ordinal / explicit pivot into the next shout-out, feedback, or kudos.
+      /\b(?:First|Second|Third|Fourth|Fifth|Next|Last)\s+shout[- ]?outs?\b/i,
+      /\b(?:First|Second|Third|Fourth|Fifth|Next|Last)\s+(?:one|feedback|kudos)\b/i,
+      /\bthis\s+(?:shout[- ]?out|feedback|kudos)\s+is\s+for\b/i,
+      /\b(?:first|second|third|fourth|fifth|next|last)\s+one\s+is\s+for\b/i,
       /\bwhich is [A-Z][a-zA-Z'-]{1,30}\b/
     ].freeze
 

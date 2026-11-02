@@ -73,7 +73,7 @@ RSpec.describe Llm::TranscriptCueFirstPass do
 
     expect(Llm::Client).to have_received(:call) do |kwargs|
       expect(kwargs[:system_instructions]).to include("STAY FAITHFUL TO THE TRANSCRIPT")
-      expect(kwargs[:prompt_version]).to eq("1.20261031.3")
+      expect(kwargs[:prompt_version]).to eq("1.20261102.4")
     end
 
     moments = results["cue-1"]["moments"]
