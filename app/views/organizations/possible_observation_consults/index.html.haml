@@ -7,15 +7,37 @@
     %p.text-muted.mb-0
       Paste or upload a transcript, or start Slack searches for your direct reports from My Employees. Process candidates from either source here.
 
-.mb-3.d-flex.flex-wrap.gap-2
-  = link_to "New consult", new_organization_possible_observation_consult_path(organization), class: "btn btn-primary"
-  - if current_company_teammate&.has_direct_reports? && policy(PossibleObservationSlackSearch).create?
+- viewer = current_company_teammate
+.mb-3.d-flex.flex-wrap.gap-2.align-items-center
+  = link_to "Source from a meeting transcript", new_organization_possible_observation_consult_path(organization), class: "btn btn-primary"
+  - if viewer&.has_direct_reports? && policy(PossibleObservationSlackSearch).create?
     = button_to organization_direct_reports_slack_ogo_consults_path(organization),
                 method: :post,
                 class: "btn btn-outline-primary",
                 data: { turbo: false, confirm: "Start a 30-day Slack search + stronger-model consultation for each of your direct reports? This may take a while — each person finishes separately. Results will appear on this page." } do
       %i.bi.bi-slack.me-1
       Refresh pOGOs for my direct reports (30 days)
+
+  .ms-auto
+    - if viewer.nil?
+      %span.small.text-muted Sign in as a teammate to manage auto-refresh
+    - elsif viewer.has_slack_search_identity?
+      - hub_on = viewer.slack_pogo_auto_refresh_hub_enabled?
+      .form-check.form-switch.mb-0
+        - if hub_on
+          = form_with url: organization_slack_pogo_auto_refresh_hub_path(organization), method: :delete, local: true, html: { data: { turbo: false } } do
+            %input#slack-pogo-auto-refresh-hub.form-check-input{type: "checkbox", role: "switch", checked: true, onchange: "this.form.requestSubmit()"}
+            %label.form-check-label{for: "slack-pogo-auto-refresh-hub"}
+              Keep my and my direct reports’ pOGOs from Slack up-to-date (auto-refresh every 14 days)
+        - else
+          = form_with url: organization_slack_pogo_auto_refresh_hub_path(organization), method: :post, local: true, html: { data: { turbo: false } } do
+            %input#slack-pogo-auto-refresh-hub.form-check-input{type: "checkbox", role: "switch", checked: false, onchange: "this.form.requestSubmit()"}
+            %label.form-check-label{for: "slack-pogo-auto-refresh-hub"}
+              Keep my and my direct reports’ pOGOs from Slack up-to-date (auto-refresh every 14 days)
+    - else
+      = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, viewer, source: "slackPogoAutoRefreshHub", return_to: organization_possible_observation_consults_path(organization)), class: "small" do
+        %i.bi.bi-slack.me-1
+        Sign in to Slack to auto-refresh pOGOs
 
 .mb-3
   %p.small.text-muted.mb-2

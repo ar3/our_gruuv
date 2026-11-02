@@ -4,6 +4,8 @@ class PossibleObservationSlackSearch < ApplicationRecord
   RAW_RESULTS_VERSION = 1
   EXTRACTIONS_VERSION = 1
   ALLOWED_WINDOW_DAYS = [30, 90, 180].freeze
+  # Auto-refresh only (not offered in the manual Source from Slack dropdown).
+  AUTO_REFRESH_WINDOW_DAYS = 14
   DEFAULT_WINDOW_DAYS = 90
   # Slack search.messages max per page; we paginate until Slack reports no more pages.
   PAGE_SIZE = 100
@@ -23,7 +25,7 @@ class PossibleObservationSlackSearch < ApplicationRecord
   has_many :og_consultations, as: :subject, dependent: :nullify
 
   validates :display_name, presence: true, length: { maximum: 255 }
-  validates :window_days, inclusion: { in: ALLOWED_WINDOW_DAYS }
+  validates :window_days, inclusion: { in: ALLOWED_WINDOW_DAYS + [AUTO_REFRESH_WINDOW_DAYS] }
   validates :search_status, presence: true, inclusion: { in: %w[pending processing completed failed] }
   validates :extraction_status, presence: true, inclusion: { in: %w[ready pending processing completed failed] }
   validates :query, length: { maximum: 1000 }

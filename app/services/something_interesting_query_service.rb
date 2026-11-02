@@ -152,6 +152,29 @@ class SomethingInterestingQueryService
     check_in_warning_events_for(reports)
   end
 
+  # New public Slack pOGOs about the viewer (observee-facing).
+  def public_slack_pogos_about_me
+    return SlackPossibleObservation.none unless teammate
+
+    SlackPossibleObservation
+      .where(organization_id: company.id, subject_company_teammate_id: teammate.id)
+      .where(visibility: SlackPossibleObservation::VISIBILITY_PUBLIC)
+      .where("created_at > ?", since)
+      .order(created_at: :desc)
+  end
+
+  # New Slack pOGOs the viewer discovered as searcher (includes private/DM).
+  def slack_pogos_i_discovered
+    return SlackPossibleObservation.none unless teammate
+
+    SlackPossibleObservation
+      .where(organization_id: company.id)
+      .where("created_at > ?", since)
+      .where("discoverer_company_teammate_ids @> ?", [teammate.id].to_json)
+      .includes(subject_company_teammate: :person)
+      .order(created_at: :desc)
+  end
+
   def total_count
     goals_updated_by_those_i_serve.size +
       goals_updated_on_my_teams.size +
@@ -161,7 +184,9 @@ class SomethingInterestingQueryService
       observations_about_me.count +
       observation_comments.size +
       check_in_warnings_for_me.size +
-      check_in_warnings_for_those_i_serve.size
+      check_in_warnings_for_those_i_serve.size +
+      public_slack_pogos_about_me.count +
+      slack_pogos_i_discovered.count
   end
 
   # Comments on published OGOs where the viewer is the observer, an observee,

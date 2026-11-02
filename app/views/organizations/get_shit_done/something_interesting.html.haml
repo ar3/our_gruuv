@@ -134,6 +134,37 @@
 - else
   - quiet_categories << { title: 'Check-ins that reached Warning for me', icon: 'bi-exclamation-triangle', description: 'The day one of your active assignment, position, or value check-ins first reached Warning (61+ days since last finalize)' }
 
+- if @public_slack_pogos_about_me.any?
+  .card.border-0.shadow-sm.mb-4
+    .card-body
+      %h5.mb-1
+        %i.bi.bi-slack.me-1
+        New public Slack moments about you
+      %p.text-muted.mb-2
+        = "#{pluralize(@public_slack_pogos_about_me.count, 'public pOGO')} were added about you"
+      = link_to "View Slack moments",
+                ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+                class: "btn btn-sm btn-outline-primary"
+- else
+  - quiet_categories << { title: 'New public Slack moments about you', icon: 'bi-slack', description: 'Public-channel potential OGOs found about you' }
+
+- if @slack_pogos_i_discovered.any?
+  .card.border-0.shadow-sm.mb-4
+    .card-body
+      %h5.mb-1
+        %i.bi.bi-search.me-1
+        Slack moments you discovered
+      %p.text-muted.mb-2
+        = "#{pluralize(@slack_pogos_i_discovered.count, 'pOGO')} added from your Slack searches (including private / DMs)"
+      %ul.mb-0
+        - @slack_pogos_i_discovered.limit(10).each do |moment|
+          %li
+            = moment.subject_company_teammate.person.casual_name
+            ·
+            = moment.summary.presence || moment.quote.to_s.truncate(80)
+- else
+  - quiet_categories << { title: 'Slack moments you discovered', icon: 'bi-search', description: 'Potential OGOs from Slack searches you ran' }
+
 - if quiet_categories.any?
   .row.mt-5.pt-4
     .col-12

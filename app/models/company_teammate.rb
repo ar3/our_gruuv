@@ -69,6 +69,16 @@ class CompanyTeammate < ApplicationRecord
            foreign_key: :subject_company_teammate_id,
            dependent: :destroy,
            inverse_of: :subject_company_teammate
+  has_many :slack_pogo_auto_refresh_enrollments_as_runner,
+           class_name: 'SlackPogoAutoRefreshEnrollment',
+           foreign_key: :runner_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :runner_company_teammate
+  has_many :slack_pogo_auto_refresh_enrollments_as_subject,
+           class_name: 'SlackPogoAutoRefreshEnrollment',
+           foreign_key: :subject_company_teammate_id,
+           dependent: :destroy,
+           inverse_of: :subject_company_teammate
   has_many :observations_created,
            class_name: 'Observation',
            foreign_key: :creator_company_teammate_id,

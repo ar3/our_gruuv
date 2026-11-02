@@ -105,6 +105,22 @@ module Digest
           title: 'Check-ins that reached Warning for you',
           label: 'check-ins that reached Warning for you',
           items: @query_service.check_in_warnings_for_me.map { |e| check_in_warning_line(e, include_subject: false) }
+        },
+        {
+          title: 'New public Slack moments about you',
+          label: 'public Slack pOGOs about you',
+          items: begin
+            count = @query_service.public_slack_pogos_about_me.count
+            count.positive? ? ["#{count} public pOGO#{'s' unless count == 1} were added about you"] : []
+          end
+        },
+        {
+          title: 'Slack moments you discovered',
+          label: 'Slack pOGOs you discovered',
+          items: begin
+            count = @query_service.slack_pogos_i_discovered.count
+            count.positive? ? ["#{count} pOGO#{'s' unless count == 1} added from your Slack searches"] : []
+          end
         }
       ]
     end

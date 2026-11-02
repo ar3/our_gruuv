@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_31_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_31_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1990,6 +1990,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_200000) do
     t.index ["subject_company_teammate_id"], name: "idx_slack_ogo_extraction_memos_on_subject_id"
   end
 
+  create_table "slack_pogo_auto_refresh_enrollments", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "runner_company_teammate_id", null: false
+    t.bigint "subject_company_teammate_id", null: false
+    t.string "source", default: "manual", null: false
+    t.datetime "last_refreshed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_refreshed_at"], name: "index_slack_pogo_auto_refresh_enrollments_on_last_refreshed_at"
+    t.index ["organization_id"], name: "index_slack_pogo_auto_refresh_enrollments_on_organization_id"
+    t.index ["runner_company_teammate_id", "subject_company_teammate_id"], name: "idx_slack_pogo_auto_refresh_enrollments_uniq", unique: true
+    t.index ["runner_company_teammate_id"], name: "idx_slack_pogo_auto_refresh_on_runner"
+    t.index ["source"], name: "index_slack_pogo_auto_refresh_enrollments_on_source"
+    t.index ["subject_company_teammate_id"], name: "idx_slack_pogo_auto_refresh_on_subject"
+  end
+
   create_table "slack_possible_observations", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.bigint "subject_company_teammate_id", null: false
@@ -2268,6 +2284,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_200000) do
     t.boolean "can_manage_kudos_rewards", default: false, null: false
     t.bigint "next_goal_position_id"
     t.date "clarity_check_in_grace_until"
+    t.boolean "slack_pogo_auto_refresh_hub_enabled", default: false, null: false
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
@@ -2624,6 +2641,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_200000) do
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
   add_foreign_key "slack_ogo_extraction_memos", "teammates", column: "subject_company_teammate_id"
+  add_foreign_key "slack_pogo_auto_refresh_enrollments", "organizations"
+  add_foreign_key "slack_pogo_auto_refresh_enrollments", "teammates", column: "runner_company_teammate_id"
+  add_foreign_key "slack_pogo_auto_refresh_enrollments", "teammates", column: "subject_company_teammate_id"
   add_foreign_key "slack_possible_observations", "organizations"
   add_foreign_key "slack_possible_observations", "possible_observation_slack_search_batches"
   add_foreign_key "slack_possible_observations", "possible_observation_slack_searches"

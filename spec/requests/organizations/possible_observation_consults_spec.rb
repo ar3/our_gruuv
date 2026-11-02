@@ -704,8 +704,9 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include(search.display_name)
       expect(response.body).to include("Weekly sync transcript")
       expect(response.body).to include(
-        organization_company_teammate_possible_observation_slack_search_path(organization, other, search)
+        ogos_slack_search_run_organization_company_teammate_path(organization, other, search)
       )
+      expect(response.body).to include("Source from a meeting transcript")
 
       get organization_possible_observation_consults_path(organization, type: "slack")
       expect(response.body).to include(search.display_name)

@@ -118,6 +118,13 @@ RSpec.describe "Teammate OGOs page", type: :request do
       end
     end
 
+    it "shows the per-subject auto-refresh control when Slack is connected" do
+      create(:teammate_identity, :slack_search, teammate: teammate)
+      get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include("auto-refresh every 14 days")
+      expect(response.body).to include("Keep #{person.casual_name}")
+    end
+
     it "lists durable Slack moments the viewer can see and supports dismiss" do
       moment = create(
         :slack_possible_observation,

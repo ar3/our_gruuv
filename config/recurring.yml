@@ -58,3 +58,8 @@ production:
     class: Digest::ScheduleInterestingThingsJob
     queue: default
     schedule: every hour
+
+  schedule_slack_pogo_auto_refresh:
+    class: SlackPogoAutoRefresh::ScheduleJob
+    queue: default
+    schedule: at 6am every day

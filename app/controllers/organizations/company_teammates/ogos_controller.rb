@@ -47,6 +47,7 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
       organization: organization,
       search_id: @filter_search&.id
     )
+    assign_auto_refresh_state!
     render :source_from_slack
   end
 
@@ -95,6 +96,21 @@ class Organizations::CompanyTeammates::OgosController < Organizations::Organizat
 
   def set_one_on_one_link
     @one_on_one_link = @teammate&.one_on_one_link || OneOnOneLink.new(teammate: @teammate)
+  end
+
+  def assign_auto_refresh_state!
+    viewer = current_company_teammate
+    @auto_refresh_enrollment =
+      if viewer
+        SlackPogoAutoRefreshEnrollment.find_by(
+          runner_company_teammate_id: viewer.id,
+          subject_company_teammate_id: @teammate.id
+        )
+      end
+    @auto_refresh_enabled = @auto_refresh_enrollment.present?
+    @auto_refresh_locked_by_hub =
+      viewer&.slack_pogo_auto_refresh_hub_enabled? &&
+      SlackPogoAutoRefresh::HubSubjects.call(runner: viewer).map(&:id).include?(@teammate.id)
   end
 
   def preload_rateables(observations)

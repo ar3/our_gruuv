@@ -89,6 +89,27 @@
           %i.bi.bi-x-circle.me-1
           Disconnect
 
+      .mb-4
+        %h6.fw-semibold.mb-2 Auto-refresh
+        - if @auto_refresh_locked_by_hub
+          .alert.alert-secondary.border.mb-0.py-2
+            %i.bi.bi-lock.me-1
+            Covered by your hub auto-refresh (self / direct reports). Turn hub off on Consult OG to change this.
+        - elsif @auto_refresh_enabled
+          = button_to ogos_slack_pogo_auto_refresh_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+                      method: :delete,
+                      class: "btn btn-outline-secondary btn-sm",
+                      data: { turbo: false, confirm: "Turn off auto-refresh for #{@casual_name}?" } do
+            %i.bi.bi-arrow-repeat.me-1
+            Auto-refresh on for #{@casual_name} (every 14 days) — turn off
+        - else
+          = button_to ogos_slack_pogo_auto_refresh_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+                      method: :post,
+                      class: "btn btn-outline-primary btn-sm",
+                      data: { turbo: false } do
+            %i.bi.bi-arrow-repeat.me-1
+            Keep #{@casual_name}’s pOGOs from Slack up-to-date (auto-refresh every 14 days)
+
       %h6.fw-semibold.mb-2 Run a new search
       = form_with url: organization_company_teammate_possible_observation_slack_searches_path(organization, teammate_route_param(@teammate)), method: :post, local: true, class: "row g-2 align-items-end" do
         .col-auto
@@ -112,7 +133,7 @@
         (your visibility). This is separate from the linked Slack identity used for DMs and mentions.
       = link_to organization_company_teammate_slack_search_oauth_authorize_path(organization, teammate_route_param(viewer), source: "sourceFromSlack", return_to: return_to), class: "btn btn-primary" do
         %i.bi.bi-slack.me-1
-        Connect Slack (search)
+        Sign in to Slack
       %p.mt-3.mb-0.text-muted
         %i.bi.bi-info-circle.me-1
         You can also connect or disconnect from your profile Identities section.

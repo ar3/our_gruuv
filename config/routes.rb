@@ -446,6 +446,7 @@ Rails.application.routes.draw do
     end
 
     resources :direct_reports_slack_ogo_consults, module: :organizations, only: %i[create]
+    resource :slack_pogo_auto_refresh_hub, module: :organizations, only: %i[create destroy]
 
     # Legacy upload_events routes for backward compatibility
     resources :upload_events, only: [:index, :show, :new, :create, :destroy], controller: 'bulk_sync_events' do
@@ -618,6 +619,11 @@ Rails.application.routes.draw do
         get 'ogos/from', to: 'company_teammates/ogos#from', as: :ogos_from
         get 'ogos/feedback_requests', to: 'company_teammates/ogos#feedback_requests', as: :ogos_feedback_requests
         get 'ogos/source_from_slack', to: 'company_teammates/ogos#source_from_slack', as: :ogos_source_from_slack
+        post 'ogos/slack_pogo_auto_refresh',
+             to: 'company_teammates/slack_pogo_auto_refresh_subjects#create',
+             as: :ogos_slack_pogo_auto_refresh
+        delete 'ogos/slack_pogo_auto_refresh',
+               to: 'company_teammates/slack_pogo_auto_refresh_subjects#destroy'
         get 'ogos/slack_search_runs',
             to: 'company_teammates/possible_observation_slack_search_runs#index',
             as: :ogos_slack_search_runs
