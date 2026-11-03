@@ -14,6 +14,10 @@ class SlackPossibleObservationPolicy < ApplicationPolicy
     show?
   end
 
+  def promote?
+    show?
+  end
+
   private
 
   def can_view_subject_ogos?

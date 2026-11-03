@@ -25,39 +25,14 @@
         Filtered to run:
         %strong= @filter_search.display_name
         = link_to "Clear filter", ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)), class: "ms-2"
-    - moments = @slack_possible_observations || []
-    - if moments.any?
-      .list-group.list-group-flush
-        - moments.each do |moment|
-          .list-group-item.px-0
-            .d-flex.justify-content-between.align-items-start.gap-3
-              .flex-grow-1
-                - if moment.summary.present?
-                  %p.mb-1= moment.summary
-                - quote = moment.quote
-                - if quote.present?
-                  %blockquote.blockquote.mb-2.small
-                    %p.mb-0= quote
-                .small.text-muted
-                  - if moment.speaker_label.present?
-                    %span.me-2= moment.speaker_label
-                  - if moment.channel_name.present?
-                    %span.me-2
-                      %i.bi.bi-hash
-                      = moment.channel_name
-                  - elsif moment.private_or_dm?
-                    %span.badge.text-bg-secondary.me-2 Private / DM
-                  - else
-                    %span.badge.text-bg-light.border.me-2 Public channel
-                  - if moment.permalink.present?
-                    = link_to "Open in Slack", moment.permalink, target: "_blank", rel: "noopener", class: "me-2"
-                  %span= "#{format('%.0f%%', moment.confidence * 100)} confident"
-              .flex-shrink-0
-                = button_to "Dismiss",
-                            dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(@teammate), moment),
-                            method: :post,
-                            class: "btn btn-sm btn-outline-secondary",
-                            form: { data: { turbo: false, confirm: "Dismiss this Slack moment for everyone?" } }
+    - moment_rows = @slack_possible_observations || []
+    - if moment_rows.any?
+      - moment_rows.each do |row|
+        = render "organizations/company_teammates/slack_possible_observations/moment_row",
+                 moment: row.moment,
+                 draft_observation: row.draft_observation,
+                 teammate: @teammate,
+                 return_to: ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate))
     - else
       %p.mb-0.text-muted
         No open Slack moments about #{@casual_name} yet. Run a search below — new finds land here for anyone who can view these OGOs (public channels) or for you alone (private / DMs).

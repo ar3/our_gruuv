@@ -58,18 +58,11 @@
     %h5.mb-0 Open pOGOs from this run
   .card-body
     - if @moments.any?
-      .list-group.list-group-flush
-        - @moments.each do |moment|
-          .list-group-item.px-0
-            - if moment.summary.present?
-              %p.mb-1= moment.summary
-            - if moment.quote.present?
-              %blockquote.blockquote.mb-1.small
-                %p.mb-0= moment.quote
-            .small.text-muted
-              = "#{format('%.0f%%', moment.confidence * 100)} confident"
-              - if moment.permalink.present?
-                ·
-                = link_to "Open in Slack", moment.permalink, target: "_blank", rel: "noopener"
+      - @moments.each do |row|
+        = render "organizations/company_teammates/slack_possible_observations/moment_row",
+                 moment: row.moment,
+                 draft_observation: row.draft_observation,
+                 teammate: @teammate,
+                 return_to: ogos_slack_search_run_organization_company_teammate_path(organization, teammate_route_param(@teammate), @search)
     - else
       %p.mb-0.text-muted No open pOGOs from this run (dismissed, published, or none found).

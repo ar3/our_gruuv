@@ -36,11 +36,11 @@ RSpec.describe PossibleObservationSlackSearches::VisibleSlackPossibleObservation
       organization: organization
     )
 
-    expect(result).to include(public_row, private_for_viewer)
-    expect(result).not_to include(private_for_other)
+    expect(result.map(&:moment)).to include(public_row, private_for_viewer)
+    expect(result.map(&:moment)).not_to include(private_for_other)
   end
 
-  it "hides dismissed rows and rows with an existing Slack OGO" do
+  it "hides dismissed and published OGOs, but keeps draft-linked moments" do
     dismissed = create(
       :slack_possible_observation,
       :dismissed,
@@ -48,13 +48,21 @@ RSpec.describe PossibleObservationSlackSearches::VisibleSlackPossibleObservation
       subject_company_teammate: subject_teammate,
       discoverer_company_teammate_ids: [viewer.id]
     )
-    with_ogo = create(
+    with_published = create(
       :slack_possible_observation,
       organization: organization,
       subject_company_teammate: subject_teammate,
       discoverer_company_teammate_ids: [viewer.id],
-      channel_id: "Cogo",
+      channel_id: "Cpub",
       message_ts: "1710000000.009900"
+    )
+    with_draft = create(
+      :slack_possible_observation,
+      organization: organization,
+      subject_company_teammate: subject_teammate,
+      discoverer_company_teammate_ids: [viewer.id],
+      channel_id: "Cdraft",
+      message_ts: "1710000000.008800"
     )
     open_row = create(
       :slack_possible_observation,
@@ -63,12 +71,31 @@ RSpec.describe PossibleObservationSlackSearches::VisibleSlackPossibleObservation
       discoverer_company_teammate_ids: [viewer.id]
     )
 
-    trigger = create(
+    published_trigger = create(
       :observation_trigger,
       trigger_source: "slack",
-      trigger_data: { "channel_id" => "Cogo", "message_ts" => "1710000000.009900" }
+      trigger_data: { "channel_id" => "Cpub", "message_ts" => "1710000000.009900" }
     )
-    create(:observation, company: organization, observer: viewer.person, observation_trigger: trigger)
+    create(
+      :observation,
+      company: organization,
+      observer: viewer.person,
+      observation_trigger: published_trigger,
+      published_at: Time.current
+    )
+
+    draft_trigger = create(
+      :observation_trigger,
+      trigger_source: "slack",
+      trigger_data: { "channel_id" => "Cdraft", "message_ts" => "1710000000.008800" }
+    )
+    draft = create(
+      :observation,
+      company: organization,
+      observer: viewer.person,
+      observation_trigger: draft_trigger,
+      published_at: nil
+    )
 
     result = described_class.call(
       subject: subject_teammate,
@@ -76,7 +103,10 @@ RSpec.describe PossibleObservationSlackSearches::VisibleSlackPossibleObservation
       organization: organization
     )
 
-    expect(result).to eq([open_row])
-    expect(result).not_to include(dismissed, with_ogo)
+    moments = result.map(&:moment)
+    expect(moments).to include(open_row, with_draft)
+    expect(moments).not_to include(dismissed, with_published)
+    draft_row = result.find { |row| row.moment == with_draft }
+    expect(draft_row.draft_observation).to eq(draft)
   end
 end

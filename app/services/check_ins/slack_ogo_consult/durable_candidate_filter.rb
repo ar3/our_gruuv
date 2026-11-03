@@ -39,11 +39,12 @@ module CheckIns
         )
 
         rows.each do |row|
-          next if row.confidence < CONFIDENCE_THRESHOLD
-          next unless within_check_in_range?(row)
+          moment = row.moment
+          next if moment.confidence < CONFIDENCE_THRESHOLD
+          next unless within_check_in_range?(moment)
 
-          match = Match.new(record: row)
-          if object_match?(row)
+          match = Match.new(record: moment)
+          if object_match?(moment)
             object_matches << match
           else
             other_matches << match
@@ -58,24 +59,25 @@ module CheckIns
 
       private
 
-      def within_check_in_range?(row)
+      def within_check_in_range?(moment)
         return true if @since.blank?
 
-        ts = row.message_ts.to_s
+        ts = moment.message_ts.to_s
         return true if ts.blank?
 
-        moment = Time.zone.at(ts.to_f)
-        return false if moment < @since
-        return false if @until.present? && moment > @until
+        at = Time.zone.at(ts.to_f)
+        return false if at < @since
+        return false if @until.present? && at > @until
 
         true
       end
 
-      def object_match?(row)
-        payload = row.payload_hash
+      def object_match?(moment)
+        payload = moment.payload_hash
         payload[:suggested_rateable_type].to_s == @rateable_type &&
           payload[:suggested_rateable_id].to_i == @rateable_id
       end
     end
   end
 end
+

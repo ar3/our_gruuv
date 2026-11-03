@@ -683,6 +683,7 @@ Rails.application.routes.draw do
                 only: [] do
         member do
           post :dismiss
+          post :promote
         end
       end
       

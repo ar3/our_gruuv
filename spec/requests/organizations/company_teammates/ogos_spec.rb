@@ -99,6 +99,36 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("slackSearchRunsPageHelp")
     end
 
+    it "renders a search run show with open pOGOs using the shared moment row" do
+      search = create(
+        :possible_observation_slack_search,
+        organization: organization,
+        subject_company_teammate: teammate,
+        creator_company_teammate: teammate
+      )
+      create(
+        :slack_possible_observation,
+        organization: organization,
+        subject_company_teammate: teammate,
+        discoverer_company_teammate_ids: [teammate.id],
+        possible_observation_slack_search: search,
+        discovery_search_ids: [search.id],
+        payload: {
+          "summary" => "Run-scoped praise",
+          "quote" => "Nice ship from this run",
+          "confidence" => 0.88
+        }
+      )
+
+      get ogos_slack_search_run_organization_company_teammate_path(organization, teammate, search)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Open pOGOs from this run")
+      expect(response.body).to include("Run-scoped praise")
+      expect(response.body).to include("Nice ship from this run")
+      expect(response.body).to include("context-callout")
+      expect(response.body).to include("Promote to OGO")
+      expect(response.body).to include("Dismiss: this is not OGO-worthy")
+    end
 
     it "prompts the viewer to connect Slack (search) when not connected" do
       get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
@@ -152,7 +182,9 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Launch praise worth capturing")
       expect(response.body).to include("Pat crushed the timeline")
-      expect(response.body).to include("Dismiss")
+      expect(response.body).to include("context-callout")
+      expect(response.body).to include("Dismiss: this is not OGO-worthy")
+      expect(response.body).to include("Promote to OGO")
       expect(response.body).not_to include("Secret DM praise")
 
       post dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate, moment)
@@ -162,6 +194,35 @@ RSpec.describe "Teammate OGOs page", type: :request do
       get ogos_source_from_slack_organization_company_teammate_path(organization, teammate)
       expect(response.body).not_to include("Launch praise worth capturing")
       expect(private_other.reload).not_to be_dismissed
+    end
+
+    it "promotes a Slack moment to a draft OGO and keeps it on the list" do
+      moment = create(
+        :slack_possible_observation,
+        organization: organization,
+        subject_company_teammate: teammate,
+        discoverer_company_teammate_ids: [teammate.id],
+        channel_id: "Cpromote",
+        message_ts: "1710000000.001111",
+        payload: {
+          "summary" => "Promote me please",
+          "quote" => "Great work in public",
+          "confidence" => 0.91,
+          "kind" => "kudos",
+          "responder_company_teammate_id" => teammate.id
+        }
+      )
+
+      expect {
+        post promote_organization_company_teammate_slack_possible_observation_path(organization, teammate, moment)
+      }.to change(Observation, :count).by(1)
+
+      expect(response).to redirect_to(ogos_source_from_slack_organization_company_teammate_path(organization, teammate))
+      follow_redirect!
+      expect(response.body).to include("Promote me please")
+      expect(response.body).to include("Draft OGO — needs publishing")
+      expect(response.body).to include("Open draft / Finish publishing")
+      expect(response.body).not_to include(">Promote to OGO<")
     end
   end
 
