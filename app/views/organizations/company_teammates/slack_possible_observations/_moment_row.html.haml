@@ -2,11 +2,12 @@
 - draft = local_assigns[:draft_observation]
 - return_to = local_assigns[:return_to]
 
-= render "shared/context_callout", margin_class: "mb-3" do
+.mb-3
   - if moment.summary.present?
     %p.mb-1.fw-semibold{style: "color: #495057;"}= moment.summary
   - if moment.quote.present?
-    %p.mb-2= moment.quote
+    = render "shared/context_callout", margin_class: "mb-2" do
+      %p.mb-0= moment.quote
   - if draft
     %p.mb-2.small
       %span.badge.text-bg-warning Draft OGO — needs publishing
@@ -32,7 +33,7 @@
       = button_to "Promote to OGO",
                   promote_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
                   method: :post,
-                  class: "btn btn-sm btn-primary py-0",
+                  class: "btn btn-sm btn-outline-primary py-0",
                   form: { data: { turbo: false } }
       = button_to "Dismiss: this is not OGO-worthy",
                   dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
