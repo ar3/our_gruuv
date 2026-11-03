@@ -170,24 +170,35 @@ module ApplicationHelper
     OgCandidateReview::DefaultObserverToViewer.apply(items, viewer: viewer)
   end
 
-  # Step 3: flatten candidates into transcript time order (same spine as Step 2).
+  # Step 3: one row per Step 2 worthy cue, in transcript time order.
   def consult_step3_review_bundle(items, cues:)
     prepared = candidate_items_for_review(items)
-    cue_links = PossibleObservationConsults::MatchCuesToItems.call(cues: cues, items: prepared)
     cue_by_id = Array(cues).each_with_object({}) do |cue, memo|
       cue = cue.with_indifferent_access
       memo[cue[:id].to_s] = cue
     end
+    cue_links = prepared.each_with_object({}) do |item, memo|
+      cue_id = item[:cue_id].presence || item[:id]
+      memo[item[:id].to_s] = [cue_id.to_s] if cue_by_id[cue_id.to_s]
+    end
+    # Fallback for legacy rows without cue_id.
+    if cue_links.empty?
+      cue_links = PossibleObservationConsults::MatchCuesToItems.call(cues: cues, items: prepared)
+    end
     sorted = prepared.sort_by do |item|
-      starts = Array(cue_links[item[:id].to_s]).filter_map { |id| cue_by_id[id]&.[](:start_ms)&.to_i }
-      [starts.min || Float::INFINITY, item[:id].to_s]
+      cue_id = (item[:cue_id].presence || item[:id]).to_s
+      start_ms = cue_by_id[cue_id]&.[](:start_ms)&.to_i
+      start_ms ||= Array(cue_links[item[:id].to_s]).filter_map { |id| cue_by_id[id]&.[](:start_ms)&.to_i }.min
+      [start_ms || Float::INFINITY, item[:id].to_s]
     end
     { items: sorted, cue_links: cue_links, cue_by_id: cue_by_id }
   end
 
   def consult_item_timestamp_label(item, cue_links_by_item:, cue_by_id:)
     item = item.with_indifferent_access
-    cues = Array(cue_links_by_item[item[:id].to_s]).filter_map { |id| cue_by_id[id]&.with_indifferent_access }
+    cue_ids = Array(cue_links_by_item[item[:id].to_s])
+    cue_ids = [item[:cue_id].presence || item[:id]].compact if cue_ids.empty?
+    cues = cue_ids.filter_map { |id| cue_by_id[id.to_s]&.with_indifferent_access }
     return nil if cues.empty?
 
     first = cues.min_by { |cue| cue[:start_ms].to_i }
@@ -198,6 +209,26 @@ module ApplicationHelper
 
     "#{start_label} – #{end_label}"
   end
+
+  def consult_rateable_type_label(type)
+    case type.to_s
+    when "Aspiration" then "Value"
+    when "Assignment" then "Assignment"
+    when "Ability" then "Ability"
+    else type.to_s
+    end
+  end
+
+  def consult_item_outcome_saver_name(item)
+    item = item.with_indifferent_access
+    tid = item[:outcome_by_company_teammate_id].presence ||
+          item[:dismissed_by_company_teammate_id].presence ||
+          @consult&.creator_company_teammate_id
+    tm = @selectable_teammates&.find { |row| row.id == tid.to_i }
+    tm ||= CompanyTeammate.includes(:person).find_by(id: tid) if tid.present?
+    tm&.person&.casual_name.presence || tm&.person&.display_name.presence || "Someone"
+  end
+
 
   # Human-readable timeframe for the observations card empty state (anchored to last check-in or milestone when present).
   # since_date: start of range (anchor date or long ago), has_finalized: true when an anchor event exists (check-in or milestone).

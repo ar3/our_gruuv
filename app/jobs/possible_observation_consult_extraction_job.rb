@@ -8,108 +8,90 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
     return if consult.nil?
     return unless consult.people_confirmed?
 
-    model_id = model_id.presence || Llm::MultiTeammateMomentsExtractor.model_id
+    model_id = model_id.presence || Llm::TranscriptCueRatingsExtractor.model_id
     consult.mark_processing!
     consultation = nil
 
-    plaintext = consult.plaintext
-    if plaintext.blank?
-      consult.mark_failed!("No transcript content to consult.")
+    items = PossibleObservationConsults::SeedExtractionItemsFromWorthyCues.call(consult: consult)
+    if items.empty?
+      consult.mark_completed!(
+        items: [],
+        extraction_note: "No OGO-worthy cues were confirmed in Step 2.",
+        processed_teammate_ids: Array(consult.confirmed_teammate_ids).map(&:to_i)
+      )
       return
     end
-
-    teammates = consult.confirmed_teammates.includes(:person).to_a
-    if teammates.empty?
-      consult.mark_failed!("No confirmed teammates.")
-      return
-    end
-
-    chunks = Transcripts::ChunkPlaintextService.call(plaintext)
-    chunks = ["(empty)"] if chunks.empty?
-    units_total = chunks.size * teammates.size
 
     consultation = OgConsultations::StartOgoSearch.call(
       subject: consult,
       kind: OgConsultation::KIND_OGO_SEARCH_CONSULT,
       organization_id: consult.organization_id,
       triggered_by_teammate_id: consult.creator_company_teammate_id,
-      units_total: units_total,
+      units_total: items.size,
       extraction_version: PossibleObservationConsult::EXTRACTIONS_VERSION,
       model_id: model_id,
-      prompt_version: Llm::MultiTeammateMomentsExtractor.prompt_version
+      prompt_version: Llm::TranscriptCueRatingsExtractor.prompt_version
     )
 
-    chunk_errors = []
-    merged_catalog = {
-      "Assignment" => {},
-      "Ability" => {},
-      "Aspiration" => {},
-      "Goal" => {}
-    }
-    all_items = []
-    processed_teammate_ids = []
+    teammates_by_id = CompanyTeammate.where(id: items.flat_map { |item|
+      [item["responder_company_teammate_id"], item["subject_company_teammate_id"]]
+    }.compact).includes(:person).index_by(&:id)
 
-    # One person at a time across all chunks so the show page can reveal
-    # finished teammates while others are still processing.
-    teammates.each do |teammate|
-      raw_by_chunk = []
+    rated_items = []
+    rating_errors = []
 
-      chunks.each do |chunk|
-        consult.heartbeat_processing!
-        pack = PossibleObservationSlackSearches::SubjectContextPack.call(
-          teammate: teammate,
-          organization: consult.organization
-        )
-        pack.catalog.each do |type, map|
-          merged_catalog[type] ||= {}
-          merged_catalog[type].merge!(map)
-        end
+    items.each do |item|
+      consult.heartbeat_processing!
+      subject = teammates_by_id[item["subject_company_teammate_id"].to_i]
+      observer = teammates_by_id[item["responder_company_teammate_id"].to_i]
 
-        subject_name = teammate.person.casual_name.presence || teammate.person.display_name
-        result = Llm::MultiTeammateMomentsExtractor.call_for_subject(
-          chunk_text: chunk,
-          subject_name: subject_name,
-          context_text: pack.prompt_text,
-          context_catalog: pack.catalog,
-          organization_id: consult.organization_id,
-          parent: consultation,
-          triggered_by_teammate_id: consult.creator_company_teammate_id,
-          model_id: model_id
-        )
-        items = Array(result["items"]).map do |item|
-          item.stringify_keys.merge("subject_company_teammate_id" => teammate.id)
-        end
-        raw_by_chunk << items
-        chunk_errors << result["error"] if result["error"].present?
+      if subject.nil?
+        rated_items << item
+        rating_errors << "Cue #{item['id']}: missing observee"
         consultation.increment_units_completed!
+        consult.persist_partial_extractions!(
+          items: rated_items,
+          processed_teammate_ids: rated_subject_ids(rated_items)
+        )
+        next
       end
 
-      person_items = PossibleObservationConsults::MergeAndResolveExtractionsService.call(
-        organization: consult.organization,
-        confirmed_teammates: teammates,
-        raw_items_by_chunk: raw_by_chunk,
-        context_catalog: merged_catalog
+      pack = PossibleObservationSlackSearches::SubjectContextPack.call(
+        teammate: subject,
+        organization: consult.organization
       )
-      all_items.concat(person_items)
-      processed_teammate_ids << teammate.id
+      result = Llm::TranscriptCueRatingsExtractor.call(
+        quote: item["quote"],
+        observee_name: subject.person.casual_name.presence || subject.person.display_name,
+        observer_name: observer&.person&.casual_name.presence || observer&.person&.display_name,
+        context_text: pack.prompt_text,
+        context_catalog: pack.catalog,
+        organization_id: consult.organization_id,
+        parent: consultation,
+        triggered_by_teammate_id: consult.creator_company_teammate_id,
+        model_id: model_id
+      )
+      rating_errors << result["error"] if result["error"].present?
+      rated_items << apply_ratings(item, result)
+      consultation.increment_units_completed!
       consult.persist_partial_extractions!(
-        items: apply_speaker_map(consult, all_items),
-        processed_teammate_ids: processed_teammate_ids
+        items: rated_items,
+        processed_teammate_ids: rated_subject_ids(rated_items)
       )
     end
 
     note =
-      if all_items.empty?
-        chunk_errors.compact.first.presence ||
-          "No OGO candidates were found for the confirmed teammates."
+      if rated_items.empty?
+        rating_errors.compact.first.presence || "No OGO candidates were rated."
       end
 
     consult.mark_completed!(
-      items: apply_speaker_map(consult, all_items),
+      items: rated_items,
       extraction_note: note,
-      processed_teammate_ids: processed_teammate_ids
+      processed_teammate_ids: rated_subject_ids(rated_items).presence ||
+        Array(consult.confirmed_teammate_ids).map(&:to_i)
     )
-    complete_consultation!(consultation, items_count: all_items.size)
+    complete_consultation!(consultation, items_count: rated_items.size)
   rescue StandardError => e
     fail_consultation!(consultation, e.message)
     consult&.mark_failed!(e.message)
@@ -120,15 +102,26 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
 
   private
 
-  def apply_speaker_map(consult, items)
-    return items if consult.speaker_map_labels.blank? && consult.cue_annotation_rows.blank?
-
-    PossibleObservationConsults::ApplySpeakerMapToItems.call(
-      items: items,
-      speaker_map: consult.speaker_map,
-      cue_annotations: consult.cue_annotations,
-      cues: consult.moment_cues
+  def apply_ratings(item, result)
+    rateables = Array(result["rateables"]).map(&:stringify_keys)
+    primary = rateables.first || {}
+    confidences = rateables.filter_map { |row| row["confidence"]&.to_f }
+    item.merge(
+      "kind" => result["kind"].presence || item["kind"],
+      "summary" => result["summary"].to_s,
+      "association_reason" => result["association_reason"].to_s,
+      "rating_reason" => result["rating_reason"].to_s,
+      "suggested_rateables" => rateables,
+      "suggested_rateable_type" => primary["rateable_type"],
+      "suggested_rateable_id" => primary["rateable_id"],
+      "suggested_rateable_name" => primary["rateable_name"],
+      "suggested_rating" => primary["suggested_rating"],
+      "confidence" => confidences.max
     )
+  end
+
+  def rated_subject_ids(items)
+    items.filter_map { |item| item["subject_company_teammate_id"].presence&.to_i }.uniq
   end
 
   def complete_consultation!(consultation, items_count:)

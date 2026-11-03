@@ -36,14 +36,32 @@ FactoryBot.define do
                      create(:company_teammate, organization: consult.organization).id
         item = {
           "id" => SecureRandom.uuid,
+          "cue_id" => "cue-1",
           "kind" => "kudos",
           "confidence" => 0.9,
-          "quote" => "Summary: Pat crushed it.\n\nFull quote: great job",
-          "summary" => "Pat crushed it.",
+          "quote" => "Pat crushed it this week.",
+          "summary" => "Pat crushed the launch.",
+          "association_reason" => "Clear praise for delivery work.",
+          "rating_reason" => "Strong evidence of exceeding expectations.",
           "speaker_label" => "Alex",
           "recipient_label" => "Pat",
           "responder_company_teammate_id" => consult.creator_company_teammate_id,
           "subject_company_teammate_id" => subject_id,
+          "suggested_rateable_type" => "Ability",
+          "suggested_rateable_id" => 1,
+          "suggested_rateable_name" => "Delivery",
+          "suggested_rating" => "agree",
+          "suggested_rateables" => [
+            {
+              "rateable_type" => "Ability",
+              "rateable_id" => 1,
+              "rateable_name" => "Delivery",
+              "suggested_rating" => "agree",
+              "confidence" => 0.9,
+              "association_reason" => "Clear praise for delivery work.",
+              "rating_reason" => "Strong evidence of exceeding expectations."
+            }
+          ],
           "include" => true
         }
         consult.update!(

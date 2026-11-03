@@ -105,7 +105,7 @@ module PossibleObservationConsults
         raise ActiveRecord::RecordInvalid, observation unless observation.save
 
         observation.observees.create!(teammate_id: subject.id)
-        seed_suggested_rating!(observation, item)
+        seed_suggested_ratings!(observation, item)
       end
 
       Result.ok(observation)
@@ -125,14 +125,27 @@ module PossibleObservationConsults
       parts.join("\n\n")
     end
 
-    def seed_suggested_rating!(observation, item)
-      rateable_type = item["suggested_rateable_type"].to_s
+    def seed_suggested_ratings!(observation, item)
+      rows = Array(item["suggested_rateables"]).map { |row| row.to_h.stringify_keys }
+      if rows.empty? && item["suggested_rateable_type"].present?
+        rows = [{
+          "rateable_type" => item["suggested_rateable_type"],
+          "rateable_id" => item["suggested_rateable_id"],
+          "suggested_rating" => item["suggested_rating"]
+        }]
+      end
+
+      rows.each { |row| seed_one_rating!(observation, row) }
+    end
+
+    def seed_one_rating!(observation, row)
+      rateable_type = row["rateable_type"].to_s
       return unless %w[Ability Assignment Aspiration].include?(rateable_type)
 
-      rateable_id = item["suggested_rateable_id"].presence&.to_i
+      rateable_id = row["rateable_id"].presence&.to_i
       return if rateable_id.blank? || rateable_id <= 0
 
-      rating = item["suggested_rating"].to_s
+      rating = row["suggested_rating"].to_s
       return unless %w[strongly_agree agree disagree strongly_disagree].include?(rating)
 
       rateable = rateable_type.constantize.find_by(id: rateable_id)

@@ -1,0 +1,50 @@
+-# Locals: item, idx, organization
+- item = item.with_indifferent_access
+- idx = local_assigns.fetch(:idx)
+- observer_tm = @selectable_teammates.find { |tm| tm.id == item[:responder_company_teammate_id].to_i }
+- subject_tm = @selectable_teammates.find { |tm| tm.id == item[:subject_company_teammate_id].to_i }
+- saver = consult_item_outcome_saver_name(item)
+- observer_name = observer_tm&.person&.casual_name.presence || observer_tm&.person&.display_name.presence || "the observer"
+- subject_name = subject_tm&.person&.casual_name.presence || subject_tm&.person&.display_name.presence || "the observee"
+- quote_preview = item[:quote].to_s.truncate(180)
+- locked = item[:observation_id].present?
+- dismissed = item[:dismissed_at].present?
+- gsd_label = company_label_for("get_shit_done", "Get Shit Done")
+%tr{ data: { consult_candidate_row: true } }
+  %td{ colspan: 3 }
+    = hidden_field_tag "items[#{idx}][id]", item[:id]
+    = hidden_field_tag "items[#{idx}][cue_id]", item[:cue_id].presence || item[:id]
+    = hidden_field_tag "items[#{idx}][quote]", item[:quote]
+    = hidden_field_tag "items[#{idx}][summary]", item[:summary]
+    = hidden_field_tag "items[#{idx}][kind]", item[:kind]
+    = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
+    = hidden_field_tag "items[#{idx}][observation_id]", item[:observation_id]
+    = hidden_field_tag "items[#{idx}][responder_company_teammate_id]", item[:responder_company_teammate_id]
+    = hidden_field_tag "items[#{idx}][subject_company_teammate_id]", item[:subject_company_teammate_id]
+    = hidden_field_tag "items[#{idx}][dismissed_at]", item[:dismissed_at]
+    = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
+    = hidden_field_tag "items[#{idx}][outcome_by_company_teammate_id]", item[:outcome_by_company_teammate_id]
+    = hidden_field_tag "items[#{idx}][state]", (locked ? "included" : "dismissed")
+    - if locked
+      .border.rounded.p-3.bg-success-subtle
+        %p.mb-2
+          %strong= saver
+          created a draft OGO from
+          %em= "“#{quote_preview}”"
+          — observer
+          %strong= observer_name
+          , observee
+          %strong #{subject_name}.
+        %p.mb-2.small.text-muted
+          This will now show up on #{observer_name}’s #{gsd_label} list.
+        = link_to "Open OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"
+    - elsif dismissed
+      .border.rounded.p-3.bg-light
+        %p.mb-0
+          %strong= saver
+          decided this was not OGO-worthy:
+          %em= "“#{quote_preview}”"
+          — observer
+          %strong= observer_name
+          , observee
+          %strong #{subject_name}.

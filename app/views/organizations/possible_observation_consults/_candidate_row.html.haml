@@ -11,15 +11,19 @@
 - current_state = locked ? "included" : (dismissed ? "dismissed" : (included ? "included" : "needs_processed"))
 -# Prompt-debug hone loop: edit while Keep Reviewing; product path still unlocks only on Create Draft OGO.
 - field_disabled = locked || (!prompt_debug && current_state != "included")
-- confidence = item[:confidence].to_f
-- badge_class = confidence >= 0.75 ? "text-bg-success" : (confidence >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
 - include_label = prompt_debug ? "Would create draft OGO" : "Create Draft OGO"
 - quote_rows = 11
-- row_data = { consult_candidate_row: true, consult_prompt_debug: prompt_debug.presence }
+- rateables = Array(item[:suggested_rateables])
+- if rateables.blank? && item[:suggested_rateable_type].present?
+  - rateables = [ { rateable_type: item[:suggested_rateable_type], rateable_id: item[:suggested_rateable_id], rateable_name: item[:suggested_rateable_name], suggested_rating: item[:suggested_rating], confidence: item[:confidence] } ]
+- summary_text = item[:summary].to_s.strip
+- why_lines = [item[:association_reason], item[:rating_reason]].map { |line| line.to_s.strip }.reject(&:blank?)
+- row_data = { consult_candidate_row: true, consult_prompt_debug: prompt_debug.presence, controller: "consult-copy-to-story" }
 - row_data = row_data.merge(prompt_debug_transcript_target: "item", item_id: item[:id], cue_ids: linked_cue_ids.join(",")) if prompt_debug
 %tr{ data: row_data }
   %td
     = hidden_field_tag "items[#{idx}][id]", item[:id]
+    = hidden_field_tag "items[#{idx}][cue_id]", item[:cue_id].presence || item[:id]
     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
     = hidden_field_tag "items[#{idx}][observation_id]", item[:observation_id]
     = hidden_field_tag "items[#{idx}][summary]", item[:summary]
@@ -36,6 +40,16 @@
     = hidden_field_tag "items[#{idx}][suggested_goal_id]", item[:suggested_goal_id]
     = hidden_field_tag "items[#{idx}][dismissed_at]", item[:dismissed_at]
     = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
+    = hidden_field_tag "items[#{idx}][outcome_by_company_teammate_id]", item[:outcome_by_company_teammate_id]
+    - rateables.each_with_index do |rateable, ridx|
+      - rateable = rateable.with_indifferent_access
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rateable_type]", rateable[:rateable_type]
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rateable_id]", rateable[:rateable_id]
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rateable_name]", rateable[:rateable_name]
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][suggested_rating]", rateable[:suggested_rating]
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][confidence]", rateable[:confidence]
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][association_reason]", rateable[:association_reason]
+      = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rating_reason]", rateable[:rating_reason]
     .small.text-muted.mb-1
       - if timestamp_label.present?
         = timestamp_label
@@ -48,14 +62,44 @@
               type: "button",
               data: { action: "prompt-debug-transcript#highlightFromItem", item_id: item[:id], cue_ids: linked_cue_ids.join(",") }
             } Show in transcript
-    = text_area_tag "items[#{idx}][quote]", item[:quote], class: "form-control form-control-sm", rows: quote_rows, disabled: field_disabled, data: { consult_row_field: true }
-    .mt-2.fs-6
-      %span.badge.me-2{ class: badge_class }= "#{format('%.0f%%', confidence * 100)} confident in this suggestion"
-      - if item[:suggested_rating].present?
-        - rating_label = ObservationRating.display_label(item[:suggested_rating]) if item[:suggested_rating].present?
-        Suggested:
-        %strong= rating_label
-        for #{item[:suggested_rateable_name].presence || item[:suggested_rateable_type]}
+    = text_area_tag "items[#{idx}][quote]",
+                    item[:quote],
+                    class: "form-control form-control-sm",
+                    rows: quote_rows,
+                    disabled: field_disabled,
+                    data: { consult_row_field: true, consult_copy_to_story_target: "story" }
+    - if summary_text.present? || why_lines.any?
+      .mt-2.small.text-muted
+        - if summary_text.present?
+          %div
+            %span= summary_text
+            %button.btn.btn-link.btn-sm.p-0.align-baseline.ms-1{
+                type: "button",
+                data: { action: "consult-copy-to-story#copy", copy_text: summary_text }
+              }
+              copy to OGO story
+        - why_lines.each do |why_line|
+          %div.mt-1
+            %span= why_line
+            %button.btn.btn-link.btn-sm.p-0.align-baseline.ms-1{
+                type: "button",
+                data: { action: "consult-copy-to-story#copy", copy_text: why_line }
+              }
+              copy to OGO story
+    - if rateables.any?
+      .mt-2
+        %div.small.fw-semibold.mb-1 Suggested ratings
+        %ul.list-unstyled.mb-0
+          - rateables.each do |rateable|
+            - rateable = rateable.with_indifferent_access
+            - rating_label = ObservationRating.display_label(rateable[:suggested_rating]) if rateable[:suggested_rating].present?
+            - conf = rateable[:confidence].to_f
+            - badge_class = conf >= 0.75 ? "text-bg-success" : (conf >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
+            %li.mb-1
+              %span.badge.me-1{ class: badge_class }= "#{format('%.0f%%', conf * 100)}"
+              %strong= rating_label.presence || "Rating"
+              for #{consult_rateable_type_label(rateable[:rateable_type])}
+              %em= rateable[:rateable_name]
   %td{ style: "min-width: 240px;" }
     .mb-2
       = label_tag nil, "What we'll do when we Save all at the end", class: "form-label small mb-1 d-block"

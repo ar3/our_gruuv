@@ -102,9 +102,9 @@ RSpec.describe "Possible observation consults", type: :request do
                 }
               }
       end.to have_enqueued_job(PossibleObservationConsultExtractionJob)
-        .with(consult.id, model_id: Llm::MultiTeammateMomentsExtractor.model_id)
+        .with(consult.id, model_id: Llm::TranscriptCueRatingsExtractor.model_id)
 
-      expect(Llm::MultiTeammateMomentsExtractor.model_id).to include("claude-sonnet-4-5")
+      expect(Llm::TranscriptCueRatingsExtractor.model_id).to include("claude-sonnet-4-5")
       expect(consult.reload.extraction_status).to eq("pending")
     end
 
@@ -346,7 +346,8 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Create published OGO now (private)")
       expect(response.body).to include("Dismiss now")
       expect(response.body).not_to include("Consult OG again")
-      expect(response.body).to include("confident in this suggestion")
+      expect(response.body).to include("Suggested ratings")
+      expect(response.body).to include("copy to OGO story")
       expect(response.body).to include('rows="11"')
       expect(response.body).not_to include("Faster, but less powerful model")
       expect(response.body).not_to include("Slower, but more powerful model")
@@ -387,27 +388,49 @@ RSpec.describe "Possible observation consults", type: :request do
           "processed_teammate_ids" => [other.id, third.id],
           "items" => [
             {
-              "id" => "late-item",
+              "id" => "late-cue",
+              "cue_id" => "late-cue",
               "kind" => "kudos",
               "confidence" => 0.8,
               "quote" => late_text,
               "full_quote" => late_text,
-              "suggested_rating" => "exceeded",
+              "summary" => "Later praise",
+              "suggested_rating" => "agree",
               "suggested_rateable_type" => "Ability",
               "suggested_rateable_name" => "Delivery",
+              "suggested_rateables" => [
+                {
+                  "rateable_type" => "Ability",
+                  "rateable_id" => 1,
+                  "rateable_name" => "Delivery",
+                  "suggested_rating" => "agree",
+                  "confidence" => 0.8
+                }
+              ],
               "responder_company_teammate_id" => teammate.id,
               "subject_company_teammate_id" => third.id,
               "include" => false
             },
             {
-              "id" => "early-item",
+              "id" => "early-cue",
+              "cue_id" => "early-cue",
               "kind" => "kudos",
               "confidence" => 0.7,
               "quote" => early_text,
               "full_quote" => early_text,
-              "suggested_rating" => "met",
+              "summary" => "Early praise",
+              "suggested_rating" => "agree",
               "suggested_rateable_type" => "Ability",
               "suggested_rateable_name" => "Delivery",
+              "suggested_rateables" => [
+                {
+                  "rateable_type" => "Ability",
+                  "rateable_id" => 1,
+                  "rateable_name" => "Delivery",
+                  "suggested_rating" => "agree",
+                  "confidence" => 0.7
+                }
+              ],
               "responder_company_teammate_id" => teammate.id,
               "subject_company_teammate_id" => other.id,
               "include" => false
@@ -422,8 +445,7 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Step 3 · Review candidate OGOs")
       expect(response.body).not_to include("Results so far")
       expect(response.body).to include("00:01:00.000")
-      expect(response.body).to include("confident in this suggestion")
-      expect(response.body).to include("Suggested:")
+      expect(response.body).to include("Suggested ratings")
       expect(response.body).to include('rows="11"')
       expect(response.body.index(early_text)).to be < response.body.index(late_text)
     end
@@ -445,6 +467,28 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include('name="items[0][responder_company_teammate_id]"')
       expect(response.body).to include("form-select")
       expect(response.body).to include(other.person.display_name)
+    end
+
+    it "replaces dismissed rows with an outcome summary after Save all" do
+      item = consult.extraction_items.first
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              commit: "Save all",
+              items: {
+                "0" => {
+                  id: item[:id],
+                  state: "dismissed",
+                  quote: item[:quote],
+                  responder_company_teammate_id: teammate.id,
+                  subject_company_teammate_id: other.id
+                }
+              }
+            }
+
+      get organization_possible_observation_consult_path(organization, consult)
+      expect(response.body).to include("decided this was not OGO-worthy")
+      expect(response.body).to include(teammate.person.casual_name)
+      expect(response.body).not_to include("What we&#39;ll do when we Save all at the end")
     end
   end
 

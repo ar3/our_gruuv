@@ -115,7 +115,7 @@ module Organizations
       )
       PossibleObservationConsultExtractionJob.perform_later(
         @consult.id,
-        model_id: Llm::MultiTeammateMomentsExtractor.model_id
+        model_id: Llm::TranscriptCueRatingsExtractor.model_id
       )
       redirect_to consult_path,
                   notice: "Step 3 started — drafting OGOs for the confirmed people."
@@ -126,7 +126,7 @@ module Organizations
       @consult.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
       PossibleObservationConsultExtractionJob.perform_later(
         @consult.id,
-        model_id: Llm::MultiTeammateMomentsExtractor.model_id
+        model_id: Llm::TranscriptCueRatingsExtractor.model_id
       )
       redirect_to consult_path, notice: "OG Consult started again."
     end
@@ -361,6 +361,7 @@ module Organizations
         item["include"] = true
         item["dismissed_at"] = nil
         item["dismissed_by_company_teammate_id"] = nil
+        item["outcome_by_company_teammate_id"] = current_company_teammate&.id
         item
       end
       @consult.replace_extraction_items!(items)
@@ -422,6 +423,7 @@ module Organizations
         item["dismissed_at"] = item["dismissed_at"].presence || Time.current.iso8601
         item["dismissed_by_company_teammate_id"] =
           item["dismissed_by_company_teammate_id"].presence || current_company_teammate&.id
+        item["outcome_by_company_teammate_id"] = current_company_teammate&.id
         item
       end
       @consult.replace_extraction_items!(items) if items.any?
@@ -443,6 +445,11 @@ module Organizations
         return
       end
 
+      items = items.map do |item|
+        next item unless included_item?(item) || item["dismissed_at"].present?
+
+        item.merge("outcome_by_company_teammate_id" => current_company_teammate&.id)
+      end
       @consult.replace_extraction_items!(items)
       dismissed_count = items.count { |item| item["dismissed_at"].present? }
 
@@ -568,13 +575,17 @@ module Organizations
         submitted = if h.respond_to?(:permit)
           h.permit(
             :id, :state, :quote, :summary, :short_quote, :full_quote, :kind,
-            :speaker_label, :recipient_label,
+            :speaker_label, :recipient_label, :cue_id,
             :responder_company_teammate_id, :subject_company_teammate_id,
             :observer_unknown, :observee_unknown,
             :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
             :suggested_rateable_name, :association_reason, :rating_reason,
             :confidence, :observation_id,
-            :dismissed_at, :dismissed_by_company_teammate_id
+            :dismissed_at, :dismissed_by_company_teammate_id, :outcome_by_company_teammate_id,
+            suggested_rateables: [
+              :rateable_type, :rateable_id, :rateable_name, :suggested_rating, :confidence,
+              :association_reason, :rating_reason
+            ]
           ).to_h.stringify_keys
         else
           h.stringify_keys

@@ -12,7 +12,7 @@
 - step3_done = completed
 - step3_current = step2_done && !step3_done
 - step2_detail = first_pass_waiting ? "First pass in progress — figuring out who was talking and who they were talking about…" : "OG tried to figure out who was talking and who they were talking about… but we need you to verify"
-- step3_detail = processing ? "Drafting OGOs…" : (@consult.extraction_status == "failed" ? "Drafting failed — try again" : "OG will try to associate the right Abilities, Assignments, or Values to this potential OGO… and you'll create it, and the observer can then publish it")
+- step3_detail = processing ? "Suggesting ratings for each confirmed cue…" : (@consult.extraction_status == "failed" ? "Rating suggestions failed — try again" : "OG suggests Abilities, Assignments, or Values to rate for each Step 2 cue — then you create the OGO, and the observer can publish it")
 
 .mb-3
   = link_to "← All consults", organization_possible_observation_consults_path(organization), class: "text-decoration-none"
