@@ -29,7 +29,7 @@ RSpec.describe 'Observation Show Page', type: :system do
 
       it 'publishes observation when clicked' do
         visit organization_observation_path(company, draft_observation)
-        within('[data-test-id="observation-publish-header"]') { click_button 'Publish' }
+        within('[data-test-id="observation-publish-actions"]') { click_button 'Publish' }
 
         expect(page).to have_current_path(organization_observation_path(company, draft_observation))
         expect(page).to have_content('Observation was successfully published')

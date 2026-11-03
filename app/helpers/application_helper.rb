@@ -172,7 +172,7 @@ module ApplicationHelper
 
   # Step 3: one row per Step 2 worthy cue, in transcript time order.
   def consult_step3_review_bundle(items, cues:)
-    prepared = candidate_items_for_review(items)
+    prepared = candidate_items_for_review(items).map { |item| consult_normalize_item_rateables(item) }
     cue_by_id = Array(cues).each_with_object({}) do |cue, memo|
       cue = cue.with_indifferent_access
       memo[cue[:id].to_s] = cue
@@ -192,6 +192,45 @@ module ApplicationHelper
       [start_ms || Float::INFINITY, item[:id].to_s]
     end
     { items: sorted, cue_links: cue_links, cue_by_id: cue_by_id }
+  end
+
+  # Form round-trips and some persisted rows store suggested_rateables as an indexed Hash
+  # ({"0"=>..., "1"=>...}). Array(hash) becomes [["0", {...}], ...] and breaks the view.
+  def consult_suggested_rateables(item)
+    item = item.with_indifferent_access
+    raw = item[:suggested_rateables]
+    rows =
+      case raw
+      when Hash, ActiveSupport::HashWithIndifferentAccess
+        raw.sort_by { |key, _| key.to_s.to_i }.map(&:last)
+      when Array
+        raw
+      else
+        []
+      end
+    rows = rows.filter_map do |row|
+      next unless row.is_a?(Hash)
+
+      row.with_indifferent_access
+    end
+    if rows.blank? && item[:suggested_rateable_type].present?
+      rows = [
+        {
+          rateable_type: item[:suggested_rateable_type],
+          rateable_id: item[:suggested_rateable_id],
+          rateable_name: item[:suggested_rateable_name],
+          suggested_rating: item[:suggested_rating],
+          confidence: item[:confidence]
+        }.with_indifferent_access
+      ]
+    end
+    rows
+  end
+
+  def consult_normalize_item_rateables(item)
+    item = item.respond_to?(:with_indifferent_access) ? item.with_indifferent_access.deep_dup : item.deep_dup
+    item[:suggested_rateables] = consult_suggested_rateables(item)
+    item
   end
 
   def consult_item_timestamp_label(item, cue_links_by_item:, cue_by_id:)
@@ -217,6 +256,16 @@ module ApplicationHelper
     when "Ability" then "Ability"
     else type.to_s
     end
+  end
+
+  def consult_rateable_confidence_tooltip(rateable)
+    rateable = rateable.with_indifferent_access
+    pct = (rateable[:confidence].to_f * 100).round
+    example_label = ObservationRating.display_label(rateable[:suggested_rating]).to_s.downcase
+    article = example_label.match?(/\A[aeiou]/i) ? "an" : "a"
+    type_label = consult_rateable_type_label(rateable[:rateable_type])
+    name = rateable[:rateable_name].to_s.presence || "this #{type_label.downcase}"
+    "OG is #{pct}% confident that this is #{article} #{example_label} example of the #{type_label} #{name}"
   end
 
   def consult_item_outcome_saver_name(item)

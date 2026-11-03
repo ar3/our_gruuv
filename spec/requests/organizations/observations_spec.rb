@@ -1231,6 +1231,8 @@ RSpec.describe 'Organizations::Observations', type: :request do
       get organization_observation_path(organization, observation)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Observation Details')
+      expect(response.body).to include('data-test-id="observation-edit-header"')
+      expect(response.body).to include('aria-label="Edit Observation"')
 
       breadcrumb = CGI.unescapeHTML(response.body[%r{page-context-nav__breadcrumb.*?</nav>}m].to_s)
       expect(breadcrumb).to include('My OGOs')
@@ -1247,6 +1249,26 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(breadcrumb).not_to include('>Observations<')
       bare_index_href = organization_observations_path(organization)
       expect(breadcrumb).not_to match(/href="#{Regexp.escape(bare_index_href)}"/)
+    end
+
+    context 'when the observation is a draft' do
+      let(:draft_observation) do
+        obs = build(:observation, observer: person, company: organization, privacy_level: :observed_only, published_at: nil, story: 'Draft story')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'shows Publish in Actions, Edit next to Observation Details, and a dramatic unpublished callout' do
+        get organization_observation_path(organization, draft_observation)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-test-id="observation-edit-header"')
+        expect(response.body).to include('data-test-id="observation-publish-actions"')
+        expect(response.body).not_to include('data-test-id="observation-publish-header"')
+        expect(response.body).to include('This observation is not published')
+        expect(response.body).to include('data-test-id="observation-publish-nudge"')
+        expect(response.body).to include('Publish now')
+      end
     end
   end
 

@@ -81,6 +81,71 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
     end
 
+    context 'when observation was triggered from Consult OG to Find OGOs' do
+      let(:consult_trigger) do
+        create(
+          :observation_trigger,
+          trigger_source: 'ogo_consult',
+          trigger_type: 'ogo_source_search',
+          trigger_data: { possible_observation_consult_id: 1 }
+        )
+      end
+      let(:consult_observation) do
+        obs = build(
+          :observation,
+          observer: observer,
+          company: company,
+          privacy_level: :public_to_company,
+          observation_trigger: consult_trigger,
+          created_as_type: Observation::CREATED_AS_OGO_CONSULT,
+          creator_company_teammate: observer_teammate
+        )
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        assign(:organization, company)
+        assign(:observation, consult_observation)
+        obs_observer = consult_observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        allow(view).to receive(:policy) do |obj|
+          if obj == consult_observation
+            double(post_to_slack?: false, publish?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{consult_observation.id}")
+        allow(view).to receive(:edit_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{consult_observation.id}/edit")
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Test story</p>',
+            gifs_html: '',
+            story_media_html: '',
+            visibility_text: 'Public to Company',
+            visibility_text_style: 'text-primary',
+            visibility_icon: '',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{consult_observation.id}",
+            permalink_path: '/organizations/1/kudos/2024-01-01/123'
+          )
+        )
+        allow(consult_observation).to receive(:format_ratings_by_type_and_level).and_return([])
+        allow(view).to receive(:render_markdown).and_return('<p>Formatted markdown</p>')
+        render
+      end
+
+      it 'mentions meeting transcripts in the consult description' do
+        expect(rendered).to have_content('Story was triggered from a Consult OG to Find OGOs')
+        expect(rendered).to have_content('or from a meeting transcript')
+        expect(rendered).to have_content("messages from and about #{observee_person.casual_name}")
+      end
+    end
+
     context 'when observation has no trigger' do
       before do
         assign(:organization, company)
@@ -362,52 +427,71 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       obs
     end
 
-    context 'when observation is draft and current user is the observer' do
-      before do
-        assign(:organization, company)
-        assign(:observation, draft_observation)
-        assign(:observee_names, [observee_person.casual_name])
-        assign(:direct_manager_names, [])
-        assign(:other_manager_names, [])
-        obs = observer
-        view.instance_variable_set(:@current_person, obs)
-        view.define_singleton_method(:current_person) { obs }
-        allow(view).to receive(:policy) do |obj|
-          if obj == draft_observation
-            double(publish?: true, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
-          else
-            double(publish?: false, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
-          end
+    def render_draft_nudge(viewer:, can_publish:)
+      assign(:organization, company)
+      assign(:observation, draft_observation)
+      assign(:observee_names, [observee_person.casual_name])
+      assign(:direct_manager_names, [])
+      assign(:other_manager_names, [])
+      view.instance_variable_set(:@current_person, viewer)
+      view.define_singleton_method(:current_person) { viewer }
+      allow(view).to receive(:policy) do |obj|
+        if obj == draft_observation
+          double(publish?: can_publish, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
+        else
+          double(publish?: false, post_to_slack?: false, view_permalink?: false, update?: false, destroy?: false, restore?: false)
         end
-        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}")
-        allow(view).to receive(:publish_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}/publish")
-        allow_any_instance_of(Observation).to receive(:decorate).and_return(
-          double(
-            story_html: '<p>Draft story</p>',
-            gifs_html: '',
-            story_media_html: '',
-            visibility_text_style: 'text-primary',
-            visibility_text: 'Public to Company',
-            visibility_icon: '',
-            feelings_display_html: '',
-            permalink_url: "https://example.com/observations/#{draft_observation.id}"
-          )
-        )
-        allow(draft_observation).to receive(:format_ratings_by_type_and_level).and_return([])
-        render
       end
+      allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}")
+      allow(view).to receive(:edit_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}/edit")
+      allow(view).to receive(:publish_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}/publish")
+      allow_any_instance_of(Observation).to receive(:decorate).and_return(
+        double(
+          story_html: '<p>Draft story</p>',
+          gifs_html: '',
+          story_media_html: '',
+          visibility_text_style: 'text-primary',
+          visibility_text: 'Public to Company',
+          visibility_icon: '',
+          feelings_display_html: '',
+          permalink_url: "https://example.com/observations/#{draft_observation.id}",
+          permalink_path: '/organizations/1/kudos/2024-01-01/123'
+        )
+      )
+      allow(draft_observation).to receive(:format_ratings_by_type_and_level).and_return([])
+      render
+    end
 
-      it 'displays Almost done! heading' do
-        expect(rendered).to have_content('Almost done!')
+    context 'when observation is draft and current user is the observer' do
+      before { render_draft_nudge(viewer: observer, can_publish: true) }
+
+      it 'displays a dramatic unpublished callout' do
+        expect(rendered).to have_css('.alert.alert-warning.border-warning.border-3', text: /This observation is not published/)
+        expect(rendered).to have_css('i.bi-exclamation-triangle-fill')
       end
 
       it 'displays nudge copy about publishing' do
-        expect(rendered).to have_content('You have to publish this or it is like it never happened')
+        expect(rendered).to have_content('nobody else can see it')
+        expect(rendered).to have_content('like it never happened')
       end
 
-      it 'displays a prominent Publish button' do
-        expect(rendered).to have_css('input[type="submit"][value="Publish"]')
-        expect(rendered).to have_css('.btn-lg')
+      it 'displays a prominent Publish now button' do
+        expect(rendered).to have_css('[data-test-id="observation-publish-nudge"]')
+        expect(rendered).to have_button('Publish now')
+        expect(rendered).to have_css('.btn-lg.btn-warning')
+      end
+    end
+
+    context 'when observation is draft and current user is not the observer' do
+      before { render_draft_nudge(viewer: observee_person, can_publish: false) }
+
+      it 'still displays the unpublished callout' do
+        expect(rendered).to have_css('.alert.alert-warning.border-warning.border-3', text: /This observation is not published/)
+      end
+
+      it 'displays disabled Publish now with warning icon' do
+        expect(rendered).to have_css('button.btn-lg.btn-warning.disabled[disabled]', text: 'Publish now')
+        expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-title="Only the observer can publish this observation"]')
       end
     end
 
@@ -440,7 +524,8 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       it 'does not display the draft publish nudge' do
-        expect(rendered).not_to have_content('You have to publish this or it is like it never happened')
+        expect(rendered).not_to have_content('This observation is not published')
+        expect(rendered).not_to have_content('like it never happened')
       end
     end
   end
@@ -1238,6 +1323,86 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
     end
 
+    context 'Publish button' do
+      let(:draft_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil, story: 'Draft story')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      before do
+        assign(:observation, draft_observation)
+        allow(view).to receive(:edit_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}/edit")
+        allow(view).to receive(:publish_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}/publish")
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{draft_observation.id}")
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Draft story</p>',
+            gifs_html: '',
+            story_media_html: '',
+            visibility_text_style: 'text-info',
+            visibility_icon: '👁️',
+            visibility_text: 'Public to Company',
+            feelings_display_html: '<span>Happy</span>',
+            permalink_url: 'https://example.com/permalink',
+            permalink_path: '/organizations/1/kudos/2024-01-01/123'
+          )
+        )
+        allow(draft_observation).to receive(:format_ratings_by_type_and_level).and_return([])
+      end
+
+      context 'when user can publish' do
+        before do
+          allow(view).to receive(:policy) do |obj|
+            if obj == draft_observation
+              double(
+                post_to_slack?: false,
+                publish?: true,
+                view_permalink?: false,
+                update?: true,
+                destroy?: false,
+                restore?: false
+              )
+            else
+              double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+            end
+          end
+          render
+        end
+
+        it 'displays enabled Publish button in Actions' do
+          expect(rendered).to have_css('[data-test-id="observation-publish-actions"]')
+          expect(rendered).to have_button('Publish')
+        end
+      end
+
+      context 'when user cannot publish' do
+        before do
+          allow(view).to receive(:policy) do |obj|
+            if obj == draft_observation
+              double(
+                post_to_slack?: false,
+                publish?: false,
+                view_permalink?: false,
+                update?: false,
+                destroy?: false,
+                restore?: false
+              )
+            else
+              double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+            end
+          end
+          render
+        end
+
+        it 'displays disabled Publish button with warning icon' do
+          expect(rendered).to have_css('button.btn-outline-secondary.disabled[disabled]', text: 'Publish')
+          expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-title="Only the observer can publish this observation"]')
+        end
+      end
+    end
+
     context 'Edit Observation button' do
       context 'when user has update permission' do
         before do
@@ -1261,6 +1426,13 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         it 'displays enabled Edit Observation link' do
           expect(rendered).to have_link('Edit Observation', href: "/organizations/#{company.id}/observations/#{observation.id}/edit")
           expect(rendered).to have_css('a.btn-outline-secondary', text: 'Edit Observation')
+        end
+
+        it 'places Edit next to Observation Details in the header' do
+          header = view.content_for(:header).to_s
+          expect(header).to include('Observation Details')
+          expect(header).to include('Edit Observation')
+          expect(header).to include('data-test-id="observation-edit-header"')
         end
       end
 

@@ -324,13 +324,15 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         obs
       end
 
-      it 'shows draft publish nudge to observer with Almost done! and giant Publish button' do
+      it 'shows draft publish nudge to observer with dramatic unpublished callout and Publish now button' do
         get :show, params: { organization_id: company.id, id: draft_observation.id }
         expect(response).to have_http_status(:success)
-        expect(response.body).to include('Almost done!')
-        expect(response.body).to include('You have to publish this or it is like it never happened')
-        expect(response.body).to include('Publish')
+        expect(response.body).to include('This observation is not published')
+        expect(response.body).to include('nobody else can see it')
+        expect(response.body).to include('like it never happened')
+        expect(response.body).to include('Publish now')
         expect(response.body).to include('btn-lg')
+        expect(response.body).to include('border-warning')
       end
     end
 

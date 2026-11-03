@@ -126,7 +126,17 @@ module PossibleObservationConsults
     end
 
     def seed_suggested_ratings!(observation, item)
-      rows = Array(item["suggested_rateables"]).map { |row| row.to_h.stringify_keys }
+      raw = item["suggested_rateables"]
+      rows =
+        case raw
+        when Hash, ActiveSupport::HashWithIndifferentAccess
+          raw.sort_by { |key, _| key.to_s.to_i }.map(&:last)
+        when Array
+          raw
+        else
+          []
+        end
+      rows = rows.filter_map { |row| row.is_a?(Hash) ? row.to_h.stringify_keys : nil }
       if rows.empty? && item["suggested_rateable_type"].present?
         rows = [{
           "rateable_type" => item["suggested_rateable_type"],

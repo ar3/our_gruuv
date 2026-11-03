@@ -572,6 +572,10 @@ module Organizations
         end
 
       list.map do |h|
+        rateables = normalize_suggested_rateables_param(
+          h.is_a?(ActionController::Parameters) ? h[:suggested_rateables] : h["suggested_rateables"] || h[:suggested_rateables]
+        )
+
         submitted = if h.respond_to?(:permit)
           h.permit(
             :id, :state, :quote, :summary, :short_quote, :full_quote, :kind,
@@ -581,15 +585,12 @@ module Organizations
             :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
             :suggested_rateable_name, :association_reason, :rating_reason,
             :confidence, :observation_id,
-            :dismissed_at, :dismissed_by_company_teammate_id, :outcome_by_company_teammate_id,
-            suggested_rateables: [
-              :rateable_type, :rateable_id, :rateable_name, :suggested_rating, :confidence,
-              :association_reason, :rating_reason
-            ]
+            :dismissed_at, :dismissed_by_company_teammate_id, :outcome_by_company_teammate_id
           ).to_h.stringify_keys
         else
-          h.stringify_keys
+          h.stringify_keys.except("suggested_rateables")
         end
+        submitted["suggested_rateables"] = rateables if rateables
 
         # Merge submitted values onto the stored item so fields that are hidden or disabled
         # in the form (e.g. observer/subject on non-included rows, or any field on a locked
@@ -600,8 +601,49 @@ module Organizations
 
         out["observer_unknown"] = out["responder_company_teammate_id"].blank?
         out["observee_unknown"] = out["subject_company_teammate_id"].blank?
+        # Always persist as a real Array of hashes (never an indexed {"0"=>...} Hash).
+        out["suggested_rateables"] = normalize_suggested_rateables_param(
+          out["suggested_rateables"]
+        ) || []
         apply_state!(out)
         out
+      end
+    end
+
+    # Form fields arrive as items[n][suggested_rateables][0][...] — an indexed Hash, not an Array.
+    # Permitting with suggested_rateables: [:attr] raises TypeError ("wrong element type String").
+    # Persisted JSON can also be that indexed Hash; Array(hash) then breaks the show view.
+    def normalize_suggested_rateables_param(raw)
+      return nil if raw.nil?
+
+      rows =
+        case raw
+        when ActionController::Parameters
+          raw.to_unsafe_h.sort_by { |k, _| k.to_s.to_i }.map(&:last)
+        when Hash, ActiveSupport::HashWithIndifferentAccess
+          raw.sort_by { |k, _| k.to_s.to_i }.map(&:last)
+        when Array
+          raw
+        else
+          []
+        end
+
+      rows.filter_map do |row|
+        attrs =
+          if row.respond_to?(:permit)
+            row.permit(
+              :rateable_type, :rateable_id, :rateable_name, :suggested_rating, :confidence,
+              :association_reason, :rating_reason
+            ).to_h
+          elsif row.is_a?(Hash)
+            row
+          end
+        next if attrs.blank?
+
+        attrs.stringify_keys.slice(
+          "rateable_type", "rateable_id", "rateable_name", "suggested_rating", "confidence",
+          "association_reason", "rating_reason"
+        )
       end
     end
 

@@ -13,9 +13,7 @@
 - field_disabled = locked || (!prompt_debug && current_state != "included")
 - include_label = prompt_debug ? "Would create draft OGO" : "Create Draft OGO"
 - quote_rows = 11
-- rateables = Array(item[:suggested_rateables])
-- if rateables.blank? && item[:suggested_rateable_type].present?
-  - rateables = [ { rateable_type: item[:suggested_rateable_type], rateable_id: item[:suggested_rateable_id], rateable_name: item[:suggested_rateable_name], suggested_rating: item[:suggested_rating], confidence: item[:confidence] } ]
+- rateables = consult_suggested_rateables(item)
 - summary_text = item[:summary].to_s.strip
 - why_lines = [item[:association_reason], item[:rating_reason]].map { |line| line.to_s.strip }.reject(&:blank?)
 - row_data = { consult_candidate_row: true, consult_prompt_debug: prompt_debug.presence, controller: "consult-copy-to-story" }
@@ -42,7 +40,6 @@
     = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
     = hidden_field_tag "items[#{idx}][outcome_by_company_teammate_id]", item[:outcome_by_company_teammate_id]
     - rateables.each_with_index do |rateable, ridx|
-      - rateable = rateable.with_indifferent_access
       = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rateable_type]", rateable[:rateable_type]
       = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rateable_id]", rateable[:rateable_id]
       = hidden_field_tag "items[#{idx}][suggested_rateables][#{ridx}][rateable_name]", rateable[:rateable_name]
@@ -86,20 +83,6 @@
                 data: { action: "consult-copy-to-story#copy", copy_text: why_line }
               }
               copy to OGO story
-    - if rateables.any?
-      .mt-2
-        %div.small.fw-semibold.mb-1 Suggested ratings
-        %ul.list-unstyled.mb-0
-          - rateables.each do |rateable|
-            - rateable = rateable.with_indifferent_access
-            - rating_label = ObservationRating.display_label(rateable[:suggested_rating]) if rateable[:suggested_rating].present?
-            - conf = rateable[:confidence].to_f
-            - badge_class = conf >= 0.75 ? "text-bg-success" : (conf >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
-            %li.mb-1
-              %span.badge.me-1{ class: badge_class }= "#{format('%.0f%%', conf * 100)}"
-              %strong= rating_label.presence || "Rating"
-              for #{consult_rateable_type_label(rateable[:rateable_type])}
-              %em= rateable[:rateable_name]
   %td{ style: "min-width: 240px;" }
     .mb-2
       = label_tag nil, "What we'll do when we Save all at the end", class: "form-label small mb-1 d-block"
@@ -167,6 +150,25 @@
         = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: locked, data: { ogo_identity_alternates_target: "select" }
         - unless locked
           = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observee_alternates)
+    - if rateables.any?
+      .mt-3
+        %div.small.fw-semibold.mb-1 Suggested ratings
+        %ul.list-unstyled.mb-0
+          - rateables.each do |rateable|
+            - rating_label = ObservationRating.display_label(rateable[:suggested_rating]) if rateable[:suggested_rating].present?
+            - conf = rateable[:confidence].to_f
+            - badge_class = conf >= 0.75 ? "text-bg-success" : (conf >= 0.5 ? "text-bg-warning" : "text-bg-secondary")
+            - confidence_tooltip = consult_rateable_confidence_tooltip(rateable)
+            %li.mb-1
+              %span.badge.me-1{
+                  class: badge_class,
+                  tabindex: "0",
+                  title: confidence_tooltip,
+                  data: { bs_toggle: "tooltip", bs_title: confidence_tooltip, bs_placement: "top" }
+                }= "#{format('%.0f%%', conf * 100)}"
+              %strong= rating_label.presence || "Rating"
+              for #{consult_rateable_type_label(rateable[:rateable_type])}
+              %em= rateable[:rateable_name]
   %td
     - if locked
       = link_to "Open draft OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"

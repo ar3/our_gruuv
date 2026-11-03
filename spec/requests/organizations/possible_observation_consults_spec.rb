@@ -177,7 +177,19 @@ RSpec.describe "Possible observation consults", type: :request do
                     quote: item[:quote],
                     responder_company_teammate_id: teammate.id,
                     subject_company_teammate_id: other.id,
-                    confidence: item[:confidence]
+                    confidence: item[:confidence],
+                    # Form posts indexed hashes (not arrays) for nested rateables.
+                    suggested_rateables: {
+                      "0" => {
+                        rateable_type: "Ability",
+                        rateable_id: "1",
+                        rateable_name: "Delivery",
+                        suggested_rating: "agree",
+                        confidence: "0.9",
+                        association_reason: "Clear praise",
+                        rating_reason: "Strong evidence"
+                      }
+                    }
                   }
                 }
               }
@@ -490,6 +502,103 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include(teammate.person.casual_name)
       expect(response.body).not_to include("What we&#39;ll do when we Save all at the end")
     end
+
+    it "accepts Keep Reviewing saves when suggested_rateables arrive as an indexed hash from the form" do
+      item = consult.extraction_items.first
+      patch organization_possible_observation_consult_path(organization, consult),
+            params: {
+              commit: "Save all",
+              items: {
+                "0" => {
+                  id: item[:id],
+                  state: "needs_processed",
+                  kind: item[:kind],
+                  quote: item[:quote],
+                  summary: item[:summary],
+                  association_reason: item[:association_reason],
+                  rating_reason: item[:rating_reason],
+                  responder_company_teammate_id: teammate.id,
+                  subject_company_teammate_id: other.id,
+                  confidence: item[:confidence],
+                  suggested_rateable_type: "Ability",
+                  suggested_rateable_id: "1",
+                  suggested_rateable_name: "Delivery",
+                  suggested_rating: "agree",
+                  suggested_rateables: {
+                    "0" => {
+                      rateable_type: "Ability",
+                      rateable_id: "1",
+                      rateable_name: "Delivery",
+                      suggested_rating: "agree",
+                      confidence: "0.9"
+                    },
+                    "1" => {
+                      rateable_type: "Assignment",
+                      rateable_id: "2",
+                      rateable_name: "Launch",
+                      suggested_rating: "strongly_agree",
+                      confidence: "0.8"
+                    }
+                  }
+                }
+              }
+            }
+
+      expect(response).to redirect_to(organization_possible_observation_consult_path(organization, consult))
+      expect(response).not_to have_http_status(:internal_server_error)
+      saved = consult.reload.extraction_items.first
+      expect(saved[:include]).to eq(false)
+      expect(saved[:dismissed_at]).to be_blank
+      expect(saved[:suggested_rateables]).to be_a(Array)
+      expect(saved[:suggested_rateables].size).to eq(2)
+      expect(saved[:suggested_rateables].first).to be_a(Hash)
+      expect(saved[:suggested_rateables].first[:rateable_name]).to eq("Delivery")
+      expect(saved[:suggested_rateables].last[:rateable_name]).to eq("Launch")
+
+      get organization_possible_observation_consult_path(organization, consult)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Suggested ratings")
+      expect(response.body).to include("Delivery")
+      expect(response.body).to include("Launch")
+    end
+
+    it "renders show when persisted suggested_rateables are an indexed hash (legacy shape)" do
+      item = consult.extraction_items.first.to_h.stringify_keys.merge(
+        "include" => false,
+        "suggested_rateables" => {
+          "0" => {
+            "rateable_type" => "Ability",
+            "rateable_id" => "16",
+            "rateable_name" => "Collaboration",
+            "suggested_rating" => "agree",
+            "confidence" => "0.85",
+            "association_reason" => "Team recognition",
+            "rating_reason" => "Sustained participation"
+          },
+          "1" => {
+            "rateable_type" => "Aspiration",
+            "rateable_id" => "4",
+            "rateable_name" => "Work Together, Win Together",
+            "suggested_rating" => "agree",
+            "confidence" => "0.78"
+          }
+        }
+      )
+      consult.update!(extractions: consult.extractions.merge("items" => [item]))
+
+      get organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include("with_indifferent_access")
+      expect(response.body).to include("Suggested ratings")
+      expect(response.body).to include("Collaboration")
+      expect(response.body).to include("Work Together, Win Together")
+      expect(response.body).to include("85%")
+      expect(response.body).to include("78%")
+      expect(response.body).to include("data-bs-toggle=\"tooltip\"")
+      expect(response.body).to include("OG is 85% confident that this is a strong example of the Ability Collaboration")
+      expect(response.body).to include("OG is 78% confident that this is a strong example of the Value Work Together, Win Together")
+    end
   end
 
   describe "prompt-debug hone loop" do
@@ -578,7 +687,7 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("OG tried to figure out who was talking and who they were talking about")
       expect(response.body).to include("but we need you to verify")
       expect(response.body).to include("Step 3 • Review the content and create the OGOs")
-      expect(response.body).to include("associate the right Abilities, Assignments, or Values")
+      expect(response.body).to include("OG suggests Abilities, Assignments, or Values to rate for each Step 2 cue")
       expect(response.body).to include("OGO-worthy")
       expect(response.body).to include("merged into one cue")
       expect(response.body).to include("Confirm people and continue to Step 3")

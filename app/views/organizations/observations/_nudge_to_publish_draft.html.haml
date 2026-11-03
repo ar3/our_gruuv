@@ -1,10 +1,19 @@
-.card.mb-4.border-warning{ role: "region", "aria-labelledby": "draft-publish-nudge" }
-  .card-body.bg-light
-    .text-center.py-4
-      %h4.mb-2{ id: "draft-publish-nudge" }
-        Almost done!
-      %p.mb-4.text-muted
-        You have to publish this or it is like it never happened.
-      - if policy(@observation).publish?
-        = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false }, html: { class: 'd-inline-block' } do |form|
-          = form.submit 'Publish', class: 'btn btn-primary btn-lg px-5 py-3'
+.alert.alert-warning.border.border-warning.border-3.py-4.mb-4{ role: "region", "aria-labelledby": "draft-publish-nudge" }
+  .d-flex.flex-column.flex-md-row.align-items-md-center.justify-content-between.gap-3
+    .me-md-3
+      %h4.alert-heading.mb-2{ id: "draft-publish-nudge" }
+        %i.bi.bi-exclamation-triangle-fill.me-2
+        This observation is not published
+      %p.mb-0
+        Until it is published, nobody else can see it — and it is like it never happened.
+    - if policy(@observation).publish?
+      = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false, test_id: 'observation-publish-nudge' }, class: 'flex-shrink-0' do |form|
+        = form.button class: 'btn btn-lg btn-warning text-dark fw-semibold', type: 'submit' do
+          %i.bi.bi-send.me-2
+          Publish now
+    - else
+      .d-flex.align-items-center.gap-2.flex-shrink-0
+        %button.btn.btn-lg.btn-warning.text-dark.fw-semibold.disabled{ disabled: true, type: "button" }
+          %i.bi.bi-send.me-2
+          Publish now
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can publish this observation"}

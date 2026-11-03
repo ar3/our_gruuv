@@ -1,12 +1,22 @@
 - content_for :title, "Observation"
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center.mb-2
-    %h1.mb-0{id: "page-title"}
-      %i.bi.bi-eye.me-2
-      Observation Details
-    .d-flex.align-items-center
-      = content_for :header_action
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2{id: "page-title"}
+      %i.bi.bi-eye
+      %span Observation Details
+      - if policy(@observation).update?
+        = link_to edit_organization_observation_path(@organization, @observation, return_url: organization_observation_path(@organization, @observation), return_text: 'Back to Observation'),
+                  class: 'btn btn-primary',
+                  title: 'Edit Observation',
+                  "aria-label" => 'Edit Observation',
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top", test_id: 'observation-edit-header' } do
+          %i.bi.bi-pencil
+      - else
+        %span.d-inline-flex.align-items-center.gap-1
+          %button.btn.btn-primary.disabled{type: "button", disabled: true, title: "You need to be the observer to edit this observation", "aria-label" => "Edit Observation", "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
+            %i.bi.bi-pencil
+          %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be the observer to edit this observation"}
 
 - content_for :go_back_link do
   - observation_show_crumbs = []
@@ -18,15 +28,7 @@
 
 - content_for :header_action do
   .d-flex.align-items-center.gap-2
-    - if @observation.draft? && policy(@observation).publish?
-      = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false, test_id: 'observation-publish-header' } do |form|
-        = form.submit 'Publish', class: 'btn btn-primary'
-    - elsif @observation.draft? && !policy(@observation).publish?
-      .d-flex.align-items-center.gap-2
-        %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
-          Publish
-        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
-    - elsif @observation.soft_deleted? && policy(@observation).restore?
+    - if @observation.soft_deleted? && policy(@observation).restore?
       = button_to 'Restore', restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-outline-success', data: { turbo: false }
     = render 'mode_switcher', organization: @organization, observation: @observation
 
@@ -53,8 +55,8 @@
   .row
     .col-12
       = render 'feedback_expectation_banner', organization: @organization
-/ Draft nudge - shown when observation is draft and user can publish (observer)
-- if @observation.draft? && current_person == @observation.observer
+/ Draft nudge - shown for any viewer when observation is unpublished
+- if @observation.draft?
   .row
     .col-12
       = render 'nudge_to_publish_draft'
@@ -85,7 +87,11 @@
                 %i.bi.bi-question-circle.text-muted{"data-bs-toggle" => "tooltip", "data-bs-html" => "true", "data-bs-title" => trigger.tooltip_trigger_data_html}
               - if slack_source && creator_name.present? && observee_name.present?
                 %p.mb-2.mt-2.small.text-muted
-                  #{creator_name} did an OG consultation to find potentially missing observations from messages from and about #{observee_name}. This is one of those potentially missing OGOs. Feel free to ignore this, update it and publish it, or publish it as-is.
+                  - if @observation.ogo_consult_sourced? || trigger.trigger_source == "ogo_consult"
+                    #{creator_name} did an OG consultation to find potentially missing observations from messages from and about #{observee_name}, or from a meeting transcript. This is one of those potentially missing OGOs. Feel free to ignore this, update it and publish it, or publish it as-is.
+                  - else
+                    #{creator_name} did an OG consultation to find potentially missing observations from messages from and about #{observee_name}. This is one of those potentially missing OGOs. Feel free to ignore this, update it and publish it, or publish it as-is.
+
               - if slack_source
                 .d-flex.flex-wrap.gap-3.small
                   - if slack_permalink.present?
@@ -574,6 +580,20 @@
           Actions
       .card-body
         .d-grid.gap-2
+          / Publish Observation
+          - if @observation.draft? && policy(@observation).publish?
+            = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, class: 'w-100', data: { turbo: false, test_id: 'observation-publish-actions' } do |form|
+              = form.button class: 'btn btn-primary w-100', type: 'submit' do
+                %i.bi.bi-send.me-2
+                Publish
+          - elsif @observation.draft?
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
+                  %i.bi.bi-send.me-2
+                  Publish
+              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can publish this observation"}
+
           / View Public Version
           - if policy(@observation).view_permalink?
             = link_to @observation.decorate.permalink_path, target: '_blank', class: 'btn btn-outline-secondary w-100' do

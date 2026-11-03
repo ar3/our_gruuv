@@ -198,4 +198,42 @@ RSpec.describe ApplicationHelper, type: :helper do
       ).to eq('00:01:00.000 – 00:01:05.000')
     end
   end
+
+  describe '#consult_suggested_rateables' do
+    it 'coerces an indexed hash into an array of hashes' do
+      rows = helper.consult_suggested_rateables(
+        'suggested_rateables' => {
+          '0' => { 'rateable_name' => 'Collaboration', 'confidence' => '0.85' },
+          '1' => { 'rateable_name' => 'Delivery', 'confidence' => '0.7' }
+        }
+      )
+
+      expect(rows).to be_a(Array)
+      expect(rows.size).to eq(2)
+      expect(rows.first).to be_a(ActiveSupport::HashWithIndifferentAccess)
+      expect(rows.map { |row| row[:rateable_name] }).to eq(%w[Collaboration Delivery])
+    end
+  end
+
+  describe '#consult_rateable_confidence_tooltip' do
+    it 'uses a/an and the rating display label' do
+      expect(
+        helper.consult_rateable_confidence_tooltip(
+          'confidence' => 0.85,
+          'suggested_rating' => 'strongly_agree',
+          'rateable_type' => 'Ability',
+          'rateable_name' => 'Collaboration'
+        )
+      ).to eq('OG is 85% confident that this is an exceptional example of the Ability Collaboration')
+
+      expect(
+        helper.consult_rateable_confidence_tooltip(
+          'confidence' => 0.7,
+          'suggested_rating' => 'agree',
+          'rateable_type' => 'Aspiration',
+          'rateable_name' => 'Work Together'
+        )
+      ).to eq('OG is 70% confident that this is a strong example of the Value Work Together')
+    end
+  end
 end 
