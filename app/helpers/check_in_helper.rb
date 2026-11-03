@@ -630,15 +630,23 @@ module CheckInHelper
   end
 
   # Generic status label for single-item check-in rows (position/assignment/aspiration).
-  # latest_finalized_at: time of most recent finalized check-in for this item (nil if never).
-  def single_item_check_in_status_label(check_in, latest_finalized_at, teammate)
+  # latest_finalized: most recent finalized check-in for this item (nil if never).
+  # Acknowledgement source of truth is check_in.employee_acknowledged_at (not maap_snapshot).
+  def single_item_check_in_status_label(check_in, latest_finalized, teammate)
     if check_in.officially_completed?
-      return 'Acknowledged' if check_in.maap_snapshot&.acknowledged?
-      return 'Waiting to be acknowledged'
+      return single_item_acknowledged_status_label(teammate) if check_in.employee_acknowledged?
+
+      is_latest = latest_finalized.present? && latest_finalized.id == check_in.id
+      if is_latest && check_in.acknowledgement_relevant_ratings?
+        return single_item_waiting_acknowledgement_status_label(teammate)
+      end
+
+      return 'Skipped Employee Acknowledgement'
     end
     if check_in.ready_for_finalization?
       return 'Waiting to be reviewed'
     end
+    latest_finalized_at = latest_finalized&.official_check_in_completed_at
     last_finalized_days_ago = latest_finalized_at ? ((Time.current - latest_finalized_at) / 1.day).to_i : 9999
     if last_finalized_days_ago <= healthy_pill_days
       return 'Nothing to do yet'
@@ -655,6 +663,24 @@ module CheckInHelper
     else
       'Waiting to be reviewed'
     end
+  end
+
+  def single_item_waiting_acknowledgement_status_label(teammate)
+    link_to(
+      'Waiting to be acknowledged',
+      acknowledge_organization_company_teammate_check_ins_path(teammate.organization, teammate)
+    )
+  end
+
+  def single_item_acknowledged_status_label(teammate)
+    link_to(
+      '✅ Acknowledged',
+      organization_insights_acknowledgements_path(
+        teammate.organization,
+        teammate_filter: "teammate_#{teammate.id}",
+        timeframe: 'all_time'
+      )
+    )
   end
 
   # Person we are "waiting for" when only one side has completed (for display under Complete pill).
@@ -676,8 +702,8 @@ module CheckInHelper
   end
 
 
-  def aspiration_check_in_status_label(check_in, latest_finalized_at, teammate)
-    single_item_check_in_status_label(check_in, latest_finalized_at, teammate)
+  def aspiration_check_in_status_label(check_in, latest_finalized, teammate)
+    single_item_check_in_status_label(check_in, latest_finalized, teammate)
   end
 
   def aspiration_check_in_waiting_for_name(check_in, teammate)

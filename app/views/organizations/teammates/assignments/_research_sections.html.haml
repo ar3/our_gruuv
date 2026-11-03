@@ -51,7 +51,6 @@
                   %th Status
                   %th Actions
               %tbody
-                - latest_finalized_at = @latest_finalized&.official_check_in_completed_at
                 - @check_ins.each do |check_in|
                   - both_complete = check_in.employee_completed? && check_in.manager_completed?
                   - open_both_incomplete = check_in.open? && !both_complete
@@ -105,10 +104,10 @@
                       - else
                         %span.badge.bg-secondary In Progress
                     - if open_both_incomplete
-                      %td{colspan: 2}= single_item_check_in_status_label(check_in, latest_finalized_at, @teammate)
+                      %td{colspan: 2}= single_item_check_in_status_label(check_in, @latest_finalized, @teammate)
                     - else
                       %td
-                        = single_item_check_in_status_label(check_in, latest_finalized_at, @teammate)
+                        = single_item_check_in_status_label(check_in, @latest_finalized, @teammate)
                       %td
                         - if both_complete && check_in.officially_completed?
                           %a.btn.btn-sm.btn-outline-primary.assignment-check-in-toggle{"aria-expanded" => "false", "aria-controls" => "check_in_details_#{check_in.id}", "data-bs-toggle" => "collapse", "data-bs-target" => "#check_in_details_#{check_in.id}", href: "#check_in_details_#{check_in.id}", role: "button"}

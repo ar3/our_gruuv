@@ -566,18 +566,23 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     @can_filter_acknowledgements = policy(company).manage_employment?
     apply_acknowledgements_filter_default!
-    @acknowledgements_filter = params[:teammate_filter].to_s
-    @acknowledgements_filter_options = acknowledgements_filter_options if @can_filter_acknowledgements
-    teammate_ids = acknowledgements_teammate_ids_for_filter(@acknowledgements_filter)
+    requested_acknowledgements_filter = params[:teammate_filter].to_s
+    @acknowledgements_status_filter = acknowledgements_status_filter_param
+    @acknowledgements_filter_grouped_options = acknowledgements_filter_grouped_options if @can_filter_acknowledgements
+    @employment_managers_casual_names_for_acknowledgements = employment_managers_casual_names_for_acknowledgements
+    teammate_ids = acknowledgements_teammate_ids_for_filter(requested_acknowledgements_filter)
+    apply_acknowledgements_filter_authorization!(requested_filter: requested_acknowledgements_filter)
 
     report = Insights::CheckInAcknowledgementsReport.call(
       organization: company,
       teammate_ids: teammate_ids,
-      range: range
+      range: range,
+      status_filter: @acknowledgements_status_filter
     )
     @acknowledgement_rows = report[:rows]
     @acknowledgement_counts = report[:counts]
     @acknowledgement_total = report[:total]
+    @acknowledgement_filtered_total = report[:filtered_total]
     @acknowledgements_pie_chart_data = report[:pie_chart_data]
   end
 
@@ -589,50 +594,108 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     params[:teammate_filter] = "just_me"
   end
 
-  def acknowledgements_filter_options
-    options = [
-      ["Just me", "just_me"],
-      ["Everyone", "everyone"]
-    ]
+  def acknowledgements_status_filter_param
+    value = params[:status_filter].to_s
+    %w[all acknowledged unacknowledged skipped].include?(value) ? value : "all"
+  end
 
+  def acknowledgements_filter_grouped_options
+    groups = []
+    groups << ["Me", [["Me", "just_me"]]]
+    groups << ["All employees", [["All employees", "everyone"]]]
+
+    manager_options = acknowledgements_manager_filter_options
+    groups << ["By manager", manager_options] if manager_options.any?
+
+    teammate_options = active_acknowledgements_teammates.map do |tm|
+      [tm.person.display_name, "teammate_#{tm.id}"]
+    end
+    groups << ["Teammates", teammate_options] if teammate_options.any?
+
+    groups
+  end
+
+  def acknowledgements_manager_filter_options
     manager_ids = EmploymentTenure
       .where(company: company, ended_at: nil)
       .where.not(manager_teammate_id: nil)
       .distinct
       .pluck(:manager_teammate_id)
-    CompanyTeammate.where(id: manager_ids).joins(:person).order("people.last_name ASC, people.first_name ASC").each do |manager|
-      options << ["Managed by #{manager.person.casual_name}", "managed_by_#{manager.id}"]
+    CompanyTeammate.where(id: manager_ids).joins(:person).order("people.last_name ASC, people.first_name ASC").map do |manager|
+      ["Managed by #{manager.person.casual_name}", "managed_by_#{manager.id}"]
     end
-
-    active_acknowledgements_teammates.each do |tm|
-      options << [tm.person.display_name, "teammate_#{tm.id}"]
-    end
-
-    options
   end
 
+  # Returns only teammate ids the viewer is allowed to see. Unauthorized broader
+  # filters never leak other people's rows — they resolve to just the viewer.
   def acknowledgements_teammate_ids_for_filter(filter)
     case filter.to_s
     when "everyone"
-      return [] unless policy(company).manage_employment?
+      return unauthorized_acknowledgements_fallback_ids unless @can_filter_acknowledgements
 
       active_acknowledgements_teammates.pluck(:id)
     when /\Amanaged_by_(\d+)\z/
-      return [] unless policy(company).manage_employment?
+      return unauthorized_acknowledgements_fallback_ids unless @can_filter_acknowledgements
 
       manager_id = Regexp.last_match(1).to_i
       EmploymentTenure
         .where(company: company, manager_teammate_id: manager_id, ended_at: nil)
         .pluck(:teammate_id)
     when /\Ateammate_(\d+)\z/
-      return [] unless policy(company).manage_employment?
-
       teammate_id = Regexp.last_match(1).to_i
-      active_acknowledgements_teammates.where(id: teammate_id).pluck(:id)
+      if @can_filter_acknowledgements
+        active_acknowledgements_teammates.where(id: teammate_id).pluck(:id)
+      elsif current_company_teammate&.id == teammate_id
+        [teammate_id]
+      else
+        unauthorized_acknowledgements_fallback_ids
+      end
     else
       # just_me (default) — always allowed
-      current_company_teammate ? [current_company_teammate.id] : []
+      just_me_acknowledgements_teammate_ids
     end
+  end
+
+  def just_me_acknowledgements_teammate_ids
+    current_company_teammate ? [current_company_teammate.id] : []
+  end
+
+  def unauthorized_acknowledgements_fallback_ids
+    @acknowledgements_filter_unauthorized = true
+    just_me_acknowledgements_teammate_ids
+  end
+
+  def apply_acknowledgements_filter_authorization!(requested_filter:)
+    if @acknowledgements_filter_unauthorized
+      names = @employment_managers_casual_names_for_acknowledgements
+      @acknowledgements_notes_access_denied_message =
+        if names.any?
+          "Only #{names.to_sentence} can view other people's acknowledgements."
+        else
+          "Only people with Employment Management can view other people's acknowledgements."
+        end
+      @acknowledgements_filter = "just_me"
+      return
+    end
+
+    # Without Employment Management the dropdown only offers Me — keep selection in sync
+    # even if the URL used teammate_<self> or another allowed self alias.
+    if !@can_filter_acknowledgements
+      @acknowledgements_filter = "just_me"
+      return
+    end
+
+    @acknowledgements_filter = requested_filter.presence || "just_me"
+  end
+
+  def employment_managers_casual_names_for_acknowledgements
+    CompanyTeammate
+      .for_organization_hierarchy(company)
+      .where(can_manage_employment: true, last_terminated_at: nil)
+      .joins(:person)
+      .includes(:person)
+      .order("people.first_name ASC, people.last_name ASC")
+      .filter_map { |tm| tm.person&.casual_name.presence }
   end
 
   def active_acknowledgements_teammates

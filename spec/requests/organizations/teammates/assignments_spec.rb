@@ -176,6 +176,52 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
       end
     end
 
+    context "when All Check-ins includes finalized acknowledgement statuses" do
+      let!(:older_finalized) do
+        create(:assignment_check_in, :finalized,
+               teammate: employee_teammate,
+               assignment: assignment,
+               official_check_in_completed_at: 20.days.ago,
+               employee_acknowledged_at: nil)
+      end
+      let!(:latest_finalized) do
+        create(:assignment_check_in, :finalized,
+               teammate: employee_teammate,
+               assignment: assignment,
+               official_check_in_completed_at: 2.days.ago,
+               employee_acknowledged_at: nil)
+      end
+
+      before { sign_in_as_teammate_for_request(employee_person, organization) }
+
+      it "links Waiting to be acknowledged for the latest and marks older ones Skipped" do
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("All Check-ins")
+        expect(response.body).to include("Skipped Employee Acknowledgement")
+        expect(response.body).to include("Waiting to be acknowledged")
+        expect(response.body).to include(
+          acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate)
+        )
+      end
+
+      it "links Acknowledged to Insights Acknowledgements when the latest is acknowledged" do
+        latest_finalized.update!(employee_acknowledged_at: 1.day.ago)
+        get assignment_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("✅ Acknowledged")
+        expect(response.body).to include(
+          ERB::Util.html_escape(
+            organization_insights_acknowledgements_path(
+              organization,
+              teammate_filter: "teammate_#{employee_teammate.id}",
+              timeframe: "all_time"
+            )
+          )
+        )
+      end
+    end
+
     context "when there is an open check-in and the assignment is required on the teammate's position" do
       let(:position_major_level) { create(:position_major_level) }
       let(:req_title) { create(:title, company: organization, position_major_level: position_major_level) }

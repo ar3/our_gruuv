@@ -340,6 +340,48 @@ RSpec.describe "Organizations::Teammates::Aspirations (values page)", type: :req
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Your check-in")
       end
+
+      it "links Waiting to be acknowledged in All Check-ins to the acknowledge page" do
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("All Check-ins")
+        expect(response.body).to include("Waiting to be acknowledged")
+        expect(response.body).to include(
+          acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate)
+        )
+      end
+    end
+
+    context "when All Check-ins has an older skipped and a latest acknowledged check-in" do
+      before do
+        create(:aspiration_check_in, :finalized,
+               teammate: employee_teammate,
+               aspiration: aspiration,
+               official_check_in_completed_at: 15.days.ago,
+               employee_acknowledged_at: nil)
+        create(:aspiration_check_in, :finalized,
+               teammate: employee_teammate,
+               aspiration: aspiration,
+               official_check_in_completed_at: 2.days.ago,
+               employee_acknowledged_at: 1.day.ago)
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      it "shows Skipped for the older row and links Acknowledged to Insights" do
+        get aspiration_show_path
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Skipped Employee Acknowledgement")
+        expect(response.body).to include("✅ Acknowledged")
+        expect(response.body).to include(
+          ERB::Util.html_escape(
+            organization_insights_acknowledgements_path(
+              organization,
+              teammate_filter: "teammate_#{employee_teammate.id}",
+              timeframe: "all_time"
+            )
+          )
+        )
+      end
     end
   end
 

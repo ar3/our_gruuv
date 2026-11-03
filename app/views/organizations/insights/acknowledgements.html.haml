@@ -2,7 +2,13 @@
 - page_help_id = "acknowledgementsInsightsPageHelp"
 - chart_title_period = @chart_title_period
 - counts = @acknowledgement_counts || {}
-- filter_query = { teammate_filter: @acknowledgements_filter }.compact
+- status_filter_for_query = (@acknowledgements_status_filter if @acknowledgements_status_filter.present? && @acknowledgements_status_filter != "all")
+- filter_query = { teammate_filter: @acknowledgements_filter, status_filter: status_filter_for_query }.compact
+- if @timeframe == :custom
+  - filter_query = filter_query.merge(from: @insights_custom_from, to: @insights_custom_to).compact
+- acknowledgements_path_for = ->(**opts) { organization_insights_acknowledgements_path(@organization, **filter_query.merge(opts).compact) }
+- timeframe_btn_class = ->(key) { "btn #{@timeframe == key ? 'btn-primary' : 'btn-outline-primary'}" }
+- status_btn_class = ->(key) { "btn #{@acknowledgements_status_filter == key ? 'btn-primary' : 'btn-outline-primary'}" }
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
@@ -25,32 +31,76 @@
 
     %h3.fw-semibold.mb-2 Specifics of this page
     %ul.mb-0
-      %li Defaults to your own acknowledgements. Employment managers can filter to everyone, people managed by a given manager, or an individual.
+      %li Defaults to your own acknowledgements. Who to show is always visible; without Employment Management it only lists Me. Employment Management unlocks all employees, by manager, or an individual.
+      %li Status filter narrows the table to acknowledged, unacknowledged, or all rows. The pie chart always reflects everyone in the current Who/timeframe scope.
       %li Timeframe filters by when the check-in was reviewed together (finalized).
-      %li The pie chart covers all finalized check-ins in scope for the period, not only ones already acknowledged.
+      %li Broader Who filters in the URL are ignored unless you have Employment Management — you only ever see acknowledgements you are allowed to see.
 
-= render "timeframe_selector",
-  timeframe: @timeframe,
-  path_for: ->(**opts) { organization_insights_acknowledgements_path(@organization, **filter_query.merge(opts)) },
-  show_custom: true,
-  custom_from: @insights_custom_from,
-  custom_to: @insights_custom_to,
-  form_hidden_fields: filter_query,
-  wrapper_class: "mb-3"
+- if @acknowledgements_notes_access_denied_message.present?
+  .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
+    %i.bi.bi-info-circle.me-2
+    = @acknowledgements_notes_access_denied_message
+    %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
 
-- if @can_filter_acknowledgements
-  .mb-4
-    = form_tag organization_insights_acknowledgements_path(@organization), method: :get, class: "row g-2 align-items-end" do
-      = hidden_field_tag :timeframe, @timeframe
-      - if @timeframe == :custom
-        = hidden_field_tag :from, @insights_custom_from
-        = hidden_field_tag :to, @insights_custom_to
+.mb-4
+  .row.g-3.align-items-end
+    .col-md-4
+      %label.form-label.small.mb-1.d-block Timeframe
+      .btn-group.flex-wrap{role: "group", "aria-label" => "Timeframe"}
+        = link_to "Last 90 days", acknowledgements_path_for.(timeframe: "90_days"), class: timeframe_btn_class.call(:'90_days')
+        = link_to "Last Year", acknowledgements_path_for.(timeframe: "year"), class: timeframe_btn_class.call(:year)
+        = link_to "All-Time", acknowledgements_path_for.(timeframe: "all_time"), class: timeframe_btn_class.call(:all_time)
+        = link_to "Custom", acknowledgements_path_for.(**{ timeframe: "custom", from: @insights_custom_from, to: @insights_custom_to }.compact), class: timeframe_btn_class.call(:custom)
+    .col-md-4
+      = form_tag organization_insights_acknowledgements_path(@organization), method: :get do
+        = hidden_field_tag :timeframe, @timeframe
+        - if @timeframe == :custom
+          = hidden_field_tag :from, @insights_custom_from
+          = hidden_field_tag :to, @insights_custom_to
+        - if status_filter_for_query.present?
+          = hidden_field_tag :status_filter, status_filter_for_query
+        = label_tag :teammate_filter, "Who to show", class: "form-label small mb-1 d-block"
+        - if @can_filter_acknowledgements
+          = select_tag :teammate_filter,
+                       grouped_options_for_select(@acknowledgements_filter_grouped_options, @acknowledgements_filter),
+                       class: "form-select",
+                       onchange: "this.form.submit()"
+        - else
+          = select_tag :teammate_filter,
+                       options_for_select([["Me", "just_me"]], "just_me"),
+                       class: "form-select",
+                       onchange: "this.form.submit()"
+    .col-md-4
+      %label.form-label.small.mb-1.d-block Status
+      .btn-group.flex-wrap{role: "group", "aria-label" => "Acknowledgement status"}
+        = link_to "All", acknowledgements_path_for.(status_filter: nil, timeframe: @timeframe), class: status_btn_class.call("all")
+        = link_to "Acknowledged", acknowledgements_path_for.(status_filter: "acknowledged", timeframe: @timeframe), class: status_btn_class.call("acknowledged")
+        = link_to "Unacknowledged", acknowledgements_path_for.(status_filter: "unacknowledged", timeframe: @timeframe), class: status_btn_class.call("unacknowledged")
+        = link_to "Skipped Ack", acknowledgements_path_for.(status_filter: "skipped", timeframe: @timeframe), class: status_btn_class.call("skipped")
+  - if @timeframe == :custom
+    = form_tag acknowledgements_path_for.(), method: :get, class: "row g-2 align-items-end mt-2" do
+      = hidden_field_tag :timeframe, "custom"
+      - filter_query.each do |name, value|
+        - next if value.blank?
+        = hidden_field_tag name, value
       .col-sm-auto
-        = label_tag :teammate_filter, "Who to show", class: "form-label small mb-0 d-block"
-        = select_tag :teammate_filter,
-                     options_for_select(@acknowledgements_filter_options, @acknowledgements_filter),
-                     class: "form-select form-select-sm",
-                     onchange: "this.form.submit()"
+        = label_tag :from, "From", class: "form-label small mb-0 d-block"
+        = date_field_tag :from, @insights_custom_from, class: "form-control form-control-sm", required: true
+      .col-sm-auto
+        = label_tag :to, "To", class: "form-label small mb-0 d-block"
+        = date_field_tag :to, @insights_custom_to, class: "form-control form-control-sm", required: true
+      .col-sm-auto
+        = submit_tag "Apply range", class: "btn btn-sm btn-primary"
+  - unless @can_filter_acknowledgements
+    - viewer_names = @employment_managers_casual_names_for_acknowledgements
+    = render "shared/context_callout", margin_class: "mb-0 mt-3" do
+      .d-flex.align-items-start.gap-2
+        %i.bi.bi-info-circle.flex-shrink-0.mt-1{"aria-hidden" => "true"}
+        %p.mb-0
+          - if viewer_names.any?
+            Only #{viewer_names.to_sentence} can view other people's acknowledgements.
+          - else
+            Only people with Employment Management can view other people's acknowledgements.
 
 .container-fluid
   .row.mb-4
@@ -59,10 +109,15 @@
         .text-muted
           %strong= @acknowledgement_total
           finalized check-in#{'s' if @acknowledgement_total != 1} in this period
+          - if @acknowledgements_status_filter != "all" && @acknowledgement_filtered_total != @acknowledgement_total
+            %span.text-muted
+              (showing #{@acknowledgement_filtered_total} in table)
         %span.badge.text-bg-success
           Acknowledged: #{counts[:acknowledged].to_i}
         %span.badge.text-bg-warning
           Unacknowledged: #{counts[:unacknowledged].to_i}
+        %span.badge.text-bg-secondary
+          Skipped Ack: #{counts[:skipped].to_i}
 
   .row.mb-4
     .col-lg-6
@@ -90,8 +145,8 @@
               %table.table.table-hover.align-middle
                 %thead
                   %tr
-                    - if @can_filter_acknowledgements && @acknowledgements_filter != "just_me"
-                      %th Teammate
+                    %th Teammate
+                    %th Manager
                     %th Type
                     %th Item
                     %th Reviewed Together
@@ -101,18 +156,22 @@
                 %tbody
                   - @acknowledgement_rows.each do |row|
                     %tr
-                      - if @can_filter_acknowledgements && @acknowledgements_filter != "just_me"
-                        %td= row.teammate&.person&.display_name
+                      %td= row.teammate_name
+                      %td= row.manager_name
                       %td
                         %span.badge.bg-secondary= row.type_label
-                      %td= row.item_name
+                      %td
+                        - if row.item_path.present?
+                          = link_to row.item_name, row.item_path
+                        - else
+                          = row.item_name
                       %td
                         - if row.finalized_at.present?
                           = format_date_in_user_timezone(row.finalized_at, format: "%b %d, %Y")
                         - else
                           %span.text-muted —
                       %td
-                        - badge_class = row.status == :acknowledged ? "text-bg-success" : "text-bg-warning"
+                        - badge_class = { acknowledged: "text-bg-success", skipped: "text-bg-secondary" }.fetch(row.status, "text-bg-warning")
                         %span.badge{class: badge_class}= row.status_label
                       %td
                         - if row.acknowledged_at.present?
@@ -125,7 +184,10 @@
                         - else
                           %span.text-muted —
           - else
-            %p.text-muted.mb-0 No finalized check-ins in this period for the selected people.
+            - if @acknowledgement_total.to_i.positive? && @acknowledgements_status_filter != "all"
+              %p.text-muted.mb-0 No check-ins match the selected status filter.
+            - else
+              %p.text-muted.mb-0 No finalized check-ins in this period for the selected people.
 
 - if @acknowledgement_total.to_i.positive?
   :javascript

@@ -465,7 +465,12 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Last 90 days')
       expect(response.body).to include('Last Year')
       expect(response.body).to include('All-Time')
-      expect(response.body).not_to include('Who to show')
+      expect(response.body).to include('Who to show')
+      expect(response.body).to include('<select name="teammate_filter"')
+      expect(response.body).to include('>Me<')
+      expect(response.body).to include('context-callout')
+      expect(response.body).to include('bi-info-circle')
+      expect(response.body).to include("can view other people's acknowledgements")
     end
 
     it 'lists the current teammate finalized check-ins and status buckets' do
@@ -479,17 +484,124 @@ RSpec.describe 'Organizations::Insights', type: :request do
       get organization_insights_acknowledgements_path(organization)
 
       expect(response.body).to include('Insights Ack Assignment')
+      expect(response.body).to include(
+        "#{organization_teammate_assignment_path(organization, teammate, assignment)}#research-all-check-ins"
+      )
       expect(response.body).to include('Acknowledged:')
       expect(response.body).to include('Unacknowledged:')
       expect(response.body).not_to include('Disagreed:')
     end
 
-    it 'shows who-to-show filter for employment managers' do
+    it 'shows grouped who-to-show and status button group for employment managers' do
       teammate.update!(can_manage_employment: true)
       get organization_insights_acknowledgements_path(organization)
       expect(response.body).to include('Who to show')
-      expect(response.body).to include('Everyone')
-      expect(response.body).to include('Just me')
+      expect(response.body).to include('All employees')
+      expect(response.body).to include('>Me<')
+      expect(response.body).to include('By manager').or include('Teammates').or include('optgroup')
+      expect(response.body).to include('<select name="teammate_filter"')
+      expect(response.body).not_to include("can view other people's acknowledgements.")
+      expect(response.body).to include('Status')
+      expect(response.body).to include('>Acknowledged<')
+      expect(response.body).to include('>Unacknowledged<')
+      expect(response.body).to include('>Skipped Ack<')
+      expect(response.body).to include('aria-label="Acknowledgement status"')
+    end
+
+    it 'shows teammate and manager columns and can filter the table to unacknowledged only' do
+      manager_person = create(:person, first_name: 'Alex', last_name: 'Boss')
+      manager_teammate = create(:company_teammate,
+                                person: manager_person,
+                                organization: organization,
+                                first_employed_at: 1.year.ago,
+                                last_terminated_at: nil)
+      create(:employment_tenure,
+             teammate: teammate,
+             company: organization,
+             manager_teammate: manager_teammate,
+             started_at: 1.year.ago,
+             ended_at: nil)
+      assignment = create(:assignment, company: organization, title: 'Acked Item')
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: assignment,
+             official_check_in_completed_at: 2.days.ago,
+             employee_acknowledged_at: 1.day.ago)
+      pending_assignment = create(:assignment, company: organization, title: 'Pending Item')
+      create(:assignment_check_in, :officially_completed,
+             teammate: teammate,
+             assignment: pending_assignment,
+             official_check_in_completed_at: 3.days.ago)
+
+      get organization_insights_acknowledgements_path(organization, status_filter: 'unacknowledged')
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('>Teammate<')
+      expect(response.body).to include('>Manager<')
+      expect(response.body).to include(teammate.person.display_name)
+      expect(response.body).to include(manager_person.casual_name)
+      expect(response.body).to include('Pending Item')
+      expect(response.body).not_to include('Acked Item')
+      expect(response.body).to include('showing 1 in table')
+    end
+
+    it 'ignores unauthorized teammate query params and does not show their acknowledgements' do
+      hr_person = create(:person, first_name: 'Pat', last_name: 'Hr')
+      create(:company_teammate,
+             person: hr_person,
+             organization: organization,
+             can_manage_employment: true,
+             first_employed_at: 1.year.ago,
+             last_terminated_at: nil)
+      other_person = create(:person, first_name: 'Sam', last_name: 'Other')
+      other_teammate = create(:company_teammate,
+                              person: other_person,
+                              organization: organization,
+                              first_employed_at: 1.year.ago,
+                              last_terminated_at: nil)
+      other_assignment = create(:assignment, company: organization, title: 'Secret Other Ack')
+      create(:assignment_check_in, :officially_completed,
+             teammate: other_teammate,
+             assignment: other_assignment,
+             official_check_in_completed_at: 2.days.ago,
+             employee_acknowledged_at: 1.day.ago,
+             employee_acknowledgement_notes: 'Private other notes')
+
+      get organization_insights_acknowledgements_path(
+        organization,
+        teammate_filter: "teammate_#{other_teammate.id}",
+        timeframe: 'all_time'
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Only #{hr_person.casual_name} can view other people's acknowledgements.")
+      expect(response.body).not_to include('Secret Other Ack')
+      expect(response.body).not_to include('Private other notes')
+      expect(response.body).to include('value="just_me">Me</option>')
+    end
+
+    it 'allows viewing your own teammate filter without employment management' do
+      get organization_insights_acknowledgements_path(
+        organization,
+        teammate_filter: "teammate_#{teammate.id}"
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include("Only #{teammate.person.casual_name} can view other people's acknowledgements.")
+      expect(response.body).not_to match(/alert-warning.*can view other people's acknowledgements/)
+    end
+
+    it 'shows the who and status filters in one row even without employment management' do
+      get organization_insights_acknowledgements_path(organization)
+      expect(response.body).to include('Who to show')
+      expect(response.body).to include('Status')
+      expect(response.body).to include('aria-label="Acknowledgement status"')
+      expect(response.body).to include('>All<')
+      expect(response.body).to include('>Acknowledged<')
+      expect(response.body).to include('>Unacknowledged<')
+      expect(response.body).to include('col-md-4')
+      expect(response.body).to include('<select name="teammate_filter"')
+      expect(response.body).to include("can view other people's acknowledgements")
     end
   end
 

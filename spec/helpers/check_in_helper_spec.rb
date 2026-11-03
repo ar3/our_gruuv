@@ -226,19 +226,43 @@ RSpec.describe CheckInHelper, type: :helper do
 
     context 'when check-in is officially completed' do
       let(:check_in) do
-        build(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, maap_snapshot: nil)
+        create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, maap_snapshot: nil)
       end
 
-      it 'returns "Acknowledged" when maap_snapshot is acknowledged' do
-        snapshot = instance_double('MaapSnapshot', acknowledged?: true)
-        allow(check_in).to receive(:maap_snapshot).and_return(snapshot)
-        expect(helper.aspiration_check_in_status_label(check_in, 1.day.ago, teammate)).to eq('Acknowledged')
+      it 'links to Insights Acknowledgements when the check-in is acknowledged' do
+        check_in.update!(employee_acknowledged_at: 1.hour.ago)
+        label = helper.aspiration_check_in_status_label(check_in, check_in, teammate)
+        expect(label).to include('✅ Acknowledged')
+        expect(label).to have_link(
+          '✅ Acknowledged',
+          href: organization_insights_acknowledgements_path(
+            organization,
+            teammate_filter: "teammate_#{teammate.id}",
+            timeframe: 'all_time'
+          )
+        )
       end
 
-      it 'returns "Waiting to be acknowledged" when maap_snapshot is not acknowledged' do
-        snapshot = instance_double('MaapSnapshot', acknowledged?: false)
-        allow(check_in).to receive(:maap_snapshot).and_return(snapshot)
-        expect(helper.aspiration_check_in_status_label(check_in, 1.day.ago, teammate)).to eq('Waiting to be acknowledged')
+      it 'links Waiting to be acknowledged to the acknowledge page for the latest finalized check-in' do
+        label = helper.aspiration_check_in_status_label(check_in, check_in, teammate)
+        expect(label).to have_link(
+          'Waiting to be acknowledged',
+          href: acknowledge_organization_company_teammate_check_ins_path(organization, teammate)
+        )
+      end
+
+      it 'returns Skipped Employee Acknowledgement for older unacknowledged finalized check-ins' do
+        older = create(:aspiration_check_in, :finalized,
+                       teammate: teammate,
+                       aspiration: aspiration,
+                       official_check_in_completed_at: 10.days.ago,
+                       employee_acknowledged_at: nil)
+        latest = create(:aspiration_check_in, :finalized,
+                        teammate: teammate,
+                        aspiration: aspiration,
+                        official_check_in_completed_at: 1.day.ago,
+                        employee_acknowledged_at: nil)
+        expect(helper.aspiration_check_in_status_label(older, latest, teammate)).to eq('Skipped Employee Acknowledgement')
       end
     end
 
@@ -248,7 +272,8 @@ RSpec.describe CheckInHelper, type: :helper do
       end
 
       it 'returns "Waiting to be reviewed"' do
-        expect(helper.aspiration_check_in_status_label(check_in, 90.days.ago, teammate)).to eq('Waiting to be reviewed')
+        latest = instance_double('AspirationCheckIn', id: 0, official_check_in_completed_at: 90.days.ago)
+        expect(helper.aspiration_check_in_status_label(check_in, latest, teammate)).to eq('Waiting to be reviewed')
       end
     end
 
@@ -259,7 +284,8 @@ RSpec.describe CheckInHelper, type: :helper do
       end
 
       it 'returns "Nothing to do yet"' do
-        expect(helper.aspiration_check_in_status_label(check_in, 30.days.ago, teammate)).to eq('Nothing to do yet')
+        latest = instance_double('AspirationCheckIn', id: 0, official_check_in_completed_at: 30.days.ago)
+        expect(helper.aspiration_check_in_status_label(check_in, latest, teammate)).to eq('Nothing to do yet')
       end
     end
 
@@ -270,7 +296,8 @@ RSpec.describe CheckInHelper, type: :helper do
       end
 
       it 'returns "Waiting for both" when neither side completed' do
-        expect(helper.aspiration_check_in_status_label(check_in, 90.days.ago, teammate)).to eq('Waiting for both')
+        latest = instance_double('AspirationCheckIn', id: 0, official_check_in_completed_at: 90.days.ago)
+        expect(helper.aspiration_check_in_status_label(check_in, latest, teammate)).to eq('Waiting for both')
       end
     end
   end
