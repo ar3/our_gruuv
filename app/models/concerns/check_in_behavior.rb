@@ -48,7 +48,14 @@ module CheckInBehavior
       closed.where(employee_acknowledged_at: nil).with_acknowledgement_relevant_rating
     }
     def latest_period_brief_consultation
-      OgConsultation.latest_for(subject: self, kind: OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF)
+      latest_period_brief_consultation_for(nil)
+    end
+
+    # Period briefs are viewer-scoped: OGO/pOGO visibility differs by person.
+    def latest_period_brief_consultation_for(viewer_teammate)
+      scope = OgConsultation.where(subject: self, kind: OgConsultation::KIND_CHECK_IN_PERIOD_BRIEF)
+      scope = scope.where(triggered_by_teammate: viewer_teammate) if viewer_teammate.present?
+      scope.latest_first.first
     end
 
     scope :employee_acknowledged, -> {

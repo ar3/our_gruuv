@@ -15,6 +15,8 @@ export default class extends Controller {
     "copySource",
     "copyButton",
     "copyFeedback",
+    "appendButton",
+    "appendFeedback",
     "copyActions",
     "actions",
     "rerunButton"
@@ -29,7 +31,9 @@ export default class extends Controller {
     checkInKind: String,
     checkInId: String,
     csrfToken: String,
-    autoPoll: { type: Boolean, default: false }
+    autoPoll: { type: Boolean, default: false },
+    notesFieldSuffix: String,
+    appendHeader: String
   }
 
   connect() {
@@ -282,6 +286,40 @@ export default class extends Controller {
     }
   }
 
+  appendToNotes(event) {
+    event.preventDefault()
+    if (!this.hasCopySourceTarget) return
+
+    const brief = (this.copySourceTarget.innerText || this.copySourceTarget.textContent || "").trim()
+    if (!brief) return
+
+    const notesField = this.findNotesField()
+    if (!notesField) {
+      this.showAppendFeedback("Notes field not found")
+      return
+    }
+
+    const header = this.appendHeaderValue || "<Notes>"
+    const separator = "=========="
+    const block = `${header}\n\n\n${separator}\n${brief}`
+    const existing = notesField.value || ""
+    notesField.value = existing.trim().length > 0 ? `${existing.replace(/\s+$/, "")}\n\n${block}` : block
+    notesField.dispatchEvent(new Event("input", { bubbles: true }))
+    notesField.dispatchEvent(new Event("change", { bubbles: true }))
+    this.showAppendFeedback("Appended")
+  }
+
+  findNotesField() {
+    const suffix = this.notesFieldSuffixValue
+    if (!suffix) return null
+
+    const fields = Array.from(document.querySelectorAll("textarea[name]"))
+    return fields.find((field) => {
+      const name = field.getAttribute("name") || ""
+      return name.endsWith(`[${suffix}]`) || name.endsWith(suffix)
+    }) || null
+  }
+
   fallbackCopy(text) {
     const area = document.createElement("textarea")
     area.value = text
@@ -304,6 +342,16 @@ export default class extends Controller {
     window.clearTimeout(this.copyTimer)
     this.copyTimer = window.setTimeout(() => {
       this.copyFeedbackTarget.classList.add("d-none")
+    }, 2000)
+  }
+
+  showAppendFeedback(message) {
+    if (!this.hasAppendFeedbackTarget) return
+    this.appendFeedbackTarget.textContent = message
+    this.appendFeedbackTarget.classList.remove("d-none")
+    window.clearTimeout(this.appendTimer)
+    this.appendTimer = window.setTimeout(() => {
+      this.appendFeedbackTarget.classList.add("d-none")
     }, 2000)
   }
 }

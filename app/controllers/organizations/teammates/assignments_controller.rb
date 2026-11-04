@@ -146,7 +146,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
       return_url: organization_teammate_assignment_path(organization, @teammate, @assignment),
       return_text: I18n.t("terminology.back_to_one_by_one_clarity_check_in")
     )
-    @period_brief_consultation = @open_check_in&.latest_period_brief_consultation
+    @period_brief_consultation = @open_check_in&.latest_period_brief_consultation_for(current_company_teammate)
 
     load_associable_goals_display!(@assignment, subject_teammate: @teammate)
   end

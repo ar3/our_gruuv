@@ -35,7 +35,7 @@ module Organizations
 
       def show
         authorize_check_in_access!
-        run = @check_in.latest_period_brief_consultation
+        run = @check_in.latest_period_brief_consultation_for(current_company_teammate)
         if run.nil?
           return render json: {
             status: "none",

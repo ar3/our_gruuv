@@ -56,16 +56,23 @@ module CheckIns
         summary_body = "Little is on record for this period in the context OG can see."
       end
 
-      body_parts = []
-      body_parts << context.position_algorithm_paragraph if context.position_algorithm_paragraph.present?
-      body_parts << summary_body
-      assembled = [
-        context.preface,
-        "",
-        body_parts.join("\n\n"),
-        "",
-        PeriodBriefPrompts::CLOSING_LINE
-      ].join("\n")
+      # Prior-check-in / algorithm context sits above the "OG's brief of…" header.
+      assembled_parts = []
+      if context.position_algorithm_paragraph.present?
+        assembled_parts << context.position_algorithm_paragraph
+        assembled_parts << ""
+      end
+      assembled_parts.concat(
+        [
+          context.preface,
+          context.visibility_note,
+          "",
+          summary_body,
+          "",
+          PeriodBriefPrompts::CLOSING_LINE
+        ]
+      )
+      assembled = assembled_parts.join("\n")
 
       result = @consultation.result || @consultation.create_check_in_period_brief_result!
       result.update!(
@@ -76,6 +83,8 @@ module CheckIns
           "period_end_on" => context.period_end_on.to_s,
           "object_label" => context.object_label,
           "casual_name" => context.casual_name,
+          "viewer_casual_name" => context.viewer_casual_name,
+          "visibility_note" => context.visibility_note,
           "position_algorithm_paragraph" => context.position_algorithm_paragraph,
           "check_in_kind" => kind
         }

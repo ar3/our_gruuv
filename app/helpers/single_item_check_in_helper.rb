@@ -279,5 +279,29 @@ module SingleItemCheckInHelper
     object_label = check_in_period_brief_object_label(check_in: check_in, check_in_kind: check_in_kind)
     "Consult OG to summarize #{casual_name} and #{object_label} for this period"
   end
+
+  def check_in_period_brief_notes_field_suffix(viewer_is_employee:)
+    viewer_is_employee ? "employee_private_notes" : "manager_private_notes"
+  end
+
+  def check_in_period_brief_append_header(viewer_person:, teammate:, check_in:, check_in_kind:)
+    viewer_casual = viewer_person.casual_name
+    teammate_casual = teammate.person.casual_name
+    type_label = case check_in_kind.to_s
+                 when "assignment" then "Assignment"
+                 when "aspiration" then "Value"
+                 when "position" then "Position"
+                 else "object"
+                 end
+    object_name = case check_in_kind.to_s
+                  when "assignment" then check_in.assignment.title
+                  when "aspiration" then check_in.aspiration.name
+                  when "position"
+                    check_in.employment_tenure&.position&.title&.external_title.presence || "Position"
+                  else
+                    "this check-in"
+                  end
+    "<#{viewer_casual} notes about #{teammate_casual} and the #{type_label} named #{object_name}>"
+  end
 end
 

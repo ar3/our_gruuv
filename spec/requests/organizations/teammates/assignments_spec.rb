@@ -105,8 +105,11 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         summarize_label = "Consult OG to summarize #{employee_person.casual_name} and Assignment #{assignment.title} for this period"
         expect(response.body).to include(summarize_label)
         expect(response.body).to include('data-controller="check-in-period-brief-consult"')
-        expect(response.body).to include("OG recommends copying and pasting")
+        expect(response.body).to include("Use Copy or Append to Notes")
         expect(response.body).to include("Re-Run Consultation")
+        expect(response.body).to include("Append to notes")
+        expect(response.body).to include("view only")
+        expect(response.body).to include("pOGOs")
         expect(response.body).not_to include(">Run consultation<")
         perspective_idx = response.body.index("check-in-perspective-notes")
         brief_idx = response.body.index(summarize_label)

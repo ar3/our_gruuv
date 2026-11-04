@@ -46,8 +46,11 @@ RSpec.describe CheckIns::PeriodBriefRunner do
     text = consultation.result.output_text
     expect(text).to include("OG's brief of")
     expect(text).to include("Assignment Ship weekly demos")
+    expect(text).to include("for #{viewer_person.casual_name} only")
+    expect(text).to include("prepared only for #{viewer_person.casual_name}")
     expect(text).to include("Pat shipped demos and got kudos from a peer.")
     expect(text).to include(CheckIns::PeriodBriefPrompts::CLOSING_LINE)
     expect(text).not_to match(/you should rate/i)
+    expect(text.index("OG's brief of")).to be < text.index("Pat shipped demos")
   end
 end

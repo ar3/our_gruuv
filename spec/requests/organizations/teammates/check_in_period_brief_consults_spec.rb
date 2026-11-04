@@ -56,9 +56,13 @@ RSpec.describe "Organizations::Teammates::CheckInPeriodBriefConsults", type: :re
       expect(run.status).to eq("pending")
     end
 
-    it "reuses an in-flight consultation" do
+    it "reuses an in-flight consultation for the same viewer" do
       sign_in_as_teammate_for_request(manager_person, organization)
-      inflight = create_check_in_period_brief_consultation!(check_in: open_check_in, status: "processing")
+      inflight = create_check_in_period_brief_consultation!(
+        check_in: open_check_in,
+        status: "processing",
+        triggered_by_teammate: manager_teammate
+      )
 
       expect do
         post organization_teammate_check_in_period_brief_consult_path(organization, employee_teammate),
@@ -66,7 +70,7 @@ RSpec.describe "Organizations::Teammates::CheckInPeriodBriefConsults", type: :re
              as: :json
       end.not_to have_enqueued_job(CheckInPeriodBriefJob)
 
-      expect(open_check_in.reload.latest_period_brief_consultation).to eq(inflight)
+      expect(open_check_in.reload.latest_period_brief_consultation_for(manager_teammate)).to eq(inflight)
       json = JSON.parse(response.body)
       expect(json["ok"]).to eq(true)
       expect(json["id"]).to eq(inflight.id)
@@ -76,7 +80,11 @@ RSpec.describe "Organizations::Teammates::CheckInPeriodBriefConsults", type: :re
   describe "GET show status" do
     it "returns status payload JSON" do
       sign_in_as_teammate_for_request(manager_person, organization)
-      create_check_in_period_brief_consultation!(check_in: open_check_in, status: "processing")
+      create_check_in_period_brief_consultation!(
+        check_in: open_check_in,
+        status: "processing",
+        triggered_by_teammate: manager_teammate
+      )
 
       get organization_teammate_check_in_period_brief_consult_path(
         organization,
@@ -97,6 +105,7 @@ RSpec.describe "Organizations::Teammates::CheckInPeriodBriefConsults", type: :re
       create_check_in_period_brief_consultation!(
         check_in: open_check_in,
         status: "completed",
+        triggered_by_teammate: manager_teammate,
         output_text: "OG's brief of Pat and Assignment Demo between Jan 1, 2026 - now Nov 2, 2026:\n\nShipped demos."
       )
 

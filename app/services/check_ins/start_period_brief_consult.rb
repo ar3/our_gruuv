@@ -21,8 +21,9 @@ module CheckIns
     def call
       return fail_result("Open check-in required.") if @check_in.blank?
       return fail_result("Check-in is already finalized.") if @check_in.officially_completed?
+      return fail_result("Viewer teammate required.") if @triggered_by_teammate.blank?
 
-      inflight = @check_in.latest_period_brief_consultation
+      inflight = @check_in.latest_period_brief_consultation_for(@triggered_by_teammate)
       if inflight&.in_flight?
         return Result.new(ok: true, consultation: inflight, check_in: @check_in, error: nil)
       end

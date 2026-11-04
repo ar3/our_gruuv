@@ -95,7 +95,7 @@ class Organizations::Teammates::PositionCheckInsController < Organizations::Orga
       organization: organization,
       viewer_teammate: current_company_teammate
     )
-    @period_brief_consultation = @open_check_in&.latest_period_brief_consultation
+    @period_brief_consultation = @open_check_in&.latest_period_brief_consultation_for(current_company_teammate)
 
     render "organizations/teammates/position_check_ins/show"
   end

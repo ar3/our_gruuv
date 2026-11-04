@@ -17,8 +17,11 @@
 - link_label = has_consult ? "Consult OG again" : summarize_link_label
 - csrf_token = form_authenticity_token
 - completed_at_display = completed ? format_time_in_user_timezone(consult.completed_at || consult.created_at, format: "%B %-d, %Y %-l:%M %p") : nil
+- viewer_is_employee = current_person == teammate.person
+- notes_field_suffix = check_in_period_brief_notes_field_suffix(viewer_is_employee: viewer_is_employee)
+- append_header = check_in_period_brief_append_header(viewer_person: current_person, teammate: teammate, check_in: check_in, check_in_kind: check_in_kind)
 
-.mt-3.pt-3.border-top{ data: { controller: "check-in-period-brief-consult", check_in_period_brief_consult_open_value: open, check_in_period_brief_consult_has_consult_value: has_consult, check_in_period_brief_consult_summarize_label_value: summarize_link_label, check_in_period_brief_consult_create_url_value: create_path, check_in_period_brief_consult_status_url_value: status_path, check_in_period_brief_consult_check_in_kind_value: check_in_kind, check_in_period_brief_consult_check_in_id_value: check_in.id, check_in_period_brief_consult_csrf_token_value: csrf_token, check_in_period_brief_consult_auto_poll_value: in_flight } }
+.mt-3.pt-3.border-top{ data: { controller: "check-in-period-brief-consult", check_in_period_brief_consult_open_value: open, check_in_period_brief_consult_has_consult_value: has_consult, check_in_period_brief_consult_summarize_label_value: summarize_link_label, check_in_period_brief_consult_create_url_value: create_path, check_in_period_brief_consult_status_url_value: status_path, check_in_period_brief_consult_check_in_kind_value: check_in_kind, check_in_period_brief_consult_check_in_id_value: check_in.id, check_in_period_brief_consult_csrf_token_value: csrf_token, check_in_period_brief_consult_auto_poll_value: in_flight, check_in_period_brief_consult_notes_field_suffix_value: notes_field_suffix, check_in_period_brief_consult_append_header_value: append_header } }
   .d-flex.align-items-baseline.justify-content-end
     %a.small.text-decoration-none.text-end{ href: "#", data: { action: "check-in-period-brief-consult#linkClick", check_in_period_brief_consult_target: "link" } }
       %i.bi.bi-stars.me-1
@@ -27,8 +30,10 @@
 
   .mt-2.border.rounded.p-3.bg-light{ class: ("d-none" unless open), data: { check_in_period_brief_consult_target: "panel" } }
     %p.small.text-muted.mb-2
-      OG summarizes viewer-visible context for this check-in period into a brief you can copy into Notes.
-      OG recommends copying and pasting the content into the notes area. OG never recommends a rating.
+      OG summarizes viewer-visible context (including pOGOs) for this check-in period into a brief for
+      %strong your
+      view only — other people may see different OGOs/pOGOs in their own brief.
+      Use Copy or Append to Notes. OG never recommends a rating.
 
     .alert.alert-secondary.mb-2{ class: ("d-none" unless in_flight), data: { check_in_period_brief_consult_target: "waiting" } }
       %i.bi.bi-hourglass-split.me-2
@@ -50,10 +55,14 @@
           = result.copy_text
 
     .d-flex.align-items-center.justify-content-between.gap-2.flex-wrap{ class: ("d-none" unless completed || failed), data: { check_in_period_brief_consult_target: "actions" } }
-      .d-flex.align-items-center.gap-2{ class: ("d-none" unless completed && result), data: { check_in_period_brief_consult_target: "copyActions" } }
+      .d-flex.align-items-center.gap-2.flex-wrap{ class: ("d-none" unless completed && result), data: { check_in_period_brief_consult_target: "copyActions" } }
         %button.btn.btn-sm.btn-outline-secondary{ type: "button", data: { action: "check-in-period-brief-consult#copy", check_in_period_brief_consult_target: "copyButton" } }
           %i.bi.bi-clipboard.me-1
           Copy brief
+        %button.btn.btn-sm.btn-outline-secondary{ type: "button", data: { action: "check-in-period-brief-consult#appendToNotes", check_in_period_brief_consult_target: "appendButton" } }
+          %i.bi.bi-journal-plus.me-1
+          Append to notes
         %span.small.text-success.d-none{ data: { check_in_period_brief_consult_target: "copyFeedback" } } Copied
+        %span.small.text-success.d-none{ data: { check_in_period_brief_consult_target: "appendFeedback" } } Appended
       %button.btn.btn-sm.btn-outline-primary.ms-auto{ type: "button", data: { action: "check-in-period-brief-consult#rerun", check_in_period_brief_consult_target: "rerunButton" } }
         Re-Run Consultation
