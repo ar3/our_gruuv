@@ -92,6 +92,7 @@
                 #{number_to_currency(@value_billing_per_employee_week)} weekly clarity value per active teammate
               %small.text-muted.d-block
                 #{number_to_currency(@value_billing_per_employee_year)} annualized clarity value per active teammate
+                (which is approximately #{number_to_currency(@value_billing_annual_total)} annual and #{number_to_currency(@value_billing_monthly_total)} monthly of value that OG has helped deliver to the #{number_with_delimiter(@value_billing_active_teammate_count)} active #{'teammate'.pluralize(@value_billing_active_teammate_count)})
         - elsif @value_billing_active_teammate_count.zero?
           .border-top.pt-3.mt-3
             %p.text-muted.mb-0 No active teammates in this organization hierarchy; per-employee value is not shown.
@@ -114,6 +115,7 @@
             label: 'Observations'
       .card-body
         #value-billing-observees-chart{style: "height: 280px;"}
+        = render 'component_value_caption', caption: @value_billing_component_captions[:observees]
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
       .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
@@ -124,6 +126,7 @@
             label: 'Check-ins Progress'
       .card-body
         #value-billing-check-ins-chart{style: "height: 280px;"}
+        = render 'component_value_caption', caption: @value_billing_component_captions[:completed_check_ins]
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
       .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
@@ -134,6 +137,7 @@
             label: 'Abilities'
       .card-body
         #value-billing-milestones-chart{style: "height: 280px;"}
+        = render 'component_value_caption', caption: @value_billing_component_captions[:milestones]
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
       .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
@@ -144,6 +148,7 @@
             label: 'Goals'
       .card-body
         #value-billing-goal-check-ins-chart{style: "height: 280px;"}
+        = render 'component_value_caption', caption: @value_billing_component_captions[:goal_check_ins]
   .col-12.col-xl-6
     .card.border-0.shadow-sm.h-100
       .card-header.bg-light.d-flex.justify-content-between.align-items-center.gap-2
@@ -154,6 +159,7 @@
             label: 'OG Consultations'
       .card-body
         #value-billing-consultations-chart{style: "height: 280px;"}
+        = render 'component_value_caption', caption: @value_billing_component_captions[:consultations]
 
 :javascript
   (function() {

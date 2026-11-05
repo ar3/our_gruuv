@@ -35,6 +35,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
 
     assign_per_employee_value_metrics
     assign_outcome_summary_metrics(chart_range)
+    assign_component_value_captions
   end
 
   private
@@ -136,14 +137,84 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
     @value_billing_active_teammate_count =
       CompanyTeammate.for_organization_hierarchy(company).employed.count
 
-    if @value_billing_week_count.positive? && @value_billing_active_teammate_count.positive?
-      avg_weekly = @value_billing_total_value_sum / @value_billing_week_count
-      @value_billing_per_employee_week = avg_weekly / @value_billing_active_teammate_count
-      @value_billing_per_employee_year = @value_billing_per_employee_week * 52
+    metrics = annualized_value_metrics(
+      value_sum: @value_billing_total_value_sum,
+      week_count: @value_billing_week_count,
+      teammate_count: @value_billing_active_teammate_count
+    )
+
+    if metrics
+      @value_billing_per_employee_week = metrics[:per_employee_week]
+      @value_billing_per_employee_year = metrics[:per_employee_year]
+      @value_billing_annual_total = metrics[:annual_total]
+      @value_billing_monthly_total = metrics[:monthly_total]
     else
       @value_billing_per_employee_week = nil
       @value_billing_per_employee_year = nil
+      @value_billing_annual_total = nil
+      @value_billing_monthly_total = nil
     end
+  end
+
+  def assign_component_value_captions
+    outcome_by_key = @value_billing_outcome_rows.index_by { |row| row[:key] }
+    week_count = @value_billing_week_count
+
+    @value_billing_component_captions = {
+      observees: component_caption_metrics(
+        series: @value_billing_chart_data[:observees],
+        unit_value: WEEKLY_OBSERVEE_VALUE,
+        week_count: week_count,
+        teammate_count: outcome_by_key.dig(:stories, :teammate_count).to_i
+      ),
+      completed_check_ins: component_caption_metrics(
+        series: @value_billing_chart_data[:completed_check_ins],
+        unit_value: WEEKLY_CHECK_IN_VALUE,
+        week_count: week_count,
+        teammate_count: outcome_by_key.dig(:stand, :teammate_count).to_i
+      ),
+      milestones: component_caption_metrics(
+        series: @value_billing_chart_data[:milestones],
+        unit_value: WEEKLY_MILESTONE_VALUE,
+        week_count: week_count,
+        teammate_count: outcome_by_key.dig(:growth, :teammate_count).to_i
+      ),
+      goal_check_ins: component_caption_metrics(
+        series: @value_billing_chart_data[:goal_check_ins],
+        unit_value: WEEKLY_GOAL_CHECK_IN_VALUE,
+        week_count: week_count,
+        teammate_count: outcome_by_key.dig(:goals, :teammate_count).to_i
+      ),
+      consultations: component_caption_metrics(
+        series: @value_billing_chart_data[:consultations],
+        unit_value: WEEKLY_CONSULTATION_VALUE,
+        week_count: week_count,
+        teammate_count: outcome_by_key.dig(:consultations, :teammate_count).to_i
+      )
+    }
+  end
+
+  def component_caption_metrics(series:, unit_value:, week_count:, teammate_count:)
+    annualized_value_metrics(
+      value_sum: series.sum * unit_value,
+      week_count: week_count,
+      teammate_count: teammate_count
+    )
+  end
+
+  def annualized_value_metrics(value_sum:, week_count:, teammate_count:)
+    return nil unless week_count.positive? && teammate_count.positive?
+
+    per_employee_week = value_sum.to_f / week_count / teammate_count
+    per_employee_year = per_employee_week * 52
+    annual_total = per_employee_year * teammate_count
+    {
+      per_employee_week: per_employee_week,
+      per_employee_year: per_employee_year,
+      annual_total: annual_total,
+      monthly_total: annual_total / 12.0,
+      teammate_count: teammate_count
+    }
   end
 
   def assign_outcome_summary_metrics(chart_range)

@@ -62,6 +62,24 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
       expect(response.body).to match(/weekly clarity value per active teammate|No active teammates/)
     end
 
+    it 'shows annual and monthly approximate totals next to annualized per-teammate value' do
+      teammate = create(:company_teammate, :assigned_employee, organization: organization)
+      ability = create(:ability, company: organization)
+      create_ability_clarity_consultation!(
+        ability: ability,
+        status: 'completed',
+        triggered_by_teammate: teammate,
+        completed_at: Time.current
+      )
+
+      get organization_value_billing_path(organization, timeframe: 'year')
+
+      expect(response.body).to include('annualized clarity value per active teammate')
+      expect(response.body).to match(/which is approximately \$[\d,]+\.\d{2} annual and \$[\d,]+\.\d{2} monthly of value that OG has helped deliver to the \d+ active teammate/)
+      expect(response.body).to include('annualized per participating teammate')
+      expect(response.body).to match(/≈ \$[\d,]+\.\d{2} annual \/ \$[\d,]+\.\d{2} monthly across \d+ teammate/)
+    end
+
     it 'counts multiple completed OG consultations' do
       teammate = create(:company_teammate, :assigned_employee, organization: organization)
       ability = create(:ability, company: organization)

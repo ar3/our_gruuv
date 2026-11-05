@@ -1,0 +1,4 @@
+- if caption
+  %small.text-muted.d-block.mt-2
+    #{number_to_currency(caption[:per_employee_year])} annualized per participating teammate
+    (≈ #{number_to_currency(caption[:annual_total])} annual / #{number_to_currency(caption[:monthly_total])} monthly across #{number_with_delimiter(caption[:teammate_count])} #{'teammate'.pluralize(caption[:teammate_count])})
