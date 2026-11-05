@@ -1,0 +1,33 @@
+- slack_source = observation.slack_sourced? || trigger.ogo_source_search?
+- creator_name = observation.creator_company_teammate&.person&.casual_name
+- observee_teammate = observation.source_slack_search&.subject_company_teammate || observation.observed_teammates.first
+- observee_name = observee_teammate&.person&.casual_name
+- slack_permalink = trigger.slack_message_permalink
+.d-flex.align-items-start
+  %i.bi.bi-info-circle.text-info.me-2.mt-1
+  %div
+    .d-flex.align-items-center.flex-wrap.gap-1
+      %span
+        Story was triggered from #{trigger.display_text}
+      %i.bi.bi-question-circle.text-muted{"data-bs-toggle" => "tooltip", "data-bs-html" => "true", "data-bs-title" => trigger.tooltip_trigger_data_html}
+    - if slack_source && creator_name.present? && observee_name.present?
+      %p.mb-2.mt-2.small.text-muted
+        - if observation.ogo_consult_sourced? || trigger.trigger_source == "ogo_consult"
+          #{creator_name} did an OG consultation to find potentially missing observations from messages from and about #{observee_name}, or from a meeting transcript. This is one of those potentially missing OGOs. Feel free to ignore this, update it and publish it, or publish it as-is.
+        - else
+          #{creator_name} did an OG consultation to find potentially missing observations from messages from and about #{observee_name}. This is one of those potentially missing OGOs. Feel free to ignore this, update it and publish it, or publish it as-is.
+
+    - if slack_source
+      .d-flex.flex-wrap.gap-3.small
+        - if slack_permalink.present?
+          = link_to slack_permalink, target: "_blank", rel: "noopener", class: "text-decoration-none" do
+            %i.bi.bi-slack.me-1
+            Open Slack message
+        - if observee_teammate.present?
+          = link_to ogos_source_from_slack_organization_company_teammate_path(organization, observee_teammate), class: "text-decoration-none" do
+            %i.bi.bi-search.me-1
+            #{observee_name}'s Source from Slack
+        - if observation.source_slack_search.present?
+          = link_to organization_company_teammate_possible_observation_slack_search_path(organization, observation.source_slack_search.subject_company_teammate, observation.source_slack_search), class: "text-decoration-none" do
+            %i.bi.bi-stars.me-1
+            Open this OG consultation

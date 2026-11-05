@@ -1355,6 +1355,72 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
   end
 
+  describe 'source context on edit forms' do
+    let(:trigger) do
+      create(
+        :observation_trigger,
+        trigger_source: 'ogo_consult',
+        trigger_type: 'ogo_source_search',
+        trigger_data: {
+          permalink: 'https://slack.example/archives/C1/p1',
+          possible_observation_consult_id: 1
+        }
+      )
+    end
+
+    def sourced_observation(type)
+      create(
+        :observation,
+        observer: person,
+        company: organization,
+        observation_type: type,
+        created_as_type: Observation::CREATED_AS_OGO_CONSULT,
+        creator_company_teammate: teammate,
+        observation_trigger: trigger,
+        privacy_level: :observed_and_managers
+      )
+    end
+
+    it 'shows the trigger above the form on each edit page' do
+      {
+        'kudos' => new_kudos_organization_observations_path(organization, draft_id: sourced_observation('kudos').id),
+        'feedback' => new_feedback_organization_observations_path(organization, draft_id: sourced_observation('feedback').id),
+        'quick_note' => new_quick_note_organization_observations_path(organization, draft_id: sourced_observation('quick_note').id),
+        'generic' => new_organization_observation_path(organization, draft_id: sourced_observation('generic').id)
+      }.each_value do |path|
+        get path
+        expect(response).to have_http_status(:success)
+        body = response.body
+        expect(body).to include('aria-label="Observation source"')
+        expect(body).to include('alert-light')
+        expect(body).to include('Story was triggered from a Consult OG to Find OGOs')
+        expect(body).to include('or from a meeting transcript')
+        expect(body).to include('Open Slack message')
+        expect(body).to include('https://slack.example/archives/C1/p1')
+        expect(body.index('Story was triggered from')).to be < body.index('id="observation_form"')
+      end
+    end
+
+    it 'places the source ahead of the goal notice on a quick note' do
+      goal = create(:goal, creator: teammate, owner: teammate, company: organization, started_at: 1.week.ago, title: 'Linked Goal For Source')
+      observation = sourced_observation('quick_note')
+      observation.update!(goal: goal)
+
+      get new_quick_note_organization_observations_path(organization, draft_id: observation.id)
+
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body.index('Story was triggered from')).to be < body.index('This note is linked to the goal')
+      expect(body).to include('Linked Goal For Source')
+    end
+
+    it 'omits the source block when the observation has no trigger' do
+      get new_organization_observation_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('Story was triggered from')
+    end
+  end
+
   describe 'CSRF token in forms' do
     context 'for kudos observation form' do
       let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }

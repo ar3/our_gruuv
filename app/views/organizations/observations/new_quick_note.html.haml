@@ -16,6 +16,7 @@
         %i.bi.bi-sticky.me-2
         Quick Note
   .card-body
+    = render "organizations/observations/source_context", observation: @observation, organization: organization, variant: :alert
     - if @return_url&.include?('check_ins')
       .alert.alert-info.mb-3{role: "alert"}
         %i.bi.bi-info-circle.me-2

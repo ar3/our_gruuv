@@ -1,0 +1,9 @@
+- trigger = observation.observation_trigger
+- if trigger.present?
+  - if local_assigns.fetch(:variant, :card).to_sym == :alert
+    .alert.alert-light.border.mb-3{ role: "region", "aria-label": "Observation source" }
+      = render "organizations/observations/source_context_body", observation: observation, organization: organization, trigger: trigger
+  - else
+    .card.mb-4{ role: "region", "aria-labelledby": "observation-trigger" }
+      .card-body
+        = render "organizations/observations/source_context_body", observation: observation, organization: organization, trigger: trigger
