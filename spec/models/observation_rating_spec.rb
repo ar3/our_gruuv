@@ -43,6 +43,16 @@ RSpec.describe ObservationRating, type: :model do
     end
   end
 
+  describe '.suggestion_dot_bg_class' do
+    it 'maps ratings to the OGO button color classes' do
+      expect(described_class.suggestion_dot_bg_class(:strongly_agree)).to eq('bg-success')
+      expect(described_class.suggestion_dot_bg_class(:agree)).to eq('bg-primary')
+      expect(described_class.suggestion_dot_bg_class(:disagree)).to eq('bg-warning')
+      expect(described_class.suggestion_dot_bg_class(:strongly_disagree)).to eq('bg-danger')
+      expect(described_class.suggestion_dot_bg_class(:na)).to eq('bg-secondary')
+    end
+  end
+
   describe 'validations' do
     it { should validate_presence_of(:observation) }
     it { should validate_presence_of(:rateable) }

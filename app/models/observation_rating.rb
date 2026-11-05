@@ -34,6 +34,17 @@ class ObservationRating < ApplicationRecord
     DISPLAY_LABELS.fetch(rating.to_s) { rating.to_s.humanize }
   end
 
+  # Bootstrap bg-* class for subtle rating dots (matches OGO rating button colors).
+  def self.suggestion_dot_bg_class(rating)
+    case rating.to_s
+    when "strongly_agree" then "bg-success"
+    when "agree" then "bg-primary"
+    when "disagree" then "bg-warning"
+    when "strongly_disagree" then "bg-danger"
+    else "bg-secondary"
+    end
+  end
+
   def self.label_to_rating
     @label_to_rating ||= DISPLAY_LABELS.invert.freeze
   end

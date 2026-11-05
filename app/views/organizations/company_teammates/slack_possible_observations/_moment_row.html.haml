@@ -26,7 +26,10 @@
         %span.badge.text-bg-light.border Public channel
       %span.text-muted= "#{format('%.0f%%', moment.confidence * 100)} confident"
       - if suggestion_chip.present?
-        %span.badge.text-bg-light.border.text-muted= suggestion_chip
+        %span.badge.text-bg-light.border.text-muted.d-inline-flex.align-items-center.gap-1
+          - if moment.suggested_rating.present?
+            %span.rounded-circle.d-inline-block.flex-shrink-0{ class: ObservationRating.suggestion_dot_bg_class(moment.suggested_rating), style: "width:0.45rem;height:0.45rem;", title: ObservationRating.display_label(moment.suggested_rating), "aria-hidden" => "true" }
+          %span= suggestion_chip
     .d-flex.flex-wrap.align-items-center.gap-1{ "aria-label" => "pOGO actions" }
       - if moment.permalink.present?
         = link_to "Open in Slack",
