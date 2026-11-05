@@ -106,7 +106,7 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include(summarize_label)
         expect(response.body).to include('data-controller="check-in-period-brief-consult"')
         expect(response.body).to include("Use Copy or Append to Notes")
-        expect(response.body).to include("Re-Run Consultation")
+        expect(response.body).to include("Refresh/Update Brief")
         expect(response.body).to include("Append to notes")
         expect(response.body).to include("Copy brief")
         expect(response.body).to include('role="group"')
@@ -312,6 +312,8 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         get assignment_show_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Consult OG for evidence")
+        expect(response.body).to include("Promote or dismiss these on Slack moments")
+        expect(response.body).not_to include("stronger model")
         expect(response.body).to include("check-in-get-evidence-manually")
         expect(response.body).to include("Paste into Claude or another AI assistant")
         expect(response.body).to include("data-controller=\"clipboard\"")

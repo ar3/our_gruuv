@@ -51,5 +51,40 @@ RSpec.describe "Slack OGO check-in consults", type: :request do
     expect(response.body).to include("Consult OG for evidence")
     expect(response.body).to include("check-in-get-evidence-manually")
     expect(response.body).to include("check-in-slack-ogo-consult")
+    expect(response.body).to include("Promote or dismiss these on Slack moments")
+    expect(response.body).not_to include("stronger model")
+  end
+
+  it "returns shared moment-row HTML for object matches without promote/dismiss actions" do
+    create(
+      :slack_possible_observation,
+      organization: organization,
+      subject_company_teammate: subject,
+      discoverer_company_teammate_ids: [teammate.id],
+      message_ts: 2.days.ago.to_f.to_s,
+      payload: {
+        "confidence" => 0.92,
+        "summary" => "Check-in evidence summary",
+        "quote" => "Pat crushed the demo",
+        "suggested_rateable_type" => "Assignment",
+        "suggested_rateable_id" => assignment.id,
+        "suggested_rateable_name" => assignment.title,
+        "suggested_rating" => "agree",
+        "permalink" => "https://example.slack.com/archives/C1/p1"
+      }
+    )
+
+    get organization_teammate_slack_ogo_check_in_consult_path(organization, subject),
+        params: { rateable_type: "Assignment", rateable_id: assignment.id },
+        as: :json
+
+    expect(response).to have_http_status(:success)
+    match = response.parsed_body["object_matches"].first
+    expect(match["html"]).to include("Check-in evidence summary")
+    expect(match["html"]).to include("Open in Slack")
+    expect(match["html"]).to include("bg-primary")
+    expect(match["html"]).not_to include("Promote to OGO")
+    expect(response.parsed_body["full_results_url"]).to include("source_from_slack")
   end
 end
+

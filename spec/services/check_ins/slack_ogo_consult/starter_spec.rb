@@ -11,7 +11,7 @@ RSpec.describe CheckIns::SlackOgoConsult::Starter do
 
   before { create(:teammate_identity, :slack_search, teammate: viewer) }
 
-  it "creates a 30-day search by default (first check-in) with auto-extract" do
+  it "creates a 30-day search by default (first check-in) with auto-extract on the default model" do
     expect {
       result = described_class.call(
         organization: organization,
@@ -22,6 +22,7 @@ RSpec.describe CheckIns::SlackOgoConsult::Starter do
       expect(result.ok?).to eq(true)
       expect(result.search.window_days).to eq(30)
       expect(result.search.auto_extract_after_search).to eq(true)
+      expect(result.search.auto_extract_model_id).to eq(Llm::SlackMomentsExtractor.model_id)
     }.to change(PossibleObservationSlackSearch, :count).by(1)
       .and have_enqueued_job(PossibleObservationSlackSearchJob)
   end
@@ -47,6 +48,7 @@ RSpec.describe CheckIns::SlackOgoConsult::Starter do
       subject_company_teammate: subject_teammate
     )
 
+    batch = search.message_batches.first
     expect {
       result = described_class.call(
         organization: organization,
@@ -57,6 +59,7 @@ RSpec.describe CheckIns::SlackOgoConsult::Starter do
       )
       expect(result.ok?).to eq(true)
     }.to have_enqueued_job(PossibleObservationSlackSearchExtractionJob)
+      .with(batch.id, model_id: Llm::SlackMomentsExtractor.model_id)
 
     expect(search.message_batches.reload.map(&:extraction_status).uniq).to eq(["pending"])
   end

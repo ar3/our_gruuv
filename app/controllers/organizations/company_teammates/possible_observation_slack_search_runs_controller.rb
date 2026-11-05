@@ -44,13 +44,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchRunsControl
       return
     end
 
-    model_id =
-      if params[:model].to_s == "stronger"
-        Llm::SlackMomentsExtractor.stronger_model_id
-      else
-        Llm::SlackMomentsExtractor.model_id
-      end
-
+    model_id = Llm::SlackMomentsExtractor.model_id
     batches.each do |batch|
       batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
       PossibleObservationSlackSearchExtractionJob.perform_later(batch.id, model_id: model_id)

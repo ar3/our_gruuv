@@ -34,12 +34,7 @@ module CheckIns
           until_time: @until
         )
         phase = derive_phase(batches)
-        stronger_id = Llm::SlackMomentsExtractor.stronger_model_id
         latest_consultations = batches.filter_map { |batch| latest_consultation(batch) }
-        latest_models = latest_consultations.filter_map(&:model_id)
-        used_stronger = latest_models.any? { |mid| mid == stronger_id }
-        all_stronger = latest_models.any? && latest_models.all? { |mid| mid == stronger_id }
-        any_completed_extract = batches.any? { |b| b.extraction_status == "completed" }
         latest_consult_at = latest_consultations.map(&:created_at).max
 
         {
@@ -59,8 +54,6 @@ module CheckIns
           other_message: other_message(filtered[:other_matches].size),
           full_results_url: full_results_url,
           can_refresh_search: can_refresh_search?(latest_consult_at),
-          can_stronger_model: any_completed_extract && !all_stronger,
-          used_stronger_model: used_stronger,
           consultation_stale: consultation_stale?(latest_consult_at),
           stale_warning: stale_warning(latest_consult_at),
           polling: %w[searching extracting].include?(phase)
@@ -127,16 +120,21 @@ module CheckIns
         record = match.record
         {
           id: record.id,
-          confidence: record.confidence,
-          confidence_pct: (record.confidence * 100).round,
-          kind: record.payload_hash[:kind],
-          quote_preview: record.quote.to_s.truncate(280),
-          summary: record.summary.presence || record.quote.to_s.truncate(160),
-          permalink: record.permalink,
           slack_possible_observation_id: record.id,
-          batch_id: record.possible_observation_slack_search_batch_id,
-          batch_url: moments_url
+          html: render_moment_row(match)
         }
+      end
+
+      def render_moment_row(match)
+        ApplicationController.render(
+          partial: "organizations/company_teammates/slack_possible_observations/moment_row",
+          locals: {
+            moment: match.record,
+            draft_observation: match.draft_observation,
+            teammate: @subject_teammate,
+            actions: :evidence
+          }
+        )
       end
 
       def empty_object_message(phase, filtered)

@@ -4,7 +4,7 @@ module CheckIns
   module SlackOgoConsult
     # Splits durable SlackPossibleObservations into object matches (≥75%) vs other.
     class DurableCandidateFilter
-      Match = Data.define(:record)
+      Match = Data.define(:record, :draft_observation)
 
       def self.call(subject:, viewer:, organization:, rateable_type:, rateable_id:, since: nil, until_time: nil)
         new(
@@ -43,7 +43,7 @@ module CheckIns
           next if moment.confidence < CONFIDENCE_THRESHOLD
           next unless within_check_in_range?(moment)
 
-          match = Match.new(record: moment)
+          match = Match.new(record: moment, draft_observation: row.draft_observation)
           if object_match?(moment)
             object_matches << match
           else

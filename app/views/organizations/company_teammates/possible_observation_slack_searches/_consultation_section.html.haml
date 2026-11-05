@@ -36,29 +36,12 @@
       - if policy(batch).extract?
         - completed = batch.extraction_status == "completed"
         - primary_label = completed ? "Consult OG again" : "Consult OG to find potential OGOs"
-        - stronger_ran = completed && batch.last_extraction_used_stronger_model?
-        - faster_ran = completed && !stronger_ran
-        - faster_label = faster_ran ? "Re-run: Faster, but less powerful model" : (completed ? "Try: Faster, but less powerful model" : "Faster, but less powerful model")
-        - stronger_label = stronger_ran ? "Re-run: Slower, but more powerful model" : (completed ? "Try: Slower, but more powerful model" : "Slower, but more powerful model")
-        .btn-group{role: "group"}
-          %button.btn.btn-primary.btn-sm.dropdown-toggle{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false"}
-            %i.bi.bi-stars.me-1
-            = primary_label
-          %ul.dropdown-menu
-            %li
-              = button_to extract_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch),
-                          method: :post,
-                          class: "dropdown-item",
-                          data: { turbo: false } do
-                %i.bi.bi-lightning-charge.me-1
-                = faster_label
-            %li
-              = button_to extract_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch, model: "stronger"),
-                          method: :post,
-                          class: "dropdown-item",
-                          data: { turbo: false } do
-                %i.bi.bi-stars.me-1
-                = stronger_label
+        = button_to extract_organization_company_teammate_possible_observation_slack_search_batch_path(organization, teammate_route_param(@teammate), search, batch),
+                    method: :post,
+                    class: "btn btn-primary btn-sm",
+                    form: { data: { turbo: false } } do
+          %i.bi.bi-stars.me-1
+          = primary_label
 
   - if batch.extraction_error.present? && batch.extraction_status != "failed"
     .alert.alert-info.mb-3

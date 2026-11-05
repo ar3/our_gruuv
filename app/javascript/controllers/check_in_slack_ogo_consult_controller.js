@@ -26,7 +26,8 @@ export default class extends Controller {
     "primaryActions",
     "secondaryActions",
     "refreshButton",
-    "strongerButton"
+    "manageMomentsWrap",
+    "manageMomentsLink"
   ]
 
   connect() {
@@ -168,24 +169,14 @@ export default class extends Controller {
     }
 
     if (this.hasObjectListTarget) {
-      if (matches.length === 0) {
-        this.objectListTarget.innerHTML = ""
-      } else {
-        this.objectListTarget.innerHTML = matches
-          .map((match) => {
-            const link = match.batch_url
-              ? `<a href="${this.escape(match.batch_url)}" class="small">Open consultation</a>`
-              : ""
-            const permalink = match.permalink
-              ? `<a href="${this.escape(match.permalink)}" target="_blank" rel="noopener" class="small ms-2">Slack</a>`
-              : ""
-            return `<li class="mb-2">
-              <span class="badge text-bg-success me-1">${match.confidence_pct}%</span>
-              <span class="text-break">${this.escape(match.summary || match.quote_preview || "")}</span>
-              <div class="mt-1">${link}${permalink}</div>
-            </li>`
-          })
-          .join("")
+      this.objectListTarget.innerHTML = matches.map((match) => match.html || "").join("")
+    }
+
+    if (this.hasManageMomentsWrapTarget) {
+      const showManage = showResults && matches.length > 0
+      this.manageMomentsWrapTarget.classList.toggle("d-none", !showManage)
+      if (showManage && this.hasManageMomentsLinkTarget && data.full_results_url) {
+        this.manageMomentsLinkTarget.href = data.full_results_url
       }
     }
 
@@ -220,16 +211,12 @@ export default class extends Controller {
       const showSecondary =
         Boolean(data.search_id) &&
         data.phase === "completed" &&
-        (data.can_refresh_search || data.can_stronger_model)
+        Boolean(data.can_refresh_search)
       this.secondaryActionsTarget.classList.toggle("d-none", !showSecondary)
     }
 
     if (this.hasRefreshButtonTarget) {
       this.refreshButtonTarget.classList.toggle("d-none", !data.can_refresh_search)
-    }
-
-    if (this.hasStrongerButtonTarget) {
-      this.strongerButtonTarget.classList.toggle("d-none", !data.can_stronger_model)
     }
 
     if (this.hasPrimaryActionsTarget) {

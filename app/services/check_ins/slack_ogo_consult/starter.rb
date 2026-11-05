@@ -25,10 +25,9 @@ module CheckIns
         case @mode
         when "fresh", "refresh_search"
           start_new_search
-        when "rerun_consultation"
-          rerun_extractions(model_id: Llm::SlackMomentsExtractor.model_id)
-        when "stronger_model"
-          rerun_extractions(model_id: Llm::SlackMomentsExtractor.stronger_model_id)
+        when "rerun_consultation", "stronger_model"
+          # stronger_model kept as an alias for older clients; all extracts use Sonnet.
+          rerun_extractions
         else
           Result.new(ok?: false, search: nil, error: "Unknown mode.", needs_slack_oauth: false)
         end
@@ -50,13 +49,14 @@ module CheckIns
           display_name: default_display_name(window_days),
           search_status: "pending",
           extraction_status: "ready",
-          auto_extract_after_search: true
+          auto_extract_after_search: true,
+          auto_extract_model_id: Llm::SlackMomentsExtractor.model_id
         )
         PossibleObservationSlackSearchJob.perform_later(search.id)
         Result.new(ok?: true, search: search, error: nil, needs_slack_oauth: false)
       end
 
-      def rerun_extractions(model_id:)
+      def rerun_extractions
         search = @existing_search
         if search.nil? || search.search_status != "completed"
           return Result.new(ok?: false, search: nil, error: "No completed Slack search to re-run.", needs_slack_oauth: false)
@@ -67,6 +67,7 @@ module CheckIns
           return Result.new(ok?: false, search: search, error: "No consultation batches on this search.", needs_slack_oauth: false)
         end
 
+        model_id = Llm::SlackMomentsExtractor.model_id
         batches.each do |batch|
           batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
           PossibleObservationSlackSearchExtractionJob.perform_later(batch.id, model_id: model_id)

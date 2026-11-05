@@ -1,6 +1,8 @@
--# locals: moment:, draft_observation: nil, teammate:, return_to: nil
+-# locals: moment:, draft_observation: nil, teammate:, return_to: nil,
+-#         actions: :manage (:manage = Promote/Dismiss; :evidence = Open in Slack only)
 - draft = local_assigns[:draft_observation]
 - return_to = local_assigns[:return_to]
+- actions = local_assigns.fetch(:actions, :manage).to_sym
 - suggestion_chip = moment.suggested_association_chip
 
 .mb-3
@@ -30,25 +32,34 @@
           - if moment.suggested_rating.present?
             %span.rounded-circle.d-inline-block.flex-shrink-0{ class: ObservationRating.suggestion_dot_bg_class(moment.suggested_rating), style: "width:0.45rem;height:0.45rem;", title: ObservationRating.display_label(moment.suggested_rating), "aria-hidden" => "true" }
           %span= suggestion_chip
-    .d-flex.flex-wrap.align-items-center.gap-1{ "aria-label" => "pOGO actions" }
-      - if moment.permalink.present?
-        = link_to "Open in Slack",
-                  moment.permalink,
-                  target: "_blank",
-                  rel: "noopener",
-                  class: "btn btn-sm btn-outline-secondary"
-      - if draft
-        = link_to "Open draft / Finish publishing",
-                  organization_observation_path(organization, draft),
-                  class: "btn btn-sm btn-primary"
-      - else
-        = button_to "Promote to OGO",
-                    promote_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
-                    method: :post,
-                    class: "btn btn-sm btn-outline-primary",
-                    form: { data: { turbo: false }, class: "d-inline" }
-        = button_to "Dismiss: this is not OGO-worthy",
-                    dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
-                    method: :post,
-                    class: "btn btn-sm btn-outline-danger",
-                    form: { data: { turbo: false, confirm: "Dismiss this Slack moment for everyone? It will be treated as not OGO-worthy." }, class: "d-inline" }
+    - if actions == :manage
+      .d-flex.flex-wrap.align-items-center.gap-1{ "aria-label" => "pOGO actions" }
+        - if moment.permalink.present?
+          = link_to "Open in Slack",
+                    moment.permalink,
+                    target: "_blank",
+                    rel: "noopener",
+                    class: "btn btn-sm btn-outline-secondary"
+        - if draft
+          = link_to "Open draft / Finish publishing",
+                    organization_observation_path(organization, draft),
+                    class: "btn btn-sm btn-primary"
+        - else
+          = button_to "Promote to OGO",
+                      promote_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
+                      method: :post,
+                      class: "btn btn-sm btn-outline-primary",
+                      form: { data: { turbo: false }, class: "d-inline" }
+          = button_to "Dismiss: this is not OGO-worthy",
+                      dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
+                      method: :post,
+                      class: "btn btn-sm btn-outline-danger",
+                      form: { data: { turbo: false, confirm: "Dismiss this Slack moment for everyone? It will be treated as not OGO-worthy." }, class: "d-inline" }
+    - elsif actions == :evidence
+      .d-flex.flex-wrap.align-items-center.gap-1
+        - if moment.permalink.present?
+          = link_to "Open in Slack",
+                    moment.permalink,
+                    target: "_blank",
+                    rel: "noopener",
+                    class: "btn btn-sm btn-outline-secondary"

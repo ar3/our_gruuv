@@ -66,15 +66,9 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
     expect(build_payload[:can_refresh_search]).to eq(true)
   end
 
-  it "allows stronger-model re-run only when the latest run is not already stronger" do
+  it "does not expose a stronger-model re-run flag" do
     create_completed_consultation(created_at: 1.day.ago)
-    expect(build_payload[:can_stronger_model]).to eq(true)
-
-    create_completed_consultation(
-      created_at: Time.current,
-      model_id: Llm::SlackMomentsExtractor.stronger_model_id
-    )
-    expect(build_payload[:can_stronger_model]).to eq(false)
+    expect(build_payload).not_to have_key(:can_stronger_model)
   end
 
   it "marks consultations older than 7 days as stale with a warning" do
@@ -91,7 +85,7 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
     expect(payload[:stale_warning]).to be_nil
   end
 
-  it "serializes summary from durable Slack moments for the check-in match list" do
+  it "serializes shared moment-row HTML for the check-in match list" do
     create(
       :slack_possible_observation,
       organization: organization,
@@ -105,14 +99,20 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
         "short_quote" => "shipped early",
         "full_quote" => "Pat shipped early and crushed the launch.",
         "suggested_rateable_type" => "Assignment",
-        "suggested_rateable_id" => assignment.id
+        "suggested_rateable_id" => assignment.id,
+        "suggested_rateable_name" => assignment.title,
+        "suggested_rating" => "strongly_agree",
+        "permalink" => "https://example.slack.com/p1"
       }
     )
 
     match = build_payload[:object_matches].first
-    expect(match[:summary]).to eq("This is a story about when Pat shipped early.")
-    expect(match).not_to have_key(:short_quote)
+    expect(match[:html]).to include("This is a story about when Pat shipped early.")
+    expect(match[:html]).to include("Assignment ·")
+    expect(match[:html]).to include("bg-success")
+    expect(match[:html]).to include("Open in Slack")
+    expect(match[:html]).not_to include("Promote to OGO")
+    expect(match[:html]).not_to include("Dismiss: this is not OGO-worthy")
     expect(match[:slack_possible_observation_id]).to be_present
   end
 end
-

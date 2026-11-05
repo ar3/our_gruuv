@@ -4,6 +4,7 @@
 - create_url = organization_teammate_slack_ogo_check_in_consult_path(organization, @teammate)
 - csrf = form_authenticity_token
 - since_iso = (defined?(since_date) && since_date.present?) ? since_date.to_time.iso8601 : ""
+- moments_url = ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate))
 
 .card.border-0.shadow-sm.mb-4{"data-controller" => "check-in-slack-ogo-consult",
   "data-check-in-slack-ogo-consult-status-url-value" => status_url,
@@ -46,14 +47,17 @@
     .d-none{"data-check-in-slack-ogo-consult-target" => "results"}
       %p.fw-semibold.mb-2 Examples of #{casual_name} and #{object_name}
       %p.small.text-muted.d-none.mb-2{"data-check-in-slack-ogo-consult-target" => "emptyObject"}
-      %ul.list-unstyled.mb-3{"data-check-in-slack-ogo-consult-target" => "objectList"}
+      %div.mb-3{"data-check-in-slack-ogo-consult-target" => "objectList"}
+      %p.small.mb-2.d-none{"data-check-in-slack-ogo-consult-target" => "manageMomentsWrap"}
+        = link_to "Promote or dismiss these on Slack moments",
+                  moments_url,
+                  class: "small",
+                  data: { check_in_slack_ogo_consult_target: "manageMomentsLink" }
       %p.small.mb-2{"data-check-in-slack-ogo-consult-target" => "otherLine"}
 
       .d-none.d-flex.flex-wrap.gap-2.mt-3{"data-check-in-slack-ogo-consult-target" => "secondaryActions"}
         %button.btn.btn-sm.btn-outline-primary.d-none{type: "button", "data-action" => "check-in-slack-ogo-consult#start", "data-mode" => "refresh_search", "data-check-in-slack-ogo-consult-target" => "refreshButton"}
           Refresh search and consult
-        %button.btn.btn-sm.btn-outline-primary.d-none{type: "button", "data-action" => "check-in-slack-ogo-consult#start", "data-mode" => "stronger_model", "data-check-in-slack-ogo-consult-target" => "strongerButton"}
-          Re-run OG consultation with a stronger model
 
 .mb-4
   %a.d-inline-flex.align-items-start.gap-1.text-decoration-none{href: "#check-in-get-evidence-manually", "data-bs-toggle" => "collapse", role: "button", "aria-expanded" => "false", "aria-controls" => "check-in-get-evidence-manually"}

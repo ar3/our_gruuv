@@ -163,22 +163,22 @@ RSpec.describe "Possible observation Slack searches", type: :request do
       )
     end
 
-    it "enqueues extraction with the stronger model when model=stronger" do
+    it "enqueues extraction with the default (Sonnet) model" do
       expect {
         post extract_organization_company_teammate_possible_observation_slack_search_batch_path(
-          organization, subject, search, batch, model: "stronger"
+          organization, subject, search, batch
         )
       }.to have_enqueued_job(PossibleObservationSlackSearchExtractionJob)
-        .with(batch.id, model_id: Llm::SlackMomentsExtractor.stronger_model_id)
+        .with(batch.id, model_id: Llm::SlackMomentsExtractor.model_id)
 
       expect(batch.reload.extraction_status).to eq("pending")
     end
 
-    it "renders the model-choice dropdown on the consultation section" do
+    it "renders a single Consult OG action on the consultation section" do
       get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
       expect(response.body).to include("Consult OG to find potential OGOs")
-      expect(response.body).to include("Faster, but less powerful model")
-      expect(response.body).to include("Slower, but more powerful model")
+      expect(response.body).not_to include("Faster, but less powerful model")
+      expect(response.body).not_to include("Slower, but more powerful model")
     end
 
     context "when extracted" do
@@ -254,22 +254,11 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(response.body).to include("these are defaulted to Reviewing below")
       end
 
-      it "prefixes the already-run (default) model with Re-run and the other with Try" do
+      it "offers Consult OG again after a completed extraction" do
         get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
         expect(response.body).to include("Consult OG again")
-        expect(response.body).to include("Re-run: Faster, but less powerful model")
-        expect(response.body).to include("Try: Slower, but more powerful model")
-      end
-
-      it "prefixes the stronger model with Re-run when it was the last model run" do
-        batch.mark_extraction_completed!(
-          items: batch.extraction_items,
-          model_id: Llm::SlackMomentsExtractor.stronger_model_id
-        )
-
-        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
-        expect(response.body).to include("Re-run: Slower, but more powerful model")
-        expect(response.body).to include("Try: Faster, but less powerful model")
+        expect(response.body).not_to include("Faster, but less powerful model")
+        expect(response.body).not_to include("Slower, but more powerful model")
       end
 
       it "shows the rating and linked object name as text above the generated rationale" do

@@ -52,17 +52,18 @@ RSpec.describe PossibleObservationSlackSearchExtractionJob, type: :job do
     expect(batch.last_extraction_prompt_version).to eq(Llm::SlackMomentsExtractor::PROMPT_VERSION)
   end
 
-  it 'defaults to the Haiku model id' do
-    expect(Llm::SlackMomentsExtractor.model_id).to include('claude-haiku-4-5')
-    expect(Llm::SlackMomentsExtractor.stronger_model_id).to include('claude-sonnet-4-5')
+  it 'defaults to the Sonnet model id' do
+    expect(Llm::SlackMomentsExtractor.model_id).to include('claude-sonnet-4-5')
+    expect(Llm::SlackMomentsExtractor.stronger_model_id).to eq(Llm::SlackMomentsExtractor.model_id)
+    expect(Llm::SlackMomentsExtractor.faster_model_id).to include('claude-haiku-4-5')
   end
 
-  it 'records the stronger model when requested' do
-    described_class.perform_now(batch.id, model_id: Llm::SlackMomentsExtractor.stronger_model_id)
+  it 'records the model when requested explicitly' do
+    described_class.perform_now(batch.id, model_id: Llm::SlackMomentsExtractor.model_id)
 
     consultation = OgConsultation.order(:id).last
     expect(consultation.subject).to eq(batch)
-    expect(consultation.model_id).to eq(Llm::SlackMomentsExtractor.stronger_model_id)
+    expect(consultation.model_id).to eq(Llm::SlackMomentsExtractor.model_id)
     expect(batch.reload.extraction_status).to eq('completed')
   end
 

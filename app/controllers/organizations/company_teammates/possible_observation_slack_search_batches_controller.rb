@@ -50,23 +50,20 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
   def extract
     authorize @batch, :extract?
     @batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-    if stronger_model_requested?
-      PossibleObservationSlackSearchExtractionJob.perform_later(
-        @batch.id,
-        model_id: Llm::SlackMomentsExtractor.stronger_model_id
-      )
-      redirect_to batch_path,
-                  notice: "Consult OG started with a slower, more powerful model — finding potential OGOs in the background."
-    else
-      PossibleObservationSlackSearchExtractionJob.perform_later(@batch.id)
-      redirect_to batch_path, notice: "Consult OG started — finding potential OGOs in the background."
-    end
+    PossibleObservationSlackSearchExtractionJob.perform_later(
+      @batch.id,
+      model_id: Llm::SlackMomentsExtractor.model_id
+    )
+    redirect_to batch_path, notice: "Consult OG started — finding potential OGOs in the background."
   end
 
   def re_extract
     authorize @batch, :re_extract?
     @batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
-    PossibleObservationSlackSearchExtractionJob.perform_later(@batch.id)
+    PossibleObservationSlackSearchExtractionJob.perform_later(
+      @batch.id,
+      model_id: Llm::SlackMomentsExtractor.model_id
+    )
     redirect_to batch_path, notice: "Consult OG started again — finding potential OGOs in the background."
   end
 
@@ -138,10 +135,6 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
 
   def items_param
     params[:items] || params.dig(:possible_observation_slack_search_batch, :items)
-  end
-
-  def stronger_model_requested?
-    params[:model].to_s == "stronger"
   end
 
   def included_item?(item)
