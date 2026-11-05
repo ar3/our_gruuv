@@ -189,4 +189,18 @@ RSpec.describe Llm::SlackMomentsExtractor do
 
     expect(result["items"]).to be_empty
   end
+
+  it "instructs the model to link violations of positively written objects as Mis-aligned/Concerning" do
+    instructions = described_class.new(
+      chunk_text: "msg",
+      subject_name: "Pat"
+    ).send(:system_instructions)
+
+    expect(described_class::PROMPT_VERSION).to eq("1.20261105.0")
+    expect(instructions).to include("positive expectations")
+    expect(instructions).to include("violate, undermine, or invert")
+    expect(instructions).to include("suggested_rating disagree")
+    expect(instructions).to include("strongly_disagree")
+    expect(instructions).to include("mis-aligned, and concerning examples")
+  end
 end

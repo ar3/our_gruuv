@@ -56,13 +56,14 @@
 
     .d-flex.align-items-center.justify-content-between.gap-2.flex-wrap{ class: ("d-none" unless completed || failed), data: { check_in_period_brief_consult_target: "actions" } }
       .d-flex.align-items-center.gap-2.flex-wrap{ class: ("d-none" unless completed && result), data: { check_in_period_brief_consult_target: "copyActions" } }
-        %button.btn.btn-sm.btn-outline-secondary{ type: "button", data: { action: "check-in-period-brief-consult#copy", check_in_period_brief_consult_target: "copyButton" } }
-          %i.bi.bi-clipboard.me-1
-          Copy brief
-        %button.btn.btn-sm.btn-outline-secondary{ type: "button", data: { action: "check-in-period-brief-consult#appendToNotes", check_in_period_brief_consult_target: "appendButton" } }
-          %i.bi.bi-journal-plus.me-1
-          Append to notes
-        %span.small.text-success.d-none{ data: { check_in_period_brief_consult_target: "copyFeedback" } } Copied
+        .btn-group.btn-group-sm{ role: "group", "aria-label" => "Brief actions" }
+          %button.btn.btn-outline-secondary{ type: "button", data: { action: "check-in-period-brief-consult#appendToNotes", check_in_period_brief_consult_target: "appendButton" } }
+            %i.bi.bi-journal-plus.me-1
+            Append to notes
+          %button.btn.btn-outline-secondary{ type: "button", data: { action: "check-in-period-brief-consult#copy", check_in_period_brief_consult_target: "copyButton" } }
+            %i.bi.bi-clipboard.me-1
+            Copy brief
         %span.small.text-success.d-none{ data: { check_in_period_brief_consult_target: "appendFeedback" } } Appended
+        %span.small.text-success.d-none{ data: { check_in_period_brief_consult_target: "copyFeedback" } } Copied
       %button.btn.btn-sm.btn-outline-primary.ms-auto{ type: "button", data: { action: "check-in-period-brief-consult#rerun", check_in_period_brief_consult_target: "rerunButton" } }
         Re-Run Consultation

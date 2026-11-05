@@ -40,4 +40,12 @@ class PossibleObservationSlackSearchPolicy < ApplicationPolicy
   def extraction_status?
     show?
   end
+
+  # Re-run LLM extract on this search's stored messages (e.g. after a prompt bump).
+  def re_consult?
+    show? &&
+      record.search_status == "completed" &&
+      !record.hub_in_flight? &&
+      record.extractable_batches.any?
+  end
 end

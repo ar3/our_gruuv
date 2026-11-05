@@ -150,6 +150,20 @@ class PossibleObservationSlackSearch < ApplicationRecord
     %w[searching extracting].include?(hub_phase)
   end
 
+  # True when at least one completed batch was extracted with an older/missing prompt version.
+  def extraction_prompt_stale?
+    return false unless search_status == "completed"
+    return false if hub_in_flight?
+
+    message_batches.any?(&:extraction_prompt_stale?)
+  end
+
+  def extractable_batches
+    message_batches.select do |batch|
+      %w[ready failed completed].include?(batch.extraction_status)
+    end
+  end
+
   def pogo_count
     extraction_items.size
   end

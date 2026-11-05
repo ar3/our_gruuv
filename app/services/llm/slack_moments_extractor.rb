@@ -9,8 +9,8 @@ module Llm
     SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
     # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
     # Ask before bumping major; otherwise set date to today and increment minor.
-    # 1.20261006.1 — display quote is summary → full quote → why (no short quote)
-    PROMPT_VERSION = "1.20261006.1"
+    # 1.20261105.0 — look for violations/opposites of positively written MAAP objects
+    PROMPT_VERSION = "1.20261105.0"
     RATING_WORDS = ObservationRating::DISPLAY_LABELS.except("na").freeze
     ALLOWED_RATINGS = RATING_WORDS.keys.freeze
     ALLOWED_RATEABLE_TYPES = %w[Assignment Ability Aspiration].freeze
@@ -142,6 +142,13 @@ module Llm
           clear. If readers cannot see the outcome from the message text alone, omit or keep confidence <= 0.65.
         Prefer moments that clearly evidence the SUBJECT CONTEXT objects (aspirations, assignment outcomes,
         abilities, goals). Use the exact object names and ids from that context when suggesting links.
+        Those objects are almost always written as positive expectations (what good looks like).
+        Also look for the opposite: moments that violate, undermine, or invert those expectations —
+        still link them to the same SUBJECT CONTEXT object, with suggested_rating disagree (#{disagree})
+        or strongly_disagree (#{concerning}), and kind feedback.
+        Do not skip a clear violation of an Assignment outcome, Value, or Ability just because the catalog
+        text is phrased positively. Look for exceptional, strong, mis-aligned, and concerning examples of
+        the behaviors those objects call for.
         Speaker identity: the message poster is the speaker (from the message header username/user).
         When the speaker says "I", "me", "my", or describes their own work in first person, that action belongs
         to the speaker — never to people who are only @mentioned, informed, helped, asked, or discussed.

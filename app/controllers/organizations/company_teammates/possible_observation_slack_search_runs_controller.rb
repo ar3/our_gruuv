@@ -8,7 +8,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchRunsControl
   before_action :set_one_on_one_link
   before_action :authorize_ogos!
   before_action :assign_viewable_teammates_context
-  before_action :set_search, only: :show
+  before_action :set_search, only: %i[show re_consult]
   after_action :verify_authorized
 
   def index
@@ -31,6 +31,33 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchRunsControl
       organization: organization,
       search_id: @search.id
     )
+  end
+
+  # Re-extract every batch for this search with the current SlackMomentsExtractor prompt.
+  # Reuses stored Slack messages; does not create a new search run.
+  def re_consult
+    authorize @search, :re_consult?
+    batches = @search.extractable_batches
+    if batches.empty?
+      redirect_to ogos_slack_search_run_organization_company_teammate_path(organization, @teammate, @search),
+                  alert: "No consultations are ready to re-run."
+      return
+    end
+
+    model_id =
+      if params[:model].to_s == "stronger"
+        Llm::SlackMomentsExtractor.stronger_model_id
+      else
+        Llm::SlackMomentsExtractor.model_id
+      end
+
+    batches.each do |batch|
+      batch.update!(extraction_status: "pending", extraction_error: nil, extractions: {})
+      PossibleObservationSlackSearchExtractionJob.perform_later(batch.id, model_id: model_id)
+    end
+
+    redirect_to ogos_slack_search_run_organization_company_teammate_path(organization, @teammate, @search),
+                notice: "Re-consulting with the latest OG extract prompt — finding potential OGOs in the background."
   end
 
   private

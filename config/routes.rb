@@ -630,6 +630,9 @@ Rails.application.routes.draw do
         get 'ogos/slack_search_runs/:search_id',
             to: 'company_teammates/possible_observation_slack_search_runs#show',
             as: :ogos_slack_search_run
+        post 'ogos/slack_search_runs/:search_id/re_consult',
+             to: 'company_teammates/possible_observation_slack_search_runs#re_consult',
+             as: :re_consult_ogos_slack_search_run
         get 'maap_teammate_growth', to: 'company_teammates/maap_teammate_growth#show', as: :maap_teammate_growth
         post 'maap_teammate_growth/run', to: 'company_teammates/maap_teammate_growth#run', as: :run_maap_teammate_growth
         get 'maap_teammate_growth/status', to: 'company_teammates/maap_teammate_growth#status', as: :maap_teammate_growth_status

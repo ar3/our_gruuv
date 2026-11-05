@@ -49,6 +49,7 @@ RSpec.describe PossibleObservationSlackSearchExtractionJob, type: :job do
     expect(consultation.result).to be_a(OgoSearchResult)
     expect(consultation.result.items_count).to eq(0)
     expect(batch.reload.extraction_status).to eq('completed')
+    expect(batch.last_extraction_prompt_version).to eq(Llm::SlackMomentsExtractor::PROMPT_VERSION)
   end
 
   it 'defaults to the Haiku model id' do

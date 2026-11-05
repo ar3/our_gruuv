@@ -48,6 +48,7 @@ module PossibleObservationSlackSearches
         message_ts: message_ts
       )
 
+      item_id = item["id"].to_s.presence
       if record.new_record?
         record.organization = @search.organization
         record.visibility = visibility
@@ -56,10 +57,10 @@ module PossibleObservationSlackSearches
         record.payload = payload
         record.possible_observation_slack_search = @search
         record.possible_observation_slack_search_batch = @batch
-        record.extraction_item_id = item["id"].to_s.presence
+        record.extraction_item_id = item_id
         record.save!
       else
-        record.update!(merge_existing_attrs(record, discoverer_id, visibility, payload))
+        record.update!(merge_existing_attrs(record, discoverer_id, visibility, payload, item_id))
       end
 
       true
@@ -70,11 +71,11 @@ module PossibleObservationSlackSearches
         channel_id: channel_id,
         message_ts: message_ts
       )
-      record.update!(merge_existing_attrs(record, discoverer_id, visibility, payload))
+      record.update!(merge_existing_attrs(record, discoverer_id, visibility, payload, item["id"].to_s.presence))
       true
     end
 
-    def merge_existing_attrs(record, discoverer_id, visibility, payload)
+    def merge_existing_attrs(record, discoverer_id, visibility, payload, item_id)
       ids = record.discoverer_ids
       ids << discoverer_id if discoverer_id.present? && !ids.include?(discoverer_id)
       search_ids = record.discovery_search_id_list
@@ -87,11 +88,32 @@ module PossibleObservationSlackSearches
       if record.private_or_dm? && visibility == SlackPossibleObservation::VISIBILITY_PUBLIC
         attrs[:visibility] = visibility
       end
-      attrs[:payload] = payload if record.payload_hash.blank?
+      # Refresh open suggestions on re-extract; leave dismissed and published alone.
+      if refresh_payload?(record)
+        attrs[:payload] = payload
+        attrs[:extraction_item_id] = item_id if item_id.present?
+      elsif record.payload_hash.blank?
+        attrs[:payload] = payload
+      end
       attrs[:possible_observation_slack_search_id] = record.possible_observation_slack_search_id || @search.id
       attrs[:possible_observation_slack_search_batch_id] =
         record.possible_observation_slack_search_batch_id || @batch.id
       attrs
+    end
+
+    def refresh_payload?(record)
+      return false if record.dismissed?
+      return false if published_observation_exists?(record)
+
+      true
+    end
+
+    def published_observation_exists?(record)
+      DuplicateObservationsForMessage.call(
+        organization: @search.organization,
+        channel_id: record.channel_id,
+        message_ts: record.message_ts
+      ).any?(&:published?)
     end
 
     def build_payload(item, source)

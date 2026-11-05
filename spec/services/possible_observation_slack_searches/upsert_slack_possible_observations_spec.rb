@@ -131,4 +131,83 @@ RSpec.describe PossibleObservationSlackSearches::UpsertSlackPossibleObservations
     expect(row.discoverer_ids).to contain_exactly(creator.id, other_creator.id)
     expect(row.discovery_search_id_list).to contain_exactly(search.id, second_search.id)
   end
+
+  it "refreshes payload on open rows when re-extracting" do
+    described_class.call(
+      search: search,
+      batch: batch,
+      items: [
+        item(channel_id: "Cpublic", ts: "1710000000.000100").merge(
+          "summary" => "Old summary",
+          "suggested_rating" => "agree"
+        )
+      ]
+    )
+    row = SlackPossibleObservation.find_by!(channel_id: "Cpublic", message_ts: "1710000000.000100")
+    expect(row.payload_hash[:summary]).to eq("Old summary")
+
+    described_class.call(
+      search: search,
+      batch: batch,
+      items: [
+        item(channel_id: "Cpublic", ts: "1710000000.000100").merge(
+          "summary" => "New summary",
+          "suggested_rateable_type" => "Assignment",
+          "suggested_rateable_name" => "Own launch",
+          "suggested_rating" => "strongly_agree"
+        )
+      ]
+    )
+
+    expect(row.reload.payload_hash[:summary]).to eq("New summary")
+    expect(row.payload_hash[:suggested_rating]).to eq("strongly_agree")
+  end
+
+  it "does not refresh payload for dismissed rows" do
+    described_class.call(
+      search: search,
+      batch: batch,
+      items: [item(channel_id: "Cpublic", ts: "1710000000.000100").merge("summary" => "Keep me")]
+    )
+    row = SlackPossibleObservation.find_by!(channel_id: "Cpublic", message_ts: "1710000000.000100")
+    row.dismiss!(by: creator)
+
+    described_class.call(
+      search: search,
+      batch: batch,
+      items: [item(channel_id: "Cpublic", ts: "1710000000.000100").merge("summary" => "Should not win")]
+    )
+
+    expect(row.reload.payload_hash[:summary]).to eq("Keep me")
+    expect(row).to be_dismissed
+  end
+
+  it "does not refresh payload when a published OGO already exists for the message" do
+    described_class.call(
+      search: search,
+      batch: batch,
+      items: [item(channel_id: "Cpublic", ts: "1710000000.000100").merge("summary" => "Published moment")]
+    )
+    trigger = create(
+      :observation_trigger,
+      trigger_source: "slack",
+      trigger_data: { "channel_id" => "Cpublic", "message_ts" => "1710000000.000100" }
+    )
+    create(
+      :observation,
+      company: organization,
+      observer: creator.person,
+      observation_trigger: trigger,
+      published_at: Time.current
+    )
+
+    described_class.call(
+      search: search,
+      batch: batch,
+      items: [item(channel_id: "Cpublic", ts: "1710000000.000100").merge("summary" => "Should not win")]
+    )
+
+    row = SlackPossibleObservation.find_by!(channel_id: "Cpublic", message_ts: "1710000000.000100")
+    expect(row.payload_hash[:summary]).to eq("Published moment")
+  end
 end

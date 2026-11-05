@@ -1,6 +1,7 @@
 -# locals: moment:, draft_observation: nil, teammate:, return_to: nil
 - draft = local_assigns[:draft_observation]
 - return_to = local_assigns[:return_to]
+- suggestion_chip = moment.suggested_association_chip
 
 .mb-3
   - if moment.summary.present?
@@ -11,32 +12,40 @@
   - if draft
     %p.mb-2.small
       %span.badge.text-bg-warning Draft OGO — needs publishing
-  .d-flex.flex-wrap.align-items-center.gap-2.small
-    - if moment.speaker_label.present?
-      %span.text-muted= moment.speaker_label
-    - if moment.channel_name.present?
-      %span.text-muted
-        %i.bi.bi-hash
-        = moment.channel_name
-    - elsif moment.private_or_dm?
-      %span.badge.text-bg-secondary Private / DM
-    - else
-      %span.badge.text-bg-light.border Public channel
-    - if moment.permalink.present?
-      = link_to "Open in Slack", moment.permalink, target: "_blank", rel: "noopener", class: "btn btn-sm btn-outline-secondary py-0"
-    %span.text-muted= "#{format('%.0f%%', moment.confidence * 100)} confident"
-    - if draft
-      = link_to "Open draft / Finish publishing",
-                organization_observation_path(organization, draft),
-                class: "btn btn-sm btn-primary py-0"
-    - else
-      = button_to "Promote to OGO",
-                  promote_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
-                  method: :post,
-                  class: "btn btn-sm btn-outline-primary py-0",
-                  form: { data: { turbo: false } }
-      = button_to "Dismiss: this is not OGO-worthy",
-                  dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
-                  method: :post,
-                  class: "btn btn-sm btn-outline-danger py-0",
-                  form: { data: { turbo: false, confirm: "Dismiss this Slack moment for everyone? It will be treated as not OGO-worthy." } }
+  .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+    .d-flex.flex-wrap.align-items-center.gap-2.small
+      - if moment.speaker_label.present?
+        %span.text-muted= moment.speaker_label
+      - if moment.channel_name.present?
+        %span.text-muted
+          %i.bi.bi-hash
+          = moment.channel_name
+      - elsif moment.private_or_dm?
+        %span.badge.text-bg-secondary Private / DM
+      - else
+        %span.badge.text-bg-light.border Public channel
+      %span.text-muted= "#{format('%.0f%%', moment.confidence * 100)} confident"
+      - if suggestion_chip.present?
+        %span.badge.text-bg-light.border.text-muted= suggestion_chip
+    .d-flex.flex-wrap.align-items-center.gap-1{ "aria-label" => "pOGO actions" }
+      - if moment.permalink.present?
+        = link_to "Open in Slack",
+                  moment.permalink,
+                  target: "_blank",
+                  rel: "noopener",
+                  class: "btn btn-sm btn-outline-secondary"
+      - if draft
+        = link_to "Open draft / Finish publishing",
+                  organization_observation_path(organization, draft),
+                  class: "btn btn-sm btn-primary"
+      - else
+        = button_to "Promote to OGO",
+                    promote_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
+                    method: :post,
+                    class: "btn btn-sm btn-outline-primary",
+                    form: { data: { turbo: false }, class: "d-inline" }
+        = button_to "Dismiss: this is not OGO-worthy",
+                    dismiss_organization_company_teammate_slack_possible_observation_path(organization, teammate_route_param(teammate), moment, return_to: return_to),
+                    method: :post,
+                    class: "btn btn-sm btn-outline-danger",
+                    form: { data: { turbo: false, confirm: "Dismiss this Slack moment for everyone? It will be treated as not OGO-worthy." }, class: "d-inline" }

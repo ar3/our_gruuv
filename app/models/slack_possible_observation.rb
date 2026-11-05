@@ -99,7 +99,39 @@ class SlackPossibleObservation < ApplicationRecord
     payload_hash[:channel_name].to_s
   end
 
+  def suggested_rateable_type
+    payload_hash[:suggested_rateable_type].to_s.presence
+  end
+
+  def suggested_rateable_id
+    id = payload_hash[:suggested_rateable_id]
+    id.present? ? id.to_i : nil
+  end
+
+  def suggested_rateable_name
+    payload_hash[:suggested_rateable_name].to_s.presence
+  end
+
+  def suggested_rating
+    payload_hash[:suggested_rating].to_s.presence
+  end
+
+  # Short chip: "Assignment · Own launch · Exceptional" (Value for Aspiration).
+  def suggested_association_chip
+    parts = []
+    type = suggested_rateable_type
+    if type.present?
+      parts << (type == "Aspiration" ? "Value" : type)
+    end
+    parts << suggested_rateable_name if suggested_rateable_name.present?
+    if suggested_rating.present?
+      parts << ObservationRating.display_label(suggested_rating)
+    end
+    parts.join(" · ").presence
+  end
+
   def message_key
     "#{channel_id}|#{message_ts}"
   end
 end
+

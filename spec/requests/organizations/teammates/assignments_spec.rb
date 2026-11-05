@@ -108,6 +108,8 @@ RSpec.describe "Organizations::Teammates::Assignments (1-by-1 check-in page)", t
         expect(response.body).to include("Use Copy or Append to Notes")
         expect(response.body).to include("Re-Run Consultation")
         expect(response.body).to include("Append to notes")
+        expect(response.body).to include("Copy brief")
+        expect(response.body).to include('role="group"')
         expect(response.body).to include("view only")
         expect(response.body).to include("pOGOs")
         expect(response.body).not_to include(">Run consultation<")

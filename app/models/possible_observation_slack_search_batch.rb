@@ -81,9 +81,10 @@ class PossibleObservationSlackSearchBatch < ApplicationRecord
     touch if extraction_status == "processing"
   end
 
-  def mark_extraction_completed!(items:, extraction_note: nil, model_id: nil)
+  def mark_extraction_completed!(items:, extraction_note: nil, model_id: nil, prompt_version: nil)
     payload = { "version" => EXTRACTIONS_VERSION, "items" => sort_extraction_items(items) }
     payload["model_id"] = model_id if model_id.present?
+    payload["prompt_version"] = prompt_version if prompt_version.present?
     update!(
       extractions: payload,
       extraction_status: "completed",
@@ -96,10 +97,21 @@ class PossibleObservationSlackSearchBatch < ApplicationRecord
     extractions.is_a?(Hash) ? extractions["model_id"].presence : nil
   end
 
+  # Prompt version used for the most recent completed extraction (nil for legacy runs).
+  def last_extraction_prompt_version
+    extractions.is_a?(Hash) ? extractions["prompt_version"].presence : nil
+  end
+
   # Whether the most recent completed extraction used the slower, more powerful model.
   # Legacy runs (no stored model id) are treated as the default/faster model.
   def last_extraction_used_stronger_model?
     last_extraction_model_id == Llm::SlackMomentsExtractor.stronger_model_id
+  end
+
+  def extraction_prompt_stale?
+    return false unless extraction_status == "completed"
+
+    last_extraction_prompt_version != Llm::SlackMomentsExtractor::PROMPT_VERSION
   end
 
   def mark_extraction_failed!(message)
