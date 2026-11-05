@@ -201,6 +201,22 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
         expect(position_check_in.maap_snapshot.employee_company_teammate).to eq(employee_teammate)
       end
 
+      it "queues an acknowledgement nudge for the finalizer and the teammate" do
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: finalization_params
+        }.to have_enqueued_job(CheckIns::SendAcknowledgementNudgeJob).with(
+          organization_id: organization.id,
+          employee_teammate_id: employee_teammate.id,
+          nudger_company_teammate_id: manager_teammate.id
+        )
+
+        expect(response).to redirect_to(
+          acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate)
+        )
+        expect(flash[:notice]).to eq("Check-ins finalized successfully. A nudge is being sent.")
+      end
+
       it "removes check-in from ready_for_finalization list after finalization" do
         expect(PositionCheckIn.ready_for_finalization.where(id: position_check_in.id)).to exist
 
@@ -342,11 +358,14 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
     context "when no check-ins are finalized" do
       it "succeeds but does not create a snapshot" do
         empty_params = {}
-        
+        snapshot_count = MaapSnapshot.count
+
         expect {
           post organization_company_teammate_finalization_path(organization, employee_teammate),
                params: empty_params
-        }.not_to change { MaapSnapshot.count }
+        }.not_to have_enqueued_job(CheckIns::SendAcknowledgementNudgeJob)
+
+        expect(MaapSnapshot.count).to eq(snapshot_count)
         
         expect(response).to redirect_to(acknowledge_organization_company_teammate_check_ins_path(organization, employee_teammate))
       end

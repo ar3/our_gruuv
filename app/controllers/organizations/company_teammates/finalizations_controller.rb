@@ -97,9 +97,17 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     
     if result.ok?
       EngagementHealth.schedule_refresh_for(@teammate.id)
-      # TODO: Send notification to employee
+      notice = 'Check-ins finalized successfully.'
+      if result.value[:snapshot].present?
+        CheckIns::SendAcknowledgementNudgeJob.perform_later(
+          organization_id: organization.id,
+          employee_teammate_id: @teammate.id,
+          nudger_company_teammate_id: current_company_teammate.id
+        )
+        notice = 'Check-ins finalized successfully. A nudge is being sent.'
+      end
       redirect_to acknowledge_organization_company_teammate_check_ins_path(organization, @teammate),
-                  notice: 'Check-ins finalized successfully. Employee will be notified.'
+                  notice: notice
     else
       redirect_to organization_company_teammate_finalization_path(organization, @teammate),
                   alert: "Failed to finalize: #{result.error}"
