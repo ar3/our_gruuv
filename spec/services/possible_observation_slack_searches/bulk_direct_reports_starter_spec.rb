@@ -25,7 +25,7 @@ RSpec.describe PossibleObservationSlackSearches::BulkDirectReportsStarter do
     search = PossibleObservationSlackSearch.last
     expect(search.window_days).to eq(30)
     expect(search.auto_extract_after_search).to be(true)
-    expect(search.auto_extract_model_id).to eq(Llm::SlackMomentsExtractor.stronger_model_id)
+    expect(search.auto_extract_model_id).to eq(Llm::SlackMomentsExtractor.model_id)
     expect(search.subject_company_teammate).to eq(direct)
     expect(search.creator_company_teammate).to eq(manager)
   end

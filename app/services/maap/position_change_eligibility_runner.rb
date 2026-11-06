@@ -115,7 +115,7 @@ module Maap
       # Position-Change Eligibility is a high-stakes year-horizon read — default to Sonnet 4.5.
       # Override with POSITION_CHANGE_ELIGIBILITY_BEDROCK_MODEL_ID if needed.
       @model_id ||= ENV.fetch('POSITION_CHANGE_ELIGIBILITY_BEDROCK_MODEL_ID') {
-        Llm::SlackMomentsExtractor.stronger_model_id
+        Llm::SlackMomentsExtractor.model_id
       }
     end
 

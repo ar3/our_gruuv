@@ -2,10 +2,8 @@
 
 module Llm
   # Bedrock extractor for noteworthy Slack moments that warrant an OGO (precision over recall).
-  # Default: Claude Sonnet 4.5 via Bedrock regional inference profile (override with SLACK_SEARCH_BEDROCK_MODEL_ID).
-  # Haiku remains available as faster_model_id for rare explicit opt-ins.
+  # Claude Sonnet 4.5 via Bedrock regional inference profile (override with SLACK_SEARCH_BEDROCK_MODEL_ID).
   class SlackMomentsExtractor
-    HAIKU_45_FOUNDATION_SUFFIX = "anthropic.claude-haiku-4-5-20251001-v1:0"
     SONNET_45_FOUNDATION_SUFFIX = "anthropic.claude-sonnet-4-5-20250929-v1:0"
     # Prompt version: <major>.<YYYYMMDD>.<minor> — see docs/RULES/prompt-versioning.md
     # Ask before bumping major; otherwise set date to today and increment minor.
@@ -46,14 +44,6 @@ module Llm
 
     def self.default_model_id
       "#{region_prefix}.#{SONNET_45_FOUNDATION_SUFFIX}"
-    end
-
-    def self.stronger_model_id
-      default_model_id
-    end
-
-    def self.faster_model_id
-      "#{region_prefix}.#{HAIKU_45_FOUNDATION_SUFFIX}"
     end
 
     def self.model_id

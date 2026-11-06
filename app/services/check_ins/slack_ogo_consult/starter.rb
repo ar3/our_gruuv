@@ -25,8 +25,7 @@ module CheckIns
         case @mode
         when "fresh", "refresh_search"
           start_new_search
-        when "rerun_consultation", "stronger_model"
-          # stronger_model kept as an alias for older clients; all extracts use Sonnet.
+        when "rerun_consultation"
           rerun_extractions
         else
           Result.new(ok?: false, search: nil, error: "Unknown mode.", needs_slack_oauth: false)

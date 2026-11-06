@@ -46,7 +46,7 @@ module PossibleObservationSlackSearches
         search_status: "pending",
         extraction_status: "ready",
         auto_extract_after_search: true,
-        auto_extract_model_id: Llm::SlackMomentsExtractor.stronger_model_id
+        auto_extract_model_id: Llm::SlackMomentsExtractor.model_id
       )
       PossibleObservationSlackSearchJob.perform_later(search.id)
       search

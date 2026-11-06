@@ -54,8 +54,7 @@ RSpec.describe PossibleObservationSlackSearchExtractionJob, type: :job do
 
   it 'defaults to the Sonnet model id' do
     expect(Llm::SlackMomentsExtractor.model_id).to include('claude-sonnet-4-5')
-    expect(Llm::SlackMomentsExtractor.stronger_model_id).to eq(Llm::SlackMomentsExtractor.model_id)
-    expect(Llm::SlackMomentsExtractor.faster_model_id).to include('claude-haiku-4-5')
+    expect(Llm::SlackMomentsExtractor.default_model_id).to eq(Llm::SlackMomentsExtractor.model_id)
   end
 
   it 'records the model when requested explicitly' do

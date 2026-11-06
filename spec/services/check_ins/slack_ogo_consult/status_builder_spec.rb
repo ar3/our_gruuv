@@ -66,11 +66,6 @@ RSpec.describe CheckIns::SlackOgoConsult::StatusBuilder do
     expect(build_payload[:can_refresh_search]).to eq(true)
   end
 
-  it "does not expose a stronger-model re-run flag" do
-    create_completed_consultation(created_at: 1.day.ago)
-    expect(build_payload).not_to have_key(:can_stronger_model)
-  end
-
   it "marks consultations older than 7 days as stale with a warning" do
     create_completed_consultation(created_at: 8.days.ago)
     payload = build_payload

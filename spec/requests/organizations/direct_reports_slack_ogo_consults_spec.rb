@@ -34,7 +34,7 @@ RSpec.describe "Direct reports Slack OGO consults", type: :request do
 
     search = PossibleObservationSlackSearch.last
     expect(search.window_days).to eq(30)
-    expect(search.auto_extract_model_id).to eq(Llm::SlackMomentsExtractor.stronger_model_id)
+    expect(search.auto_extract_model_id).to eq(Llm::SlackMomentsExtractor.model_id)
     expect(response).to redirect_to(organization_possible_observation_consults_path(organization))
     expect(flash[:notice]).to include("may take a while")
   end

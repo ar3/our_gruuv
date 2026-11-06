@@ -40,7 +40,7 @@ module Organizations
     def bulk_notice(count)
       hub = "Consult OG to find potential OGOs"
       "Started #{count} Slack #{'consultation'.pluralize(count)} for your direct reports " \
-        "(last 30 days, stronger model). This may take a while — each person finishes separately. " \
+        "(last 30 days). This may take a while — each person finishes separately. " \
         "Watch progress and open results on #{hub}."
     end
   end

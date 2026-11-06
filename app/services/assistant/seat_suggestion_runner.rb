@@ -48,7 +48,7 @@ module Assistant
       )
       @result.update!(tool_context: tool_context)
 
-      model_id = ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.stronger_model_id }
+      model_id = ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.model_id }
       purpose = OgConsultations::Kinds.fetch(@consultation.kind).llm_purpose
       user_prompt = build_user_prompt(tool_context)
 
@@ -124,7 +124,7 @@ module Assistant
       @consultation.update!(
         status: "failed",
         error_message: message.to_s.truncate(10_000),
-        model_id: ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.stronger_model_id },
+        model_id: ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.model_id },
         prompt_version: Assistant::SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION,
         completed_at: Time.current
       )

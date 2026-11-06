@@ -102,12 +102,6 @@ class PossibleObservationSlackSearchBatch < ApplicationRecord
     extractions.is_a?(Hash) ? extractions["prompt_version"].presence : nil
   end
 
-  # Whether the most recent completed extraction used the slower, more powerful model.
-  # Legacy runs (no stored model id) are treated as the default/faster model.
-  def last_extraction_used_stronger_model?
-    last_extraction_model_id == Llm::SlackMomentsExtractor.stronger_model_id
-  end
-
   def extraction_prompt_stale?
     return false unless extraction_status == "completed"
 
