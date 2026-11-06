@@ -230,6 +230,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
       item
     end
     @batch.replace_extraction_items!(items) if items.any?
+    sync_durable_dismissals!(items)
     redirect_to batch_path, notice: matched ? "Candidate dismissed." : "Candidates saved."
   end
 
@@ -249,6 +250,7 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
     end
 
     @batch.replace_extraction_items!(items)
+    sync_durable_dismissals!(items)
     dismissed_count = items.count { |item| item["dismissed_at"].present? }
 
     promotable = items.any? { |item| included_item?(item) && item["observation_id"].blank? }
@@ -282,6 +284,25 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchBatchesCont
       end
     else
       redirect_to batch_path, alert: Array(result.error).join(", ")
+    end
+  end
+
+  # Batch review and the shared pOGO list must dismiss the same Slack message.
+  def sync_durable_dismissals!(items)
+    actor = current_company_teammate
+    items.each do |item|
+      next if item["dismissed_at"].blank?
+
+      channel_id = item["channel_id"].to_s
+      message_ts = item["ts"].to_s
+      next if channel_id.blank? || message_ts.blank?
+
+      record = SlackPossibleObservation.find_by(
+        subject_company_teammate_id: @search.subject_company_teammate_id,
+        channel_id: channel_id,
+        message_ts: message_ts
+      )
+      record&.dismiss!(by: actor)
     end
   end
 

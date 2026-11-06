@@ -113,7 +113,15 @@ class PossibleObservationSlackSearchBatch < ApplicationRecord
   end
 
   def replace_extraction_items!(items)
-    update!(extractions: { "version" => EXTRACTIONS_VERSION, "items" => sort_extraction_items(items) })
+    current = extractions.is_a?(Hash) ? extractions : {}
+    update!(
+      extractions: {
+        "version" => EXTRACTIONS_VERSION,
+        "items" => sort_extraction_items(items),
+        "model_id" => current["model_id"],
+        "prompt_version" => current["prompt_version"]
+      }.compact
+    )
   end
 
   private

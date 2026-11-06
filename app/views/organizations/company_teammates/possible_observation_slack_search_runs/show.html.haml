@@ -59,7 +59,7 @@
             ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate), search_id: @search.id),
             class: "btn btn-primary"
   - if policy(@search).show?
-    = link_to "Legacy batch review",
+    = link_to "Batch details",
               organization_company_teammate_possible_observation_slack_search_path(organization, teammate_route_param(@teammate), @search),
               class: "btn btn-outline-secondary"
 

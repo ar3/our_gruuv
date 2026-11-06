@@ -100,7 +100,8 @@
                observation_type_options: @observation_type_options || [],
                teammates_grouped_for_select: @teammates_grouped_for_select || [],
                duplicate_observations_by_key: @duplicate_observations_by_batch_id[batch.id] || {},
-               suggested_rateable_names_by_key: @suggested_rateable_names_by_batch_id[batch.id] || {}
+               suggested_rateable_names_by_key: @suggested_rateable_names_by_batch_id[batch.id] || {},
+               moments_by_key: @slack_moments_by_key || {}
 
     :javascript
       (function() {

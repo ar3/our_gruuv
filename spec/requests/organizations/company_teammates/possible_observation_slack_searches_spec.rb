@@ -289,6 +289,34 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         expect(response.body).not_to include("text-bg-info")
       end
 
+      it "renders the shared moment row for a durable pOGO on the batch review" do
+        item = batch.extraction_items.first
+        create(
+          :slack_possible_observation,
+          organization: organization,
+          subject_company_teammate: subject,
+          discoverer_company_teammate_ids: [teammate.id],
+          channel_id: item[:channel_id],
+          message_ts: item[:ts],
+          payload: {
+            "summary" => "Shared row summary",
+            "quote" => "Shared row quote",
+            "confidence" => 0.9,
+            "permalink" => item[:permalink],
+            "suggested_rateable_type" => "Assignment",
+            "suggested_rateable_name" => "Own the launch",
+            "suggested_rating" => "strongly_agree"
+          }
+        )
+
+        get organization_company_teammate_possible_observation_slack_search_path(organization, subject, search)
+
+        expect(response.body).to include("Shared row summary")
+        expect(response.body).to include("Assignment · Own the launch · Exceptional")
+        expect(response.body).to include("Promote to OGO")
+        expect(response.body).not_to include("The OG Consultation AI Agent is suggesting:")
+      end
+
       it "saves include/kind updates and returns to the consultation section" do
         item = batch.extraction_items.first
         patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
@@ -382,6 +410,41 @@ RSpec.describe "Possible observation Slack searches", type: :request do
         dismissed = batch.reload.extraction_items.first
         expect(dismissed[:dismissed_at]).to be_present
         expect(dismissed[:dismissed_by_company_teammate_id]).to eq(teammate.id)
+      end
+
+      it "dismisses the durable pOGO and keeps the stored prompt version" do
+        item = batch.extraction_items.first
+        batch.update!(
+          extractions: batch.extractions.merge(
+            "prompt_version" => "1.20261105.0",
+            "model_id" => "test-model"
+          )
+        )
+        moment = create(
+          :slack_possible_observation,
+          organization: organization,
+          subject_company_teammate: subject,
+          channel_id: item[:channel_id],
+          message_ts: item[:ts]
+        )
+
+        patch organization_company_teammate_possible_observation_slack_search_batch_path(organization, subject, search, batch),
+              params: {
+                dismiss_item_id: item[:id],
+                items: {
+                  "0" => {
+                    id: item[:id],
+                    state: "needs_processed",
+                    quote: item[:quote],
+                    channel_id: item[:channel_id],
+                    ts: item[:ts]
+                  }
+                }
+              }
+
+        expect(moment.reload).to be_dismissed
+        expect(batch.reload.last_extraction_prompt_version).to eq("1.20261105.0")
+        expect(batch.last_extraction_model_id).to eq("test-model")
       end
 
       it "renders the tri-state status controls and per-row actions on the review form" do

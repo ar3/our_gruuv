@@ -132,6 +132,10 @@ class Organizations::CompanyTeammates::PossibleObservationSlackSearchesControlle
     @latest_consultation_by_batch_id = {}
     @duplicate_observations_by_batch_id = {}
     @suggested_rateable_names_by_batch_id = {}
+    @slack_moments_by_key = SlackPossibleObservation
+                            .for_subject(@teammate)
+                            .where(organization: organization)
+                            .index_by(&:message_key)
 
     @batches.each do |batch|
       @latest_consultation_by_batch_id[batch.id] = OgConsultation.latest_for(
