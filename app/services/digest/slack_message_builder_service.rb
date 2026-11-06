@@ -10,6 +10,7 @@ module Digest
     GSD_CATEGORY_LABELS = {
       observable_moments: 'Observable Moments',
       pending_acknowledgements: -> { I18n.t('terminology.clarity_check_ins_awaiting_acknowledgement') },
+      transcript_observation_drafts: 'OGO drafts from meeting transcripts',
       observation_drafts: 'Observation Drafts',
       silent_observations: 'Silent Observations',
       feedback_expectation_mismatches: 'Feedback to clean up',
@@ -547,7 +548,7 @@ module Digest
           @teammate
         )
         collection.map { |c| acknowledgement_check_in_label(c, acknowledge_url) }
-      when :observation_drafts, :silent_observations, :feedback_expectation_mismatches
+      when :observation_drafts, :transcript_observation_drafts, :silent_observations, :feedback_expectation_mismatches
         collection.map { |o| observation_draft_label(o) }
       when :feedback_requests_awaiting_response
         collection.map { |request| feedback_request_label(request) }

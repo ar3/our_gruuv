@@ -342,5 +342,59 @@ module ObservationsHelper
 
     'private Slack DM'
   end
+
+  def transcript_draft_audience_phrase(observation)
+    observee_names = observation.observed_teammates.filter_map { |teammate| teammate.person&.casual_name }
+    names = (observee_names + transcript_draft_direct_manager_names(observation)).uniq
+    return "the people who should see it" if names.empty?
+
+    names.to_sentence
+  end
+
+  def transcript_draft_quiet_label(observation)
+    "Publish for #{transcript_draft_audience_phrase(observation)}. Don't notify anyone."
+  end
+
+  def transcript_draft_channel_name(observation)
+    observation.company&.kudos_channel&.display_name
+  end
+
+  def transcript_draft_channel_label(observation)
+    company_name = observation.company&.name.presence || "the company"
+    channel_name = transcript_draft_channel_name(observation).presence || "the company channel"
+    "Publish to #{company_name} and post it in #{channel_name} as-is."
+  end
+
+  def transcript_draft_quiet_blocked_reason(observation)
+    return "Only the observer can publish this observation." unless policy(observation).publish?
+
+    nil
+  end
+
+  def transcript_draft_channel_blocked_reason(observation)
+    return "Only the observer can publish this observation." unless policy(observation).publish?
+    if observation.has_negative_ratings?
+      return "A concerning rating stays with the people who should see it, so this cannot go in the company channel."
+    end
+    return "No company channel is set up yet." if transcript_draft_channel_name(observation).blank?
+
+    nil
+  end
+
+  def transcript_draft_direct_manager_names(observation)
+    names = []
+    observation.observed_teammates.each do |teammate|
+      next unless teammate.person
+
+      ManagerialHierarchyQuery.new(person: teammate.person, organization: observation.company).call.each do |info|
+        next unless info[:level] == 0
+
+        person = Person.find_by(id: info[:person_id])
+        name = person&.casual_name.presence || info[:name]
+        names << name if name.present? && names.exclude?(name)
+      end
+    end
+    names
+  end
 end
 

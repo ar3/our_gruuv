@@ -1270,6 +1270,43 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(response.body).to include('Publish now')
       end
     end
+
+    context 'when the draft came from a meeting transcript' do
+      let(:transcript_draft) do
+        create(
+          :observation,
+          observer: person,
+          company: organization,
+          published_at: nil,
+          privacy_level: :observed_and_managers,
+          created_as_type: Observation::CREATED_AS_OGO_CONSULT,
+          story: "You already said this about the launch."
+        )
+      end
+
+      it 'offers one-click log actions instead of a bare Publish' do
+        get organization_observation_path(organization, transcript_draft)
+        expect(response).to have_http_status(:success)
+        body = CGI.unescapeHTML(response.body)
+        observee = transcript_draft.observed_teammates.first.person.casual_name
+        expect(body).to include("Publish for #{observee}. Don't notify anyone.")
+        expect(body).to include("Publish to #{organization.name} and post it in the company channel as-is.")
+        expect(body).to include("Edit before publishing")
+        expect(body).to include('data-test-id="transcript-draft-quiet"')
+        expect(body).not_to include('data-test-id="observation-publish-actions"')
+        expect(body).not_to include("Publish now")
+      end
+
+      it 'publishes quietly for the observee and their manager' do
+        post confirm_transcript_ogo_organization_observation_path(organization, transcript_draft), params: { intent: "quiet" }
+
+        expect(response).to redirect_to(organization_observation_path(organization, transcript_draft))
+        expect(flash[:notice]).to include("Nobody was notified")
+        transcript_draft.reload
+        expect(transcript_draft).to be_published
+        expect(transcript_draft.privacy_level).to eq("observed_and_managers")
+      end
+    end
   end
 
   describe 'GET /organizations/:organization_id/observations/:id (show) when kudos points are disabled' do

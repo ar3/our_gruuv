@@ -1,0 +1,45 @@
+- observation = local_assigns.fetch(:observation)
+- organization = local_assigns.fetch(:organization)
+- return_url = local_assigns[:return_url]
+- size = local_assigns.fetch(:size, "lg")
+- button_class = "btn w-100 text-start text-wrap #{size == 'lg' ? 'btn-lg' : 'btn-sm'}"
+- quiet_reason = transcript_draft_quiet_blocked_reason(observation)
+- channel_reason = transcript_draft_channel_blocked_reason(observation)
+- can_edit = policy(observation).update?
+
+.d-grid.gap-2
+  - if quiet_reason.blank?
+    = form_with url: confirm_transcript_ogo_organization_observation_path(organization, observation), method: :post, local: true, class: "w-100", data: { turbo: false, test_id: "transcript-draft-quiet" } do
+      = hidden_field_tag :intent, "quiet"
+      = hidden_field_tag :return_url, return_url if return_url.present?
+      = button_tag type: "submit", class: "#{button_class} btn-warning text-dark fw-semibold" do
+        = transcript_draft_quiet_label(observation)
+  - else
+    .d-flex.align-items-center.gap-2
+      .flex-grow-1
+        %button{type: "button", class: "#{button_class} btn-warning text-dark fw-semibold disabled", disabled: true}
+          = transcript_draft_quiet_label(observation)
+      %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => quiet_reason}
+
+  - if channel_reason.blank?
+    = form_with url: confirm_transcript_ogo_organization_observation_path(organization, observation), method: :post, local: true, class: "w-100", data: { turbo: false, test_id: "transcript-draft-channel" } do
+      = hidden_field_tag :intent, "channel"
+      = hidden_field_tag :return_url, return_url if return_url.present?
+      = button_tag type: "submit", class: "#{button_class} btn-outline-primary" do
+        = transcript_draft_channel_label(observation)
+  - else
+    .d-flex.align-items-center.gap-2
+      .flex-grow-1
+        %button{type: "button", class: "#{button_class} btn-outline-secondary disabled", disabled: true}
+          = transcript_draft_channel_label(observation)
+      %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => channel_reason}
+
+  - if can_edit
+    = link_to edit_organization_observation_path(organization, observation, return_url: return_url.presence || organization_observation_path(organization, observation), return_text: "Back to Observation"), class: "#{button_class} btn-outline-secondary", data: { test_id: "transcript-draft-edit" } do
+      Edit before publishing
+  - else
+    .d-flex.align-items-center.gap-2
+      .flex-grow-1
+        %button{type: "button", class: "#{button_class} btn-outline-secondary disabled", disabled: true}
+          Edit before publishing
+      %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be the observer to edit this observation"}

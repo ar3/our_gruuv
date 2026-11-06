@@ -34,6 +34,11 @@
 - else
   - completed_categories << { title: goal_confidence_checks_label, icon: 'bi-bullseye', description: goal_confidence_checks_description }
 
+- if @transcript_observation_drafts.any?
+  = render partial: 'organizations/get_shit_done/transcript_observation_drafts_section'
+- else
+  - completed_categories << { title: 'OGO drafts from meeting transcripts', icon: 'bi-mic', description: 'Transcript drafts ready to log in one click' }
+
 - if @observation_drafts.any?
   = render partial: 'organizations/get_shit_done/observation_drafts_section'
 - else

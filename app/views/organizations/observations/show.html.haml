@@ -56,7 +56,11 @@
     .col-12
       = render 'feedback_expectation_banner', organization: @organization
 / Draft nudge - shown for any viewer when observation is unpublished
-- if @observation.draft?
+- if @observation.draft? && @observation.ogo_consult_sourced?
+  .row
+    .col-12
+      = render "transcript_draft_banner"
+- elsif @observation.draft?
   .row
     .col-12
       = render 'nudge_to_publish_draft'
@@ -544,8 +548,10 @@
           Actions
       .card-body
         .d-grid.gap-2
-          / Publish Observation
-          - if @observation.draft? && policy(@observation).publish?
+          / Publish Observation (transcript drafts use the one-click banner instead)
+          - if @observation.draft? && @observation.ogo_consult_sourced?
+            / confirmed from the transcript banner
+          - elsif @observation.draft? && policy(@observation).publish?
             = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, class: 'w-100', data: { turbo: false, test_id: 'observation-publish-actions' } do |form|
               = form.button class: 'btn btn-primary w-100', type: 'submit' do
                 %i.bi.bi-send.me-2

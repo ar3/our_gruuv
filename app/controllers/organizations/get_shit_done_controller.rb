@@ -12,6 +12,7 @@ class Organizations::GetShitDoneController < Organizations::OrganizationNamespac
     @pending_acknowledgement_queue = query_service.pending_acknowledgement_queue
     @pending_acknowledgement_count = @pending_acknowledgement_queue.count
     @observation_drafts = query_service.observation_drafts
+    @transcript_observation_drafts = query_service.transcript_observation_drafts
     @silent_observations = query_service.silent_observations
     @feedback_expectation_mismatches = query_service.feedback_expectation_mismatches
     @feedback_requests_awaiting_response = query_service.feedback_requests_awaiting_response

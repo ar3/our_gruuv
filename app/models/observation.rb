@@ -88,6 +88,14 @@ class Observation < ApplicationRecord
   scope :by_privacy_level, ->(level) { where(privacy_level: level) }
   scope :drafts, -> { where(published_at: nil) }
   scope :published, -> { where.not(published_at: nil) }
+  scope :ogo_consult_sourced, -> {
+    left_joins(:observation_trigger).where(
+      "observations.created_as_type = :created_as OR (observation_triggers.trigger_source = :source AND observation_triggers.trigger_type = :type)",
+      created_as: CREATED_AS_OGO_CONSULT,
+      source: "ogo_consult",
+      type: "ogo_source_search"
+    )
+  }
   scope :kudos_observations, -> { where(observation_type: 'kudos') }
   scope :feedback_observations, -> { where(observation_type: 'feedback') }
   scope :quick_notes, -> { where(observation_type: 'quick_note') }

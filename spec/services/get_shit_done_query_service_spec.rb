@@ -57,6 +57,23 @@ RSpec.describe GetShitDoneQueryService do
       
       expect(service.observation_drafts).to be_empty
     end
+
+    it 'keeps transcript drafts out of handwritten drafts and lists them separately' do
+      handwritten = create(:observation, observer: person, company: company, published_at: nil, story: "Typed by hand")
+      transcript = create(
+        :observation,
+        observer: person,
+        company: company,
+        published_at: nil,
+        created_as_type: Observation::CREATED_AS_OGO_CONSULT,
+        story: "Said this in the meeting"
+      )
+
+      expect(service.observation_drafts).to include(handwritten)
+      expect(service.observation_drafts).not_to include(transcript)
+      expect(service.transcript_observation_drafts).to contain_exactly(transcript)
+      expect(service.total_pending_count).to eq(2)
+    end
   end
 
   describe '#total_pending_count' do

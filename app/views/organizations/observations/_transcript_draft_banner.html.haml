@@ -1,0 +1,10 @@
+.alert.alert-warning.border.border-warning.border-3.py-4.mb-4{ role: "region", "aria-labelledby": "transcript-draft-banner" }
+  .row.g-3.align-items-center
+    .col-lg-5
+      %h4.alert-heading.mb-2{ id: "transcript-draft-banner" }
+        %i.bi.bi-exclamation-triangle-fill.me-2
+        This observation is not published
+      %p.mb-0
+        You already said this. Log it in one click — each button publishes it, sets who can see it, and either stays quiet or posts it.
+    .col-lg-7
+      = render "organizations/observations/transcript_draft_actions", organization: @organization, observation: @observation, return_url: organization_observation_path(@organization, @observation), size: "lg"

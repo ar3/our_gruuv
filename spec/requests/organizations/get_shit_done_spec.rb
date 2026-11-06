@@ -304,6 +304,33 @@ RSpec.describe 'Organizations::GetShitDone', type: :request do
       end
     end
 
+    it 'lists transcript drafts separately from handwritten observation drafts' do
+      handwritten = create(:observation, observer: person, company: company, published_at: nil, story: "Typed by hand on Tuesday")
+      transcript = create(
+        :observation,
+        observer: person,
+        company: company,
+        published_at: nil,
+        created_as_type: Observation::CREATED_AS_OGO_CONSULT,
+        story: "Said this in the Monday meeting"
+      )
+
+      get "/organizations/#{company.to_param}/get_shit_done"
+
+      expect(response).to have_http_status(:success)
+      body = CGI.unescapeHTML(response.body)
+      expect(body).to include("OGO drafts from meeting transcripts")
+      expect(body).to include("Said this in the Monday meeting")
+      expect(body).to include("Don't notify anyone.")
+      expect(body).to include("Edit before publishing")
+      expect(body).to include("Typed by hand on Tuesday")
+      transcript_section = body[/transcriptObservationDraftsSection.*?<\/table>/m].to_s
+      expect(transcript_section).to include("Said this in the Monday meeting")
+      expect(transcript_section).not_to include("Typed by hand on Tuesday")
+      expect(body).to include(organization_observation_path(company, handwritten))
+      expect(body).to include(confirm_transcript_ogo_organization_observation_path(company, transcript))
+    end
+
     it 'shows caption listing hidden categories when sections have no tasks' do
       get "/organizations/#{company.to_param}/get_shit_done"
 

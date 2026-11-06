@@ -1839,6 +1839,19 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
   end
 
+  # Transcript draft: publish + privacy + notify-or-not in one click.
+  def confirm_transcript_ogo
+    @observation = organization.observations.find(params[:id])
+    authorize @observation, :publish?
+
+    result = Observations::ConfirmTranscriptDraft.call(observation: @observation, intent: params[:intent])
+    if result.ok?
+      redirect_to transcript_draft_return_url, notice: result.value
+    else
+      redirect_to transcript_draft_return_url, alert: result.error.to_s
+    end
+  end
+
   # Override user_not_authorized to redirect to kudos page for observation show actions
   def user_not_authorized
     # For observation show actions, redirect to kudos page instead of root
@@ -1853,6 +1866,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   private
+
+  def transcript_draft_return_url
+    url = params[:return_url].to_s
+    return organization_observation_path(organization, @observation) unless url.start_with?("/") && !url.start_with?("//")
+
+    url
+  end
 
   def base_filtered(query)
     # Get filtered observations without sorting (to get accurate count)

@@ -33,12 +33,14 @@ class GetShitDoneQueryService
 
   def observation_drafts
     return Observation.none unless person && company
-    
-    Observation.where(observer: person, company: company)
-               .drafts
-               .where.not(privacy_level: :observer_only)
-               .where(deleted_at: nil)
-               .recent
+
+    base_observation_drafts.where.not(id: Observation.ogo_consult_sourced.select("observations.id"))
+  end
+
+  def transcript_observation_drafts
+    return Observation.none unless person && company
+
+    base_observation_drafts.merge(Observation.ogo_consult_sourced)
   end
 
   # Published, non-journal observations you authored with no notifications yet (same criteria as the observation show nudge).
@@ -122,6 +124,7 @@ class GetShitDoneQueryService
     observable_moments.count +
       pending_acknowledgement_count +
       observation_drafts.count +
+      transcript_observation_drafts.count +
       silent_observations.count +
       feedback_expectation_mismatches.count +
       feedback_requests_awaiting_response.count +
@@ -138,6 +141,7 @@ class GetShitDoneQueryService
       pending_acknowledgements: pending_acknowledgement_queue.items,
       pending_acknowledgement_count: pending_acknowledgement_count,
       observation_drafts: observation_drafts,
+      transcript_observation_drafts: transcript_observation_drafts,
       silent_observations: silent_observations,
       feedback_expectation_mismatches: feedback_expectation_mismatches,
       feedback_requests_awaiting_response: feedback_requests_awaiting_response,
@@ -158,6 +162,7 @@ class GetShitDoneQueryService
       { count: pending_acknowledgement_count, label: I18n.t("terminology.clarity_check_ins_awaiting_acknowledgement") },
       { count: check_ins_awaiting_input.size, label: I18n.t("terminology.clarity_check_ins_awaiting_your_input") },
       { count: goals_needing_check_in.count, label: I18n.t("terminology.goal_confidence_checks") },
+      { count: transcript_observation_drafts.count, label: "OGO drafts from meeting transcripts" },
       { count: observation_drafts.count, label: "Observation Drafts" },
       { count: silent_observations.count, label: "Silent Observations" },
       { count: feedback_expectation_mismatches.count, label: "Feedback to clean up" },
@@ -168,6 +173,16 @@ class GetShitDoneQueryService
   end
 
   private
+
+  def base_observation_drafts
+    return Observation.none unless person && company
+
+    Observation.where(observer: person, company: company)
+               .drafts
+               .where.not(privacy_level: :observer_only)
+               .where(deleted_at: nil)
+               .recent
+  end
 
   def empty_acknowledgement_queue
     CheckIns::AcknowledgementQueue::Result.new(
