@@ -74,6 +74,10 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
 
       get organization_value_billing_path(organization, timeframe: 'year')
 
+      expect(response.body).to match(/weekly clarity value per active teammate\s*<span[^>]*>\s*\(~\$[\d,]+\.\d{2} monthly\)/m)
+      weekly_amount = response.body[/\$(?<amount>[\d,]+\.\d{2}) weekly clarity value per active teammate/, :amount]
+      monthly_amount = response.body[/\(~(?<amount>\$[\d,]+\.\d{2}) monthly\)/, :amount]
+      expect(monthly_amount.delete('$,').to_f).to be_within(0.01).of(weekly_amount.delete(',').to_f * 4.3)
       expect(response.body).to include('annualized clarity value per active teammate')
       expect(response.body).to match(/which is approximately \$[\d,]+\.\d{2} annual and \$[\d,]+\.\d{2} monthly of value that OG has helped deliver to the \d+ active teammate/)
       expect(response.body).to include('annualized per participating teammate')

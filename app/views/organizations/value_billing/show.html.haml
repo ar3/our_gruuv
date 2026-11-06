@@ -90,6 +90,8 @@
                 %span.text-muted =
               .fs-3.fw-semibold.text-success-emphasis.mb-1
                 #{number_to_currency(@value_billing_per_employee_week)} weekly clarity value per active teammate
+                %span.fs-6.fw-normal.text-success-emphasis
+                  (~#{number_to_currency(@value_billing_per_employee_month_approx)} monthly)
               %small.text-muted.d-block
                 #{number_to_currency(@value_billing_per_employee_year)} annualized clarity value per active teammate
                 (which is approximately #{number_to_currency(@value_billing_annual_total)} annual and #{number_to_currency(@value_billing_monthly_total)} monthly of value that OG has helped deliver to the #{number_with_delimiter(@value_billing_active_teammate_count)} active #{'teammate'.pluralize(@value_billing_active_teammate_count)})

@@ -6,6 +6,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
   WEEKLY_CHECK_IN_VALUE = 0.5
   WEEKLY_GOAL_CHECK_IN_VALUE = 0.25
   WEEKLY_CONSULTATION_VALUE = 1.0
+  APPROX_WEEKS_PER_MONTH = 4.3
 
   def show
     authorize organization, :show?
@@ -145,11 +146,13 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
 
     if metrics
       @value_billing_per_employee_week = metrics[:per_employee_week]
+      @value_billing_per_employee_month_approx = @value_billing_per_employee_week * APPROX_WEEKS_PER_MONTH
       @value_billing_per_employee_year = metrics[:per_employee_year]
       @value_billing_annual_total = metrics[:annual_total]
       @value_billing_monthly_total = metrics[:monthly_total]
     else
       @value_billing_per_employee_week = nil
+      @value_billing_per_employee_month_approx = nil
       @value_billing_per_employee_year = nil
       @value_billing_annual_total = nil
       @value_billing_monthly_total = nil
