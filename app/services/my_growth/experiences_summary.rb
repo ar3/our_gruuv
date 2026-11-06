@@ -117,6 +117,13 @@ module MyGrowth
       show_inflight_charts ? inflight_rating_energy_buckets : official_rating_energy_buckets
     end
 
+    # Plain-language reminder of #guidance_position_rating for the position brief.
+    def self.position_energy_guidance_reminder
+      "If more than 20% of a teammate's energy is Working to Meet, their overall rating is likely Developing (or a monitoring rating). " \
+        "If more than 50% of their energy is Exceeding and none is Working to Meet, they are usually rated Exceptional. " \
+        "Anything in between is usually rated Accomplished."
+    end
+
     # Maps assignment-energy mix → Developing (1) / Accomplished (2) / Exceptional (3).
     # Nil when there is no rated energy to apply the tip against.
     def guidance_position_rating

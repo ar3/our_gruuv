@@ -19,7 +19,8 @@ export default class extends Controller {
     "appendFeedback",
     "copyActions",
     "actions",
-    "rerunButton"
+    "rerunButton",
+    "positionFormula"
   ]
 
   static values = {
@@ -185,6 +186,7 @@ export default class extends Controller {
   }
 
   showResults(data) {
+    if (this.hasPositionFormulaTarget) this.positionFormulaTarget.classList.add("d-none")
     if (!this.hasResultsTarget) return
     this.resultsTarget.classList.remove("d-none")
     if (this.hasCopySourceTarget && data.output_text) {
@@ -196,6 +198,7 @@ export default class extends Controller {
   }
 
   hideResults() {
+    if (this.hasPositionFormulaTarget) this.positionFormulaTarget.classList.remove("d-none")
     if (!this.hasResultsTarget) return
     this.resultsTarget.classList.add("d-none")
   }

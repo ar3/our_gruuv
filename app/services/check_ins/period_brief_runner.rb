@@ -58,6 +58,10 @@ module CheckIns
 
       # Prior-check-in / algorithm context sits above the "OG's brief of…" header.
       assembled_parts = []
+      if context.object_kind == "position"
+        assembled_parts << MyGrowth::ExperiencesSummary.position_energy_guidance_reminder
+        assembled_parts << ""
+      end
       if context.position_algorithm_paragraph.present?
         assembled_parts << context.position_algorithm_paragraph
         assembled_parts << ""

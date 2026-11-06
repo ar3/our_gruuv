@@ -337,6 +337,18 @@ RSpec.describe MyGrowth::ExperiencesSummary do
       expect(summary.guidance_position_rating).to eq(1)
     end
 
+    it 'states the position energy reminder with the same thresholds as guidance_position_rating' do
+      text = described_class.position_energy_guidance_reminder
+      expect(text).to include("more than 20%")
+      expect(text).to include("Working to Meet")
+      expect(text).to include("Developing")
+      expect(text).to include("more than 50%")
+      expect(text).to include("Exceeding")
+      expect(text).to include("none is Working to Meet")
+      expect(text).to include("Exceptional")
+      expect(text).to include("Accomplished")
+    end
+
     it 'maps >50% exceeding with no working-to-meet to Exceptional' do
       create(
         :assignment_tenure,

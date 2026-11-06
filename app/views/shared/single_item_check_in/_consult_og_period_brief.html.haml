@@ -34,6 +34,9 @@
       %strong your
       view only — other people may see different OGOs/pOGOs in their own brief.
       Use Copy or Append to Notes. OG never recommends a rating.
+    - if check_in_kind == "position"
+      %p.small.text-muted.mb-2{ class: ("d-none" if completed && result), data: { check_in_period_brief_consult_target: "positionFormula" } }
+        = MyGrowth::ExperiencesSummary.position_energy_guidance_reminder
 
     .alert.alert-secondary.mb-2{ class: ("d-none" unless in_flight), data: { check_in_period_brief_consult_target: "waiting" } }
       %i.bi.bi-hourglass-split.me-2

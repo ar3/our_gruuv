@@ -51,6 +51,7 @@ RSpec.describe CheckIns::PeriodBriefRunner do
     expect(text).to include("Pat shipped demos and got kudos from a peer.")
     expect(text).to include(CheckIns::PeriodBriefPrompts::CLOSING_LINE)
     expect(text).not_to match(/you should rate/i)
+    expect(text).not_to include("more than 20% of a teammate's energy")
     expect(text.index("OG's brief of")).to be < text.index("Pat shipped demos")
   end
 end

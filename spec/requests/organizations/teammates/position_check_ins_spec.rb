@@ -62,6 +62,11 @@ RSpec.describe "Organizations::Teammates::PositionCheckIns", type: :request do
       summarize_label = "Consult OG to summarize #{person.casual_name} and Position #{title.external_title} for this period"
       expect(response.body).to include(summarize_label)
       expect(response.body).to include('data-controller="check-in-period-brief-consult"')
+      expect(response.body).to include("more than 20%")
+      expect(response.body).to include("Working to Meet")
+      expect(response.body).to include("none is Working to Meet")
+      expect(response.body).to include("usually rated Exceptional")
+      expect(response.body).to include("usually rated Accomplished")
       perspective_idx = response.body.index("check-in-perspective-notes")
       brief_idx = response.body.index(summarize_label)
       form_idx = response.body.index('data-controller="check-in-autosave"')
