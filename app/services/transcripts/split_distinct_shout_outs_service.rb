@@ -11,20 +11,33 @@ module Transcripts
     MARKER_CLUSTER_MS = 120
 
     MARKERS = [
-      /\bCouple more\b/i,
-      /\bOne more\b/i,
+      # Count / leftover pivots ("Couple more…", "2 more. Seref…", "One more…")
+      /\b(?:couple|a few|one|two|three|\d+)\s+more\b/i,
       /\bWell,?\s+let me(?:\s+\w+){0,6}\s+go to\b/i,
       /\bLet me(?:\s+\w+){0,4}\s+go to the one\b/i,
       /\bNext up\b/i,
       /\bMoving on[,.]?\s+(?:to|I)\b/i,
       /\bAlright,?\s+(?:one more|another|a few more)\b/i,
       /\bAll right,?\s+(?:one more|another|a few more)\b/i,
-      /\bAnd then,?\s+(?:for|I want to shout|shout out|last|I also)\b/i,
+      # Soft spoken pivots between distinct shout-outs in one long turn.
+      /\bAnd then[,.…\s]+(?:for|I want to shout|shout out|last|I also|I(?:'m| am) wrapping)\b/i,
+      /\bAnd then[,.…\s]+[A-Z][a-zA-Z'-]{1,30}\b/,
+      /\bAlso,?\s+for\b/i,
+      /\bI(?:'m| am) wrapping with\b/i,
+      # Full name, then second-person praise ("Sydney Kidd. You have impressed…")
+      /\b[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+)+\.\s+You(?:'ve| have)\b/,
       # Ordinal / explicit pivot into the next shout-out, feedback, or kudos.
       /\b(?:First|Second|Third|Fourth|Fifth|Next|Last)\s+shout[- ]?outs?\b/i,
       /\b(?:First|Second|Third|Fourth|Fifth|Next|Last)\s+(?:one|feedback|kudos)\b/i,
       /\bthis\s+(?:shout[- ]?out|feedback|kudos)\s+is\s+for\b/i,
       /\b(?:first|second|third|fourth|fifth|next|last)\s+one\s+is\s+for\b/i,
+      # Bare spoken ordinals ("First, Luis…", "Second, Steve…") — capital after comma avoids
+      # metaphor asides like "First, you gotta lift…".
+      /\b(?:First|Second|Third|Fourth|Fifth)\s*,\s+[A-Z]/,
+      /\bMy next (?:two|three|\d+)\b/i,
+      /\bFirst,?\s+I will go with\b/i,
+      /\bAnd finally\b/i,
+      /\bFinally,\s+[A-Z]/,
       # Host reading someone else's shout-out aloud.
       /\bI(?:\s+\w+){0,2}\s+have\s+one\b/i,
       /\bon behalf of\b/i,
