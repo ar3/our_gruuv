@@ -75,12 +75,15 @@
                       = cue[:start].presence || "—"
                   %td.small{ style: "min-width: 180px; max-width: 300px;" }
                     = cue[:text]
-                    - if cue[:merged]
-                      %span.badge.text-bg-light.border.ms-1 #{cue[:source_block_count]} blocks
+                    - debug_pill = consult_cue_debug_pill(cue, annotation)
+                    - if debug_pill
+                      %span.badge.text-bg-light.border.ms-1{
+                        "data-bs-toggle" => "tooltip",
+                        "data-bs-title" => debug_pill[:title],
+                        title: debug_pill[:title]
+                      }= debug_pill[:label]
                     - if cue[:kind] == "audio_share"
                       %span.badge.text-bg-secondary.ms-1 Audio
-                    - if annotation[:first_pass_reason].present?
-                      .small.text-muted.mt-1= annotation[:first_pass_reason]
                   %td{ style: "min-width: 180px;" }
                     .small.mb-1
                       %code= speaker.presence || "—"

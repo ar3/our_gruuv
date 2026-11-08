@@ -258,6 +258,51 @@ module ApplicationHelper
     end
   end
 
+  # Step 2 cue badge: caption-block count + why this row exists (AI/marker split + first-pass reason).
+  def consult_cue_debug_pill(cue, annotation = {})
+    cue = cue.with_indifferent_access
+    annotation = annotation.with_indifferent_access
+    parts = []
+    blocks = cue[:source_block_count].to_i
+    if cue[:merged] || blocks > 1
+      parts << "#{blocks} #{'caption block'.pluralize(blocks)}"
+    end
+
+    moments_count = annotation[:moments_count].presence&.to_i || cue[:moments_count].to_i
+    moment_index = annotation[:moment_index].presence&.to_i || cue[:moment_index].to_i
+    split_source = annotation[:split_source].presence ||
+                   (moments_count > 1 ? "ai_moment" : nil) ||
+                   (cue[:split_from_cue_id].present? ? "discourse_marker" : nil)
+
+    if split_source == "ai_moment" && moments_count > 1 && moment_index.positive?
+      parts << "AI split #{moment_index}/#{moments_count}"
+    elsif split_source == "discourse_marker" || cue[:split_from_cue_id].present?
+      parts << "marker split"
+    end
+
+    reason = annotation[:first_pass_reason].to_s.strip
+    parts << reason if reason.present?
+    return if parts.empty?
+
+    {
+      label: parts.join(" · "),
+      title: consult_cue_debug_pill_title(blocks: blocks, split_source: split_source, moments_count: moments_count, moment_index: moment_index, reason: reason)
+    }
+  end
+
+  def consult_cue_debug_pill_title(blocks:, split_source:, moments_count:, moment_index:, reason:)
+    bits = []
+    bits << "#{blocks} nearby caption #{'block'.pluralize(blocks)} merged from the same speaker." if blocks > 1
+    case split_source
+    when "ai_moment"
+      bits << "First-pass AI split this turn into #{moments_count} moments; this is moment #{moment_index}."
+    when "discourse_marker"
+      bits << "Split by a deterministic discourse marker (e.g. First,/Second,/My next two) before the AI pass."
+    end
+    bits << "AI reason: #{reason}" if reason.present?
+    bits.join(" ")
+  end
+
   def consult_rateable_confidence_tooltip(rateable)
     rateable = rateable.with_indifferent_access
     pct = (rateable[:confidence].to_f * 100).round

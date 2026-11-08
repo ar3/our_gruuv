@@ -236,4 +236,33 @@ RSpec.describe ApplicationHelper, type: :helper do
       ).to eq('OG is 70% confident that this is a strong example of the Value Work Together')
     end
   end
+
+  describe '#consult_cue_debug_pill' do
+    it 'includes caption blocks, AI split index, and first-pass reason' do
+      pill = helper.consult_cue_debug_pill(
+        { 'merged' => true, 'source_block_count' => 3 },
+        {
+          'split_source' => 'ai_moment',
+          'moment_index' => 2,
+          'moments_count' => 3,
+          'first_pass_reason' => 'praise'
+        }
+      )
+
+      expect(pill[:label]).to eq('3 caption blocks · AI split 2/3 · praise')
+      expect(pill[:title]).to include('3 nearby caption blocks merged')
+      expect(pill[:title]).to include('moment 2')
+      expect(pill[:title]).to include('AI reason: praise')
+    end
+
+    it 'labels discourse-marker splits' do
+      pill = helper.consult_cue_debug_pill(
+        { 'merged' => true, 'source_block_count' => 2, 'split_from_cue_id' => 'cue-1' },
+        { 'split_source' => 'discourse_marker', 'first_pass_reason' => 'new observee Polly after My next two' }
+      )
+
+      expect(pill[:label]).to eq('2 caption blocks · marker split · new observee Polly after My next two')
+      expect(pill[:title]).to include('discourse marker')
+    end
+  end
 end 

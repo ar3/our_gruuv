@@ -53,8 +53,12 @@ module PossibleObservationConsults
           "kind" => first[:kind].to_s,
           "source_cue_ids" => atoms.flat_map { |atom| Array(atom[:source_cue_ids]).presence || [atom[:id].to_s] },
           "source_block_count" => atoms.sum { |atom| atom[:source_block_count].to_i.positive? ? atom[:source_block_count].to_i : 1 },
-          "merged" => atoms.size > 1 || ActiveModel::Type::Boolean.new.cast(first[:merged])
-        }
+          "merged" => atoms.size > 1 || ActiveModel::Type::Boolean.new.cast(first[:merged]),
+          "parent_cue_id" => first[:parent_cue_id],
+          "split_from_cue_id" => first[:split_from_cue_id],
+          "moment_index" => first[:moment_index],
+          "moments_count" => first[:moments_count]
+        }.compact
         annotations_out[id] = annotation.merge("cue_id" => id)
       end
 
@@ -93,8 +97,11 @@ module PossibleObservationConsults
       primary.merge(
         "ogo_worthy" => worthy,
         "cue_status" => worthy ? "ogo_worthy" : "ignore",
-        "first_pass_reason" => reasons.join("; ").truncate(500)
-      )
+        "first_pass_reason" => reasons.join("; ").truncate(500),
+        "split_source" => primary["split_source"],
+        "moment_index" => primary["moment_index"],
+        "moments_count" => primary["moments_count"]
+      ).compact
     end
   end
 end

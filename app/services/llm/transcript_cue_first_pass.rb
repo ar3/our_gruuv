@@ -14,7 +14,8 @@ module Llm
     # 1.20261102.5 — read-aloud "I have one/on behalf of", award vs later shout-outs, floor reopen = ignore
     # 1.20261107.0 — soft pivots: "And then Natalie", "Also, for…", "2 more", "I'm wrapping with…", "Name. You have…"
     # 1.20261107.1 — bare ordinals "First,/Second,/And finally,", "My next two", "First, I will go with…"
-    PROMPT_VERSION = "1.20261107.1"
+    # 1.20261108.0 — balance: split only on new observee/delimiter; never split same-person paragraph beats
+    PROMPT_VERSION = "1.20261108.0"
     BATCH_SIZE = 30
     TEXT_LIMIT = 4_000
     MIN_ANCHOR_CHARS = 12
@@ -98,32 +99,39 @@ module Llm
 
         STAY FAITHFUL TO THE TRANSCRIPT. Never invent, paraphrase, summarize, or borrow wording from another cue.
         Default: one moment per cue.
-        Split into multiple moments when the speaker clearly starts a separate shout-out/critique about a different person or distinct group —
+
+        WHEN TO SPLIT (only these):
+        Split into multiple moments when the speaker clearly starts a separate shout-out/critique about a DIFFERENT person or distinct group,
         OR when praise/critique ends and the speaker switches to logistics / hosting (emit that tail as its own moment with ogo_worthy:false).
-        Treat these as delimiters between moments:
+        Delimiters that usually mean a new moment:
         - ordinals: "first one is for…", "Second shout-out was for…", "last shout out for…",
           bare spoken lists "First, Luis…", "Second, Steve…", "And finally, James…", "Finally, …"
         - batch pivots: "My next two…", "First, I will go with…" (starts the next person after a shared intro)
         - pivots: "this shout-out/feedback/kudos is for…", "which is Amy…", "couple more" / "2 more" / "a few more", "next"
-        - soft spoken pivots in a long kudos monologue: "And then Natalie…", "Also, for the marketing team…",
-          "I'm wrapping with Ina…", "Sydney Kidd. You have impressed…" (full name + second-person praise)
+        - soft spoken pivots naming a new person/group: "And then Natalie…", "Also, for the marketing team…",
+          "I'm wrapping with Ina…", "Sydney Kidd. You have impressed…" (full name + second-person praise for someone NEW)
         - read-aloud: "I have one… from Gabe…", "I also have one on behalf of Clint…", "he had one for Christina…"
         - leave celebration / reopen floor: "Okay, I think those were the tasks…", "All right, if you have a shoutout, let me know…"
+        If several different people/groups are praised in turn, emit one moment per person/group with a verbatim anchor at each pivot —
+        do not collapse them into one moment whose reason lists multiple names ("shout-out to Luis, Steve, and James").
+
+        WHEN NOT TO SPLIT:
+        Do NOT split a single continuous shout-out to the SAME person into paragraph/sentence beats.
+        Keep together: more praise about the same "you", "And besides…", "You bring…", Workiversary closers, restating the same name,
+        joint pairs (Kayla and Nicole as one pair), and pronouns referring to the person already being praised.
+        Sentence breaks and rhetorical flourishes are not new moments.
+
         Award-winner announcements (e.g. "Kay Shockey won… Congratulations, Kay!") are their own worthy moment — do not merge them
         with later "I'm going to read for folks" shout-outs about other people.
         When the mic holder reads a shout-out written by someone else ("from Gabe", "on behalf of Clint"), set observer_label to that author
         (Gabe / Clint) and observee_labels to who is being praised (Jesus / Christina). The reader is not the observer unless they also speak as themselves.
-        Keep joint shout-outs together (Kayla and Nicole praised as a pair = one moment).
-        If the cue clearly praises several different people/groups in turn, you MUST emit one moment per person/group with a verbatim
-        anchor at each pivot — do not collapse them into a single moment whose reason lists multiple names
-        ("shout-out to Luis, Steve, and James" / "multiple shout-outs").
-        Do NOT split every name mention, pronouns, or restating the same people. Prefer under-splitting over over-splitting — except for the delimiter phrases above.
 
         For each moment return:
         - anchor: a VERBATIM contiguous substring copied from that cue's text (#{MIN_ANCHOR_CHARS}+ characters) that starts this moment. Must appear in the cue text (same words/punctuation). Do not rewrite.
         - observer_label: who is giving the observation (author of the shout-out/feedback; often the cue speaker, or the "from"/"on behalf of" person when read aloud)
         - observee_labels: who that moment is about (empty if team/none/unclear)
         - observer_company_teammate_id / observee_company_teammate_ids: roster ids; null/[] if unsure. Never invent ids.
+        - reason: short; if you split, name the pivot and new observee (e.g. "new observee Polly after My next two"); if you kept one moment, say who it is about — not just "praise".
         Prefer precision over recall for ogo_worthy.
         Respond with ONLY a JSON object:
         {"cues":[{"id":"cue-1","moments":[{"ogo_worthy":true,"anchor":"First, for, Kayla and Nicole.","observer_label":"...","observee_labels":["Kayla","Nicole"],"observer_company_teammate_id":123,"observee_company_teammate_ids":[456,789],"reason":"short"}]}]}.

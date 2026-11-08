@@ -101,6 +101,7 @@ module PossibleObservationConsults
             "text" => excerpt,
             "parent_cue_id" => cue[:id].to_s,
             "moment_index" => index + 1,
+            "moments_count" => moments.size,
             "merged" => ActiveModel::Type::Boolean.new.cast(cue[:merged]) || moments.size > 1
           )
 
@@ -108,6 +109,14 @@ module PossibleObservationConsults
             "cue_status" => ogo_worthy ? "ogo_worthy" : "ignore",
             "ogo_worthy" => ogo_worthy,
             "first_pass_reason" => llm["reason"].to_s,
+            "split_source" =>
+              if moments.size > 1
+                "ai_moment"
+              elsif cue[:split_from_cue_id].present?
+                "discourse_marker"
+              end,
+            "moment_index" => moments.size > 1 ? index + 1 : nil,
+            "moments_count" => moments.size > 1 ? moments.size : nil,
             "observer_label" => observer_label,
             "observer_certainty" =>
               if observer_resolution[:company_teammate_id].blank?

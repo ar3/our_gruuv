@@ -136,6 +136,9 @@ RSpec.describe PossibleObservationConsults::ApplyFirstPassResults do
     rows = consult.cue_annotation_rows.values
     expect(rows.count { |row| row[:ogo_worthy] }).to eq(2)
     expect(rows.map { |row| row[:observee_company_teammate_id] }).to contain_exactly(kayla_tm.id, amy_tm.id)
+    expect(rows.map { |row| row[:split_source] }).to all(eq("ai_moment"))
+    expect(rows.map { |row| row[:moments_count] }).to all(eq(2))
+    expect(rows.map { |row| row[:moment_index] }).to contain_exactly(1, 2)
   end
 
   it "replaces invented excerpts with the original cue text" do
