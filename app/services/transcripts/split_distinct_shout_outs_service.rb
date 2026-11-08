@@ -2,16 +2,19 @@
 
 module Transcripts
   # After same-speaker caption merge, split a long turn into distinct shout-out
-  # moments when the speaker clearly pivots ("Couple more… which is Amy").
+  # moments when the speaker clearly pivots to a new person/group.
   # Deterministic — keeps transcript text verbatim; no LLM.
+  #
+  # Split on "who changed" delimiters only. Do not split same-person paragraph
+  # beats ("You bring…", "And besides…") — those have no marker here on purpose.
   class SplitDistinctShoutOutsService
     # Only fire after the turn has already said something (avoid splitting the opener).
     MIN_LEADING_CHARS = 40
-    # "Couple more… Well… which is Amy" is one pivot — keep the earliest marker in a cluster.
-    MARKER_CLUSTER_MS = 120
+    # "Couple more… Well… which is Amy" is one pivot (~46 chars) — keep the earliest marker.
+    # Keep this tight so nearby distinct thank-yous ("Julie's help" then "Sydney Petchel for…") stay separate.
+    MARKER_CLUSTER_CHARS = 50
 
-    MARKERS = [
-      # Count / leftover pivots ("Couple more…", "2 more. Seref…", "One more…")
+    COUNT_PIVOTS = [
       /\b(?:couple|a few|one|two|three|\d+)\s+more\b/i,
       /\bWell,?\s+let me(?:\s+\w+){0,6}\s+go to\b/i,
       /\bLet me(?:\s+\w+){0,4}\s+go to the one\b/i,
@@ -19,37 +22,66 @@ module Transcripts
       /\bMoving on[,.]?\s+(?:to|I)\b/i,
       /\bAlright,?\s+(?:one more|another|a few more)\b/i,
       /\bAll right,?\s+(?:one more|another|a few more)\b/i,
-      # Soft spoken pivots between distinct shout-outs in one long turn.
-      /\bAnd then[,.…\s]+(?:for|I want to shout|shout out|last|I also|I(?:'m| am) wrapping)\b/i,
-      /\bAnd then[,.…\s]+[A-Z][a-zA-Z'-]{1,30}\b/,
+      /\bMy next (?:two|three|\d+)\b/i,
+      /\bFirst,?\s+I will go with\b/i,
+      /\bwhich is [A-Z][a-zA-Z'-]{1,30}\b/
+    ].freeze
+
+    THANK_YOU_PIVOTS = [
+      /\bAlso,?\s+I want to thank\b/i,
       /\bAlso,?\s+for\b/i,
-      /\bI(?:'m| am) wrapping with\b/i,
-      # Full name, then second-person praise ("Sydney Kidd. You have impressed…")
-      /\b[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+)+\.\s+You(?:'ve| have)\b/,
-      # Ordinal / explicit pivot into the next shout-out, feedback, or kudos.
+      /\bFirst and foremost\b/i,
+      /\bOf course,?\s+I have to say\b/i,
+      /\bbut we needed [A-Z][a-zA-Z'-]{1,30}(?:\s+[A-Z][a-zA-Z'-]{1,30})?'s help\b/,
+      # Full name + contribution ("Sydney Petchel for making…")
+      /\b[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+)+\s+for\s+(?:making|creating|helping|owning|driving|jumping)\b/,
+      # Full name, then second-person praise for someone new ("Sydney Kidd. You have impressed…")
+      /\b[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+)+\.\s+You(?:'ve| have)\b/
+    ].freeze
+
+    ORDINAL_PIVOTS = [
       /\b(?:First|Second|Third|Fourth|Fifth|Next|Last)\s+shout[- ]?outs?\b/i,
       /\b(?:First|Second|Third|Fourth|Fifth|Next|Last)\s+(?:one|feedback|kudos)\b/i,
       /\bthis\s+(?:shout[- ]?out|feedback|kudos)\s+is\s+for\b/i,
       /\b(?:first|second|third|fourth|fifth|next|last)\s+one\s+is\s+for\b/i,
-      # Bare spoken ordinals ("First, Luis…", "Second, Steve…") — capital after comma avoids
-      # metaphor asides like "First, you gotta lift…".
+      # Bare spoken ordinals ("First, Luis…") — capital after comma avoids "First, you gotta…"
       /\b(?:First|Second|Third|Fourth|Fifth)\s*,\s+[A-Z]/,
-      /\bMy next (?:two|three|\d+)\b/i,
-      /\bFirst,?\s+I will go with\b/i,
       /\bAnd finally\b/i,
-      /\bFinally,\s+[A-Z]/,
-      # Host reading someone else's shout-out aloud.
+      /\bFinally,\s+[A-Z]/
+    ].freeze
+
+    SOFT_SPOKEN_PIVOTS = [
+      /\bAnd then[,.…\s]+(?:for|I want to shout|shout out|last|I also|I(?:'m| am) wrapping)\b/i,
+      /\bAnd then[,.…\s]+[A-Z][a-zA-Z'-]{1,30}\b/,
+      /\bI(?:'m| am) wrapping with\b/i
+    ].freeze
+
+    READ_ALOUD_PIVOTS = [
       /\bI(?:\s+\w+){0,2}\s+have\s+one\b/i,
-      /\bon behalf of\b/i,
-      # Leave award / agenda and reopen the floor as their own cues.
+      /\bon behalf of\b/i
+    ].freeze
+
+    FLOOR_PIVOTS = [
       /\bOkay,?\s+I think those were the tasks\b/i,
       /\bAll right,?\s+if you have a shout[- ]?out\b/i,
-      /\bif you have a shout[- ]?out,?\s+let me know\b/i,
-      /\bwhich is [A-Z][a-zA-Z'-]{1,30}\b/
+      /\bif you have a shout[- ]?out,?\s+let me know\b/i
     ].freeze
+
+    MARKERS = (
+      COUNT_PIVOTS +
+      THANK_YOU_PIVOTS +
+      ORDINAL_PIVOTS +
+      SOFT_SPOKEN_PIVOTS +
+      READ_ALOUD_PIVOTS +
+      FLOOR_PIVOTS
+    ).freeze
 
     def self.call(cues:)
       new(cues: cues).call
+    end
+
+    def self.split_text(text)
+      new(cues: []).send(:split_text, text)
     end
 
     def initialize(cues:)
@@ -78,10 +110,6 @@ module Transcripts
       expanded.map.with_index(1) do |cue, index|
         cue.merge("id" => "cue-#{index}", "index" => index)
       end
-    end
-
-    def self.split_text(text)
-      new(cues: []).send(:split_text, text)
     end
 
     private
@@ -116,7 +144,7 @@ module Transcripts
       clustered = []
       starts.each do |idx|
         next if idx.zero?
-        next if clustered.any? && (idx - clustered.last) < MARKER_CLUSTER_MS
+        next if clustered.any? && (idx - clustered.last) < MARKER_CLUSTER_CHARS
 
         clustered << idx
       end

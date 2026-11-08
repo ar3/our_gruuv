@@ -15,8 +15,12 @@ module Llm
     # 1.20261107.0 — soft pivots: "And then Natalie", "Also, for…", "2 more", "I'm wrapping with…", "Name. You have…"
     # 1.20261107.1 — bare ordinals "First,/Second,/And finally,", "My next two", "First, I will go with…"
     # 1.20261108.0 — balance: split only on new observee/delimiter; never split same-person paragraph beats
-    PROMPT_VERSION = "1.20261108.0"
-    BATCH_SIZE = 30
+    # 1.20261108.1 — require every cue id in the batch; smaller batches + omit retry (avoid model_omitted dropouts)
+    # 1.20261108.2 — thank-you pivots; who-changed rule; marker rescue when model under-splits
+    PROMPT_VERSION = "1.20261108.2"
+    # Verbose multi-moment JSON burns output tokens; keep batches small so Nova finishes every cue id.
+    BATCH_SIZE = 12
+    RETRY_BATCH_SIZE = 6
     TEXT_LIMIT = 4_000
     MIN_ANCHOR_CHARS = 12
     NOVA_2_LITE_FOUNDATION_SUFFIX = "amazon.nova-2-lite-v1:0"
@@ -58,6 +62,16 @@ module Llm
         results.merge!(run_batch(batch))
       end
 
+      omitted = @cues.select { |cue| results[cue.with_indifferent_access[:id].to_s].blank? }
+      if omitted.any?
+        Rails.logger.warn(
+          "TranscriptCueFirstPass retrying #{omitted.size} omitted cue(s) in batches of #{RETRY_BATCH_SIZE}"
+        )
+        omitted.each_slice(RETRY_BATCH_SIZE) do |batch|
+          results.merge!(run_batch(batch))
+        end
+      end
+
       @cues.each do |cue|
         cue = cue.with_indifferent_access
         id = cue[:id].to_s
@@ -91,52 +105,6 @@ module Llm
         }
       end
 
-      system = <<~SYS
-        You label meeting transcript cues for an observation product (OurGruuv Observations / OGOs).
-        An OGO-worthy moment is celebration (kudos/shout-out) or constructive criticism about a person's work or behavior.
-        Ignore: music/lyrics, screen-share audio, logistics, host transitions, agenda/reminders, party-game invites,
-        values roll-call without praise/critique, pure small talk, and reopening the floor ("if you have a shoutout, let me know" / "you were up first, go ahead").
-
-        STAY FAITHFUL TO THE TRANSCRIPT. Never invent, paraphrase, summarize, or borrow wording from another cue.
-        Default: one moment per cue.
-
-        WHEN TO SPLIT (only these):
-        Split into multiple moments when the speaker clearly starts a separate shout-out/critique about a DIFFERENT person or distinct group,
-        OR when praise/critique ends and the speaker switches to logistics / hosting (emit that tail as its own moment with ogo_worthy:false).
-        Delimiters that usually mean a new moment:
-        - ordinals: "first one is for…", "Second shout-out was for…", "last shout out for…",
-          bare spoken lists "First, Luis…", "Second, Steve…", "And finally, James…", "Finally, …"
-        - batch pivots: "My next two…", "First, I will go with…" (starts the next person after a shared intro)
-        - pivots: "this shout-out/feedback/kudos is for…", "which is Amy…", "couple more" / "2 more" / "a few more", "next"
-        - soft spoken pivots naming a new person/group: "And then Natalie…", "Also, for the marketing team…",
-          "I'm wrapping with Ina…", "Sydney Kidd. You have impressed…" (full name + second-person praise for someone NEW)
-        - read-aloud: "I have one… from Gabe…", "I also have one on behalf of Clint…", "he had one for Christina…"
-        - leave celebration / reopen floor: "Okay, I think those were the tasks…", "All right, if you have a shoutout, let me know…"
-        If several different people/groups are praised in turn, emit one moment per person/group with a verbatim anchor at each pivot —
-        do not collapse them into one moment whose reason lists multiple names ("shout-out to Luis, Steve, and James").
-
-        WHEN NOT TO SPLIT:
-        Do NOT split a single continuous shout-out to the SAME person into paragraph/sentence beats.
-        Keep together: more praise about the same "you", "And besides…", "You bring…", Workiversary closers, restating the same name,
-        joint pairs (Kayla and Nicole as one pair), and pronouns referring to the person already being praised.
-        Sentence breaks and rhetorical flourishes are not new moments.
-
-        Award-winner announcements (e.g. "Kay Shockey won… Congratulations, Kay!") are their own worthy moment — do not merge them
-        with later "I'm going to read for folks" shout-outs about other people.
-        When the mic holder reads a shout-out written by someone else ("from Gabe", "on behalf of Clint"), set observer_label to that author
-        (Gabe / Clint) and observee_labels to who is being praised (Jesus / Christina). The reader is not the observer unless they also speak as themselves.
-
-        For each moment return:
-        - anchor: a VERBATIM contiguous substring copied from that cue's text (#{MIN_ANCHOR_CHARS}+ characters) that starts this moment. Must appear in the cue text (same words/punctuation). Do not rewrite.
-        - observer_label: who is giving the observation (author of the shout-out/feedback; often the cue speaker, or the "from"/"on behalf of" person when read aloud)
-        - observee_labels: who that moment is about (empty if team/none/unclear)
-        - observer_company_teammate_id / observee_company_teammate_ids: roster ids; null/[] if unsure. Never invent ids.
-        - reason: short; if you split, name the pivot and new observee (e.g. "new observee Polly after My next two"); if you kept one moment, say who it is about — not just "praise".
-        Prefer precision over recall for ogo_worthy.
-        Respond with ONLY a JSON object:
-        {"cues":[{"id":"cue-1","moments":[{"ogo_worthy":true,"anchor":"First, for, Kayla and Nicole.","observer_label":"...","observee_labels":["Kayla","Nicole"],"observer_company_teammate_id":123,"observee_company_teammate_ids":[456,789],"reason":"short"}]}]}.
-      SYS
-
       user = <<~USER
         Roster JSON (id + names only):
         #{JSON.pretty_generate(roster_payload)}
@@ -148,7 +116,7 @@ module Llm
       result = Llm::Client.call(
         purpose: "transcript_cue_first_pass",
         model_id: @model_id,
-        system_instructions: system,
+        system_instructions: system_instructions,
         user_prompt: user,
         organization_id: @organization_id,
         triggered_by_teammate_id: @triggered_by_teammate_id,
@@ -160,6 +128,51 @@ module Llm
     rescue StandardError => e
       Rails.logger.error("TranscriptCueFirstPass batch failed: #{e.class} #{e.message}")
       {}
+    end
+
+    def system_instructions
+      <<~SYS
+        You label meeting transcript cues for an observation product (OurGruuv Observations / OGOs).
+        An OGO-worthy moment is celebration (kudos/shout-out) or constructive criticism about a person's work or behavior.
+        Ignore: music/lyrics, screen-share audio, logistics, host transitions, agenda/reminders, party-game invites,
+        values roll-call without praise/critique, pure small talk, product/promo digressions without thanking someone,
+        and reopening the floor ("if you have a shoutout, let me know" / "you were up first, go ahead").
+
+        STAY FAITHFUL TO THE TRANSCRIPT. Never invent, paraphrase, summarize, or borrow wording from another cue.
+        Default: one moment per cue.
+
+        SPLIT RULE (who changed):
+        Emit a new moment only when the thank-you / critique target changes to a DIFFERENT person or distinct group,
+        OR when praise ends and the speaker switches to logistics / hosting (that tail: ogo_worthy:false).
+        Delimiters that usually mean a new target:
+        - thank-you pivots: "Also, I want to thank Josh…", "First and foremost, Celene…", "Of course, I have to say, Steve…",
+          "but we needed Julie's help…", "Sydney Petchel for making…"
+        - ordinals: "First, Luis…", "Second, Steve…", "And finally, James…", "first one is for…", "Second shout-out…"
+        - batch pivots: "My next two…", "First, I will go with…", "couple more" / "2 more", "which is Amy…"
+        - soft pivots naming someone new: "And then Natalie…", "Also, for the marketing team…", "I'm wrapping with Ina…",
+          "Sydney Kidd. You have impressed…"
+        - read-aloud: "I have one… from Gabe…", "on behalf of Clint…"
+        - leave celebration / reopen floor: "Okay, I think those were the tasks…", "All right, if you have a shoutout…"
+        If several different people/groups are thanked in turn, one moment per person/group with a verbatim anchor at each pivot —
+        do not collapse into one reason that lists many names.
+
+        DO NOT SPLIT when the who did not change:
+        Same person continuing ("You bring…", "And besides…", Workiversary closers), joint pairs (Kayla and Nicole together),
+        pronouns for the person already being praised, or rhetorical/sentence breaks inside one thank-you.
+        Keep product/promo explanations attached to the people just thanked — or mark that stretch ogo_worthy:false — not a new person moment.
+
+        Award-winner announcements are their own worthy moment; do not merge with later read-aloud shout-outs about others.
+        When reading someone else's shout-out ("from Gabe", "on behalf of Clint"), observer_label is that author; observee_labels are who is praised.
+
+        For each moment return:
+        - anchor: VERBATIM contiguous substring from that cue (#{MIN_ANCHOR_CHARS}+ chars) that starts this moment. Do not rewrite.
+        - observer_label / observee_labels / observer_company_teammate_id / observee_company_teammate_ids (roster ids only; null/[] if unsure)
+        - reason: ≤12 words. Split: "new observee Celene after First and foremost". One moment: who it is about (not just "praise").
+        Prefer precision over recall for ogo_worthy.
+        CRITICAL: Return exactly one cues[] entry for EVERY cue id in the input. Prefer brief reasons over omitting cues.
+        Respond with ONLY a JSON object:
+        {"cues":[{"id":"cue-1","moments":[{"ogo_worthy":true,"anchor":"First, for, Kayla and Nicole.","observer_label":"...","observee_labels":["Kayla","Nicole"],"observer_company_teammate_id":123,"observee_company_teammate_ids":[456,789],"reason":"short"}]}]}.
+      SYS
     end
 
     def roster_payload
@@ -216,12 +229,20 @@ module Llm
     end
 
     # Ground every moment in the original cue text. Never keep invented wording.
+    # Prefer verified anchors; if the model under-splits or anchors fail, fall back to
+    # deterministic thank-you / ordinal markers when those markers find 2+ segments.
     def bind_moments_to_transcript(cue_text, moments)
       return [] if cue_text.blank?
       return [fallback_moment(cue_text: cue_text, speaker: "", reason: "empty_moments")] if moments.blank?
 
+      marker_segments = Transcripts::SplitDistinctShoutOutsService.split_text(cue_text)
+
       if moments.size == 1
         moment = moments.first
+        if moment["ogo_worthy"] && marker_segments.size >= 2
+          return moments_from_marker_segments(marker_segments, template: moment)
+        end
+
         return [moment.merge("excerpt" => cue_text).except("anchor")]
       end
 
@@ -232,9 +253,7 @@ module Llm
         { moment: moment, index: index }
       end
 
-      # If split anchors can't be verified, try discourse-marker slices from the cue text.
       if located.size < 2
-        marker_segments = Transcripts::SplitDistinctShoutOutsService.split_text(cue_text)
         if marker_segments.size >= 2
           return assign_moments_to_segments(moments, marker_segments)
         end
@@ -255,6 +274,18 @@ module Llm
         excerpt = cue_text[start_idx...end_idx].to_s.strip
         excerpt = cue_text if excerpt.blank?
         row[:moment].merge("excerpt" => excerpt).except("anchor")
+      end
+    end
+
+    # Model returned one worthy moment but markers found multiple thank-you targets.
+    def moments_from_marker_segments(segments, template:)
+      segments.map do |segment|
+        template.merge(
+          "excerpt" => segment,
+          "observee_labels" => [],
+          "observee_company_teammate_ids" => [],
+          "reason" => [template["reason"], "split_by_discourse_marker"].reject(&:blank?).join("; ")
+        ).except("anchor")
       end
     end
 

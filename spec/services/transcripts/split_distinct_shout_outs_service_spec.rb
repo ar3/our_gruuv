@@ -163,6 +163,78 @@ RSpec.describe Transcripts::SplitDistinctShoutOutsService do
     expect(segments[5]).to include("Your chops are stellar")
   end
 
+  it "does not split same-person Workiversary paragraph beats" do
+    text = <<~TEXT.squish
+      It's been really great to have a front row seat to all of the progress that you've driven over the past two years.
+      I can't believe you've been here for two already. You bring so much energy and dedication to everything that you do,
+      and the impact that you've made on the team is beyond amazing. And besides being a great senior product manager, you
+      also bring so much kindness to the way that you work and the care for your teammates. So, we're so lucky to have you
+      on the team, and I can't wait to see what you do in the coming year. So happy Workiversary.
+    TEXT
+
+    expect(described_class.split_text(text).size).to eq(1)
+  end
+
+  it "splits a thank-you pivot monologue into one cue per new observee" do
+    text = <<~TEXT.squish
+      Oh, I did, because I've got so many, oh my gosh. There's so much to be thankful for this past week. But to start,
+      I'm gonna start with the… there's a lot of people, there's a lot of folks I'm gonna go through. PGMs, PSMs, partner
+      services, and especially Nicole, Kayla, and Bella. Why am I thanking that group? They have worked for… quarters, I'd
+      say, for partner services for two quarters, and PGM's close to that as well, compiling data on our existing partners
+      to know who they use and who they recommend, who they prefer, or if they don't recommend anyone for payroll services,
+      operations, LMSs, you name it. And they've gotten a ton of data from that, which has been extremely helpful, and it's
+      also going to be useful For some conversations that Clint's having next week as well, so can't thank you guys enough.
+      I know it wasn't easy to be able to gather all that information and compile it in one spot, so special thanks to
+      Nicolle and Bella, who spent a lot of time on the spreadsheet making that perfect today as well, so thank you guys.
+      Also, I want to thank Josh. and Clint for their FBR conference efforts last week. I don't know if it was talked about
+      last week or not, but they got 15 leads, 6 book demos, multiple deals in the pipeline that they've helped move forward.
+      So, FBR was a huge success, even though it's a really small event. It looks like it's going to be more successful for
+      us, potentially, than IFA, which is our really big event that we have in February. So, awesome job, Josh, and all of
+      your efforts there, and of course, Clint. Then everyone involved in end-of-year specials to improve our new MRR for Q4.
+      We want to make sure we're hitting numbers right, so we all can get our bonuses. And that list of folks that is helping
+      is growing. First and foremost, Celene, for having to create a million email campaigns over the past week, which is no
+      small feat, and we've put a lot of pressure on her to create a lot of different campaigns. And she does it with a smile,
+      she does a great job, she takes all the feedback, she creates stuff. Sending us stuff late night, too, I know she's,
+      West Coast, can't thank you enough, Celene. Really appreciate all the efforts. there. Of course, not just Celene, but
+      we needed Julie's help for creating new plans in the system, which she jumped on. Sydney Petchel for making the changes
+      to account classes that were running the plans for… she did that before she went on PTO last night and jumped in and
+      knocked that out. Can't thank her enough for it. And then, of course, everyone that's involved, from the PGMs, reviewing
+      scripts, figuring out the best ways to push out the specials. I'm very excited for what we're gonna launch, and we have
+      3 really big promotions. Walter knows of one of them, because we did it back in the day, but for State Farm, there's gonna
+      be a special we're rolling out that's 15 months at the price of 12. We're also taking some partners that we know have
+      very low hiring needs, like, Wild Birds Unlimited, for example, purposes, where they tend to have under 5 employees, and
+      over the years, we keep raising our rates, right? But we've identified there's certain brands where they have such low
+      hiring needs, we're offering, Hire and Grow Lite, which is at a discounted rate, so $4.95 for the year for hire, $6.95
+      for the year for Grow. And we're pushing out two specials, well, specials that are in a two-part through the end of the
+      year. One is like a… a… false end that's right before Thanksgiving to try to really drive as much adoption as possible
+      from now until Thanksgiving. And then because of popular demand, and of course, such a great response, we're gonna extend
+      it again right before Christmas so we can get another burst. Then we also have another group that is… Grow for the price
+      of higher. And so those are the three different groups that we're doing. There's a lot of efforts going behind the scenes,
+      and I know even AR3 and Products jumping in to help. Natalie's offered to do some webinars for groups to drive some
+      additional opportunities there, so it is a company effort to be able to drive our sales in Q4, and I can't thank everyone
+      enough for all of your efforts in prioritizing that as well. Of course, I have to say, Steve, he's amazing. promotion so
+      well deserved, like, my gosh, everyone that works with Steve has wonderful experiences, including our partners, so well
+      deserved, Steve. Can't thank you enough for being on the team.
+    TEXT
+
+    segments = described_class.split_text(text)
+    expect(segments.size).to eq(6)
+    expect(segments[0]).to include("Nicole, Kayla, and Bella")
+    expect(segments[0]).not_to include("Also, I want to thank Josh")
+    expect(segments[1]).to include("Also, I want to thank Josh")
+    expect(segments[1]).to include("Clint")
+    expect(segments[1]).not_to include("First and foremost, Celene")
+    expect(segments[2]).to include("First and foremost, Celene")
+    expect(segments[2]).not_to include("but we needed Julie's help")
+    expect(segments[3]).to include("but we needed Julie's help")
+    expect(segments[3]).not_to include("Sydney Petchel for making")
+    expect(segments[4]).to include("Sydney Petchel for making")
+    expect(segments[4]).not_to include("Of course, I have to say, Steve")
+    expect(segments[5]).to include("Of course, I have to say, Steve")
+    # Promo digression stays with Sydney — not its own person cue.
+    expect(segments[4]).to include("State Farm")
+  end
+
   it "splits award, read-aloud shout-outs, and floor reopen into separate cues" do
     text = <<~TEXT.squish
       Kay Shockey! I thought Kayla was gonna win for the third month in a row, and I'm like, maybe I should take you off the
