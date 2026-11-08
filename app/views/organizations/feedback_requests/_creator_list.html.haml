@@ -73,7 +73,7 @@
                   = request.subject_of_feedback_teammate.person.display_name
                   - if request.archived?
                     %span.badge.bg-secondary.ms-2 Archived
-                %td= request.requestor_teammate.person.display_name
+                %td= feedback_request_requestor_display_name(request)
                 %td
                   - rateable = request.feedback_request_questions.first&.rateable
                   - if rateable

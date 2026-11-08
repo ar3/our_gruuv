@@ -73,20 +73,43 @@
       - else
         %span.text-muted Generic
 
--# Skip uses its own POST form; keep it outside this form so nested forms don't submit answers.
-= form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request),
-            method: :post,
-            local: true,
-            html: { id: "feedback-request-answer-form" } do |form|
-  - if flash[:alert]
-    .alert.alert-danger= flash[:alert]
+- consult = @question_clarity_consultation
+- can_consult = policy(@feedback_request).consult_question_clarity?
+- has_completed = consult&.status == 'completed'
+- in_flight = consult&.in_flight?
+- failed = consult&.status == 'failed'
+- clarity_result = consult&.result if consult&.result.is_a?(FeedbackRequestQuestionClarityResult)
+- clarity_open = has_completed || in_flight || failed || params[:fr_question_clarity].present?
+- clarity_wrapper_data = if can_consult
+  - { controller: "fr-question-clarity-consult", fr_question_clarity_consult_open_value: clarity_open, fr_question_clarity_consult_has_completed_value: has_completed }
+- else
+  - {}
 
-  = render "organizations/feedback_requests/answer_question_cards",
+-# Consult controls stay outside the answer form (button_to would nest forms otherwise).
+-# Stimulus wrapper encloses both the show link and per-question suggestion targets.
+.mt-2.mb-3{ data: clarity_wrapper_data }
+  = render "organizations/feedback_requests/question_clarity_consult_controls",
       organization: organization,
       feedback_request: @feedback_request,
-      questions: @questions,
-      observation_by_question_id: @observation_by_question_id,
-      disabled: false
+      consult: consult,
+      return_to: "answer"
+
+  -# Skip uses its own POST form; keep it outside this form so nested forms don't submit answers.
+  = form_with url: submit_answers_organization_feedback_request_path(organization, @feedback_request),
+              method: :post,
+              local: true,
+              html: { id: "feedback-request-answer-form" } do |form|
+    - if flash[:alert]
+      .alert.alert-danger= flash[:alert]
+
+    = render "organizations/feedback_requests/answer_question_cards",
+        organization: organization,
+        feedback_request: @feedback_request,
+        questions: @questions,
+        observation_by_question_id: @observation_by_question_id,
+        disabled: false,
+        clarity_result: (has_completed ? clarity_result : nil),
+        clarity_suggestions_open: clarity_open
 
 - cancel_path = policy(@feedback_request).show? ? organization_feedback_request_path(organization, @feedback_request) : ogos_feedback_requests_organization_company_teammate_path(organization, "me")
 .d-flex.justify-content-between.align-items-start.pt-2.gap-3.flex-wrap

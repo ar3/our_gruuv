@@ -606,6 +606,7 @@ Rails.application.routes.draw do
         get :about_me
         get :complete_picture
         get :internal
+        post :accept_feedback_offer
         get :true_jd_print
         get :permissions
         post :update_permissions
@@ -971,6 +972,12 @@ Rails.application.routes.draw do
         post :notify_respondents
         post :archive
         post :restore
+        post :question_clarity_consult,
+             to: 'feedback_requests/question_clarity_consults#create',
+             as: :question_clarity_consult
+        get :question_clarity_consult_status,
+            to: 'feedback_requests/question_clarity_consults#status',
+            as: :question_clarity_consult_status
       end
     end
     

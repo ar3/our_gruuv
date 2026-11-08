@@ -38,6 +38,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
 
     @notifications_sent = @feedback_request.respondent_notifications_sent
     @notifications_by_teammate_id = @notifications_sent.group_by { |n| n.metadata&.dig("teammate_id")&.to_i }
+    @question_clarity_consultation = @feedback_request.latest_question_clarity_consultation
   end
 
   def new
@@ -557,6 +558,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @assignments = company.assignments.ordered
     @abilities = company.abilities.order(:name)
     @aspirations = company.aspirations.ordered
+    @question_clarity_consultation = @feedback_request.latest_question_clarity_consultation
   end
 
   def load_restricted_answer_page_assigns

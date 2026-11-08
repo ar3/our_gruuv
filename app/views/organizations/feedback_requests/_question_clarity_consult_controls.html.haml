@@ -1,0 +1,48 @@
+- consult = local_assigns[:consult]
+- feedback_request = local_assigns.fetch(:feedback_request)
+- organization = local_assigns.fetch(:organization)
+- return_to = local_assigns.fetch(:return_to, 'show')
+- can_consult = policy(feedback_request).consult_question_clarity?
+- return unless can_consult
+
+- has_completed = consult&.status == 'completed'
+- in_flight = consult&.in_flight?
+- failed = consult&.status == 'failed'
+- run_path = question_clarity_consult_organization_feedback_request_path(organization, feedback_request, return_to: return_to)
+- status_url = question_clarity_consult_status_organization_feedback_request_path(organization, feedback_request)
+
+.mb-2
+  - if has_completed
+    %a.small.text-decoration-none{ href: "#", data: { action: "fr-question-clarity-consult#toggle" } }
+      %i.bi.bi-stars.me-1
+      %span{ data: { fr_question_clarity_consult_target: "linkLabel" } }
+        Show what OG thinks will make the questions a bit more specific / easier to respond to
+  - elsif in_flight
+    %span.small.text-muted
+      %i.bi.bi-stars.me-1
+      Consulting OG…
+  - elsif failed
+    = button_to run_path,
+                method: :post,
+                class: "btn btn-link btn-sm text-decoration-none p-0 align-baseline",
+                form: { class: "d-inline" } do
+      %i.bi.bi-stars.me-1
+      Try Consult OG again
+  - else
+    = button_to run_path,
+                method: :post,
+                class: "btn btn-link btn-sm text-decoration-none p-0 align-baseline",
+                form: { class: "d-inline" } do
+      %i.bi.bi-stars.me-1
+      Consult OG to see if we can make the questions a bit more specific / easier to respond to
+
+- if in_flight
+  = render "shared/og_consultations/status_banner",
+           status_url: status_url,
+           label: "Consult OG",
+           initial_status: consult.status,
+           wrapper_class: "alert alert-secondary mb-3",
+           time_zone: current_person_iana_timezone
+- elsif failed
+  .alert.alert-danger.py-2.small.mb-3
+    Consultation failed#{consult.error_message.present? ? ": #{consult.error_message}" : "."}

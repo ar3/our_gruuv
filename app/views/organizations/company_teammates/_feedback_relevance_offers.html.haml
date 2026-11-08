@@ -1,0 +1,27 @@
+- offers = local_assigns.fetch(:offers)
+- organization = local_assigns.fetch(:organization)
+- teammate = local_assigns.fetch(:teammate)
+- casual_name = local_assigns.fetch(:casual_name)
+- return if offers.blank?
+
+%section#feedback-offers.mb-4{role: "region", "aria-labelledby": "feedback-offers-heading"}
+  .card
+    .card-header
+      %h5.mb-0{ id: "feedback-offers-heading" }
+        %i.bi.bi-chat-heart.me-2
+        Give #{casual_name} relevant feedback
+    .card-body
+      %p.text-muted.small.mb-3
+        These prompts are tailored to how you connect with #{casual_name}. Clicking opens a real feedback request (created by OurGruuv if it does not exist yet).
+      .list-group
+        - offers.each do |offer|
+          .list-group-item.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
+            %div
+              .fw-semibold= offer.label
+              - if offer.description.present?
+                .small.text-muted= offer.description
+            = button_to "Open",
+                        accept_feedback_offer_organization_company_teammate_path(organization, teammate, offer_key: offer.offer_key),
+                        method: :post,
+                        class: "btn btn-sm btn-outline-primary",
+                        form: { class: "mb-0" }

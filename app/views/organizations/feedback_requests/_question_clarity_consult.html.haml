@@ -1,0 +1,35 @@
+- consult = local_assigns[:consult]
+- feedback_request = local_assigns.fetch(:feedback_request)
+- organization = local_assigns.fetch(:organization)
+- questions = local_assigns.fetch(:questions)
+- return_to = local_assigns.fetch(:return_to, 'show')
+- disabled = local_assigns.fetch(:disabled, false)
+- observation_by_question_id = local_assigns.fetch(:observation_by_question_id, {})
+- can_consult = policy(feedback_request).consult_question_clarity?
+
+- has_completed = consult&.status == 'completed'
+- in_flight = consult&.in_flight?
+- failed = consult&.status == 'failed'
+- result = consult&.result if consult&.result.is_a?(FeedbackRequestQuestionClarityResult)
+- open = has_completed || in_flight || failed || params[:fr_question_clarity].present?
+
+- wrapper_data = if can_consult
+  - { controller: "fr-question-clarity-consult", fr_question_clarity_consult_open_value: open, fr_question_clarity_consult_has_completed_value: has_completed }
+- else
+  - {}
+
+.mt-2.mb-3{ data: wrapper_data }
+  = render "organizations/feedback_requests/question_clarity_consult_controls",
+      organization: organization,
+      feedback_request: feedback_request,
+      consult: consult,
+      return_to: return_to
+
+  = render "organizations/feedback_requests/answer_question_cards",
+      organization: organization,
+      feedback_request: feedback_request,
+      questions: questions,
+      observation_by_question_id: observation_by_question_id,
+      disabled: disabled,
+      clarity_result: (has_completed ? result : nil),
+      clarity_suggestions_open: open

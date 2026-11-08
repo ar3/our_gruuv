@@ -65,7 +65,7 @@
               = @feedback_request.subject_of_feedback_teammate.person.display_name
             %p
               %strong Requestor:
-              = @feedback_request.requestor_teammate.person.display_name
+              = feedback_request_requestor_display_name(@feedback_request)
             %p
               %strong Subject Line:
               = @feedback_request.subject_line
@@ -273,10 +273,12 @@
     %small.text-muted Preview of what respondents will see
   .card-body
     - if @questions.any?
-      = render "organizations/feedback_requests/answer_question_cards",
+      = render "organizations/feedback_requests/question_clarity_consult",
           organization: organization,
           feedback_request: @feedback_request,
           questions: @questions,
+          consult: @question_clarity_consultation,
+          return_to: "show",
           observation_by_question_id: {},
           disabled: true
     - else

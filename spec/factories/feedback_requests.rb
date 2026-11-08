@@ -9,8 +9,16 @@ FactoryBot.define do
 
     after(:build) do |feedback_request|
       # Ensure teammates are in the same company
-      feedback_request.requestor_teammate.organization = feedback_request.company
+      if feedback_request.requestor_teammate
+        feedback_request.requestor_teammate.organization = feedback_request.company
+      end
       feedback_request.subject_of_feedback_teammate.organization = feedback_request.company
+    end
+
+    trait :system_generated do
+      requestor_teammate { nil }
+      open_to_anyone { false }
+      system_offer_key { "values" }
     end
 
     trait :archived do

@@ -1,0 +1,18 @@
+- question = local_assigns.fetch(:question)
+- clarity_result = local_assigns[:clarity_result]
+- open = local_assigns.fetch(:open, false)
+- return if clarity_result.blank?
+
+- suggestion = clarity_result.suggestion_for_question(question.id)
+- return if suggestion.blank?
+
+- suggestion = suggestion.stringify_keys
+- suggested_text = suggestion['suggested_question_text'].to_s
+- return if suggested_text.blank?
+
+.mt-2{ class: ("d-none" unless open), data: { fr_question_clarity_consult_target: "suggestion" } }
+  %hr
+  %p.small.fw-semibold.mb-1 OG tries to make it more clear...
+  .markdown-content.small= render_markdown(suggested_text)
+  - if suggestion['rationale'].present?
+    .small.text-muted.mt-1= suggestion['rationale']

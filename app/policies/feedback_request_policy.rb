@@ -101,6 +101,14 @@ class FeedbackRequestPolicy < ApplicationPolicy
     viewing_teammate == record.requestor_teammate
   end
 
+  # Creator (show) or anyone who can answer may run / view question-clarity Consult OG (once per FR).
+  def consult_question_clarity?
+    return false unless viewing_teammate
+    return false if viewing_teammate.terminated?
+    return true if show?
+    answer?
+  end
+
   def view_in_teammate_story?
     return false unless viewing_teammate
     return false if viewing_teammate.terminated?

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_08_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -384,8 +384,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
     t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
-    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying, 'like'::character varying, 'neutral'::character varying, 'prefer_not'::character varying, 'only_if_necessary'::character varying]::text[]))", name: "assignment_survey_responses_personal_alignment_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying::text, 'like'::character varying::text, 'neutral'::character varying::text, 'prefer_not'::character varying::text, 'only_if_necessary'::character varying::text]))", name: "assignment_survey_responses_personal_alignment_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -692,6 +692,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
     t.index ["referable_type", "referable_id"], name: "index_external_references_on_referable"
   end
 
+  create_table "feedback_request_question_clarity_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "idx_on_og_consultation_id_2b7a3561eb", unique: true
+  end
+
   create_table "feedback_request_questions", force: :cascade do |t|
     t.bigint "feedback_request_id", null: false
     t.text "question_text", null: false
@@ -719,13 +728,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
 
   create_table "feedback_requests", force: :cascade do |t|
     t.bigint "company_id", null: false
-    t.bigint "requestor_teammate_id", null: false
+    t.bigint "requestor_teammate_id"
     t.bigint "subject_of_feedback_teammate_id", null: false
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "subject_line"
     t.boolean "open_to_anyone", default: true, null: false
+    t.string "system_offer_key"
+    t.index ["company_id", "subject_of_feedback_teammate_id", "system_offer_key"], name: "index_feedback_requests_on_system_offer_key_unique", unique: true, where: "((system_offer_key IS NOT NULL) AND (deleted_at IS NULL))"
     t.index ["company_id"], name: "index_feedback_requests_on_company_id"
     t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
     t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
@@ -1026,7 +1037,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
     t.jsonb "decision_warnings", default: [], null: false
     t.string "create_key"
     t.index ["decided_by_id"], name: "index_maap_proposals_on_decided_by_id"
-    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying])::text[])))"
+    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('submitted'::character varying)::text])))"
     t.index ["organization_id", "kind", "status"], name: "index_maap_proposals_on_organization_kind_and_status"
     t.index ["organization_id", "status"], name: "index_maap_proposals_on_organization_and_status"
     t.index ["organization_id"], name: "index_maap_proposals_on_organization_id"
@@ -2497,6 +2508,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_02_071036) do
   add_foreign_key "engagement_health_weekly_rollups", "organizations"
   add_foreign_key "engagement_health_weekly_rollups", "teammates"
   add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
+  add_foreign_key "feedback_request_question_clarity_results", "og_consultations"
   add_foreign_key "feedback_request_questions", "feedback_requests"
   add_foreign_key "feedback_request_responders", "feedback_requests"
   add_foreign_key "feedback_request_responders", "teammates"

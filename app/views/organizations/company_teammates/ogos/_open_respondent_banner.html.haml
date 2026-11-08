@@ -8,5 +8,5 @@
         %li
           Feedback on
           %strong= request.subject_of_feedback_teammate.person.display_name
-          from #{request.requestor_teammate.person.display_name}
+          from #{feedback_request_requestor_display_name(request)}
           = link_to "Respond", answer_organization_feedback_request_path(organization, request), class: "btn btn-sm btn-outline-primary ms-2"

@@ -22,7 +22,7 @@
               = teammate_profile_image(subject, size: 32)
               %span= subject.person.display_name
           %td
-            %div= request.requestor_teammate.person.display_name
+            %div= feedback_request_requestor_display_name(request)
             %small.text-muted= format_time_in_user_timezone(request.created_at)
           %td
             %span= request.subject_line.presence || "Untitled request"

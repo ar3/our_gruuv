@@ -29,7 +29,12 @@ module FeedbackRequests
       requestor_same_as_subject = @feedback_request.requestor_teammate_id == @feedback_request.subject_of_feedback_teammate_id
       subject_name = @feedback_request.subject_of_feedback_teammate&.person&.display_name.presence || 'a colleague'
       subject_casual_name = @feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || subject_name
-      requestor_name = @feedback_request.requestor_teammate&.person&.display_name.presence || 'Someone'
+      requestor_name =
+        if @feedback_request.system_generated?
+          'OurGruuv'
+        else
+          @feedback_request.requestor_teammate&.person&.display_name.presence || 'Someone'
+        end
       requestor_slack_user_id = @feedback_request.requestor_teammate&.slack_user_id
       subject_line = @feedback_request.subject_line.presence
 

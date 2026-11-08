@@ -39,7 +39,7 @@
                     Feedback on
                     %strong= request.subject_of_feedback_teammate.person.display_name
                   %small.text-muted
-                    From #{request.requestor_teammate.person.display_name} · #{format_time_in_user_timezone(request.created_at)}
+                    From #{feedback_request_requestor_display_name(request)} · #{format_time_in_user_timezone(request.created_at)}
                 - if completed
                   - if request.archived?
                     %span.badge.bg-secondary Archived

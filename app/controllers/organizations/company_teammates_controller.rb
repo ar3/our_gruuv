@@ -340,6 +340,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       goal.instance_variable_set(:@last_check_in, goal.goal_check_ins.recent.first)
     end
 
+    @feedback_relevance_offers =
+      if current_company_teammate && current_company_teammate.id != @teammate.id
+        FeedbackRequests::RelevanceOffers.call(viewer: current_company_teammate, subject: @teammate)
+      else
+        []
+      end
+
     # URLs for "View all" links on observation sections (observation index with filter)
     casual_name = @teammate.person.casual_name
     internal_return = internal_organization_company_teammate_path(organization, @teammate)
@@ -379,6 +386,29 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Debug mode - gather comprehensive authorization data
     if params[:debug] == 'true'
       gather_debug_data
+    end
+  end
+
+  def accept_feedback_offer
+    authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
+    unless current_company_teammate
+      redirect_to internal_organization_company_teammate_path(organization, @teammate),
+                  alert: 'You need an active teammate record to give feedback.'
+      return
+    end
+
+    result = FeedbackRequests::AcceptSystemOffer.call(
+      organization: organization,
+      subject: @teammate,
+      viewer: current_company_teammate,
+      offer_key: params[:offer_key]
+    )
+
+    if result.ok?
+      redirect_to answer_organization_feedback_request_path(organization, result.feedback_request)
+    else
+      redirect_to internal_organization_company_teammate_path(organization, @teammate),
+                  alert: result.error
     end
   end
 

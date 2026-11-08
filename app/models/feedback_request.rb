@@ -2,21 +2,38 @@ class FeedbackRequest < ApplicationRecord
   include Notifiable
 
   belongs_to :company, class_name: 'Organization'
-  belongs_to :requestor_teammate, class_name: 'CompanyTeammate'
+  belongs_to :requestor_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :subject_of_feedback_teammate, class_name: 'CompanyTeammate'
   has_many :feedback_request_questions, dependent: :destroy
   has_many :feedback_request_responders, dependent: :destroy
   has_many :responders, through: :feedback_request_responders, source: :company_teammate
   has_many :observations, through: :feedback_request_questions
+  has_many :og_consultations, as: :subject, dependent: :destroy
 
   # Soft delete scopes (NO default_scope)
   scope :not_deleted, -> { where(deleted_at: nil) }
   scope :archived_soft_delete, -> { where.not(deleted_at: nil) }
   scope :open, -> { not_deleted }
+  scope :system_generated, -> { where(requestor_teammate_id: nil) }
 
   # Validations
-  validates :company, :requestor_teammate_id, :subject_of_feedback_teammate_id, :subject_line, presence: true
+  validates :company, :subject_of_feedback_teammate_id, :subject_line, presence: true
   validates :open_to_anyone, inclusion: { in: [true, false] }
+  validates :system_offer_key, uniqueness: {
+    scope: [:company_id, :subject_of_feedback_teammate_id],
+    conditions: -> { where(deleted_at: nil) },
+    allow_nil: true
+  }
+  validate :system_offer_key_requires_nil_requestor
+
+  # Nil requestor means OurGruuv created this request (relevance offers on /internal).
+  def system_generated?
+    requestor_teammate_id.nil?
+  end
+
+  def latest_question_clarity_consultation
+    og_consultations.for_kind(OgConsultation::KIND_FEEDBACK_REQUEST_QUESTION_CLARITY).latest_first.first
+  end
 
   attribute :open_to_anyone, :boolean, default: true
 
@@ -149,5 +166,14 @@ class FeedbackRequest < ApplicationRecord
     slug_parts << subject_line if subject_line.present?
     slug = slug_parts.map { |part| part.to_s.parameterize }.reject(&:blank?).join('-')
     slug.present? ? "#{id}-#{slug}" : id.to_s
+  end
+
+  private
+
+  def system_offer_key_requires_nil_requestor
+    return if system_offer_key.blank?
+    return if requestor_teammate_id.nil?
+
+    errors.add(:system_offer_key, 'can only be set on system-generated feedback requests')
   end
 end

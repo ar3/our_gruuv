@@ -48,6 +48,12 @@ module Organizations
       feedback_request.open_to_anyone? ? 'Open to anyone with the link' : 'Named respondents only'
     end
 
+    def feedback_request_requestor_display_name(feedback_request)
+      return 'OurGruuv' if feedback_request.system_generated?
+
+      feedback_request.requestor_teammate&.person&.display_name.presence || 'Someone'
+    end
+
     # Explains why the request is in its current derived state (invalid/ready/active/archived).
     # Ready vs Active is about Slack nudges, not whether the answer link works.
     def feedback_request_state_tooltip(feedback_request)

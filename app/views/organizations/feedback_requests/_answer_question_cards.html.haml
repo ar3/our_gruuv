@@ -1,7 +1,10 @@
 -# Shared question cards for answer flow and show-page preview.
--# locals: organization, feedback_request, questions, observation_by_question_id, disabled: false
+-# locals: organization, feedback_request, questions, observation_by_question_id, disabled: false,
+-#         clarity_result (optional FeedbackRequestQuestionClarityResult), clarity_suggestions_open (bool)
 - disabled = local_assigns.fetch(:disabled, false)
 - observation_by_question_id = local_assigns[:observation_by_question_id] || {}
+- clarity_result = local_assigns[:clarity_result]
+- clarity_suggestions_open = local_assigns.fetch(:clarity_suggestions_open, false)
 - subject_casual_name = feedback_request.subject_of_feedback_teammate&.person&.casual_name.presence || "the subject"
 - manager_casual_name = feedback_request.subject_of_feedback_teammate&.current_manager&.casual_name.presence
 - rateable_types = %w[Assignment Ability Aspiration]
@@ -32,6 +35,10 @@
                 = object_name
             %hr
             .markdown-content.small= render_markdown(question.question_text)
+            = render "organizations/feedback_requests/question_clarity_suggestion",
+                question: question,
+                clarity_result: clarity_result,
+                open: clarity_suggestions_open
           .col-12.col-md-8.p-3
             .text-muted This story is a...
             .mt-2
@@ -98,6 +105,10 @@
       .card-body
         %h6.mb-2 Question (no rating)
         .markdown-content.mb-3= render_markdown(question.question_text)
+        = render "organizations/feedback_requests/question_clarity_suggestion",
+            question: question,
+            clarity_result: clarity_result,
+            open: clarity_suggestions_open
         = label_tag "answers_#{question.id}_story#{'_preview' if disabled}", "Your story(ies)", class: "form-label"
         = text_area_tag "answers[#{question.id}][story]",
             story_value,

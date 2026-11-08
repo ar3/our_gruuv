@@ -173,6 +173,29 @@ module OgConsultationSpecHelpers
     consultation
   end
 
+  def create_feedback_request_question_clarity_consultation!(feedback_request:, status: 'pending', payload: {}, output_text: nil, **attrs)
+    consultation = OgConsultation.create!(
+      {
+        kind: OgConsultation::KIND_FEEDBACK_REQUEST_QUESTION_CLARITY,
+        subject: feedback_request,
+        organization_id: feedback_request.company_id,
+        status: status,
+        billable: true,
+        prompt_version: FeedbackRequests::QuestionClarityPrompts::PROMPT_VERSION,
+        units_total: 1,
+        units_completed: status == 'completed' ? 1 : 0,
+        completed_at: (status == 'completed' ? Time.current : nil)
+      }.merge(attrs.slice(*CONSULTATION_ATTRS))
+    )
+    result = FeedbackRequestQuestionClarityResult.create!(
+      og_consultation: consultation,
+      payload: payload,
+      output_text: output_text
+    )
+    consultation.update!(result: result)
+    consultation
+  end
+
   def create_check_in_period_brief_consultation!(check_in:, status: 'pending', payload: {}, output_text: nil, **attrs)
     organization_id = check_in.company_teammate.organization_id
     consultation = OgConsultation.create!(

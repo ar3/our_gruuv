@@ -144,6 +144,15 @@ module OgConsultations
         runner_class_name: 'CheckIns::PeriodBriefRunner',
         llm_purpose: 'check_in_period_brief',
         billable: true
+      ),
+      OgConsultation::KIND_FEEDBACK_REQUEST_QUESTION_CLARITY => Entry.new(
+        kind: OgConsultation::KIND_FEEDBACK_REQUEST_QUESTION_CLARITY,
+        label: 'Feedback request question clarity',
+        result_class_name: 'FeedbackRequestQuestionClarityResult',
+        job_class_name: 'FeedbackRequestQuestionClarityJob',
+        runner_class_name: 'FeedbackRequests::QuestionClarityRunner',
+        llm_purpose: 'feedback_request_question_clarity',
+        billable: true
       )
     }.freeze
 
