@@ -1,0 +1,19 @@
+- content_for :title, "Sign in with phone"
+
+.container.py-5
+  .row.justify-content-center
+    .col-md-6
+      .card.shadow
+        .card-header
+          %h3.mb-0
+            %i.bi.bi-telephone.me-2
+            Sign in with phone
+        .card-body
+          %p.text-muted We'll text you a one-time code. If we already know this number, signing in verifies it.
+          = form_with url: auth_phone_login_path, method: :post, local: true do |f|
+            .mb-3
+              = label_tag :phone, "Mobile number", class: "form-label"
+              = telephone_field_tag :phone, params[:phone], class: "form-control form-control-lg", required: true, autocomplete: "tel", placeholder: "+1 555 555 0100"
+            = submit_tag "Text me a code", class: "btn btn-primary"
+          .mt-3
+            = link_to "Back to sign in", login_path, class: "small text-muted"

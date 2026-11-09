@@ -22,10 +22,7 @@
         %span.text-muted
           %i.bi.bi-hash
           = moment.channel_name
-      - elsif moment.private_or_dm?
-        %span.badge.text-bg-secondary Private / DM
-      - else
-        %span.badge.text-bg-light.border Public channel
+      = slack_pogo_visibility_indicator(moment, subject: teammate, viewer: current_company_teammate)
       %span.text-muted= "#{format('%.0f%%', moment.confidence * 100)} confident"
       - if suggestion_chip.present?
         %span.badge.text-bg-light.border.text-muted.d-inline-flex.align-items-center.gap-1

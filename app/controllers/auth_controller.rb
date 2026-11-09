@@ -8,6 +8,8 @@ class AuthController < ApplicationController
       redirect_to(
         return_path || helpers.preferred_start_page_path(current_company_teammate.organization, current_company_teammate)
       )
+    elsif current_person
+      redirect_to me_path
     end
   end
   

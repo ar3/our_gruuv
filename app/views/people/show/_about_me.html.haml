@@ -57,7 +57,13 @@
                 .mb-3
                   = form.label :unique_textable_phone_number, "Phone Number", class: "form-label"
                   = form.telephone_field :unique_textable_phone_number, class: "form-control", placeholder: "+1234567890"
-                  %small.form-text.text-muted Optional - for SMS notifications (future feature)
+                  %small.form-text.text-muted
+                    Optional. Used for SMS digests and phone sign-in.
+                    - if @person.phone_verified?
+                      %span.text-success Verified #{format_time_in_user_timezone(@person.phone_verified_at)}.
+                    - elsif @person.unique_textable_phone_number.present?
+                      %span.text-warning Not verified yet — sign in with phone to verify.
+                    Changing your number clears verification until you complete phone sign-in again.
               
                 .mb-3
                   = form.label :timezone, "Timezone", class: "form-label"

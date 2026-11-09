@@ -29,6 +29,16 @@ Rails.application.routes.draw do
 
   # Login page
   get '/login', to: 'auth#login', as: :login
+
+  # Phone OTP login / registration (NotificationAPI SMS)
+  resource :auth_phone_login, only: %i[new create], controller: 'auth/phone_logins', path: 'login/phone' do
+    get :verify, action: :verify_form, as: :verify
+    post :verify
+  end
+  resource :auth_phone_registration, only: %i[new create], controller: 'auth/phone_registrations', path: 'login/phone/register'
+
+  # Person-scoped home (allowed without a CompanyTeammate)
+  get '/me', to: 'me#show', as: :me
     
   
   # Organization switcher

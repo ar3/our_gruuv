@@ -1,0 +1,21 @@
+- content_for :title, "Enter code"
+
+.container.py-5
+  .row.justify-content-center
+    .col-md-6
+      .card.shadow
+        .card-header
+          %h3.mb-0 Enter your code
+        .card-body
+          %p.text-muted
+            Sent to
+            %strong= @phone
+          = form_with url: verify_auth_phone_login_path, method: :post, local: true do |f|
+            = hidden_field_tag :phone, @phone
+            .mb-3
+              = label_tag :code, "One-time code", class: "form-label"
+              = text_field_tag :code, nil, class: "form-control form-control-lg", required: true, autocomplete: "one-time-code", inputmode: "numeric", maxlength: 6
+            = submit_tag "Verify and sign in", class: "btn btn-primary"
+          .mt-3.d-flex.justify-content-between
+            = link_to "Use a different number", new_auth_phone_login_path, class: "small text-muted"
+            = button_to "Resend code", auth_phone_login_path, method: :post, params: { phone: @phone }, class: "btn btn-link btn-sm p-0"

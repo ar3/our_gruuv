@@ -22,7 +22,9 @@ class Person < ApplicationRecord
 
   # Callbacks
   before_validation :normalize_email
+  before_validation :normalize_phone_number_format
   before_save :normalize_phone_number
+  before_save :clear_phone_verified_at_if_phone_changed
 
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
@@ -86,6 +88,31 @@ class Person < ApplicationRecord
   def archived_email_replacement
     local = email.to_s.split('@').first.presence || 'person'
     "#{local}-#{id}@ourgruuv.archived"
+  end
+
+  def phone_verified?
+    unique_textable_phone_number.present? && phone_verified_at.present?
+  end
+
+  def mark_phone_verified!
+    normalized = PhoneNumberNormalizer.call(unique_textable_phone_number)
+    if normalized.present? && normalized != unique_textable_phone_number
+      # Canonicalize legacy formats without the "phone changed → clear verification" callback.
+      update_columns(
+        unique_textable_phone_number: normalized,
+        phone_verified_at: Time.current,
+        updated_at: Time.current
+      )
+    else
+      update!(phone_verified_at: Time.current)
+    end
+  end
+
+  def self.find_by_textable_phone(phone)
+    candidates = PhoneNumberNormalizer.lookup_candidates(phone)
+    return nil if candidates.empty?
+
+    find_by(unique_textable_phone_number: candidates)
   end
 
   # Instance methods
@@ -447,6 +474,19 @@ class Person < ApplicationRecord
 
   def normalize_phone_number
     self.unique_textable_phone_number = nil if unique_textable_phone_number.blank?
+  end
+
+  def normalize_phone_number_format
+    return if unique_textable_phone_number.blank?
+
+    self.unique_textable_phone_number = PhoneNumberNormalizer.call(unique_textable_phone_number)
+  end
+
+  def clear_phone_verified_at_if_phone_changed
+    return if new_record?
+    return unless will_save_change_to_unique_textable_phone_number?
+
+    self.phone_verified_at = nil
   end
 
   def ensure_valid_timezone

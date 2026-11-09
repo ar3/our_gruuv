@@ -25,6 +25,7 @@ class ApplicationController < ActionController::Base
   helper_method :current_organization
   helper_method :impersonating?
   helper_method :authenticated?
+  helper_method :person_only_session?
   helper_method :impersonating_teammate
   helper_method :recent_page_visits
   helper_method :current_user_preferences
@@ -145,6 +146,31 @@ class ApplicationController < ActionController::Base
     unless current_company_teammate
       redirect_unauthenticated_to_login!
     end
+  end
+
+  # Allows a Person session without a CompanyTeammate (phone-only /me).
+  # Do not use this on org-namespaced controllers.
+  def authenticate_person_only!
+    unless current_person
+      redirect_unauthenticated_to_login!
+    end
+  end
+
+  # After phone OTP (or similar): set person session; attach a teammate session only if one exists.
+  # Does not create OurGruuv Demo teammates.
+  def establish_person_session!(person)
+    raise ArgumentError, 'person required' if person.blank?
+
+    session[:current_person_id] = person.id
+    teammate = person.active_teammates.first
+    if teammate
+      session[:current_company_teammate_id] = teammate.id
+    else
+      session.delete(:current_company_teammate_id)
+    end
+    remove_instance_variable(:@current_company_teammate) if defined?(@current_company_teammate)
+    remove_instance_variable(:@current_person) if defined?(@current_person)
+    remove_instance_variable(:@current_organization) if defined?(@current_organization)
   end
 
   # Store the intended destination, then send unauthenticated visitors to /login.
@@ -279,11 +305,16 @@ class ApplicationController < ActionController::Base
     @current_company_teammate
   end
 
-  # Helper method that delegates to current_company_teammate.person for backward compatibility
+  # Person from teammate session, or person-only session (phone login without a teammate).
   def current_person
     return @current_person if defined?(@current_person)
 
     @current_person = current_company_teammate&.person
+    if @current_person.nil? && session[:current_person_id].present?
+      @current_person = Person.find_by(id: session[:current_person_id])
+      session.delete(:current_person_id) if @current_person.nil?
+    end
+    @current_person
   end
 
   # Helper method that delegates to current_company_teammate.organization
@@ -347,6 +378,10 @@ class ApplicationController < ActionController::Base
 
   def authenticated?
     current_company_teammate.present?
+  end
+
+  def person_only_session?
+    current_person.present? && current_company_teammate.nil?
   end
 
   def impersonating_teammate

@@ -1,0 +1,76 @@
+- content_for :title, "Me"
+
+.container.py-4
+  .d-flex.justify-content-between.align-items-start.mb-4.flex-wrap.gap-2
+    %div
+      %h1.mb-1 Me
+      %p.text-muted.mb-0= @person.display_name
+    - if current_company_teammate
+      = link_to "Back to #{current_organization&.name || 'org'}", root_path, class: "btn btn-outline-secondary btn-sm"
+    - else
+      = button_to "Sign out", logout_path, method: :delete, class: "btn btn-outline-secondary btn-sm"
+
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Phone
+    .card-body
+      - if @person.unique_textable_phone_number.present?
+        %p.mb-1
+          %strong= @person.unique_textable_phone_number
+          - if @person.phone_verified?
+            %span.badge.bg-success.ms-2 Verified
+          - else
+            %span.badge.bg-warning.text-dark.ms-2 Not verified
+        - unless @person.phone_verified?
+          %p.small.text-muted.mb-0
+            Sign in with phone and enter the code to verify.
+            = link_to "Verify now", new_auth_phone_login_path, class: "ms-1"
+        - if current_company_teammate
+          %p.small.text-muted.mt-2.mb-0
+            To set or update your number, use
+            = link_to "your profile", organization_company_teammate_path(current_organization, current_company_teammate)
+            \. Changing it requires a new verification.
+      - else
+        %p.text-muted.mb-2 No phone on file.
+        - if current_company_teammate
+          = link_to "Add a phone on your profile", organization_company_teammate_path(current_organization, current_company_teammate), class: "btn btn-sm btn-outline-primary"
+        - else
+          %p.small.text-muted.mb-0
+            Use
+            = link_to "phone sign-in", new_auth_phone_login_path
+            with a new number to attach one, or
+            = link_to "Google", login_path
+            if you already have an account.
+
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Organizations / teammates
+    .card-body
+      - if @teammates.any?
+        %ul.list-unstyled.mb-0
+          - @teammates.each do |tm|
+            %li.mb-2
+              - if tm.terminated?
+                %span.text-muted= tm.organization.name
+                %span.badge.bg-secondary.ms-1 Ended
+              - else
+                = link_to tm.organization.name, organization_company_teammate_path(tm.organization, tm)
+      - else
+        %p.text-muted.mb-0 You don’t have any organization teammate records yet.
+
+  .card.mb-4
+    .card-header
+      %h5.mb-0 OGOs you’ve given outside your teammate orgs
+    .card-body
+      - if @ogos_given_outside_teammate_orgs.any?
+        %ul.list-unstyled.mb-0
+          - @ogos_given_outside_teammate_orgs.each do |ogo|
+            %li.mb-2
+              %span.text-muted.small= ogo.company&.name
+              ·
+              = truncate(ogo.story.to_s, length: 120)
+              - if ogo.published_at
+                %span.text-muted.small
+                  · #{format_time_in_user_timezone(ogo.published_at)}
+      - else
+        %p.text-muted.mb-0 None yet. Feedback you give as a guest in orgs where you’re not a teammate will show up here.

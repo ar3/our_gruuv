@@ -1,0 +1,35 @@
+- content_for :title, "Create your account"
+
+.container.py-5
+  .row.justify-content-center
+    .col-md-6
+      .card.shadow
+        .card-header
+          %h3.mb-0 Create your OurGruuv account
+        .card-body
+          %p.text-muted
+            Phone
+            %strong= @phone
+            is verified. We need your name and email to finish.
+          - if @existing_email
+            .alert.alert-warning
+              That email is already an OurGruuv account.
+              = link_to "Sign in with Google", login_path, class: "alert-link"
+              then add this phone on your profile (About me). After that, phone sign-in will work.
+          = form_with model: @person, url: auth_phone_registration_path, method: :post, local: true, scope: :person do |f|
+            .mb-3
+              = f.label :first_name, class: "form-label"
+              = f.text_field :first_name, class: "form-control", required: true
+            .mb-3
+              = f.label :last_name, class: "form-label"
+              = f.text_field :last_name, class: "form-control"
+            .mb-3
+              = f.label :email, class: "form-label"
+              = f.email_field :email, class: "form-control", required: true
+            - if @person.errors.any?
+              .alert.alert-danger.small
+                = @person.errors.full_messages.to_sentence
+            = f.submit "Create account", class: "btn btn-primary"
+          .mt-3
+            %p.small.text-muted.mb-1 Think you already have an account?
+            = link_to "Sign in with Google instead", login_path, class: "small"
