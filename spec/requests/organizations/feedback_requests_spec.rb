@@ -217,7 +217,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
 
     it 'shows share link and suggested message for open permalink requests' do
       create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
-      feedback_request.update!(open_to_anyone: true)
+      feedback_request.update!(audience: :organization)
       sign_in_as_teammate_for_request(requestor_person, company)
 
       get organization_feedback_request_path(company, feedback_request)
@@ -464,7 +464,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
     end
 
     it 'shows a related-OGOs page for non-respondents when request is respondents-only' do
-      feedback_request.update!(open_to_anyone: false)
+      feedback_request.update!(audience: :recipients_only)
       other_person = create(:person)
       create(:company_teammate, person: other_person, organization: company)
       sign_in_as_teammate_for_request(other_person, company)
@@ -477,9 +477,9 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       expect(response.body).not_to include("Save and I'm Done!")
     end
 
-    it 'allows any company teammate to answer when open_to_anyone' do
+    it 'allows any company teammate to answer when audience is organization' do
       feedback_request.feedback_request_responders.destroy_all
-      feedback_request.update!(open_to_anyone: true)
+      feedback_request.update!(audience: :organization)
       other_person = create(:person)
       create(:company_teammate, person: other_person, organization: company)
       sign_in_as_teammate_for_request(other_person, company)
@@ -886,7 +886,7 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
       other_person = create(:person)
       other_teammate = create(:company_teammate, person: other_person, organization: company)
       feedback_request.feedback_request_responders.destroy_all
-      feedback_request.update!(open_to_anyone: true)
+      feedback_request.update!(audience: :organization)
       sign_in_as_teammate_for_request(other_person, company)
 
       question = feedback_request.feedback_request_questions.first

@@ -29,7 +29,7 @@
     .col-12
       = render "nudge_to_notify_respondents"
 
-- if policy(@feedback_request).update? && @feedback_request.open_to_anyone? && !@feedback_request.invalid? && !@feedback_request.archived?
+- if policy(@feedback_request).update? && @feedback_request.open_to_organization_teammates? && !@feedback_request.invalid? && !@feedback_request.archived?
   .card.mb-4{ role: "region", "aria-labelledby": "share-link" }
     .card-header
       %h5.mb-0{ id: "share-link" }
@@ -142,7 +142,7 @@
 .card.mb-3
   .card-header.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
     %h5.mb-0
-      - if @feedback_request.open_to_anyone?
+      - if @feedback_request.open_to_organization_teammates?
         Named responders
       - else
         Responders
@@ -154,9 +154,9 @@
         %i.bi.bi-bell.me-1
         Nudge all
   .card-body
-    - if !@feedback_request.open_to_anyone? && @responders.empty?
+    - if @feedback_request.recipients_only? && @responders.empty?
       %p.text-muted.mb-0 No named responders yet — required while this request is not open to anyone with the link.
-    - elsif @feedback_request.open_to_anyone? && @responders.empty?
+    - elsif @feedback_request.open_to_organization_teammates? && @responders.empty?
       %p.text-muted.mb-0
         Open to anyone with the link. Named respondents are optional for Slack nudges and inbox.
     - elsif @responders.any?

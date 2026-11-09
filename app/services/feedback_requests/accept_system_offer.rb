@@ -72,7 +72,7 @@ module FeedbackRequests
         requestor_teammate: nil,
         subject_of_feedback_teammate: @subject,
         subject_line: subject_line_for(offer),
-        open_to_anyone: false,
+        audience: :recipients_only,
         system_offer_key: offer.offer_key
       )
       fr.save!

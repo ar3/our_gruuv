@@ -4,7 +4,7 @@ FactoryBot.define do
     association :requestor_teammate, factory: [:company_teammate]
     association :subject_of_feedback_teammate, factory: [:company_teammate]
     subject_line { "Feedback request #{rand(1000)}" }
-    open_to_anyone { true }
+    audience { :organization }
     deleted_at { nil }
 
     after(:build) do |feedback_request|
@@ -17,7 +17,7 @@ FactoryBot.define do
 
     trait :system_generated do
       requestor_teammate { nil }
-      open_to_anyone { false }
+      audience { :recipients_only }
       system_offer_key { "values" }
     end
 
@@ -26,7 +26,7 @@ FactoryBot.define do
     end
 
     trait :respondents_only do
-      open_to_anyone { false }
+      audience { :recipients_only }
     end
 
     trait :ready do
@@ -37,7 +37,7 @@ FactoryBot.define do
     end
 
     trait :ready_respondents_only do
-      open_to_anyone { false }
+      audience { :recipients_only }
       after(:create) do |feedback_request|
         create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Test question?', position: 1)
         responder = create(:company_teammate, organization: feedback_request.company)
@@ -46,7 +46,7 @@ FactoryBot.define do
     end
 
     trait :ready_open_link do
-      open_to_anyone { true }
+      audience { :organization }
       after(:create) do |feedback_request|
         create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Test question?', position: 1)
       end

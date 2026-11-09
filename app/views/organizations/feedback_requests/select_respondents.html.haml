@@ -35,7 +35,7 @@
         = hidden_field_tag "open_to_anyone", "0"
         = check_box_tag "open_to_anyone",
           "1",
-          @feedback_request.open_to_anyone?,
+          @feedback_request.open_to_organization_teammates?,
           class: "form-check-input",
           id: "open_to_anyone"
         = label_tag "open_to_anyone", class: "form-check-label" do

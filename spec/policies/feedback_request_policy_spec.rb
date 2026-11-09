@@ -238,21 +238,21 @@ RSpec.describe FeedbackRequestPolicy, type: :policy do
       expect(subject).not_to permit(pundit_user_subject, feedback_request)
     end
 
-    it "denies other users from answering when request is respondents-only" do
-      feedback_request.update!(open_to_anyone: false)
+    it "denies other users from answering when request is recipients_only" do
+      feedback_request.update!(audience: :recipients_only)
       create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
       feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
       expect(subject).not_to permit(pundit_user_other, feedback_request.reload)
     end
 
-    it "allows any company teammate when open_to_anyone and request is answerable" do
+    it "allows any company teammate when audience is organization and request is answerable" do
       create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
       expect(subject).to permit(pundit_user_other, feedback_request.reload)
       expect(subject).to permit(pundit_user_requestor, feedback_request)
       expect(subject).to permit(pundit_user_subject, feedback_request)
     end
 
-    it "allows any company teammate when open_to_anyone even if named responders exist" do
+    it "allows any company teammate when audience is organization even if named responders exist" do
       create(:feedback_request_question, feedback_request: feedback_request, question_text: 'Q?', position: 1)
       feedback_request.feedback_request_responders.create!(teammate: responder_teammate)
       expect(subject).to permit(pundit_user_other, feedback_request.reload)

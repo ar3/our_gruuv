@@ -80,7 +80,7 @@ class FeedbackRequestPolicy < ApplicationPolicy
     return false unless record.answerable?
     return false unless viewing_teammate.organization_id == record.company_id
 
-    return true if record.open_to_anyone?
+    return true if record.open_to_organization_teammates?
     record.responders.include?(viewing_teammate)
   end
 

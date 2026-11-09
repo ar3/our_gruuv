@@ -83,7 +83,8 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
 
       expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
       expect(feedback_request.responders.reload).to contain_exactly(responder_teammate, other_responder_teammate)
-      expect(feedback_request.reload.open_to_anyone).to be true
+      expect(feedback_request.reload).to be_organization
+      expect(feedback_request.open_to_anyone).to be true
       expect(feedback_request.ready?).to be true
     end
 
@@ -92,7 +93,8 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
             params: { open_to_anyone: '1', respondent_ids: [] }
 
       expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
-      expect(feedback_request.reload.open_to_anyone).to be true
+      expect(feedback_request.reload).to be_organization
+      expect(feedback_request.open_to_anyone).to be true
       expect(feedback_request.responders).to be_empty
       expect(feedback_request).to be_ready
     end
@@ -104,7 +106,8 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
             params: { open_to_anyone: '1', respondent_ids: [responder_teammate.id] }
 
       expect(feedback_request.responders.reload).to contain_exactly(responder_teammate)
-      expect(feedback_request.reload.open_to_anyone).to be true
+      expect(feedback_request.reload).to be_organization
+      expect(feedback_request.open_to_anyone).to be true
     end
 
     it 'requires named respondents when closed' do
@@ -119,7 +122,8 @@ RSpec.describe 'Organizations::FeedbackRequests::SelectRespondents', type: :requ
             params: { open_to_anyone: '0', respondent_ids: [responder_teammate.id] }
 
       expect(response).to redirect_to(organization_feedback_request_path(company, feedback_request))
-      expect(feedback_request.reload.open_to_anyone).to be false
+      expect(feedback_request.reload).to be_recipients_only
+      expect(feedback_request.open_to_anyone).to be false
       expect(feedback_request.responders).to contain_exactly(responder_teammate)
       expect(feedback_request).to be_ready
     end

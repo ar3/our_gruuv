@@ -16,6 +16,15 @@ class FeedbackRequest < ApplicationRecord
   scope :open, -> { not_deleted }
   scope :system_generated, -> { where(requestor_teammate_id: nil) }
 
+  # recipients_only = named responders; organization = any org teammate;
+  # open_to_public (DB: "public") = shareable outside the org (public URL later).
+  # Key can't be `public` — that method name is reserved by Active Record.
+  enum :audience, {
+    recipients_only: 'recipients_only',
+    organization: 'organization',
+    open_to_public: 'public'
+  }, validate: true
+
   # Validations
   validates :company, :subject_of_feedback_teammate_id, :subject_line, presence: true
   validates :open_to_anyone, inclusion: { in: [true, false] }
@@ -26,6 +35,10 @@ class FeedbackRequest < ApplicationRecord
   }
   validate :system_offer_key_requires_nil_requestor
 
+  attribute :open_to_anyone, :boolean, default: true
+
+  before_validation :sync_audience_open_to_anyone_dual_write
+
   # Nil requestor means OurGruuv created this request (relevance offers on /internal).
   def system_generated?
     requestor_teammate_id.nil?
@@ -34,8 +47,6 @@ class FeedbackRequest < ApplicationRecord
   def latest_question_clarity_consultation
     og_consultations.for_kind(OgConsultation::KIND_FEEDBACK_REQUEST_QUESTION_CLARITY).latest_first.first
   end
-
-  attribute :open_to_anyone, :boolean, default: true
 
   # Soft delete methods
   def soft_delete!
@@ -50,9 +61,15 @@ class FeedbackRequest < ApplicationRecord
     !archived? && deleted_at.nil?
   end
 
+  # Org answer path: any company teammate may answer (named list optional).
+  # Includes open_to_public — org teammates still answer on the org path.
+  def open_to_organization_teammates?
+    organization? || open_to_public?
+  end
+
   # Respondent-only requests need at least one named person who can answer.
   def requires_named_responders?
-    !open_to_anyone?
+    recipients_only?
   end
 
   # Check if any responders have answered (created observations)
@@ -169,6 +186,21 @@ class FeedbackRequest < ApplicationRecord
   end
 
   private
+
+  # Keep audience and open_to_anyone aligned while both columns exist.
+  # Prefer audience when it was assigned; otherwise derive audience from the boolean
+  # (supports legacy writers during the expand window).
+  def sync_audience_open_to_anyone_dual_write
+    if will_save_change_to_audience?
+      self.open_to_anyone = !recipients_only?
+    elsif will_save_change_to_open_to_anyone? || audience.blank?
+      if open_to_anyone
+        self.audience = 'organization' unless open_to_public?
+      else
+        self.audience = 'recipients_only'
+      end
+    end
+  end
 
   def system_offer_key_requires_nil_requestor
     return if system_offer_key.blank?

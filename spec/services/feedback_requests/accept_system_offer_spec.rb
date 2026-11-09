@@ -20,6 +20,7 @@ RSpec.describe FeedbackRequests::AcceptSystemOffer do
     fr = result.feedback_request
     expect(fr).to be_system_generated
     expect(fr.system_offer_key).to eq('values')
+    expect(fr).to be_recipients_only
     expect(fr.open_to_anyone).to eq(false)
     expect(fr.responders).to include(viewer)
     expect(fr.feedback_request_questions.map(&:rateable)).to include(value)

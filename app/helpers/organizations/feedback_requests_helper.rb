@@ -45,7 +45,10 @@ module Organizations
     end
 
     def feedback_request_open_to_anyone_label(feedback_request)
-      feedback_request.open_to_anyone? ? 'Open to anyone with the link' : 'Named respondents only'
+      return 'Named respondents only' if feedback_request.recipients_only?
+      return 'Open to the public' if feedback_request.open_to_public?
+
+      'Open to anyone with the link'
     end
 
     def feedback_request_requestor_display_name(feedback_request)

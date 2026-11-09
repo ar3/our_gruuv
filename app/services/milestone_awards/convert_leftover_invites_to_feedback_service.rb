@@ -22,7 +22,7 @@ module MilestoneAwards
         company: company,
         subject_of_feedback_teammate: recipient,
         subject_line: "Feedback on #{recipient.person.display_name}'s #{ability.display_name} (Milestone #{level})",
-        open_to_anyone: false
+        audience: :recipients_only
       )
 
       result = FeedbackRequests::CreateService.call(

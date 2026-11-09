@@ -177,7 +177,7 @@ RSpec.describe Organizations::FeedbackRequestsHelper, type: :helper do
         company: company,
         requestor_teammate: requestor_teammate,
         subject_of_feedback_teammate: subject_teammate,
-        open_to_anyone: false,
+        audience: :recipients_only,
         subject_line: 'Closed'
       )
       closed.feedback_request_questions.destroy_all

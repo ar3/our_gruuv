@@ -409,8 +409,10 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       return
     end
 
+    # Form still posts open_to_anyone (checkbox). Map to audience; dual-write syncs the boolean.
     open_to_anyone = ActiveModel::Type::Boolean.new.cast(params[:open_to_anyone])
     open_to_anyone = true if open_to_anyone.nil?
+    audience = open_to_anyone ? :organization : :recipients_only
 
     requested_ids = Array(params[:respondent_ids]).map(&:to_i).reject(&:zero?).uniq
     eligible_ids = CompanyTeammate
@@ -418,7 +420,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       .pluck(:id)
       .to_set
 
-    if !open_to_anyone && eligible_ids.empty?
+    if audience == :recipients_only && eligible_ids.empty?
       redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request),
                   alert: 'Select at least one named respondent, or keep the request open to anyone with the link.'
       return
@@ -429,7 +431,7 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     ids_to_remove = current_ids - eligible_ids
 
     FeedbackRequestResponder.transaction do
-      @feedback_request.update!(open_to_anyone: open_to_anyone)
+      @feedback_request.update!(audience: audience)
       ids_to_add.each do |teammate_id|
         @feedback_request.feedback_request_responders.create!(teammate_id: teammate_id)
       end
