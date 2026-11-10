@@ -9,25 +9,29 @@ module FeedbackRequests
     ].freeze
     DEFAULT_PRIVACY_LEVEL = 'observed_and_managers'.freeze
 
-    def self.call(feedback_request:, answers:, responder_teammate:, privacy_level: DEFAULT_PRIVACY_LEVEL, complete: false)
+    def self.call(feedback_request:, answers:, responder_teammate: nil, responder_person: nil, privacy_level: DEFAULT_PRIVACY_LEVEL, complete: false)
       new(
         feedback_request: feedback_request,
         answers: answers,
         responder_teammate: responder_teammate,
+        responder_person: responder_person,
         privacy_level: privacy_level,
         complete: complete
       ).call
     end
 
-    def initialize(feedback_request:, answers:, responder_teammate:, privacy_level: DEFAULT_PRIVACY_LEVEL, complete: false)
+    def initialize(feedback_request:, answers:, responder_teammate: nil, responder_person: nil, privacy_level: DEFAULT_PRIVACY_LEVEL, complete: false)
       @feedback_request = feedback_request
       @answers = answers || {}
       @responder_teammate = responder_teammate
+      @responder_person = responder_person || responder_teammate&.person
       @privacy_level = sanitize_privacy_level(privacy_level)
       @complete = complete
     end
 
     def call
+      return Result.err('Responder is required') if @responder_person.blank?
+
       ApplicationRecord.transaction do
         created_or_updated = []
 
@@ -46,7 +50,7 @@ module FeedbackRequests
           # Published answers are left alone so a later submission creates new OGOs.
           observation = Observation.drafts.find_by(
             feedback_request_question_id: question.id,
-            observer_id: @responder_teammate.person_id
+            observer_id: @responder_person.id
           )
 
           if observation
@@ -79,7 +83,7 @@ module FeedbackRequests
             created_or_updated << observation
           else
             observation = Observation.new(
-              observer: @responder_teammate.person,
+              observer: @responder_person,
               company: @feedback_request.company,
               story: story,
               feedback_request_question: question,

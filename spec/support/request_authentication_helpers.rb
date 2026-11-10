@@ -51,6 +51,13 @@ module RequestAuthenticationHelpers
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(nil)
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
   end
+
+  # Person session without a CompanyTeammate (phone-only / public FR flows).
+  def sign_in_as_person_only_for_request(person)
+    allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(nil)
+    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
+  end
 end
 
 RSpec.configure do |config|

@@ -212,7 +212,7 @@
                       %tr
                         %td
                           = link_to truncate(observation.story, length: 100), organization_observation_path(@organization, observation), class: "text-decoration-none fw-bold"
-                        %td= observation.observer.display_name
+                        %td= observation_observer_attribution(observation, name: :display_name)
                         %td= format_date_in_user_timezone(observation.observed_at, format: "%b %d, %Y")
 
     - unless @ask_og_id.present?

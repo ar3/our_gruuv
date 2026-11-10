@@ -1,7 +1,9 @@
 / Attribution section with observer and recognized people
 - observer_link = link_to observation.observer.casual_name, public_person_path(observation.observer), class: "text-decoration-none"
 %p.mb-1.text-muted.text-end
-  = "Observed by #{observer_link}".html_safe
+  Observed by
+  = observer_link
+  = observation_external_observer_badge(observation)
   - if observation.observed_teammates.any?
     |  • Recognizing: 
     - recognized_links = observation.observed_teammates.map do |teammate|

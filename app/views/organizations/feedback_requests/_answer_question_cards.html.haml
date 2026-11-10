@@ -1,7 +1,9 @@
 -# Shared question cards for answer flow and show-page preview.
 -# locals: organization, feedback_request, questions, observation_by_question_id, disabled: false,
--#         clarity_result (optional FeedbackRequestQuestionClarityResult), clarity_suggestions_open (bool)
+-#         clarity_result (optional FeedbackRequestQuestionClarityResult), clarity_suggestions_open (bool),
+-#         public_links: false (use public MAAP object URLs)
 - disabled = local_assigns.fetch(:disabled, false)
+- public_links = local_assigns.fetch(:public_links, false)
 - observation_by_question_id = local_assigns[:observation_by_question_id] || {}
 - clarity_result = local_assigns[:clarity_result]
 - clarity_suggestions_open = local_assigns.fetch(:clarity_suggestions_open, false)
@@ -14,11 +16,7 @@
   - questions_with_objects.each do |question|
     - rateable = question.rateable
     - object_name = rateable.is_a?(Assignment) ? rateable.title : rateable.name
-    - object_url = case rateable
-    -   when Assignment then organization_assignment_path(organization, rateable)
-    -   when Ability then organization_ability_path(organization, rateable)
-    -   when Aspiration then organization_aspiration_path(organization, rateable)
-    -   else nil
+    - object_url = feedback_request_rateable_path(organization, rateable, public_links: public_links)
     - existing_observation = observation_by_question_id[question.id]
     - raw_rating = existing_observation&.observation_ratings&.find { |r| r.rateable_id == rateable.id && r.rateable_type == rateable.class.name }&.rating
     - current_rating = observation_rating_display_label(raw_rating)
@@ -87,8 +85,9 @@
                 - if existing_observation.created_at
                   from #{format_time_in_user_timezone(existing_observation.created_at)}
                 — saving updates this draft. Completing publishes it as an OGO. Prior published answers from this request are not changed.
-                = link_to "Open draft observation", organization_observation_path(organization, existing_observation), class: "text-muted"
-                \.
+                - unless public_links
+                  = link_to "Open draft observation", organization_observation_path(organization, existing_observation), class: "text-muted"
+                  \.
             = render "organizations/feedback_requests/answer_privacy_selector",
                 field_name: "answers[#{question.id}][privacy_level]",
                 current_value: existing_observation&.privacy_level&.to_s.presence || "observed_and_managers",
@@ -124,8 +123,9 @@
             - if existing_observation.created_at
               from #{format_time_in_user_timezone(existing_observation.created_at)}
             — saving updates this draft. Completing publishes it as an OGO. Prior published answers from this request are not changed.
-            = link_to "Open draft observation", organization_observation_path(organization, existing_observation), class: "text-muted"
-            \.
+            - unless public_links
+              = link_to "Open draft observation", organization_observation_path(organization, existing_observation), class: "text-muted"
+              \.
         - unless disabled
           .form-text.mt-1
             %small.text-muted

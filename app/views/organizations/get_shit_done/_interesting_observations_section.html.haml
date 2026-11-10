@@ -37,7 +37,7 @@
                 %td
                   = truncate(observation.story.to_s, length: 120)
                 %td
-                  = observation.observer.casual_name
+                  = observation_observer_attribution(observation)
                 %td
                   %small.text-muted= observation.observed_teammates.map { |tm| tm.person.casual_name }.join(', ')
                 %td

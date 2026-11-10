@@ -8,7 +8,9 @@
         .d-flex
           .flex-grow-1
             .mb-1
-              %span From: #{observation.observer.casual_name}
+              %span
+                From:
+                = observation_observer_attribution(observation)
               - if observation.observed_teammates.any?
                 %span.ms-2 To: #{observation.observed_teammates.map { |t| t.person.casual_name }.join(', ')}
               - else

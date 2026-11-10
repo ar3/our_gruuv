@@ -27,7 +27,7 @@
               .d-flex.justify-content-between.align-items-start
                 .flex-grow-1
                   %h6.mb-1
-                    = observation.observer.display_name
+                    = observation_observer_attribution(observation, name: :display_name)
                     %small.text-muted
                       = format_date_in_user_timezone(observation.observed_at)
                   %p.mb-1.text-muted

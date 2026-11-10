@@ -56,6 +56,9 @@ RSpec.describe 'Feedback request question clarity consults', type: :request do
     expect(response.body).to include('Show what OG thinks will make the questions')
     expect(response.body).to include('OG tries to make it more clear')
     expect(response.body).to include('Tell a specific story')
+    expect(response.body).to include('bi-info-circle')
+    expect(response.body).to include('data-bs-toggle="popover"')
+    expect(response.body).to include('More concrete')
     # Per-question suggestion blocks are open by default after a completed consult.
     expect(response.body).to match(/data-fr-question-clarity-consult-target="suggestion"/)
     expect(response.body).not_to match(/data-fr-question-clarity-consult-target="suggestion"[^>]*class="[^"]*d-none/)

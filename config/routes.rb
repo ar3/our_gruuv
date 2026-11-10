@@ -39,6 +39,12 @@ Rails.application.routes.draw do
 
   # Person-scoped home (allowed without a CompanyTeammate)
   get '/me', to: 'me#show', as: :me
+
+  # Public Feedback Request answers (Person auth only; outside org namespace)
+  get '/f/:token', to: 'public_feedback_requests#show', as: :public_feedback_request
+  post '/f/:token', to: 'public_feedback_requests#submit', as: :submit_public_feedback_request
+  post '/f/:token/verify_start', to: 'public_feedback_requests#start_verification', as: :start_public_feedback_request_verification
+  post '/f/:token/verify', to: 'public_feedback_requests#verify', as: :verify_public_feedback_request
     
   
   # Organization switcher
@@ -911,6 +917,9 @@ Rails.application.routes.draw do
     # GIF search
     get 'gifs/search', to: 'organizations/gifs#search'
     
+    # External people (non-teammates who have given OGOs in this org, e.g. public FR)
+    resources :external_people, only: [:show], module: :organizations
+
     # Observations management
     resources :observations, module: :organizations do
       collection do

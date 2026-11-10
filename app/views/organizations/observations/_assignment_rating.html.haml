@@ -1,6 +1,12 @@
-- rating_words = local_assigns[:observation_rating].decorate.rating_to_words
+- rating = local_assigns[:observation_rating]
+- rating_words = rating.decorate.rating_to_words
 - if local_assigns[:include_assignment_name]
-  an #{content_tag(:strong, rating_words)} example of being a #{content_tag(:strong, local_assigns[:observation_rating].rateable.name)}
+  - rateable = rating.rateable
+  - org = local_assigns[:organization] || @organization || rating.observation&.company
+  - name_html = if org && rateable
+    - link_to(content_tag(:strong, rateable.name), internal_rateable_path(org, rateable), class: "text-decoration-none")
+  - else
+    - content_tag(:strong, rateable&.name)
+  an #{content_tag(:strong, rating_words)} example of being a #{name_html}
 - else
   an #{content_tag(:strong, rating_words)} example
-

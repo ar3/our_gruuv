@@ -251,6 +251,71 @@ module ObservationsHelper
     end
   end
 
+  # Observer has no active CompanyTeammate for the observation's company.
+  def observation_observer_external?(observation)
+    person = observation&.observer
+    company = observation&.company
+    return false if person.blank? || company.blank?
+
+    !person.active_teammate_of?(company)
+  end
+
+  def observation_external_observer_badge(observation)
+    return nil unless observation_observer_external?(observation)
+
+    tag.span(
+      'External',
+      class: 'badge rounded-pill text-bg-secondary ms-1 align-middle',
+      title: 'Observer is not a teammate of this organization'
+    )
+  end
+
+  # Name + optional External badge for company UI surfaces.
+  # Teammate observers → teammate page; externals → org external-person page.
+  def observation_observer_attribution(observation, name: :casual_name, organization: nil)
+    person = observation&.observer
+    return ''.html_safe if person.blank?
+
+    org = organization || @organization || observation.company
+    label = person.public_send(name)
+    if org
+      if observation_observer_external?(observation)
+        label = link_to(label, organization_external_person_path(org, person), class: 'text-decoration-none')
+      else
+        teammate = observation_observer_teammate_for(observation, org)
+        if teammate
+          label = link_to(label, organization_company_teammate_path(org, teammate), class: 'text-decoration-none')
+        end
+      end
+    end
+
+    badge = observation_external_observer_badge(observation)
+    badge ? safe_join([label, badge], ' ') : label
+  end
+
+  def observation_observer_teammate_for(observation, organization)
+    person = observation&.observer
+    return nil if person.blank? || organization.blank?
+
+    if person.company_teammates.loaded?
+      person.company_teammates.find { |t| t.organization_id == organization.id && t.last_terminated_at.nil? }
+    else
+      person.active_teammates.find_by(organization_id: organization.id)
+    end
+  end
+
+  def observation_observee_name_links(observation, organization = nil)
+    org = organization || @organization || observation.company
+    links = observation.observed_teammates.map do |teammate|
+      link_to(
+        teammate.person.casual_name,
+        organization_company_teammate_path(org, teammate),
+        class: 'text-decoration-none'
+      )
+    end
+    safe_join(links, ', ')
+  end
+
   def other_managers_popover_content(other_manager_names)
     return '' if other_manager_names.empty?
     

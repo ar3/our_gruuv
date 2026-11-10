@@ -29,24 +29,44 @@
       %p.text-muted.mb-3
         Feedback about
         %strong= @feedback_request.subject_of_feedback_teammate.person.display_name
-        is open to anyone with the link by default. Named respondents are optional — use them when you want inbox / Slack nudge accountability.
+        — choose who can open the answer link and submit OGOs.
 
-      .form-check.mb-4
-        = hidden_field_tag "open_to_anyone", "0"
-        = check_box_tag "open_to_anyone",
-          "1",
-          @feedback_request.open_to_organization_teammates?,
-          class: "form-check-input",
-          id: "open_to_anyone"
-        = label_tag "open_to_anyone", class: "form-check-label" do
-          %strong Open to anyone with the link
-          .form-text.mb-0
-            Any logged-in teammate can open the permalink and submit new OGOs. Turn this off only when responses should be limited to named people.
+      .mb-4
+        .form-check.mb-2
+          = radio_button_tag "audience",
+            "open_to_public",
+            @feedback_request.open_to_public?,
+            class: "form-check-input",
+            id: "audience_open_to_public"
+          = label_tag "audience_open_to_public", class: "form-check-label" do
+            %strong Open to the public
+            .form-text.mb-0
+              Anyone with the public link can read the questions and submit after verifying with a phone code.
+        .form-check.mb-2
+          = radio_button_tag "audience",
+            "organization",
+            @feedback_request.organization?,
+            class: "form-check-input",
+            id: "audience_organization"
+          = label_tag "audience_organization", class: "form-check-label" do
+            %strong Open to anyone in the organization with the link
+            .form-text.mb-0
+              Any logged-in teammate can open the permalink and submit new OGOs.
+        .form-check
+          = radio_button_tag "audience",
+            "recipients_only",
+            @feedback_request.recipients_only?,
+            class: "form-check-input",
+            id: "audience_recipients_only"
+          = label_tag "audience_recipients_only", class: "form-check-label" do
+            %strong Named respondents only
+            .form-text.mb-0
+              Only the people you select below can submit answers.
 
       .mb-3{data: {controller: "selection-toolbar options-filter"}}
         %h6.mb-2 Named respondents
         %p.text-muted.small.mb-3
-          Optional when the link is open. Required if you turn off “Open to anyone with the link.” Named people can be nudged in Slack and see this in their Feedback Requests inbox.
+          Optional when the request is open to the organization or public. Required for named-respondents-only. Named people can be nudged in Slack and see this in their Feedback Requests inbox.
 
         - if @teammates.any?
           = render "shared/selection_pages/toolbar",

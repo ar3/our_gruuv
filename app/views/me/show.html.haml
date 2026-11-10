@@ -10,6 +10,15 @@
     - else
       = button_to "Sign out", logout_path, method: :delete, class: "btn btn-outline-secondary btn-sm"
 
+  - if @continue_public_feedback_request
+    - fr = @continue_public_feedback_request
+    - subject_name = fr.subject_of_feedback_teammate.person.casual_name.presence || fr.subject_of_feedback_teammate.person.display_name
+    .alert.alert-light.border.mb-4{role: "status"}
+      More feedback to share?
+      = link_to "Return to feedback for #{subject_name}",
+        public_feedback_request_path(fr.public_answer_token),
+        class: "alert-link"
+
   .card.mb-4
     .card-header
       %h5.mb-0 Phone

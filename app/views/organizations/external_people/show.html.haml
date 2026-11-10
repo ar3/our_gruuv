@@ -1,0 +1,46 @@
+- content_for :title, "#{@person.casual_name} (External)"
+
+- content_for :header do
+  %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+    .me-1= person_profile_image(@person, size: 48)
+    = @person.casual_name
+    %span.badge.rounded-pill.text-bg-secondary External
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Observations", url: organization_observations_path(organization) }, { label: @person.casual_name, url: nil }])
+
+.card.mb-4
+  .card-body
+    %p.mb-1
+      %strong= @person.display_name
+      %span.badge.rounded-pill.text-bg-secondary.ms-1 External
+    %p.text-muted.mb-0.small
+      Not a teammate of #{organization.name}. This page lists observations they gave that you can see.
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      Observations from #{@person.casual_name}
+      %span.badge.bg-light.text-dark.ms-2= @observations.size
+  .card-body
+    - if @observations.any?
+      .list-group.list-group-flush
+        - @observations.each do |observation|
+          .list-group-item.px-0
+            .d-flex.justify-content-between.align-items-start.gap-3
+              .flex-grow-1
+                %p.mb-1= truncate(observation.story.to_s, length: 200)
+                %small.text-muted
+                  - if observation.observed_teammates.any?
+                    About
+                    = observation_observee_name_links(observation, organization)
+                    ·
+                  = format_time_in_user_timezone(observation.published_at || observation.observed_at)
+                  ·
+                  %span{title: observation.decorate.visibility_text, "data-bs-toggle" => "tooltip"}
+                    = observation.decorate.privacy_rings_with_label
+              = link_to organization_observation_path(organization, observation), class: "btn btn-sm btn-outline-primary flex-shrink-0" do
+                View
+    - else
+      %p.text-muted.mb-0
+        No observations from #{@person.casual_name} are visible to you in #{organization.name}.

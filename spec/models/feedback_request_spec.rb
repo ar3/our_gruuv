@@ -16,34 +16,19 @@ RSpec.describe FeedbackRequest, type: :model do
   end
 
   describe 'audience' do
-    it 'defaults to organization and dual-writes open_to_anyone true' do
+    it 'defaults to organization' do
       expect(feedback_request).to be_organization
-      expect(feedback_request.open_to_anyone).to be true
       expect(feedback_request).to be_open_to_organization_teammates
     end
 
-    it 'dual-writes open_to_anyone false when audience is recipients_only' do
-      feedback_request.update!(audience: :recipients_only)
-      expect(feedback_request.reload.open_to_anyone).to be false
-      expect(feedback_request).to be_recipients_only
+    it 'generates a public_answer_token' do
+      expect(feedback_request.public_answer_token).to be_present
     end
 
-    it 'dual-writes audience from legacy open_to_anyone writes' do
-      feedback_request.update!(open_to_anyone: false)
-      expect(feedback_request.reload).to be_recipients_only
-
-      feedback_request.update!(open_to_anyone: true)
-      expect(feedback_request.reload).to be_organization
-    end
-
-    it 'does not downgrade open_to_public when syncing open_to_anyone true' do
+    it 'treats open_to_public as open to organization teammates on the org path' do
       feedback_request.update!(audience: :open_to_public)
-      expect(feedback_request.reload.open_to_anyone).to be true
-      expect(feedback_request).to be_open_to_public
-      expect(feedback_request.read_attribute_before_type_cast('audience')).to eq('public')
-
-      feedback_request.update!(open_to_anyone: true)
       expect(feedback_request.reload).to be_open_to_public
+      expect(feedback_request).to be_open_to_organization_teammates
       expect(feedback_request.read_attribute_before_type_cast('audience')).to eq('public')
     end
 
@@ -82,16 +67,6 @@ RSpec.describe FeedbackRequest, type: :model do
       expect(feedback_request.reload.to_param).to eq(
         "#{feedback_request.id}-drew-hubspot-x-asana-automation"
       )
-    end
-  end
-
-  describe '.find_by_param' do
-    it 'finds by numeric id' do
-      expect(described_class.find_by_param(feedback_request.id.to_s)).to eq(feedback_request)
-    end
-
-    it 'finds by id-slug and ignores the human-readable suffix' do
-      expect(described_class.find_by_param("#{feedback_request.id}-andrew-hall-hubspot-x-asana")).to eq(feedback_request)
     end
   end
 end

@@ -10,6 +10,8 @@ class FeedbackRequest < ApplicationRecord
   has_many :observations, through: :feedback_request_questions
   has_many :og_consultations, as: :subject, dependent: :destroy
 
+  has_secure_token :public_answer_token
+
   # Soft delete scopes (NO default_scope)
   scope :not_deleted, -> { where(deleted_at: nil) }
   scope :archived_soft_delete, -> { where.not(deleted_at: nil) }
@@ -17,7 +19,7 @@ class FeedbackRequest < ApplicationRecord
   scope :system_generated, -> { where(requestor_teammate_id: nil) }
 
   # recipients_only = named responders; organization = any org teammate;
-  # open_to_public (DB: "public") = shareable outside the org (public URL later).
+  # open_to_public (DB: "public") = shareable outside the org via /f/:token.
   # Key can't be `public` — that method name is reserved by Active Record.
   enum :audience, {
     recipients_only: 'recipients_only',
@@ -27,17 +29,12 @@ class FeedbackRequest < ApplicationRecord
 
   # Validations
   validates :company, :subject_of_feedback_teammate_id, :subject_line, presence: true
-  validates :open_to_anyone, inclusion: { in: [true, false] }
   validates :system_offer_key, uniqueness: {
     scope: [:company_id, :subject_of_feedback_teammate_id],
     conditions: -> { where(deleted_at: nil) },
     allow_nil: true
   }
   validate :system_offer_key_requires_nil_requestor
-
-  attribute :open_to_anyone, :boolean, default: true
-
-  before_validation :sync_audience_open_to_anyone_dual_write
 
   # Nil requestor means OurGruuv created this request (relevance offers on /internal).
   def system_generated?
@@ -176,6 +173,10 @@ class FeedbackRequest < ApplicationRecord
     find(id)
   end
 
+  def self.find_by_public_answer_token!(token)
+    find_by!(public_answer_token: token)
+  end
+
   def to_param
     slug_parts = []
     subject_name = subject_of_feedback_teammate&.person&.casual_name
@@ -186,21 +187,6 @@ class FeedbackRequest < ApplicationRecord
   end
 
   private
-
-  # Keep audience and open_to_anyone aligned while both columns exist.
-  # Prefer audience when it was assigned; otherwise derive audience from the boolean
-  # (supports legacy writers during the expand window).
-  def sync_audience_open_to_anyone_dual_write
-    if will_save_change_to_audience?
-      self.open_to_anyone = !recipients_only?
-    elsif will_save_change_to_open_to_anyone? || audience.blank?
-      if open_to_anyone
-        self.audience = 'organization' unless open_to_public?
-      else
-        self.audience = 'recipients_only'
-      end
-    end
-  end
 
   def system_offer_key_requires_nil_requestor
     return if system_offer_key.blank?

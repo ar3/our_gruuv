@@ -17,7 +17,7 @@
           - else
             - "This story"
           - observer_link = link_to observation.observer.casual_name, public_person_path(observation.observer), class: "text-decoration-none"
-          = "#{story_part} made #{observer_link} feel #{observation.feelings_display}".html_safe
+          = safe_join([story_part.html_safe, ' made ', observer_link, observation_external_observer_badge(observation), " feel #{observation.feelings_display}"].compact)
 
       / Ratings sentences
       - if has_ratings

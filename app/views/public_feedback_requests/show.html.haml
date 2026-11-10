@@ -1,0 +1,144 @@
+- content_for :title, "Feedback Request"
+- org_name = @organization.name
+- subject_name = @feedback_request.subject_of_feedback_teammate.person.display_name
+- subject_line = @feedback_request.subject_line.presence || 'this request'
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-reply.me-2
+    Feedback for #{subject_name}
+
+- if @org_teammate_answer_path
+  .alert.alert-light.border.mb-3{role: "status"}
+    You're signed in as a #{org_name} teammate.
+    = link_to "Open the #{org_name} teammate version of this request", @org_teammate_answer_path
+
+- if @person_signed_in
+  .card.mb-3
+    .card-header
+      %h5.mb-0 Request details
+    .card-body
+      %p
+        %strong Subject:
+        = subject_name
+      - if @feedback_request.subject_line.present?
+        %p.mb-0
+          %strong Subject line:
+          = @feedback_request.subject_line
+
+- unless @person_signed_in
+  .card.mb-3.border-primary
+    .card-body
+      %p.mb-3
+        To give
+        %strong= @subject_casual_name
+        from
+        %strong= org_name
+        feedback related to
+        %strong= subject_line
+        , we will first need to verify you are real. Put in your name and phone number and we’ll text you a code. After you’ve verified you can then submit feedback!
+      - if flash[:alert]
+        .alert.alert-danger= flash[:alert]
+      - if flash[:notice]
+        .alert.alert-success= flash[:notice]
+
+      - if @awaiting_code
+        = form_with url: verify_public_feedback_request_path(@feedback_request.public_answer_token),
+                    method: :post,
+                    local: true do
+          .mb-3
+            %label.form-label{for: "public_fr_code"} Text code
+            = text_field_tag :code,
+              '',
+              class: "form-control",
+              id: "public_fr_code",
+              inputmode: "numeric",
+              autocomplete: "one-time-code",
+              required: true
+            .form-text
+              Sent to #{@verify_phone}
+              - if @verify_full_name.present?
+                for #{@verify_full_name}
+          = submit_tag "Verify and continue", class: "btn btn-primary"
+          %p.form-text.mb-0.mt-2
+            = link_to "Use a different name or number",
+              public_feedback_request_path(@feedback_request.public_answer_token, restart_verification: 1),
+              class: "text-muted"
+      - else
+        = form_with url: start_public_feedback_request_verification_path(@feedback_request.public_answer_token),
+                    method: :post,
+                    local: true do
+          .row.g-3.mb-3
+            .col-md-6
+              %label.form-label{for: "public_fr_phone"} Phone number
+              = telephone_field_tag :phone,
+                @verify_phone,
+                class: "form-control",
+                id: "public_fr_phone",
+                autocomplete: "tel",
+                required: true
+            .col-md-6
+              %label.form-label{for: "public_fr_full_name"} Full name
+              = text_field_tag :full_name,
+                (@verify_full_name unless @verify_full_name == "Anonymous User"),
+                class: "form-control",
+                id: "public_fr_full_name",
+                autocomplete: "name",
+                placeholder: "Optional — defaults to Anonymous User"
+          = submit_tag "Text me a code", class: "btn btn-primary"
+
+      %p.form-text.text-muted.mb-0.mt-3
+        If you believe you already have an account,
+        = link_to "click here to sign in", login_path, class: "text-muted"
+
+- if @person_signed_in
+  - if flash[:alert]
+    .alert.alert-danger= flash[:alert]
+  - if flash[:notice]
+    .alert.alert-success= flash[:notice]
+
+- if @prior_published_observations.any?
+  .alert.alert-secondary.mb-3
+    %p.mb-2.small
+      %strong Side note:
+      You’ve submitted #{pluralize(@prior_published_observations.size, "observation")} from this request before.
+    %ul.mb-0.small
+      - @prior_published_observations.first(5).each do |observation|
+        %li
+          - label = observation.feedback_request_question&.question_text.to_s.truncate(60).presence || "Observation"
+          = "#{label} · #{format_time_in_user_timezone(observation.published_at)}"
+
+- if @form_enabled
+  = form_with url: submit_public_feedback_request_path(@feedback_request.public_answer_token),
+              method: :post,
+              local: true,
+              html: { id: "public-feedback-request-answer-form" } do |form|
+    = render "organizations/feedback_requests/answer_question_cards",
+        organization: @organization,
+        feedback_request: @feedback_request,
+        questions: @questions,
+        observation_by_question_id: @observation_by_question_id,
+        disabled: false,
+        public_links: true
+
+  .d-flex.justify-content-end.align-items-start.pt-2.gap-3.flex-wrap.mb-4
+    .d-flex.flex-column.align-items-end
+      .d-flex.flex-wrap.gap-2.justify-content-end.align-items-center
+        = submit_tag 'Save and Keep Incomplete',
+                     name: 'save_and_keep_incomplete',
+                     class: 'btn btn-outline-primary',
+                     form: 'public-feedback-request-answer-form'
+        = submit_tag "Save and I'm Done!",
+                     name: 'save_and_complete',
+                     class: 'btn btn-primary',
+                     form: 'public-feedback-request-answer-form'
+      %p.form-text.text-muted.text-end.mb-0.mt-1{style: "max-width: 28rem;"}
+        You don’t have to respond to all of the items — even one is an incredible gift.
+- else
+  = render "organizations/feedback_requests/answer_question_cards",
+      organization: @organization,
+      feedback_request: @feedback_request,
+      questions: @questions,
+      observation_by_question_id: @observation_by_question_id,
+      disabled: true,
+      public_links: true

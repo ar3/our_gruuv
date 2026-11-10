@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_09_150000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_09_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -734,12 +734,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_09_150000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "subject_line"
-    t.boolean "open_to_anyone", default: true, null: false
     t.string "system_offer_key"
     t.string "audience", default: "organization", null: false
+    t.string "public_answer_token", null: false
     t.index ["company_id", "subject_of_feedback_teammate_id", "system_offer_key"], name: "index_feedback_requests_on_system_offer_key_unique", unique: true, where: "((system_offer_key IS NOT NULL) AND (deleted_at IS NULL))"
     t.index ["company_id"], name: "index_feedback_requests_on_company_id"
     t.index ["deleted_at"], name: "index_feedback_requests_on_deleted_at"
+    t.index ["public_answer_token"], name: "index_feedback_requests_on_public_answer_token", unique: true
     t.index ["requestor_teammate_id"], name: "index_feedback_requests_on_requestor_teammate_id"
     t.index ["subject_of_feedback_teammate_id"], name: "index_feedback_requests_on_subject_of_feedback_teammate_id"
   end

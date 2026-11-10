@@ -104,8 +104,8 @@
         .row
           .col-md-6
             %p
-              %strong Observer: 
-              = @observation.observer.casual_name
+              %strong Observer:
+              = observation_observer_attribution(@observation)
             %p
               %strong Observed: 
               = format_time_in_user_timezone(@observation.observed_at)

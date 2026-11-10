@@ -51,6 +51,17 @@ module Organizations
       'Open to anyone with the link'
     end
 
+    def feedback_request_rateable_path(organization, rateable, public_links: false)
+      case rateable
+      when Assignment
+        public_links ? organization_public_maap_assignment_path(organization, rateable) : organization_assignment_path(organization, rateable)
+      when Ability
+        public_links ? organization_public_maap_ability_path(organization, rateable) : organization_ability_path(organization, rateable)
+      when Aspiration
+        public_links ? organization_public_maap_aspiration_path(organization, rateable) : organization_aspiration_path(organization, rateable)
+      end
+    end
+
     def feedback_request_requestor_display_name(feedback_request)
       return 'OurGruuv' if feedback_request.system_generated?
 

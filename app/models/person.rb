@@ -62,6 +62,14 @@ class Person < ApplicationRecord
         person
       end
     end
+
+    # Synthetic unique email for phone-verified people created without an email address
+    # (e.g. public Feedback Request verification).
+    def phone_placeholder_email_for(phone)
+      digits = phone.to_s.gsub(/\D/, '')
+      digits = SecureRandom.hex(6) if digits.blank?
+      "phone.#{digits}@ourgruuv.phone"
+    end
   end
 
   # Virtual attribute for full name - getter and setter methods
@@ -293,6 +301,16 @@ class Person < ApplicationRecord
 
   def active_teammates
     company_teammates.where(last_terminated_at: nil)
+  end
+
+  def active_teammate_of?(organization)
+    return false if organization.blank?
+
+    if company_teammates.loaded?
+      company_teammates.any? { |t| t.organization_id == organization.id && t.last_terminated_at.nil? }
+    else
+      active_teammates.exists?(organization_id: organization.id)
+    end
   end
 
   def all_companies

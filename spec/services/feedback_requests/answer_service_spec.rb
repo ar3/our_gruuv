@@ -76,6 +76,31 @@ RSpec.describe FeedbackRequests::AnswerService, type: :service do
         expect(obs).not_to be_published
       end
 
+      it 'accepts responder_person without a teammate' do
+        question_with_rateable
+        outsider = create(:person)
+        answers = {
+          question_with_rateable.id.to_s => {
+            story: 'External feedback.',
+            rating: 'na',
+            privacy_level: 'observed_and_managers'
+          }
+        }
+
+        expect {
+          described_class.call(
+            feedback_request: feedback_request,
+            answers: answers,
+            responder_person: outsider,
+            privacy_level: 'observed_and_managers',
+            complete: true
+          )
+        }.to change { Observation.count }.by(1)
+
+        expect(Observation.last.observer).to eq(outsider)
+        expect(Observation.last).to be_published
+      end
+
       it 'publishes observation when complete: true' do
         question_with_rateable
         answers = {

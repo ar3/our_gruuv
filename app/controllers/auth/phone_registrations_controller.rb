@@ -49,7 +49,8 @@ module Auth
       session.delete(:phone_login_phone)
       session.delete(:phone_login_verified)
       establish_person_session!(@person)
-      redirect_to me_path, notice: 'Welcome to OurGruuv. Your phone is verified.'
+      return_path = consume_return_to_path
+      redirect_to return_path.presence || me_path, notice: 'Welcome to OurGruuv. Your phone is verified.'
     end
 
     private

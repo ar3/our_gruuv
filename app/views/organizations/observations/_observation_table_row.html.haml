@@ -29,7 +29,7 @@
         %i.bi.bi-exclamation-triangle.me-1
         nothing rated
   %td
-    = observation.observer.casual_name
+    = observation_observer_attribution(observation)
   %td
     - if observation.observed_teammates.any?
       - names = observation.observed_teammates.map { |teammate| teammate.person.casual_name }

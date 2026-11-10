@@ -17,9 +17,20 @@ class MeController < ApplicationController
       .includes(:company, :observed_teammates)
       .order(published_at: :desc)
       .limit(50)
+    @continue_public_feedback_request = continue_public_feedback_request
   end
 
   private
+
+  def continue_public_feedback_request
+    token = flash[:continue_public_feedback_token].presence
+    return if token.blank?
+
+    fr = FeedbackRequest.find_by(public_answer_token: token)
+    return unless fr&.open_to_public? && fr.answerable?
+
+    fr
+  end
 
   def determine_layout
     current_company_teammate ? 'authenticated-vertical-navigation' : 'application'

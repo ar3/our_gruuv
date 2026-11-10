@@ -34,7 +34,8 @@
                       = observation.decorate.story_html.html_safe
                     %small.text-muted
                       - if observation.observer
-                        Observed by #{observation.observer.casual_name}
+                        Observed by
+                        = observation_observer_attribution(observation)
                       - if observation.observed_at
                         %span.mx-1 •
                         = format_date_in_user_timezone(observation.observed_at)

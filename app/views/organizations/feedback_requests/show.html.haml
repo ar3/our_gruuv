@@ -36,15 +36,33 @@
         %i.bi.bi-link-45deg.me-2
         Share this feedback request
     .card-body
-      %p.text-muted.mb-3
-        Anyone logged in to this company can open the answer link and submit new OGOs. Paste it into Asana, Slack, or your email signature.
-      .mb-3{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy link", "clipboard-success-message-value": "Copied!" }}
-        %label.form-label.small.mb-1 Answer link
-        .d-flex.flex-wrap.align-items-start.gap-2
-          %code.flex-grow-1.p-2.bg-light.border.rounded.small{style: "word-break: break-all;", "data-clipboard-target": "source"}= @answer_url
-          %button.btn.btn-sm.btn-outline-secondary.flex-shrink-0{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
-            %i.bi.bi-clipboard.me-1
-            %span{"data-clipboard-target": "buttonLabel"} Copy link
+      - if @feedback_request.open_to_public?
+        %p.text-muted.mb-3
+          Anyone with the public link can read the questions and submit after signing in. Paste it into Asana, Slack, or your email signature.
+        .mb-3{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy link", "clipboard-success-message-value": "Copied!" }}
+          %label.form-label.small.mb-1 Public answer link
+          .d-flex.flex-wrap.align-items-start.gap-2
+            %code.flex-grow-1.p-2.bg-light.border.rounded.small{style: "word-break: break-all;", "data-clipboard-target": "source"}= @public_answer_url
+            %button.btn.btn-sm.btn-outline-secondary.flex-shrink-0{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
+              %i.bi.bi-clipboard.me-1
+              %span{"data-clipboard-target": "buttonLabel"} Copy link
+        .mb-3{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy link", "clipboard-success-message-value": "Copied!" }}
+          %label.form-label.small.mb-1 Teammate answer link
+          .d-flex.flex-wrap.align-items-start.gap-2
+            %code.flex-grow-1.p-2.bg-light.border.rounded.small{style: "word-break: break-all;", "data-clipboard-target": "source"}= @answer_url
+            %button.btn.btn-sm.btn-outline-secondary.flex-shrink-0{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
+              %i.bi.bi-clipboard.me-1
+              %span{"data-clipboard-target": "buttonLabel"} Copy link
+      - else
+        %p.text-muted.mb-3
+          Anyone logged in to this company can open the answer link and submit new OGOs. Paste it into Asana, Slack, or your email signature.
+        .mb-3{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy link", "clipboard-success-message-value": "Copied!" }}
+          %label.form-label.small.mb-1 Answer link
+          .d-flex.flex-wrap.align-items-start.gap-2
+            %code.flex-grow-1.p-2.bg-light.border.rounded.small{style: "word-break: break-all;", "data-clipboard-target": "source"}= @answer_url
+            %button.btn.btn-sm.btn-outline-secondary.flex-shrink-0{type: "button", "data-clipboard-target": "button", "data-action": "clipboard#copy"}
+              %i.bi.bi-clipboard.me-1
+              %span{"data-clipboard-target": "buttonLabel"} Copy link
       .mb-0{data: { controller: "clipboard", "clipboard-idle-label-value": "Copy message", "clipboard-success-message-value": "Copied!" }}
         %label.form-label.small.mb-1 Suggested message
         %pre.mb-2.p-3.bg-light.border.rounded.small{style: "white-space: pre-wrap; word-break: break-word;", "data-clipboard-target": "source"}= @suggested_share_message
@@ -295,7 +313,8 @@
           %li.mb-2
             = link_to organization_observation_path(organization, observation), class: "text-decoration-none" do
               %i.bi.bi-eye.me-2
-              Observation by #{observation.observer.display_name}
+              Observation by
+              = observation_observer_attribution(observation, name: :display_name)
               - if observation.feedback_request_question
                 %small.text-muted
                   (Question: #{observation.feedback_request_question.question_text.truncate(50)})

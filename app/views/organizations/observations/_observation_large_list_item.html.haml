@@ -7,7 +7,7 @@
       .mb-2
         %strong From:
         %br
-        = observation.observer.casual_name
+        = observation_observer_attribution(observation)
       - if observation.observed_teammates.any?
         .mb-2
           %strong To:

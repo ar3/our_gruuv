@@ -12,7 +12,8 @@
 
 .mt-2{ class: ("d-none" unless open), data: { fr_question_clarity_consult_target: "suggestion" } }
   %hr
-  %p.small.fw-semibold.mb-1 OG tries to make it more clear...
+  %p.small.fw-semibold.mb-1
+    OG tries to make it more clear...
+    - if suggestion['rationale'].present?
+      %i.bi.bi-info-circle.text-muted.ms-1{role: "button", tabindex: 0, style: "cursor: help;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => suggestion['rationale'], title: "Why this wording", "aria-label" => "Why OG suggests this wording"}
   .markdown-content.small= render_markdown(suggested_text)
-  - if suggestion['rationale'].present?
-    .small.text-muted.mt-1= suggestion['rationale']

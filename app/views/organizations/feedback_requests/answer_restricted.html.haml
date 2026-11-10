@@ -47,7 +47,8 @@
             = link_to organization_observation_path(organization, observation), class: "text-decoration-none" do
               %strong= observation.story.to_s.truncate(120).presence || "Observation"
             .small.text-muted.mt-1
-              By #{observation.observer.display_name}
+              By
+              = observation_observer_attribution(observation, name: :display_name)
               - if observation.published_at
                 · #{format_time_in_user_timezone(observation.published_at)}
     - else

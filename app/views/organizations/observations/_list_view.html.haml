@@ -32,7 +32,8 @@
             nothing rated
       %p.mb-1
         %small.text-muted
-          Observer: #{observation.observer.casual_name}
+          Observer:
+          = observation_observer_attribution(observation)
           - if observation.observed_teammates.any?
             |  • Observed:
             - names = observation.observed_teammates.map { |teammate| teammate.person.casual_name }

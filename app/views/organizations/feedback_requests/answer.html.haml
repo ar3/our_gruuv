@@ -13,6 +13,11 @@
       %i.bi.bi-reply.me-2
       Answer Feedback Request
 
+- if @feedback_request.open_to_public?
+  .alert.alert-light.border.mb-3.py-2{role: "status"}
+    = link_to public_feedback_request_path(@feedback_request.public_answer_token) do
+      View this as someone who is external to #{organization.name}
+
 .alert.alert-light.border.mb-3.py-2{role: "status"}
   %span.text-muted.small Prefer not to answer?
   = render "organizations/feedback_requests/skip_this_request_control",

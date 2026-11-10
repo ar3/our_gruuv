@@ -32,7 +32,8 @@
               nothing rated
           %p.mb-1
             %small.text-muted
-              Observer: #{observation.observer.casual_name}
+              Observer:
+              = observation_observer_attribution(observation)
           %p.mb-1
             %small.text-muted
               Observed:

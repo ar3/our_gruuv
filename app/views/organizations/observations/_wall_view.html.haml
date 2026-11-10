@@ -11,7 +11,8 @@
               - observation.observed_teammates.limit(3).each do |teammate|
                 - person = teammate.person
                 .me-2
-                  = person_profile_image(person, teammate: teammate, size: 40)
+                  = link_to organization_company_teammate_path(org, teammate), class: "text-decoration-none" do
+                    = person_profile_image(person, teammate: teammate, size: 40)
             - else
               .me-2
                 .rounded-circle.bg-secondary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
@@ -19,8 +20,7 @@
             .flex-grow-1
               %small.text-muted
                 - if observation.observed_teammates.any?
-                  - names = observation.observed_teammates.map { |t| t.person.casual_name }
-                  = names.join(', ')
+                  = observation_observee_name_links(observation, org)
                 - else
                   No one observed
           
@@ -62,7 +62,8 @@
           / Date
           %small.text-muted= format_date_in_user_timezone(observation.observed_at, format: '%b %d, %Y')
           %small.text-muted
-            by #{observation.observer.casual_name}
+            by
+            = observation_observer_attribution(observation)
 
         .card-footer.bg-light
           .btn-group.btn-group-sm.w-100

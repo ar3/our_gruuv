@@ -29,7 +29,11 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
     @observations_by_observer_id = @feedback_request.observations.group_by(&:observer_id)
     @observation_visibility_query = ObservationVisibilityQuery.new(current_person, company)
     @answer_url = answer_organization_feedback_request_url(organization, @feedback_request)
-    @suggested_share_message = helpers.feedback_request_suggested_share_message(@feedback_request, @answer_url)
+    @public_answer_url = if @feedback_request.open_to_public?
+      public_feedback_request_url(@feedback_request.public_answer_token)
+    end
+    share_url = @public_answer_url.presence || @answer_url
+    @suggested_share_message = helpers.feedback_request_suggested_share_message(@feedback_request, share_url)
     @responder_submission_rows = helpers.feedback_request_responder_submission_rows(
       responders: @responders,
       observations: @observations,
@@ -409,10 +413,8 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       return
     end
 
-    # Form still posts open_to_anyone (checkbox). Map to audience; dual-write syncs the boolean.
-    open_to_anyone = ActiveModel::Type::Boolean.new.cast(params[:open_to_anyone])
-    open_to_anyone = true if open_to_anyone.nil?
-    audience = open_to_anyone ? :organization : :recipients_only
+    audience = params[:audience].to_s.presence_in(%w[recipients_only organization open_to_public])
+    audience ||= 'organization'
 
     requested_ids = Array(params[:respondent_ids]).map(&:to_i).reject(&:zero?).uniq
     eligible_ids = CompanyTeammate
@@ -420,9 +422,9 @@ class Organizations::FeedbackRequestsController < Organizations::OrganizationNam
       .pluck(:id)
       .to_set
 
-    if audience == :recipients_only && eligible_ids.empty?
+    if audience == 'recipients_only' && eligible_ids.empty?
       redirect_to select_respondents_organization_feedback_request_path(organization, @feedback_request),
-                  alert: 'Select at least one named respondent, or keep the request open to anyone with the link.'
+                  alert: 'Select at least one named respondent, or keep the request open to the organization or public.'
       return
     end
 

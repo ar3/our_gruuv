@@ -40,8 +40,8 @@
         .row
           .col-md-6
             %p
-              %strong Observer: 
-              = @form.model.observer.casual_name
+              %strong Observer:
+              = observation_observer_attribution(@form.model)
             %p
               %strong Observed: 
               = @form.observed_at ? format_time_in_user_timezone(@form.observed_at) : 'Not set'

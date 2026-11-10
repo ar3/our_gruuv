@@ -21,6 +21,47 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it 'shows an External badge when the observer is not a company teammate' do
+      outsider = create(:person, first_name: 'Pat', last_name: 'External')
+      create(:observation,
+        company: organization,
+        observer: outsider,
+        privacy_level: :public_to_company,
+        published_at: Time.current,
+        story: 'External guest feedback story'
+      )
+
+      get organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('External guest feedback story')
+      expect(response.body).to include('External')
+      expect(response.body).to include('Observer is not a teammate of this organization')
+    end
+
+    it 'makes rated objects and teammate names clickable on the wall view' do
+      ability = create(:ability, company: organization, name: 'Wall Link Ability')
+      observee = create(:company_teammate, organization: organization)
+      observation = build(:observation,
+        company: organization,
+        observer: person,
+        privacy_level: :public_to_company,
+        published_at: Time.current,
+        story: 'Wall view rating link story'
+      )
+      observation.observees = []
+      observation.observees.build(teammate: observee)
+      observation.save!
+      create(:observation_rating, observation: observation, rateable: ability, rating: :agree)
+
+      get organization_observations_path(organization, view: 'wall')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Wall view rating link story')
+      expect(response.body).to include(organization_ability_path(organization, ability))
+      expect(response.body).to include('Wall Link Ability')
+      expect(response.body).to include(organization_company_teammate_path(organization, observee))
+      expect(response.body).to include(organization_company_teammate_path(organization, teammate))
+    end
+
     it 'shows privacy quick filter chips in the spotlight footer' do
       get organization_observations_path(organization)
       expect(response).to have_http_status(:success)
