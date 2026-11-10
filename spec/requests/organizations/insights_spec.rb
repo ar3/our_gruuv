@@ -174,6 +174,9 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Observations Sharing')
       expect(response.body).to include('observations-by-privacy-chart')
       expect(response.body).to include('observations-by-privacy-pie-chart')
+      expect(response.body).to include('observations-by-observer-affiliation-chart')
+      expect(response.body).to include('observations-by-observer-affiliation-pie-chart')
+      expect(response.body).to include('Observations by Internal vs External observers')
       expect(response.body).to include('observations-by-observer-department-chart')
       expect(response.body).to include('observations-by-observer-department-pie-chart')
       expect(response.body).to include('observations-by-observee-department-pie-chart')
@@ -217,6 +220,26 @@ RSpec.describe 'Organizations::Insights', type: :request do
       get organization_insights_observations_path(organization)
       expect(response.body).to include('Values counts')
       expect(response.body).to include('observations/values_counts/download')
+    end
+
+    it 'summarizes external observers separately and lists them in observer tables' do
+      outsider = create(:person, first_name: 'Pat', last_name: 'Guest')
+      create(:observation,
+        company: organization,
+        observer: outsider,
+        published_at: 1.day.ago,
+        observed_at: 1.day.ago,
+        deleted_at: nil,
+        privacy_level: :public_to_company,
+        story: 'External insights guest story'
+      )
+
+      get organization_insights_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('external person')
+      expect(response.body).to include('Pat')
+      expect(response.body).to include(organization_external_person_path(organization, outsider))
+      expect(response.body).to include('Observer')
     end
   end
 

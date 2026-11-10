@@ -27,16 +27,16 @@ RSpec.describe ObservationsHelper, 'external observer', type: :helper do
       expect(helper.observation_observer_external?(observation)).to be true
     end
 
-    it 'is true when the observer only has a terminated teammate for the company' do
-      outsider = create(:person)
+    it 'is false when the observer only has a terminated teammate for the company' do
+      former = create(:person)
       create(:company_teammate,
-        person: outsider,
+        person: former,
         organization: company,
         last_terminated_at: Date.current,
         first_employed_at: 1.year.ago
       )
-      observation = build_observation(observer: outsider)
-      expect(helper.observation_observer_external?(observation)).to be true
+      observation = build_observation(observer: former)
+      expect(helper.observation_observer_external?(observation)).to be false
     end
   end
 
@@ -48,6 +48,7 @@ RSpec.describe ObservationsHelper, 'external observer', type: :helper do
       expect(html).to include('Pat')
       expect(html).to include('External')
       expect(html).to include(organization_external_person_path(company, outsider))
+      expect(html).to include('Observer has never been a teammate of this organization')
     end
 
     it 'does not include External for org teammates' do
@@ -63,6 +64,19 @@ RSpec.describe ObservationsHelper, 'external observer', type: :helper do
       html = helper.observation_observer_attribution(observation, organization: company)
       expect(html).to include(organization_company_teammate_path(company, observer_teammate))
       expect(html).not_to include('External')
+    end
+
+    it 'links terminated teammates to their teammate page without an External badge' do
+      former_teammate = create(:company_teammate,
+        organization: company,
+        last_terminated_at: Date.current,
+        first_employed_at: 1.year.ago
+      )
+      observation = build_observation(observer: former_teammate.person)
+      html = helper.observation_observer_attribution(observation, organization: company)
+      expect(html).to include(organization_company_teammate_path(company, former_teammate))
+      expect(html).not_to include('External')
+      expect(html).not_to include(organization_external_person_path(company, former_teammate.person))
     end
   end
 end

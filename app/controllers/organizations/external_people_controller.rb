@@ -8,7 +8,7 @@ module Organizations
     def show
       @person = Person.find(params[:id])
 
-      if (teammate = active_teammate_in_org_or_company(@person))
+      if (teammate = teammate_in_org_or_company(@person))
         skip_authorization
         redirect_to organization_company_teammate_path(organization, teammate),
                     notice: "#{@person.casual_name} is a teammate — opened their teammate profile."
@@ -29,8 +29,9 @@ module Organizations
 
     private
 
-    def active_teammate_in_org_or_company(person)
-      person.active_teammates.find_by(organization_id: [organization.id, company.id].uniq)
+    # Any teammate record (active or terminated) — only never-hired people use this page.
+    def teammate_in_org_or_company(person)
+      person.company_teammates.find_by(organization_id: [organization.id, company.id].uniq)
     end
   end
 end

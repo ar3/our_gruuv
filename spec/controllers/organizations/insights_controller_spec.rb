@@ -396,6 +396,47 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(observee_dept[:series]).to be_an(Array)
     end
 
+    it 'assigns Internal vs External observer chart data with the same week categories' do
+      get :observations, params: { organization_id: company.id }
+      affiliation = assigns(:observations_by_observer_affiliation_chart_data)
+      expect(affiliation).to be_a(Hash)
+      expect(affiliation[:categories]).to eq(assigns(:observations_chart_data)[:categories])
+      expect(affiliation[:series].map { |s| s[:name] }).to eq(%w[Internal External])
+      expect(assigns(:observations_observer_affiliation_pie_chart_data)).to be_an(Array)
+    end
+
+    it 'buckets never-hired observers as External and keeps terminated teammates as Internal' do
+      outsider = create(:person)
+      former = create(:person)
+      create(:company_teammate,
+        person: former,
+        organization: company,
+        last_terminated_at: Date.current,
+        first_employed_at: 1.year.ago
+      )
+      create(:observation, observer: outsider, company: company, published_at: 1.day.ago, observed_at: 1.day.ago, deleted_at: nil)
+      create(:observation, observer: former, company: company, published_at: 1.day.ago, observed_at: 1.day.ago, deleted_at: nil)
+
+      get :observations, params: { organization_id: company.id }
+
+      summary = assigns(:observations_insights_summary)
+      expect(summary[:unique_observer_externals]).to eq(1)
+      expect(summary[:unique_observer_teammates]).to be >= 1
+
+      dept_series = assigns(:observations_by_observer_department_chart_data)[:series]
+      external_series = dept_series.find { |s| s[:name] == 'External' }
+      expect(external_series).to be_present
+      expect(external_series[:data].sum).to eq(1)
+
+      affiliation = assigns(:observations_by_observer_affiliation_chart_data)[:series]
+      expect(affiliation.find { |s| s[:name] == 'External' }[:data].sum).to eq(1)
+      expect(affiliation.find { |s| s[:name] == 'Internal' }[:data].sum).to be >= 1
+
+      observers = assigns(:observation_observers)
+      expect(observers.any? { |row| row[:external] && row[:person_id] == outsider.id }).to be true
+      expect(observers.any? { |row| !row[:external] && row[:person_id] == former.id }).to be true
+    end
+
     it 'assigns observations sourcing pie chart data' do
       get :observations, params: { organization_id: company.id }
       expect(assigns(:observations_sourcing_pie_chart_data)).to be_an(Array)

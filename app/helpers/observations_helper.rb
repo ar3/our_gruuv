@@ -251,13 +251,18 @@ module ObservationsHelper
     end
   end
 
-  # Observer has no active CompanyTeammate for the observation's company.
+  # True only for never-hired observers (no CompanyTeammate for the company at all).
+  # Terminated teammates are still teammates — no External badge.
   def observation_observer_external?(observation)
     person = observation&.observer
     company = observation&.company
     return false if person.blank? || company.blank?
 
-    !person.active_teammate_of?(company)
+    if person.company_teammates.loaded?
+      person.company_teammates.none? { |t| t.organization_id == company.id }
+    else
+      !person.company_teammates.exists?(organization_id: company.id)
+    end
   end
 
   def observation_external_observer_badge(observation)
@@ -266,12 +271,12 @@ module ObservationsHelper
     tag.span(
       'External',
       class: 'badge rounded-pill text-bg-secondary ms-1 align-middle',
-      title: 'Observer is not a teammate of this organization'
+      title: 'Observer has never been a teammate of this organization'
     )
   end
 
   # Name + optional External badge for company UI surfaces.
-  # Teammate observers → teammate page; externals → org external-person page.
+  # Teammate observers (incl. terminated) → teammate page; never-hired → external-person page.
   def observation_observer_attribution(observation, name: :casual_name, organization: nil)
     person = observation&.observer
     return ''.html_safe if person.blank?
@@ -298,9 +303,11 @@ module ObservationsHelper
     return nil if person.blank? || organization.blank?
 
     if person.company_teammates.loaded?
-      person.company_teammates.find { |t| t.organization_id == organization.id && t.last_terminated_at.nil? }
+      teammates = person.company_teammates.select { |t| t.organization_id == organization.id }
+      teammates.find { |t| t.last_terminated_at.nil? } || teammates.first
     else
-      person.active_teammates.find_by(organization_id: organization.id)
+      person.active_teammates.find_by(organization_id: organization.id) ||
+        person.company_teammates.find_by(organization_id: organization.id)
     end
   end
 

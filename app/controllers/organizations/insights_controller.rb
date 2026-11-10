@@ -337,9 +337,16 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     chart_range = range || (52.weeks.ago..Time.current)
     @insights_chart_period_label = insights_chart_title_period(@timeframe, range, chart_range)
     @observations_chart_data = observations_chart_series_by_privacy(base_scope, chart_range)
+    @observations_by_observer_affiliation_chart_data = Insights::ObservationsInternalExternalChart.call(
+      base_scope: base_scope,
+      chart_range: chart_range,
+      organization: company
+    )
     @observations_by_observer_department_chart_data = observations_by_observer_department_chart_series(base_scope, chart_range)
     @observations_by_department_chart_data = observations_by_department_chart_series(base_scope, chart_range)
     @observations_privacy_pie_chart_data = observations_privacy_pie_chart_data_from_scope(base_scope)
+    @observations_observer_affiliation_pie_chart_data =
+      stacked_series_to_pie_points(@observations_by_observer_affiliation_chart_data)
     @observations_observer_department_pie_chart_data = stacked_series_to_pie_points(@observations_by_observer_department_chart_data)
     @observations_observee_department_pie_chart_data = stacked_series_to_pie_points(@observations_by_department_chart_data)
     @observations_insights_summary = observations_insights_summary_stats(base_scope)
@@ -355,7 +362,14 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @observer_teammates = CompanyTeammate
       .where(organization: company)
       .where(person_id: observer_ids)
-      .includes(employment_tenures: { position: { title: :department } })
+      .includes(:person, employment_tenures: { position: { title: :department } })
+    teammate_person_ids = @observer_teammates.map(&:person_id).to_set
+    external_observer_ids = observer_ids.reject { |pid| teammate_person_ids.include?(pid) }
+    @observer_external_people = Person.where(id: external_observer_ids).to_a
+    @observation_observers = build_observation_observer_rows(
+      observer_teammates: @observer_teammates,
+      external_people: @observer_external_people
+    )
 
     # Aggregate kudos / feedback / mixed per observer (load observations with ratings + triggers for sourcing)
     observations_with_bucket = base_scope.includes(:observation_ratings, :observation_trigger).to_a
@@ -913,15 +927,47 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   def observations_insights_summary_stats(base_scope)
     obs_subquery = base_scope.except(:order).select(:id)
     rating_scope = ObservationRating.where(observation_id: obs_subquery)
+    observer_ids = base_scope.distinct.pluck(:observer_id).compact
+    teammate_observer_ids = Insights::ObservationsObserverAffiliation.teammate_person_ids(
+      organization: company,
+      person_ids: observer_ids
+    )
+    external_observer_count = observer_ids.count { |pid| !teammate_observer_ids.include?(pid) }
 
     {
       stories_count: base_scope.count,
-      unique_observer_teammates: base_scope.distinct.count(:observer_id),
+      unique_observer_teammates: teammate_observer_ids.size,
+      unique_observer_externals: external_observer_count,
       unique_observee_teammates: Observee.where(observation_id: obs_subquery).distinct.count(:teammate_id),
       unique_aspirations_rated: rating_scope.where(rateable_type: 'Aspiration').distinct.count(:rateable_id),
       unique_assignments_rated: rating_scope.where(rateable_type: 'Assignment').distinct.count(:rateable_id),
       unique_abilities_rated: rating_scope.where(rateable_type: 'Ability').distinct.count(:rateable_id)
     }
+  end
+
+  def build_observation_observer_rows(observer_teammates:, external_people:)
+    teammate_rows = Array(observer_teammates).map do |teammate|
+      {
+        person_id: teammate.person_id,
+        person: teammate.person,
+        teammate: teammate,
+        external: false,
+        department_label: Insights::ObservationsObserverAffiliation.observer_department_label(
+          person_id: teammate.person_id,
+          teammate: teammate
+        )
+      }
+    end
+    external_rows = Array(external_people).map do |person|
+      {
+        person_id: person.id,
+        person: person,
+        teammate: nil,
+        external: true,
+        department_label: Insights::ObservationsObserverAffiliation::EXTERNAL_LABEL
+      }
+    end
+    teammate_rows + external_rows
   end
 
   def prompts_download_teammate_scope
@@ -1019,25 +1065,29 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   end
 
   def observations_by_observer_department_chart_series(base_scope, chart_range)
-    # Same scope and date (observed_at) as the privacy chart; group by observer's department
+    # Same scope and date (observed_at) as the privacy chart; group by observer's department.
+    # Never-hired observers → External; teammates without a dept → No Department.
+    affil = Insights::ObservationsObserverAffiliation
     scope = base_scope.where(observed_at: chart_range)
     observation_rows = scope.pluck(:id, :observed_at, :observer_id)
 
     observer_person_ids = observation_rows.map { |_id, _at, oid| oid }.uniq.compact
-    department_by_observer = {}
+    teammate_by_person_id = {}
     if observer_person_ids.any?
       CompanyTeammate
         .where(organization: company, person_id: observer_person_ids)
         .includes(employment_tenures: { position: { title: :department } })
         .find_each do |tm|
-          dept = tm.active_employment_tenure&.position&.title&.department&.name.presence || 'No Department'
-          department_by_observer[tm.person_id] = dept
+          teammate_by_person_id[tm.person_id] = tm
         end
     end
 
     observation_department = {}
     observation_rows.each do |obs_id, _, observer_id|
-      observation_department[obs_id] = observer_id ? (department_by_observer[observer_id] || 'No Department') : 'No Department'
+      observation_department[obs_id] = affil.observer_department_label(
+        person_id: observer_id,
+        teammate: observer_id && teammate_by_person_id[observer_id]
+      )
     end
 
     end_date = chart_range.end.to_date
@@ -1057,7 +1107,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
       counts_by_dept
     end
 
-    department_names = week_counts.flat_map(&:keys).uniq.sort
+    department_names = affil.sort_department_names(week_counts.flat_map(&:keys))
     series = department_names.map do |dept|
       data = week_counts.map { |counts| counts[dept] || 0 }
       { name: dept, data: data }

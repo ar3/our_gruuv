@@ -35,7 +35,27 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('External guest feedback story')
       expect(response.body).to include('External')
-      expect(response.body).to include('Observer is not a teammate of this organization')
+      expect(response.body).to include('Observer has never been a teammate of this organization')
+    end
+
+    it 'does not show an External badge for terminated company teammates' do
+      former = create(:company_teammate,
+        organization: organization,
+        last_terminated_at: Date.current,
+        first_employed_at: 1.year.ago
+      )
+      create(:observation,
+        company: organization,
+        observer: former.person,
+        privacy_level: :public_to_company,
+        published_at: Time.current,
+        story: 'Former teammate feedback story'
+      )
+
+      get organization_observations_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Former teammate feedback story')
+      expect(response.body).not_to include('Observer has never been a teammate of this organization')
     end
 
     it 'makes rated objects and teammate names clickable on the wall view' do

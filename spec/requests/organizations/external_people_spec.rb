@@ -57,6 +57,16 @@ RSpec.describe 'Organizations::ExternalPeople', type: :request do
       expect(response).to redirect_to(organization_company_teammate_path(organization, viewer_teammate))
     end
 
+    it 'redirects terminated teammates to their teammate profile' do
+      former = create(:company_teammate,
+        organization: organization,
+        last_terminated_at: Date.current,
+        first_employed_at: 1.year.ago
+      )
+      get organization_external_person_path(organization, former.person)
+      expect(response).to redirect_to(organization_company_teammate_path(organization, former))
+    end
+
     it 'requires authentication' do
       sign_out_teammate_for_request
       get organization_external_person_path(organization, external_person)

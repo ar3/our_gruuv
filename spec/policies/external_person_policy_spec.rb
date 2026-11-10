@@ -19,6 +19,17 @@ RSpec.describe ExternalPersonPolicy, type: :policy do
       expect(subject).not_to permit(pundit_user, viewer_teammate.person)
     end
 
+    it 'denies viewing someone who only has a terminated teammate record' do
+      former = create(:person)
+      create(:company_teammate,
+        person: former,
+        organization: company,
+        last_terminated_at: Date.current,
+        first_employed_at: 1.year.ago
+      )
+      expect(subject).not_to permit(pundit_user, former)
+    end
+
     it 'denies when there is no viewing teammate' do
       expect(subject).not_to permit(OpenStruct.new(user: nil, impersonating_teammate: nil), external_person)
     end
