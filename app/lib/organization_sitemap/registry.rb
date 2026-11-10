@@ -510,11 +510,9 @@ module OrganizationSitemap
             goal: "See Title, Position, and Assignment Expectation Alignment aggregated by department.",
             synonyms: %w[departments health department health expectation alignment]),
           insights_page(:protect_flow, "Protect Flow", "bi-shield-check", :organization_protect_flow_path,
-            policy: ->(ctx) {
-              ctx.teammate&.has_direct_reports? && ctx.policy(ctx.organization).protect_flow?
-            },
-            goal: "Weekly per-person actions across health vectors so managers protect flow — clarity, challenge, and feedback.",
-            synonyms: %w[protect flow weekly focus team health one thing manager ritual thirty minutes]),
+            policy: ->(ctx) { ctx.policy(ctx.organization).protect_flow? },
+            goal: "Weekly per-person actions across health signals so managers protect flow — clarity, challenge, and feedback. Teammates without reports see their own health signals.",
+            synonyms: %w[protect flow weekly focus team health one thing manager ritual thirty minutes overall health og health]),
           insights_page(:insights_observations, "Observations", "bi-eye", :organization_insights_observations_path,
             goal: "Explore observation trends and analytics.",
             synonyms: %w[insights observations observation analytics ogo insights]),

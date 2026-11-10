@@ -163,18 +163,18 @@ module HealthNudges
       total = @stats[:total_employees].to_i
       healthy = @stats[:healthy_count].to_i
       needs = (@stats[:needs_attention_count] || @stats[:concerning_count]).to_i
-      vectors = @stats[:current_unhealthy_vectors].to_i
-      improved = @stats[:improved_vector_count].to_i
+      steady = @stats[:current_steady_signals].to_i
+      improved = @stats[:improved_signal_count].to_i
 
       if total.zero?
         "There are no people in this view right now."
       else
         parts = [
           "Of *#{total}* #{'person'.pluralize(total)}, *#{healthy}* fully healthy this week",
-          "*#{needs}* with unhealthy vectors"
+          "*#{needs}* with work remaining"
         ]
-        parts << "*#{vectors}* unhealthy vectors across the team" if vectors.positive?
-        parts << "*#{improved}* vectors improved so far" if improved.positive?
+        parts << "*#{steady}* steady signals across the team"
+        parts << "*#{improved}* signals improved so far" if improved.positive?
         "#{parts.join(', ')}."
       end
     end
@@ -197,8 +197,10 @@ module HealthNudges
     end
 
     def protect_flow_unhealthy?
-      (@stats[:needs_attention_count] || @stats[:concerning_count]).to_i.positive? ||
-        @stats[:current_unhealthy_vectors].to_i.positive?
+      needs = (@stats[:needs_attention_count] || @stats[:concerning_count]).to_i
+      steady = @stats[:current_steady_signals].to_i
+      total_signals = @stats[:total_signal_count].to_i
+      needs.positive? || (total_signals.positive? && steady < total_signals)
     end
 
     def dashboard_url_options

@@ -13,11 +13,11 @@
         %h2.h5.mb-1
           = link_to person[:name], person[:hub_path], class: "text-decoration-none"
         %p.small.text-muted.mb-0
-          #{person[:start_unhealthy_count]}→#{person[:unhealthy_count]} unhealthy vectors · ~30 min this week
+          #{person[:start_steady_count]}→#{person[:steady_count]} steady signals · ~30 min this week
 
-    -# Highest-leverage vector — always-visible why + One Thing links
+    -# Highest-leverage health signal — always-visible why + One Thing links
     .mb-3
-      = render "organizations/protect_flow/hero_vector",
+      = render "organizations/protect_flow/hero_signal",
                action: hero,
                hero_item_links: person[:hero_item_links]
 
@@ -25,7 +25,7 @@
       %h3.h6.fw-semibold.text-muted.mb-2 Also blocking clarity
       .d-flex.flex-column.gap-2.mb-3
         - person[:secondary].each do |action|
-          = render "organizations/protect_flow/vector_row",
+          = render "organizations/protect_flow/signal_row",
                    action: action,
                    organization: organization,
                    historical: historical,
@@ -35,7 +35,7 @@
       %h3.h6.fw-semibold.text-muted.mb-2 Clear
       .d-flex.flex-column.gap-2.mb-0
         - person[:clear_items].each do |action|
-          = render "organizations/protect_flow/vector_row",
+          = render "organizations/protect_flow/signal_row",
                    action: action,
                    organization: organization,
                    historical: historical,

@@ -135,17 +135,19 @@ module HealthNudges
 
       eh_status = person[:worst_status].presence || EngagementHealth::WARNING
       hero = person[:hero] || {}
-      unhealthy = person[:unhealthy_count].to_i
+      start_steady = person[:start_steady_count].to_i
+      steady = person[:steady_count].to_i
+      steady_bit = "#{start_steady}→#{steady} steady #{'signal'.pluralize(steady)}"
       detail =
         if hero[:title].present?
           bits = [ hero[:title].to_s ]
           bits << hero[:why].to_s if hero[:why].present?
-          bits << "#{unhealthy} unhealthy #{'vector'.pluralize(unhealthy)}" if unhealthy.positive?
+          bits << steady_bit
           bits.join(" ... ")
-        elsif unhealthy.positive?
-          "#{unhealthy} unhealthy #{'vector'.pluralize(unhealthy)} this week."
+        elsif eh_status == EngagementHealth::NEEDS_ATTENTION
+          "#{steady_bit} this week."
         else
-          "All vectors healthy this week."
+          "All signals steady this week."
         end
 
       entry(teammate: teammate, eh_status: eh_status, detail: detail, health_object: "protect_flow")

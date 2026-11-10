@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ProtectFlow
-  # Top unhealthy Engagement Health *items* for the hero vector — deep links to
+  # Top unhealthy Engagement Health *items* for the hero health signal — deep links to
   # the specific check-in / goal / ability / OGO surfaces (not the full One Thing carousel).
   class HeroItemLinks
     include Rails.application.routes.url_helpers

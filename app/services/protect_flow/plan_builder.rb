@@ -184,8 +184,8 @@ module ProtectFlow
       clear_items = healthy.map { |row| clear_item_for(teammate, row) }
 
       worst = EngagementHealth.worst_status(enriched.map { |s| s[:status] })
-      start_unhealthy = start_statuses.count { |_c, s| s.present? && s != EngagementHealth::HEALTHY }
-      current_unhealthy = enriched.count { |s| s[:status] != EngagementHealth::HEALTHY }
+      start_steady = start_statuses.count { |_c, s| steady_status?(s) }
+      current_steady = enriched.count { |s| steady_status?(s[:status]) }
 
       {
         teammate: teammate,
@@ -195,8 +195,8 @@ module ProtectFlow
         statuses: enriched,
         worst_status: worst,
         urgency_rank: EngagementHealth.status_severity_rank(worst),
-        unhealthy_count: current_unhealthy,
-        start_unhealthy_count: start_unhealthy,
+        steady_count: current_steady,
+        start_steady_count: start_steady,
         hero: hero,
         secondary: secondary,
         clear_items: clear_items
@@ -224,8 +224,8 @@ module ProtectFlow
         statuses: [],
         worst_status: EngagementHealth::WARNING,
         urgency_rank: EngagementHealth.status_severity_rank(EngagementHealth::WARNING),
-        unhealthy_count: 0,
-        start_unhealthy_count: start_statuses.count { |_c, s| s.present? && s != EngagementHealth::HEALTHY },
+        steady_count: 0,
+        start_steady_count: start_statuses.count { |_c, s| steady_status?(s) },
         hero: hero,
         secondary: [],
         clear_items: []
@@ -277,7 +277,7 @@ module ProtectFlow
         status_label: EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::HEALTHY),
         short_title: "Stay clear",
         title: "Stay clear",
-        why: "They're healthy across vectors. A short 1:1 still protects flow before signals go stale.",
+        why: "They're steady across health signals. A short 1:1 still protects flow before signals go stale.",
         cta_label: "Open #{one_thing_label_for_teammate(teammate)}",
         path: organization_company_teammate_one_on_one_link_path(@organization, teammate),
         cleared: false
@@ -291,7 +291,7 @@ module ProtectFlow
       when :hero
         base
       when :clear
-        "#{base} This vector is healthy — keep it that way."
+        "#{base} This health signal is steady — keep it that way."
       else
         "#{base} Secondary to the highest-leverage move for this person — still part of protecting flow."
       end
@@ -326,30 +326,37 @@ module ProtectFlow
     end
 
     def sort_people(people)
-      people.sort_by { |p| [p[:urgency_rank], -p[:unhealthy_count], p[:name].to_s.downcase] }
+      # Fewer steady signals (more Needs Attention) first within the same urgency band.
+      people.sort_by { |p| [p[:urgency_rank], p[:steady_count].to_i, p[:name].to_s.downcase] }
     end
 
     def build_progress(people, start_baseline, comparison_baseline)
-      start_unhealthy = count_unhealthy_in_baseline(start_baseline)
-      current_unhealthy = count_unhealthy_in_baseline(comparison_baseline)
+      start_steady = count_steady_in_baseline(start_baseline)
+      current_steady = count_steady_in_baseline(comparison_baseline)
       improved = count_improved(start_baseline, comparison_baseline)
 
       {
-        start_unhealthy_count: start_unhealthy,
-        current_unhealthy_count: current_unhealthy,
-        improved_vector_count: improved,
+        start_steady_count: start_steady,
+        current_steady_count: current_steady,
+        improved_signal_count: improved,
         people_count: people.size,
-        healthy_people_count: people.count { |p| p[:worst_status] == EngagementHealth::HEALTHY }
+        healthy_people_count: people.count { |p| p[:worst_status] == EngagementHealth::HEALTHY },
+        total_signal_count: people.size * CATEGORY_PRIORITY.size
       }
     end
 
-    def count_unhealthy_in_baseline(baseline)
+    # Steady = Healthy + Warning (everything except Needs Attention).
+    def steady_status?(status)
+      status.present? && status != EngagementHealth::NEEDS_ATTENTION
+    end
+
+    def count_steady_in_baseline(baseline)
       return 0 if baseline.blank?
 
       baseline.values.sum do |cats|
         next 0 unless cats.is_a?(Hash)
 
-        cats.count { |_c, status| status.present? && status != EngagementHealth::HEALTHY }
+        cats.count { |_c, status| steady_status?(status) }
       end
     end
 

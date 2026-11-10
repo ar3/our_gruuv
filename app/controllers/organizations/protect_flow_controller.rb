@@ -6,14 +6,17 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
 
   before_action :require_authentication
   before_action :set_manager_teammate
-  before_action :apply_protect_flow_filter_default_if_needed
+  before_action :apply_protect_flow_filter_default_if_needed, unless: :protect_flow_self_only?
 
   def show
     authorize @organization, :protect_flow?
 
-    @current_manager_filter = params[:manager_id]
-    @available_manager_filter_options = available_protect_flow_manager_filter_options
+    @protect_flow_self_only = protect_flow_self_only?
+    @current_manager_filter = @protect_flow_self_only ? "just_me" : params[:manager_id]
+    @available_manager_filter_options = available_protect_flow_manager_filter_options unless @protect_flow_self_only
     load_protect_flow_plan!
+    return if @protect_flow_self_only
+
     assign_health_nudge_context!(
       health_object: "protect_flow",
       spotlight_stats: HealthNudges::Service.spotlight_stats_from_protect_flow_plan(@plan)
@@ -22,6 +25,11 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
 
   def nudge
     authorize @organization, :protect_flow?
+    if protect_flow_self_only?
+      redirect_to organization_protect_flow_path(@organization),
+                  alert: "Health nudges are for managers with direct reports."
+      return
+    end
 
     load_protect_flow_plan!
     redirect_params = { manager_id: params[:manager_id] }
@@ -36,8 +44,19 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
 
   private
 
+  def protect_flow_self_only?
+    return true unless current_company_teammate
+
+    !current_company_teammate.has_direct_reports?
+  end
+
   def load_protect_flow_plan!
-    teammates = filtered_teammates_for_protect_flow.to_a
+    teammates =
+      if protect_flow_self_only?
+        Array(current_company_teammate)
+      else
+        filtered_teammates_for_protect_flow.to_a
+      end
     store = ProtectFlow::WeekSnapshotStore.for(person: current_person, organization: @organization)
     @plan = ProtectFlow::PlanBuilder.call(
       organization: @organization,

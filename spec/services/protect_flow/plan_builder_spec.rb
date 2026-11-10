@@ -85,9 +85,12 @@ RSpec.describe ProtectFlow::PlanBuilder do
     it "tracks progress from week-start snapshot when health improves (no manual complete)" do
       seed_all_categories(report, clarity_status: EngagementHealth::NEEDS_ATTENTION)
 
+      category_count = EngagementHealth::CATEGORIES.size
       plan = described_class.call(organization: company, week_store: store, teammates: [report])
-      expect(plan[:progress][:start_unhealthy_count]).to eq(1)
-      expect(plan[:progress][:current_unhealthy_count]).to eq(1)
+      expect(plan[:progress][:start_steady_count]).to eq(category_count - 1)
+      expect(plan[:progress][:current_steady_count]).to eq(category_count - 1)
+      expect(plan[:progress][:total_signal_count]).to eq(category_count)
+      expect(plan[:people].sole[:steady_count]).to eq(category_count - 1)
 
       EngagementHealthStatus.find_by!(
         teammate: report,
@@ -96,11 +99,22 @@ RSpec.describe ProtectFlow::PlanBuilder do
       ).update!(status: EngagementHealth::HEALTHY)
 
       plan2 = described_class.call(organization: company, week_store: store, teammates: [report])
-      expect(plan2[:progress][:start_unhealthy_count]).to eq(1)
-      expect(plan2[:progress][:current_unhealthy_count]).to eq(0)
-      expect(plan2[:progress][:improved_vector_count]).to eq(1)
+      expect(plan2[:progress][:start_steady_count]).to eq(category_count - 1)
+      expect(plan2[:progress][:current_steady_count]).to eq(category_count)
+      expect(plan2[:progress][:improved_signal_count]).to eq(1)
       expect(plan2[:people].sole[:clear_items].map { |r| r[:category] }).to include(EngagementHealth::CATEGORY_REQUIRED_CLARITY)
       expect(plan2[:people].sole[:clear_items].find { |r| r[:category] == EngagementHealth::CATEGORY_REQUIRED_CLARITY }[:cleared]).to be(true)
+    end
+
+    it "counts Warning as steady (Healthy + Warning; not Needs Attention)" do
+      seed_all_categories(report, clarity_status: EngagementHealth::WARNING)
+
+      plan = described_class.call(organization: company, week_store: store, teammates: [report])
+      category_count = EngagementHealth::CATEGORIES.size
+
+      expect(plan[:progress][:current_steady_count]).to eq(category_count)
+      expect(plan[:people].sole[:steady_count]).to eq(category_count)
+      expect(plan[:people].sole[:hero][:category]).to eq(EngagementHealth::CATEGORY_REQUIRED_CLARITY)
     end
 
     it "closes the prior week and allows browsing history" do

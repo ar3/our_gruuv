@@ -13,11 +13,11 @@
         .d-flex.flex-wrap.gap-3.justify-content-md-end
           %div
             %div.fs-4.fw-semibold.lh-1
-              #{progress[:start_unhealthy_count]}→#{progress[:current_unhealthy_count]}
-            %div.small.text-muted Unhealthy vectors
+              #{progress[:start_steady_count]}→#{progress[:current_steady_count]}
+            %div.small.text-muted Steady signals
           %div
-            %div.fs-4.fw-semibold.lh-1= progress[:improved_vector_count]
-            %div.small.text-muted Vectors improved
+            %div.fs-4.fw-semibold.lh-1= progress[:improved_signal_count]
+            %div.small.text-muted Signals improved
           %div
             %div.fs-4.fw-semibold.lh-1
               #{progress[:healthy_people_count]}/#{progress[:people_count]}

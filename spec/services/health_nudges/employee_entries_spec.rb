@@ -52,7 +52,8 @@ RSpec.describe HealthNudges::EmployeeEntries do
           teammate: teammate,
           name: teammate.person.casual_name,
           worst_status: EngagementHealth::WARNING,
-          unhealthy_count: 1,
+          start_steady_count: 3,
+          steady_count: 4,
           hero: { title: "Clarity Check-ins", why: "Stale clarity kills flow." }
         }
       ]
@@ -62,6 +63,7 @@ RSpec.describe HealthNudges::EmployeeEntries do
     expect(entries.first[:status]).to eq(EngagementHealth::WARNING)
     expect(entries.first[:detail]).to include("Clarity Check-ins")
     expect(entries.first[:detail]).to include("Stale clarity")
+    expect(entries.first[:detail]).to include("3→4 steady signals")
     expect(entries.first[:action_url]).to include("/one_on_one_link")
     expect(entries.first[:action_button_label]).to include("One Thing Page")
   end

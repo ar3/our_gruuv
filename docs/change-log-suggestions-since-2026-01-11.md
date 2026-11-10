@@ -60,7 +60,7 @@ Rough launch dates are best-effort from commit history. Adjust to when you actua
 ```markdown
 ## OG Health: one status language across clarity, milestones, OGOs, and goals
 
-We now track how "in the groove" someone is across four vectors — Clarity Check-ins, Ability Milestones, OGOs, and Goals — using a shared status: **Healthy**, **Warning**, and **Needs Attention**.
+We now track how "in the groove" someone is across four health signals — Clarity Check-ins, Ability Milestones, OGOs, and Goals — using a shared status: **Healthy**, **Warning**, and **Needs Attention**.
 
 You’ll see this language on the OG Scorecard, Check-ins Health, Up Next, Manager Lite, and the 1:1 Overview. Banners and “what’s next” nudges use the same rules, so a teammate doesn’t look healthy on one page and at risk on another.
 ```
@@ -70,7 +70,7 @@ You’ll see this language on the OG Scorecard, Check-ins Health, Up Next, Manag
 1. Open a teammate’s **1:1 Hub → Overview**  
    Path pattern: `/organizations/:org_id/company_teammates/:id/one_on_one_link/overview`  
    Or: avatar menu → **My 1:1** (for yourself), then Overview.
-2. Capture the Overview strip that shows Healthy / Warning / Needs Attention across the four vectors (and any summary bars under teammates if visible).
+2. Capture the Overview strip that shows Healthy / Warning / Needs Attention across the four health signals (and any summary bars under teammates if visible).
 3. Optional second crop: **Insights → OG Scorecard** with red/yellow/green cells visible  
    Path: `/organizations/:org_id/insights/og_scorecard`  
    Nav: Insights (or equivalent) → OG Scorecard.

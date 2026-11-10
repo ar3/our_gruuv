@@ -63,7 +63,7 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response.body).to include("Protect Flow")
       expect(response.body).to include("Protect flow — stale clarity kills it")
       expect(response.body).to include("Alex")
-      expect(response.body).to include("unhealthy vectors")
+      expect(response.body).to include("steady signals")
       expect(response.body).to include("Who to show")
       expect(response.body).to include("Protect Flow")
       expect(response.body).to include("Check-ins")
@@ -90,19 +90,44 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response.body).not_to include('value="everyone"')
     end
 
-    it "forbids teammates without direct reports" do
-      employee_person = create(:person)
-      create(:company_teammate, person: employee_person, organization: company, first_employed_at: 1.month.ago)
+    it "shows a self-only health card for teammates without direct reports" do
+      employee_person = create(:person, first_name: "Sam", last_name: "Solo")
+      employee = create(
+        :company_teammate,
+        person: employee_person,
+        organization: company,
+        first_employed_at: 1.month.ago,
+        last_terminated_at: nil
+      )
+      EngagementHealth::CATEGORIES.each do |category|
+        EngagementHealthStatus.create!(
+          teammate: employee,
+          organization: company,
+          level: "category",
+          category: category,
+          status: EngagementHealth::HEALTHY,
+          inputs: {},
+          computed_at: Time.current
+        )
+      end
       sign_in_as_teammate_for_request(employee_person, company)
 
       get organization_protect_flow_path(company)
 
-      expect(response).to have_http_status(:redirect).or have_http_status(:forbidden)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Sam")
+      expect(response.body).to include("Your health signals")
+      expect(response.body).to include("steady signals")
+      expect(response.body).not_to include("Who to show")
+      expect(response.body).not_to include("healthNudge-protect_flow")
+      expect(response.body).not_to include("Alex")
+      expect(response.body).not_to include("This week’s progress")
     end
 
     it "shows progress after health improves without manual completion" do
+      steady_at_start = EngagementHealth::CATEGORIES.size - 1
       get organization_protect_flow_path(company)
-      expect(response.body).to include("1→1")
+      expect(response.body).to include("#{steady_at_start}→#{steady_at_start}")
 
       EngagementHealthStatus.find_by!(
         teammate: report,
@@ -116,7 +141,7 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       ).update!(status: EngagementHealth::HEALTHY)
 
       get organization_protect_flow_path(company)
-      expect(response.body).to include("1→0")
+      expect(response.body).to include("#{steady_at_start}→#{EngagementHealth::CATEGORIES.size}")
       expect(response.body).to include("Clear")
       expect(response.body).to include("Clarity Check-ins")
       expect(response.body).not_to include("Hero action")

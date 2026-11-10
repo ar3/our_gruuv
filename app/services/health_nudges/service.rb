@@ -79,9 +79,10 @@ module HealthNudges
         needs_attention_count: people_count - healthy,
         ok_count: 0,
         concerning_count: people_count - healthy,
-        current_unhealthy_vectors: progress[:current_unhealthy_count].to_i,
-        improved_vector_count: progress[:improved_vector_count].to_i,
-        start_unhealthy_count: progress[:start_unhealthy_count].to_i,
+        current_steady_signals: progress[:current_steady_count].to_i,
+        start_steady_count: progress[:start_steady_count].to_i,
+        improved_signal_count: progress[:improved_signal_count].to_i,
+        total_signal_count: progress[:total_signal_count].to_i,
         week_start: plan[:week_start]
       }
     end

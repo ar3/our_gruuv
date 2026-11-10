@@ -19,7 +19,7 @@
     %p.small.text-muted.mb-0
       Protect flow for #{people_count} #{people_count == 1 ? "person" : "people"} this week.
       %span.badge.rounded-pill.text-bg-light.border
-        #{progress[:start_unhealthy_count]}→#{progress[:current_unhealthy_count]} unhealthy
+        #{progress[:start_steady_count]}→#{progress[:current_steady_count]} steady
       ·
       %span.badge.rounded-pill{class: progress[:healthy_people_count] == people_count ? "text-bg-success" : "text-bg-warning"}
         #{progress[:healthy_people_count]} healthy

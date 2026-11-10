@@ -48,8 +48,9 @@ RSpec.describe HealthNudges::Message do
         total_employees: 3,
         healthy_count: 1,
         needs_attention_count: 2,
-        current_unhealthy_vectors: 4,
-        improved_vector_count: 1,
+        current_steady_signals: 11,
+        improved_signal_count: 1,
+        total_signal_count: 15,
         week_start: "2026-08-18"
       }
     )
@@ -57,6 +58,9 @@ RSpec.describe HealthNudges::Message do
     expect(message.body_mrkdwn).to include("Overall Health check-in")
     expect(message.body_mrkdwn).to include("Overall Health for your direct reports")
     expect(message.body_mrkdwn).to include("Open Overall Health for your team")
+    expect(message.body_mrkdwn).to include("steady signals across the team")
+    expect(message.body_mrkdwn).to include("signals improved so far")
+    expect(message.body_mrkdwn).not_to include("vector")
     expect(message.body_mrkdwn).not_to include("We do Clarity check-ins for 3 reasons")
     expect(message.importance_mrkdwn).to include("We do Clarity check-ins for 3 reasons")
     expect(message.importance_mrkdwn).to include(

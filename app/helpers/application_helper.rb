@@ -966,7 +966,7 @@ module ApplicationHelper
       ["#{casual}'s One Thing", 'one_on_one_hub'],
       ["#{casual}'s Clarity Check-In Hub", 'clarity_check_in_hub'],
       ["#{casual}'s #{gsd_label} list", 'get_shit_done'],
-      (company_teammate.has_direct_reports? ? ['Protect Flow', 'protect_flow'] : nil),
+      ['Protect Flow', 'protect_flow'],
       ["#{casual}'s Goals", 'goals'],
       ["#{org_name} Goals", 'company_goals'],
       ['My Growth · Experiences', 'my_growth_experiences'],

@@ -376,13 +376,13 @@ RSpec.describe OrganizationPolicy, type: :policy do
         expect(policy.protect_flow?).to be true
       end
 
-      it 'denies employed teammates without direct reports' do
+      it 'allows employed teammates without direct reports' do
         allow(employed_teammate).to receive(:has_direct_reports?).and_return(false)
         policy = OrganizationPolicy.new(pundit_user_employed, organization)
-        expect(policy.protect_flow?).to be false
+        expect(policy.protect_flow?).to be true
       end
 
-      it 'allows admin bypass even without direct reports' do
+      it 'allows admin bypass' do
         policy = OrganizationPolicy.new(pundit_user_admin, organization)
         expect(policy.protect_flow?).to be true
       end

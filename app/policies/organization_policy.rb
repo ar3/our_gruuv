@@ -72,9 +72,9 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization
     return false unless viewing_teammate.employed?
-    return true if admin_bypass?
 
-    viewing_teammate.has_direct_reports?
+    # Any employed teammate can open Overall Health; ICs see only their own card.
+    true
   end
 
   def talent_density?
