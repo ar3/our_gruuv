@@ -88,6 +88,8 @@ module ProtectFlow
       {
         week_start: raw["week_start"].to_s,
         closed: raw["closed"] == true,
+        # First visit that opened this week's snapshot (falls back to Monday week_start).
+        opened_at: raw["opened_at"].presence,
         start_baseline: stringify_baseline(raw["start_baseline"]),
         end_baseline: stringify_baseline(raw["end_baseline"])
       }

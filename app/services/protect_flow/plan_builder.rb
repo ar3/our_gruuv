@@ -88,7 +88,10 @@ module ProtectFlow
         week_closed: viewing_week[:closed],
         available_weeks: available_weeks,
         people: people,
-        progress: build_progress(people, start_baseline, comparison_baseline)
+        progress: build_progress(people).merge(
+          # Baseline is snapped on first Protect Flow visit that week (opened_at), not Monday.
+          baseline_as_of: viewing_week[:opened_at].presence || viewing_week[:week_start]
+        )
       }
     end
 
@@ -158,7 +161,7 @@ module ProtectFlow
       end
 
       enriched = current_statuses.map do |row|
-        start_status = start_statuses[row[:category]]
+        start_status = start_statuses[row[:category].to_s] || start_statuses[row[:category]]
         improved = start_status.present? &&
           EngagementHealth.status_severity_rank(row[:status]) > EngagementHealth.status_severity_rank(start_status)
         cleared = improved && row[:status] == EngagementHealth::HEALTHY
@@ -181,6 +184,18 @@ module ProtectFlow
       worst = EngagementHealth.worst_status(enriched.map { |s| s[:status] })
       start_steady = start_statuses.count { |_c, s| steady_status?(s) }
       current_steady = enriched.count { |s| steady_status?(s[:status]) }
+      start_needs_work = start_statuses.count { |_c, s| needs_work_status?(s) }
+      current_needs_work = enriched.count { |s| needs_work_status?(s[:status]) }
+      # If week-start snapshot is missing this person (common when EH arrived mid-week),
+      # fall back to current so progress / copy never undercount open work as "on track".
+      week_needs_work =
+        if start_statuses.present?
+          [start_needs_work, current_needs_work].max
+        else
+          current_needs_work
+        end
+      effective_start_steady = start_statuses.present? ? start_steady : current_steady
+      improved_count = enriched.count { |s| s[:improved] }
 
       {
         teammate: teammate,
@@ -192,6 +207,11 @@ module ProtectFlow
         urgency_rank: EngagementHealth.status_severity_rank(worst),
         steady_count: current_steady,
         start_steady_count: start_steady,
+        effective_start_steady_count: effective_start_steady,
+        start_needs_work_count: start_needs_work,
+        current_needs_work_count: current_needs_work,
+        week_needs_work_count: week_needs_work,
+        improved_count: improved_count,
         attention_items: attention_items,
         clear_items: clear_items
       }
@@ -222,6 +242,11 @@ module ProtectFlow
         urgency_rank: EngagementHealth.status_severity_rank(EngagementHealth::WARNING),
         steady_count: 0,
         start_steady_count: start_statuses.count { |_c, s| steady_status?(s) },
+        effective_start_steady_count: start_statuses.count { |_c, s| steady_status?(s) },
+        start_needs_work_count: start_statuses.count { |_c, s| needs_work_status?(s) },
+        current_needs_work_count: 1,
+        week_needs_work_count: [start_statuses.count { |_c, s| needs_work_status?(s) }, 1].max,
+        improved_count: 0,
         attention_items: [attention],
         clear_items: []
       }
@@ -376,24 +401,35 @@ module ProtectFlow
       people.sort_by { |p| [p[:urgency_rank], p[:steady_count].to_i, p[:name].to_s.downcase] }
     end
 
-    def build_progress(people, start_baseline, comparison_baseline)
-      start_steady = count_steady_in_baseline(start_baseline)
-      current_steady = count_steady_in_baseline(comparison_baseline)
-      improved = count_improved(start_baseline, comparison_baseline)
+    def build_progress(people, _start_baseline = nil, _comparison_baseline = nil)
+      # Prefer per-person rollups (same start/current fallback as person week summary)
+      # so missing week-start snapshots don't zero out progress.
+      start_steady = people.sum { |p| p[:effective_start_steady_count].to_i }
+      current_steady = people.sum { |p| p[:steady_count].to_i }
+      improved = people.sum { |p| p[:improved_count].to_i }
+      people_count = people.size
+      total_signals = people_count * CATEGORY_PRIORITY.size
+      teammates_steady = people.count { |p| steady_status?(p[:worst_status]) }
 
       {
         start_steady_count: start_steady,
         current_steady_count: current_steady,
         improved_signal_count: improved,
-        people_count: people.size,
+        people_count: people_count,
+        teammates_steady_count: teammates_steady,
         healthy_people_count: people.count { |p| p[:worst_status] == EngagementHealth::HEALTHY },
-        total_signal_count: people.size * CATEGORY_PRIORITY.size
+        total_signal_count: total_signals
       }
     end
 
     # Steady = Healthy + Warning (everything except Needs Attention).
     def steady_status?(status)
       status.present? && status != EngagementHealth::NEEDS_ATTENTION
+    end
+
+    # Warning / Needs Attention — signals that still need work this week.
+    def needs_work_status?(status)
+      status.present? && status != EngagementHealth::HEALTHY
     end
 
     def count_steady_in_baseline(baseline)

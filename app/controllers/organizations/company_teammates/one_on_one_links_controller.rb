@@ -238,14 +238,22 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     )
   end
 
-  # SI "those I serve" categories for the hub teammate only. Viewer = current
-  # teammate (same as the SI page); default window is last 14 days.
+  # SI "those I serve" for the hub teammate, always from their manager's lens so
+  # anyone on this page sees the same 1:1 prep list. Default window: 14 days.
   def load_something_interesting_for_one_thing
     baseline = SomethingInterestingQueryService.one_thing_baseline
     @si_since = parsed_si_since_param || baseline
+    @si_perspective_manager = @teammate.active_employment_tenure&.manager_teammate
+
+    unless @si_perspective_manager
+      @goals_by_those_i_serve = []
+      @observations_about_those_i_serve = Observation.none
+      @check_in_warnings_for_those_i_serve = []
+      return
+    end
 
     query_service = SomethingInterestingQueryService.new(
-      teammate: current_company_teammate,
+      teammate: @si_perspective_manager,
       since: @si_since,
       focus_teammate: @teammate
     )

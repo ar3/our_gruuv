@@ -1,4 +1,6 @@
 - casual_name = @teammate.person.casual_name
+- manager = @si_perspective_manager
+- manager_casual = manager&.person&.casual_name
 
 .mt-4#oneThingSomethingInteresting
   %h3.mb-1
@@ -8,6 +10,21 @@
     Things that happened with
     = casual_name
     that can make this 1:1 better
+
+  - if manager
+    .alert.alert-light.border.mb-3.py-2{role: "status"}
+      %small.text-muted
+        %i.bi.bi-eye.me-1{"aria-hidden" => "true"}
+        Viewing what
+        %strong= manager_casual
+        would see in their Something Interesting list for
+        = "#{casual_name}."
+  - else
+    .alert.alert-light.border.mb-3.py-2{role: "status"}
+      %small.text-muted
+        %i.bi.bi-eye.me-1{"aria-hidden" => "true"}
+        No manager is assigned, so there is no manager Something Interesting lens to show for
+        = "#{casual_name}."
 
   = render 'organizations/get_shit_done/something_interesting_feed',
            categories: :those_i_serve,

@@ -63,7 +63,8 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response.body).to include("Protect Flow")
       expect(response.body).to include("Protect flow — stale clarity kills it")
       expect(response.body).to include("Alex")
-      expect(response.body).to include("steady signals")
+      expect(response.body).to match(/of the 1 warning\/unhealthy signal, we(?:'|&#39;)ve improved 0 so far/)
+      expect(response.body).to include("essential clarity signals steady")
       expect(response.body).to include("Who to show")
       expect(response.body).to include("Protect Flow")
       expect(response.body).to include("Check-ins")
@@ -119,7 +120,8 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Sam")
       expect(response.body).to include("Your health signals")
-      expect(response.body).to include("steady signals")
+      expect(response.body).to match(/we(?:'|&#39;)re on track/)
+      expect(response.body).to include("essential clarity signals steady")
       expect(response.body).not_to include("Who to show")
       expect(response.body).not_to include("healthNudge-protect_flow")
       expect(response.body).not_to include("Alex")
@@ -127,9 +129,15 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
     end
 
     it "shows progress after health improves without manual completion" do
-      steady_at_start = EngagementHealth::CATEGORIES.size - 1
+      total_signals = EngagementHealth::CATEGORIES.size
+      steady_at_start = total_signals - 1
       get organization_protect_flow_path(company)
-      expect(response.body).to include("#{steady_at_start}→#{steady_at_start}")
+      expect(response.body).to include("This week’s progress")
+      expect(response.body).to include("0/1")
+      expect(response.body).to include("Teammates steady")
+      expect(response.body).to include("#{steady_at_start}/#{total_signals}")
+      expect(response.body).to include("Signals steady as of #{Date.current.strftime('%b')} #{Date.current.day.ordinalize}")
+      expect(response.body).to include("signals improved")
 
       EngagementHealthStatus.find_by!(
         teammate: report,
@@ -143,7 +151,10 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       ).update!(status: EngagementHealth::HEALTHY)
 
       get organization_protect_flow_path(company)
-      expect(response.body).to include("#{steady_at_start}→#{EngagementHealth::CATEGORIES.size}")
+      expect(response.body).to include("1/1")
+      expect(response.body).to include("#{steady_at_start}/#{total_signals}")
+      expect(response.body).to include("signal improved")
+      expect(response.body).not_to include("0/1")
       expect(response.body).to include("Clear")
       expect(response.body).to include("Clarity Check-ins")
       expect(response.body).not_to match(/<h3[^>]*>\s*Needs work\s*<\/h3>/)

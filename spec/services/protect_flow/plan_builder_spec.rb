@@ -93,6 +93,9 @@ RSpec.describe ProtectFlow::PlanBuilder do
       expect(plan[:progress][:start_steady_count]).to eq(category_count - 1)
       expect(plan[:progress][:current_steady_count]).to eq(category_count - 1)
       expect(plan[:progress][:total_signal_count]).to eq(category_count)
+      expect(plan[:progress][:teammates_steady_count]).to eq(0)
+      expect(plan[:progress][:people_count]).to eq(1)
+      expect(plan[:progress][:improved_signal_count]).to eq(0)
       expect(plan[:people].sole[:steady_count]).to eq(category_count - 1)
 
       EngagementHealthStatus.find_by!(
@@ -105,6 +108,7 @@ RSpec.describe ProtectFlow::PlanBuilder do
       expect(plan2[:progress][:start_steady_count]).to eq(category_count - 1)
       expect(plan2[:progress][:current_steady_count]).to eq(category_count)
       expect(plan2[:progress][:improved_signal_count]).to eq(1)
+      expect(plan2[:progress][:teammates_steady_count]).to eq(1)
       expect(plan2[:people].sole[:clear_items].map { |r| r[:category] }).to include(EngagementHealth::CATEGORY_REQUIRED_CLARITY)
       expect(plan2[:people].sole[:clear_items].find { |r| r[:category] == EngagementHealth::CATEGORY_REQUIRED_CLARITY }[:cleared]).to be(true)
     end
@@ -116,10 +120,31 @@ RSpec.describe ProtectFlow::PlanBuilder do
       category_count = EngagementHealth::CATEGORIES.size
 
       expect(plan[:progress][:current_steady_count]).to eq(category_count)
+      expect(plan[:progress][:teammates_steady_count]).to eq(1)
       expect(plan[:people].sole[:steady_count]).to eq(category_count)
       expect(plan[:people].sole[:attention_items].map { |a| a[:category] }).to eq([
         EngagementHealth::CATEGORY_REQUIRED_CLARITY
       ])
+    end
+
+    it "falls back to current steady when week-start snapshot is missing a person" do
+      seed_all_categories(report, clarity_status: EngagementHealth::NEEDS_ATTENTION)
+      described_class.call(organization: company, week_store: store, teammates: [report])
+
+      prefs = UserPreference.for_person(person)
+      key = "protect_flow_weeks_v1_org_#{company.id}"
+      weeks = prefs.preferences.fetch(key).fetch("weeks").deep_dup
+      week_start = weeks.keys.first
+      weeks[week_start]["start_baseline"] = {}
+      prefs.update_preference(key, { "weeks" => weeks })
+
+      plan = described_class.call(organization: company, week_store: store, teammates: [report])
+      category_count = EngagementHealth::CATEGORIES.size
+
+      expect(plan[:people].sole[:effective_start_steady_count]).to eq(category_count - 1)
+      expect(plan[:progress][:start_steady_count]).to eq(category_count - 1)
+      expect(plan[:progress][:teammates_steady_count]).to eq(0)
+      expect(plan[:people].sole[:week_needs_work_count]).to eq(1)
     end
 
     it "attaches item deep links on attention items" do

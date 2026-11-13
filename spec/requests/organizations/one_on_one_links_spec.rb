@@ -52,6 +52,9 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).not_to include("Current Sync Link")
       expect(response.body).to include("Something Interesting")
       expect(response.body).to include("Defaults to the last 14 days")
+      expect(response.body).to include("Viewing what")
+      expect(response.body).to include(manager_person.casual_name)
+      expect(response.body).to include("would see in their Something Interesting list")
       expect(response.body).to include("Goals updated by those I serve")
       expect(response.body).to include("Observations made about those I serve")
       expect(response.body).to include("Check-ins that reached Warning for those I serve")
@@ -59,7 +62,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).not_to include("Slack moments you discovered")
     end
 
-    it "shows focused Something Interesting entries for the hub teammate" do
+    it "shows focused Something Interesting entries from the manager's perspective" do
       goal = create(
         :goal,
         owner: employee_teammate,
@@ -93,6 +96,25 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).not_to include(other_goal.title)
     end
 
+    it "shows the same manager-perspective Something Interesting when the employee views their One Thing" do
+      goal = create(
+        :goal,
+        owner: employee_teammate,
+        creator: employee_teammate,
+        company: organization,
+        title: "Shared SI Goal #{SecureRandom.hex(4)}",
+        goal_type: "quantitative_key_result"
+      )
+
+      sign_in_as_teammate_for_request(employee_person, organization)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(manager_person.casual_name)
+      expect(response.body).to include("would see in their Something Interesting list")
+      expect(response.body).to include(goal.title)
+    end
+
     it "respects an explicit since param on Something Interesting" do
       goal = create(
         :goal,
@@ -111,6 +133,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
           params: { since: 30.days.ago.to_date.to_s }
       expect(response.body).to include(goal.title)
     end
+
 
     it "resolves company_teammate_id 'me' (and legacy 'my') to the signed-in teammate" do
       sign_in_as_teammate_for_request(employee_person, organization)

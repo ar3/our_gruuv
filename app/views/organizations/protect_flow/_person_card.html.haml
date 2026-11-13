@@ -14,7 +14,7 @@
         %h2.h5.mb-1
           = link_to person[:name], person[:hub_path], class: "text-decoration-none"
         %p.small.text-muted.mb-0
-          #{person[:start_steady_count]}→#{person[:steady_count]} steady signals · ~30 min this week
+          = protect_flow_person_week_summary(person)
 
     - if attention_items.any?
       %h3.h6.fw-semibold.text-muted.mb-2 Needs work
