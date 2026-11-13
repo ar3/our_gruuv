@@ -20,6 +20,7 @@
     - existing_observation = observation_by_question_id[question.id]
     - raw_rating = existing_observation&.observation_ratings&.find { |r| r.rateable_id == rateable.id && r.rateable_type == rateable.class.name }&.rating
     - current_rating = observation_rating_display_label(raw_rating)
+    - allow_public_to_company = %w[strongly_agree agree].include?(raw_rating.to_s)
     - story_value = existing_observation&.story.to_s
 
     .card.mb-3
@@ -95,6 +96,7 @@
                 manager_casual_name: manager_casual_name,
                 company_name: (organization&.name || @feedback_request&.company&.name),
                 disabled: disabled,
+                allow_public_to_company: allow_public_to_company,
                 id_suffix: (disabled ? "_preview" : nil)
 
   - (questions - questions_with_objects).each do |question|
@@ -138,4 +140,5 @@
             manager_casual_name: manager_casual_name,
             company_name: (organization&.name || @feedback_request&.company&.name),
             disabled: disabled,
+            allow_public_to_company: false,
             id_suffix: (disabled ? "_preview" : nil)

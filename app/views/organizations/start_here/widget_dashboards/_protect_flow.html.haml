@@ -1,6 +1,7 @@
 - plan = ProtectFlow::PlanBuilder.call(
     organization: context.organization,
     week_store: ProtectFlow::WeekSnapshotStore.for(person: context.person, organization: context.organization),
+    viewer: context.company_teammate,
     teammates: begin
       company = context.organization.root_company || context.organization
       ids = EmploymentTenure

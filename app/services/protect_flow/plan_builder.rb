@@ -32,11 +32,12 @@ module ProtectFlow
 
     def self.call(...) = new(...).call
 
-    def initialize(organization:, week_store:, teammates:, week_start: nil)
+    def initialize(organization:, week_store:, teammates:, week_start: nil, viewer: nil)
       @organization = organization
       @week_store = week_store
       @teammates = Array(teammates)
       @requested_week_start = week_start.presence
+      @viewer = viewer
     end
 
     def call
@@ -75,10 +76,10 @@ module ProtectFlow
         )
       end
       people = sort_people(people)
-      item_links_by_teammate = HeroItemLinks.for_people(organization: @organization, people: people)
-      people = people.map do |person|
-        person.merge(hero_item_links: item_links_by_teammate[person[:teammate_id]] || [])
-      end
+      links_by_teammate = SignalItemLinks.for_people(organization: @organization, people: people)
+      people = people.map { |person| attach_item_links(person, links_by_teammate[person[:teammate_id]] || {}) }
+      items_by_key = load_items_by_teammate_category(people)
+      people = people.map { |person| attach_opportunity_sentences(person, items_by_key) }
 
       {
         week_start: viewing_week[:week_start],
@@ -168,19 +169,13 @@ module ProtectFlow
         )
       end
 
-      unhealthy = enriched
+      attention_rows = enriched
         .reject { |s| s[:status] == EngagementHealth::HEALTHY }
         .sort_by { |s| [s[:severity], CATEGORY_PRIORITY.index(s[:category])] }
 
       healthy = enriched.select { |s| s[:status] == EngagementHealth::HEALTHY }
 
-      hero, secondary =
-        if unhealthy.any?
-          [action_for(teammate, unhealthy.first, role: :hero), unhealthy.drop(1).map { |s| action_for(teammate, s, role: :secondary) }]
-        else
-          [healthy_maintain_action(teammate), []]
-        end
-
+      attention_items = attention_rows.map { |row| action_for(teammate, row, role: :attention) }
       clear_items = healthy.map { |row| clear_item_for(teammate, row) }
 
       worst = EngagementHealth.worst_status(enriched.map { |s| s[:status] })
@@ -197,24 +192,25 @@ module ProtectFlow
         urgency_rank: EngagementHealth.status_severity_rank(worst),
         steady_count: current_steady,
         start_steady_count: start_steady,
-        hero: hero,
-        secondary: secondary,
+        attention_items: attention_items,
         clear_items: clear_items
       }
     end
 
     def pending_health_person(teammate, start_statuses)
-      hero = {
-        role: :hero,
+      attention = {
+        role: :attention,
         category: "pending_health",
         status: EngagementHealth::WARNING,
         status_label: "Pending",
         short_title: "Health pending",
         title: "Health pending",
         why: "Engagement Health has not been calculated yet for this person. #{one_thing_label_for_teammate(teammate)} loads live signals so you can protect flow.",
+        opportunity: nil,
         cta_label: "Open #{one_thing_label_for_teammate(teammate)}",
         path: organization_company_teammate_one_on_one_link_path(@organization, teammate),
-        cleared: false
+        cleared: false,
+        item_links: []
       }
       {
         teammate: teammate,
@@ -226,15 +222,78 @@ module ProtectFlow
         urgency_rank: EngagementHealth.status_severity_rank(EngagementHealth::WARNING),
         steady_count: 0,
         start_steady_count: start_statuses.count { |_c, s| steady_status?(s) },
-        hero: hero,
-        secondary: [],
+        attention_items: [attention],
         clear_items: []
       }
+    end
+
+    def attach_item_links(person, links_by_category)
+      attention_items = Array(person[:attention_items]).map do |action|
+        action.merge(item_links: Array(links_by_category[action[:category]]))
+      end
+      person.merge(attention_items: attention_items)
+    end
+
+    def load_items_by_teammate_category(people)
+      teammate_ids = people.map { |person| person[:teammate_id] }.compact
+      return {} if teammate_ids.empty?
+
+      EngagementHealthStatus
+        .items
+        .where(organization: @organization, teammate_id: teammate_ids)
+        .group_by { |row| [row.teammate_id, row.category] }
+    end
+
+    def attach_opportunity_sentences(person, items_by_key)
+      teammate = person[:teammate]
+      attention_items = Array(person[:attention_items]).map do |action|
+        action.merge(
+          opportunity: opportunity_for(
+            teammate: teammate,
+            action: action,
+            items: items_for(action, person, items_by_key)
+          )
+        )
+      end
+      clear_items = Array(person[:clear_items]).map do |action|
+        action.merge(
+          opportunity: opportunity_for(
+            teammate: teammate,
+            action: action,
+            items: items_for(action, person, items_by_key)
+          )
+        )
+      end
+      person.merge(attention_items: attention_items, clear_items: clear_items)
+    end
+
+    def items_for(action, person, items_by_key)
+      rows = Array(items_by_key[[person[:teammate_id], action[:category]]])
+      if action[:role] == :clear
+        rows.select { |row| row.status == EngagementHealth::HEALTHY }
+      else
+        rows.reject { |row| row.status == EngagementHealth::HEALTHY }
+      end
+    end
+
+    def opportunity_for(teammate:, action:, items:)
+      OpportunitySentence.call(
+        organization: @organization,
+        teammate: teammate,
+        viewer: @viewer,
+        category: action[:category],
+        short_title: action[:short_title],
+        status: action[:status],
+        role: action[:role],
+        items: items,
+        item_links: Array(action[:item_links])
+      )
     end
 
     def action_for(teammate, status_row, role:)
       category = status_row[:category]
       short = CATEGORY_SHORT_LABELS.fetch(category)
+      cta = action_cta_label(teammate, category)
       {
         role: role,
         category: category,
@@ -243,10 +302,12 @@ module ProtectFlow
         short_title: short,
         title: short,
         why: action_why(category, role),
-        cta_label: action_cta_label(teammate, category),
+        opportunity: nil,
+        cta_label: cta,
         path: action_path(teammate, category),
         cleared: false,
-        improved: status_row[:improved]
+        improved: status_row[:improved],
+        item_links: []
       }
     end
 
@@ -261,26 +322,13 @@ module ProtectFlow
         short_title: short,
         title: short,
         why: action_why(category, :clear),
+        opportunity: nil,
         cta_label: action_cta_label(teammate, category),
         path: action_path(teammate, category),
         cleared: status_row[:cleared],
         start_status: status_row[:start_status],
-        improved: status_row[:improved]
-      }
-    end
-
-    def healthy_maintain_action(teammate)
-      {
-        role: :hero,
-        category: "maintain",
-        status: EngagementHealth::HEALTHY,
-        status_label: EngagementHealth::STATUS_LABELS.fetch(EngagementHealth::HEALTHY),
-        short_title: "Stay clear",
-        title: "Stay clear",
-        why: "They're steady across health signals. A short 1:1 still protects flow before signals go stale.",
-        cta_label: "Open #{one_thing_label_for_teammate(teammate)}",
-        path: organization_company_teammate_one_on_one_link_path(@organization, teammate),
-        cleared: false
+        improved: status_row[:improved],
+        item_links: []
       }
     end
 
@@ -288,12 +336,10 @@ module ProtectFlow
       flow_role = CATEGORY_FLOW_ROLE.fetch(category)
       base = "Flow needs #{flow_role}. Stale #{EngagementHealth::CATEGORY_LABELS.fetch(category).downcase} erodes clarity of where they stand."
       case role
-      when :hero
-        base
       when :clear
         "#{base} This health signal is steady — keep it that way."
       else
-        "#{base} Secondary to the highest-leverage move for this person — still part of protecting flow."
+        base
       end
     end
 
@@ -376,7 +422,6 @@ module ProtectFlow
       end
     end
 
-    # Protect Flow is always a manager viewing reports — use possessive, not "My".
     def one_thing_label_for_teammate(teammate)
       casual = teammate.person&.casual_name.to_s.presence || "Their"
       "#{casual}'s One Thing"

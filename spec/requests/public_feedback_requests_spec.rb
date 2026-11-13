@@ -61,6 +61,19 @@ RSpec.describe 'Public feedback requests', type: :request do
       expect(response.body).not_to include('verify you are real')
     end
 
+    it 'locks Public to company on the answer form until Exceptional/Strong' do
+      sign_in_as_teammate_for_request(requestor.person, company)
+      get public_feedback_request_path(feedback_request.public_answer_token)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="fr-answer-privacy"')
+      expect(response.body).to include('bi-info-circle')
+      expect(response.body).to include('data-bs-toggle="popover"')
+      expect(response.body).to include('Published and visible to all of Acme Co')
+      expect(response.body).to include('Available for Exceptional or Strong ratings.')
+      expect(response.body).to include('data-fr-answer-privacy-target="companyInput" disabled')
+    end
+
     it 'does not claim teammate status for a person-only session' do
       outsider = create(:person, first_name: 'Pat', last_name: 'External')
       sign_in_as_person_only_for_request(outsider)

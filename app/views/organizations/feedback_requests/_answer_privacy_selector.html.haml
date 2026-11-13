@@ -1,33 +1,49 @@
 - # Thin button-group radio for per-question visibility.
 - # Options: observed_only, managers_only, observed_and_managers, public_to_company.
+- # When allow_public_to_company is false, company is locked until a positive rating
+- # (Exceptional / Strong) is selected — wired by fr-answer-privacy Stimulus.
 - field_name = local_assigns[:field_name]
 - current_value = (local_assigns[:current_value].presence || 'observed_and_managers').to_s
 - subject_name = local_assigns[:subject_casual_name].presence || 'the subject'
 - manager_name = local_assigns[:manager_casual_name].presence || 'their manager'
 - company_name = local_assigns[:company_name].presence || organization&.name || 'company'
 - disabled = local_assigns.fetch(:disabled, false)
+- allow_public_to_company = local_assigns.fetch(:allow_public_to_company, true)
 - id_suffix = local_assigns[:id_suffix].to_s
+- company_locked = !disabled && !allow_public_to_company
+- if company_locked && current_value == 'public_to_company'
+  - current_value = 'observed_and_managers'
+- exceptional_label = ObservationRating.display_label('strongly_agree')
+- strong_label = ObservationRating.display_label('agree')
+- company_hint = "Available for #{exceptional_label} or #{strong_label} ratings."
+- company_popover_title = "Published and visible to all of #{company_name}"
 
 - observed_only_id = "#{field_name.to_s.parameterize}_observed_only#{id_suffix}"
 - managers_only_id = "#{field_name.to_s.parameterize}_managers_only#{id_suffix}"
 - observed_and_managers_id = "#{field_name.to_s.parameterize}_observed_and_managers#{id_suffix}"
 - public_to_company_id = "#{field_name.to_s.parameterize}_public_to_company#{id_suffix}"
 
-.mt-3.pt-2.border-top
+- privacy_data = disabled ? {} : { controller: "fr-answer-privacy" }
+
+.mt-3.pt-2.border-top{data: privacy_data}
   .small.text-muted.mb-1 Visible to:
-  .btn-group.btn-group-sm{role: "group", 'aria-label': "Who can see this answer"}
-    %input{type: "radio", name: field_name, value: "observed_only", id: observed_only_id, checked: (current_value == 'observed_only'), class: "btn-check", disabled: disabled}
-    %label.btn.btn-outline-secondary.btn-sm{for: observed_only_id, class: ("disabled" if disabled)}
-      Just #{subject_name}
+  .d-flex.align-items-center.flex-wrap.gap-1
+    .btn-group.btn-group-sm{role: "group", 'aria-label': "Who can see this answer"}
+      %input{type: "radio", name: field_name, value: "observed_only", id: observed_only_id, checked: (current_value == 'observed_only'), class: "btn-check", disabled: disabled}
+      %label.btn.btn-outline-secondary.btn-sm{for: observed_only_id, class: ("disabled" if disabled)}
+        Just #{subject_name}
 
-    %input{type: "radio", name: field_name, value: "managers_only", id: managers_only_id, checked: (current_value == 'managers_only'), class: "btn-check", disabled: disabled}
-    %label.btn.btn-outline-secondary.btn-sm{for: managers_only_id, class: ("disabled" if disabled)}
-      Just #{manager_name}
+      %input{type: "radio", name: field_name, value: "managers_only", id: managers_only_id, checked: (current_value == 'managers_only'), class: "btn-check", disabled: disabled}
+      %label.btn.btn-outline-secondary.btn-sm{for: managers_only_id, class: ("disabled" if disabled)}
+        Just #{manager_name}
 
-    %input{type: "radio", name: field_name, value: "observed_and_managers", id: observed_and_managers_id, checked: (current_value == 'observed_and_managers'), class: "btn-check", disabled: disabled}
-    %label.btn.btn-outline-secondary.btn-sm{for: observed_and_managers_id, class: ("disabled" if disabled)}
-      #{subject_name} and #{manager_name}
+      %input{type: "radio", name: field_name, value: "observed_and_managers", id: observed_and_managers_id, checked: (current_value == 'observed_and_managers'), class: "btn-check", disabled: disabled, data: ({ fr_answer_privacy_target: "fallbackInput" } unless disabled)}
+      %label.btn.btn-outline-secondary.btn-sm{for: observed_and_managers_id, class: ("disabled" if disabled)}
+        #{subject_name} and #{manager_name}
 
-    %input{type: "radio", name: field_name, value: "public_to_company", id: public_to_company_id, checked: (current_value == 'public_to_company'), class: "btn-check", disabled: disabled}
-    %label.btn.btn-outline-secondary.btn-sm{for: public_to_company_id, class: ("disabled" if disabled)}
-      Public to #{company_name}
+      %input{type: "radio", name: field_name, value: "public_to_company", id: public_to_company_id, checked: (current_value == 'public_to_company'), class: "btn-check", disabled: (disabled || company_locked), data: ({ fr_answer_privacy_target: "companyInput" } unless disabled)}
+      %label.btn.btn-outline-secondary.btn-sm{for: public_to_company_id, class: ("disabled" if (disabled || company_locked)), data: ({ fr_answer_privacy_target: "companyLabel" } unless disabled)}
+        Public to #{company_name}
+
+    - unless disabled
+      %i.bi.bi-info-circle.text-muted{class: ("d-none" unless company_locked), role: "button", tabindex: 0, style: "cursor: help;", title: company_popover_title, "aria-label" => company_popover_title, data: { fr_answer_privacy_target: "hint", bs_toggle: "popover", bs_trigger: "hover focus", bs_placement: "top", bs_title: company_popover_title, bs_content: company_hint }}

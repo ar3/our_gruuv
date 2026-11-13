@@ -62,7 +62,8 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
       organization: @organization,
       week_store: store,
       teammates: teammates,
-      week_start: params[:week_start].presence
+      week_start: params[:week_start].presence,
+      viewer: current_company_teammate
     )
   end
 

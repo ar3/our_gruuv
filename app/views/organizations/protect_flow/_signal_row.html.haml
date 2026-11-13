@@ -2,20 +2,30 @@
 - clear_section = local_assigns.fetch(:clear_section, false)
 - short_title = action[:short_title].presence || action[:title]
 - status_label = action[:status_label]
+- opportunity = action[:opportunity]
 - border_class = clear_section ? "border-success bg-success-subtle" : ""
-- btn_class = clear_section ? "btn btn-outline-success btn-sm" : "btn btn-outline-primary btn-sm"
+- btn_class = clear_section ? "btn btn-outline-success btn-sm" : "btn btn-primary btn-sm"
+- middle_class = clear_section ? "small text-muted mb-0" : "small mb-0"
 
 .border.rounded.p-3{class: border_class}
-  .d-flex.align-items-center.justify-content-between.gap-2.mb-2
-    %p.fw-semibold.mb-0= short_title
-    %span.badge{class: protect_flow_status_badge_class(action[:status])}
-      - if action[:cleared]
-        %i.bi.bi-check-lg.me-1{"aria-hidden" => "true"}
-      = status_label
-
-  .d-flex.align-items-center.justify-content-between.gap-2.flex-wrap
-    %span.small.text-muted{"data-bs-toggle" => "tooltip", "data-bs-placement" => "top", "data-bs-title" => action[:why], tabindex: 0, role: "button", style: "cursor: help;"}
-      Why is this important?
-      %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
-    .ms-auto
-      = link_to action[:cta_label], action[:path], class: btn_class
+  .row.g-2.align-items-start.protect-flow-signal-row
+    .col-4.min-w-0
+      %p.fw-semibold.mb-1= short_title
+      %span.small.text-muted{"data-bs-toggle" => "popover",
+                            "data-bs-trigger" => "hover focus",
+                            "data-bs-placement" => "top",
+                            "data-bs-content" => action[:why],
+                            tabindex: 0,
+                            role: "button",
+                            style: "cursor: help;"}
+        Why is this important?
+        %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
+    .col-4.min-w-0
+      %p{class: middle_class}= protect_flow_opportunity_sentence(opportunity)
+    .col-4.min-w-0
+      .d-flex.flex-column.align-items-stretch.gap-2
+        %span.badge.align-self-start{class: protect_flow_status_badge_class(action[:status])}
+          - if action[:cleared]
+            %i.bi.bi-check-lg.me-1{"aria-hidden" => "true"}
+          = status_label
+        = link_to action[:cta_label], action[:path], class: btn_class

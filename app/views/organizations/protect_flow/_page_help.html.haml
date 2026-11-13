@@ -23,16 +23,21 @@
     %li When a new week opens, the prior week is closed with an end-state snapshot so you can compare week over week.
     %li Use the week picker to revisit closed weeks (read-only progress).
     %li
-      Each person has three sections: the highest-leverage health signal, also blocking clarity, and clear (healthy) signals. Short titles with status pills; “Why is this important?” explains on hover; CTAs sit on the right.
+      Each person card lists
+      %strong Needs work
+      (Warning / Needs Attention) as three-column rows — name with “Why is this important?” (hover for details), one action-oriented opportunity sentence with an inline link, status + CTA — then
+      %strong Clear
+      for Healthy signals (lighter). When everything is Healthy, you only see Clear rows.
 
   %h5.fw-semibold.mb-2 Example
   .border.rounded.p-3.bg-white.mb-3
     %p.mb-1.fw-semibold Amy C. · 2→4 steady signals
     %p.small.mb-1
-      %strong Clarity Check-ins
-      %span.badge.text-bg-danger Needs Attention
-    %p.small.text-muted.mb-1 Also blocking: OGOs Received · Warning
-    %p.small.mb-0 Clear: Goals, Milestones, OGOs Given · Healthy
+      %strong Needs work:
+      Clarity Check-ins · Needs Attention; OGOs Received · Warning
+    %p.small.mb-0
+      %strong Clear:
+      Goals, Milestones, OGOs Given · Healthy
 
   %h5.fw-semibold.mb-2 Status legend
   %ul.list-unstyled.mb-0

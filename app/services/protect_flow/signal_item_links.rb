@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module ProtectFlow
-  # Top unhealthy Engagement Health *items* for the hero health signal — deep links to
+  # Top unhealthy Engagement Health *items* per attention health signal — deep links to
   # the specific check-in / goal / ability / OGO surfaces (not the full One Thing carousel).
-  class HeroItemLinks
+  class SignalItemLinks
     include Rails.application.routes.url_helpers
 
     LIMIT = 3
@@ -16,13 +16,15 @@ module ProtectFlow
       @organization = organization
     end
 
-    # Returns { teammate_id => [{ label:, path:, tooltip: }, ...] }
+    # Returns { teammate_id => { category => [{ label:, path:, tooltip: }, ...] } }
     def for_people(people)
-      specs = people.filter_map do |person|
-        category = person.dig(:hero, :category)
-        next if category.blank? || category.to_s.in?(%w[maintain pending_health])
+      specs = people.flat_map do |person|
+        Array(person[:attention_items]).filter_map do |action|
+          category = action[:category]
+          next if category.blank? || category.to_s.in?(%w[pending_health])
 
-        { teammate_id: person[:teammate_id], category: category }
+          { teammate_id: person[:teammate_id], category: category }
+        end
       end
       return {} if specs.empty?
 
@@ -37,7 +39,11 @@ module ProtectFlow
       specs.each_with_object({}) do |spec, hash|
         key = [spec[:teammate_id], spec[:category]]
         rows = Array(items_by_teammate_category[key])
-        hash[spec[:teammate_id]] = links_for_items(rows, category: spec[:category], teammate_id: spec[:teammate_id])
+        links = links_for_items(rows, category: spec[:category], teammate_id: spec[:teammate_id])
+        next if links.empty?
+
+        hash[spec[:teammate_id]] ||= {}
+        hash[spec[:teammate_id]][spec[:category]] = links
       end
     end
 
@@ -68,7 +74,6 @@ module ProtectFlow
     end
 
     def item_path(item, teammate_id:)
-      teammate = teammate_id # route helpers need the record or id; paths accept id
       case item.category
       when EngagementHealth::CATEGORY_OGO_GIVEN
         ogos_from_organization_company_teammate_path(@organization, teammate_id)

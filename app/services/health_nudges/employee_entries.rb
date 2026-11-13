@@ -134,14 +134,14 @@ module HealthNudges
       return nil unless teammate
 
       eh_status = person[:worst_status].presence || EngagementHealth::WARNING
-      hero = person[:hero] || {}
+      top = Array(person[:attention_items]).first || {}
       start_steady = person[:start_steady_count].to_i
       steady = person[:steady_count].to_i
       steady_bit = "#{start_steady}→#{steady} steady #{'signal'.pluralize(steady)}"
       detail =
-        if hero[:title].present?
-          bits = [ hero[:title].to_s ]
-          bits << hero[:why].to_s if hero[:why].present?
+        if top[:title].present?
+          bits = [ top[:title].to_s ]
+          bits << top[:why].to_s if top[:why].present?
           bits << steady_bit
           bits.join(" ... ")
         elsif eh_status == EngagementHealth::NEEDS_ATTENTION

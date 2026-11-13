@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe ProtectFlow::HeroItemLinks do
+RSpec.describe ProtectFlow::SignalItemLinks do
   let(:company) { create(:organization, :company) }
   let(:teammate) { create(:company_teammate, organization: company) }
 
@@ -20,7 +20,7 @@ RSpec.describe ProtectFlow::HeroItemLinks do
     )
   end
 
-  it "returns top unhealthy clarity items as deep links" do
+  it "returns top unhealthy clarity items keyed by teammate and category" do
     create_item(
       category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
       status: EngagementHealth::NEEDS_ATTENTION,
@@ -46,18 +46,19 @@ RSpec.describe ProtectFlow::HeroItemLinks do
     people = [
       {
         teammate_id: teammate.id,
-        hero: { category: EngagementHealth::CATEGORY_REQUIRED_CLARITY }
+        attention_items: [{ category: EngagementHealth::CATEGORY_REQUIRED_CLARITY }]
       }
     ]
 
-    links = described_class.for_people(organization: company, people: people)[teammate.id]
+    links = described_class.for_people(organization: company, people: people)
+             .dig(teammate.id, EngagementHealth::CATEGORY_REQUIRED_CLARITY)
     expect(links.map { |l| l[:label] }).to eq(["Support Desk", "Growth Aspiration"])
     expect(links.first[:path]).to include("/assignments/42")
     expect(links.second[:path]).to include("/aspirations/7")
   end
 
-  it "returns empty for maintain heroes" do
-    people = [{ teammate_id: teammate.id, hero: { category: "maintain" } }]
+  it "returns empty for pending health attention items" do
+    people = [{ teammate_id: teammate.id, attention_items: [{ category: "pending_health" }] }]
     expect(described_class.for_people(organization: company, people: people)).to eq({})
   end
 end

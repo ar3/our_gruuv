@@ -70,7 +70,9 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response.body).not_to include(">Everyone<")
       expect(response.body).not_to include("Mark done")
       expect(response.body).to include("Clarity Item A")
+      expect(response.body).to include("Needs work")
       expect(response.body).not_to include("Top items")
+      expect(response.body).not_to include("Also blocking clarity")
     end
 
     it "shows an Overall Health nudge panel for a concrete manager filter" do
@@ -144,8 +146,11 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response.body).to include("#{steady_at_start}→#{EngagementHealth::CATEGORIES.size}")
       expect(response.body).to include("Clear")
       expect(response.body).to include("Clarity Check-ins")
-      expect(response.body).not_to include("Hero action")
-      expect(response.body).to include("Why is this important?")
+      expect(response.body).not_to match(/<h3[^>]*>\s*Needs work\s*<\/h3>/)
+      expect(response.body).not_to include("Stay clear")
+      expect(response.body).to include("Clarity Check-ins is steady — consider ")
+      expect(response.body).to include("checking in on Clarity Item A")
+      expect(response.body).not_to include("Why is this important?</span>\n<ul")
     end
   end
 end

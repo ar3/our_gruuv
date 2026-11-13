@@ -44,7 +44,7 @@ RSpec.describe ProtectFlow::PlanBuilder do
       expect(plan[:progress][:people_count]).to eq(0)
     end
 
-    it "builds a hero from the worst One Thing-aligned unhealthy category" do
+    it "lists all non-healthy signals as attention items ordered by severity" do
       create_category_status(
         teammate: report,
         category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
@@ -64,21 +64,24 @@ RSpec.describe ProtectFlow::PlanBuilder do
       plan = described_class.call(organization: company, week_store: store, teammates: [report])
       person_plan = plan[:people].sole
 
-      expect(person_plan[:hero][:category]).to eq(EngagementHealth::CATEGORY_REQUIRED_CLARITY)
-      expect(person_plan[:hero][:short_title]).to eq("Clarity Check-ins")
-      expect(person_plan[:secondary].map { |a| a[:category] }).to eq([EngagementHealth::CATEGORY_OGO_RECEIVED])
-      expect(person_plan[:hero][:path]).to include("check_ins")
+      expect(person_plan[:attention_items].map { |a| a[:category] }).to eq([
+        EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        EngagementHealth::CATEGORY_OGO_RECEIVED
+      ])
+      expect(person_plan[:attention_items].first[:short_title]).to eq("Clarity Check-ins")
+      expect(person_plan[:attention_items].first[:path]).to include("check_ins")
+      expect(person_plan[:attention_items].first[:opportunity]).to be_present
+      expect(person_plan).not_to have_key(:hero)
       expect(plan[:historical]).to be(false)
     end
 
-    it "uses a maintain hero when all categories are healthy" do
+    it "shows only clear items when all categories are healthy (no maintain hero)" do
       seed_all_categories(report, clarity_status: EngagementHealth::HEALTHY)
 
       plan = described_class.call(organization: company, week_store: store, teammates: [report])
       person_plan = plan[:people].sole
 
-      expect(person_plan[:hero][:category]).to eq("maintain")
-      expect(person_plan[:secondary]).to be_empty
+      expect(person_plan[:attention_items]).to be_empty
       expect(person_plan[:clear_items].size).to eq(EngagementHealth::CATEGORIES.size)
     end
 
@@ -106,7 +109,7 @@ RSpec.describe ProtectFlow::PlanBuilder do
       expect(plan2[:people].sole[:clear_items].find { |r| r[:category] == EngagementHealth::CATEGORY_REQUIRED_CLARITY }[:cleared]).to be(true)
     end
 
-    it "counts Warning as steady (Healthy + Warning; not Needs Attention)" do
+    it "counts Warning as steady and lists it under attention items" do
       seed_all_categories(report, clarity_status: EngagementHealth::WARNING)
 
       plan = described_class.call(organization: company, week_store: store, teammates: [report])
@@ -114,7 +117,67 @@ RSpec.describe ProtectFlow::PlanBuilder do
 
       expect(plan[:progress][:current_steady_count]).to eq(category_count)
       expect(plan[:people].sole[:steady_count]).to eq(category_count)
-      expect(plan[:people].sole[:hero][:category]).to eq(EngagementHealth::CATEGORY_REQUIRED_CLARITY)
+      expect(plan[:people].sole[:attention_items].map { |a| a[:category] }).to eq([
+        EngagementHealth::CATEGORY_REQUIRED_CLARITY
+      ])
+    end
+
+    it "attaches item deep links on attention items" do
+      seed_all_categories(report, clarity_status: EngagementHealth::NEEDS_ATTENTION)
+      EngagementHealthStatus.create!(
+        teammate: report,
+        organization: company,
+        level: "item",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: "Assignment",
+        entity_id: 101,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: { "name" => "Clarity Item A" },
+        computed_at: Time.current
+      )
+
+      plan = described_class.call(organization: company, week_store: store, teammates: [report])
+      clarity = plan[:people].sole[:attention_items].find { |a| a[:category] == EngagementHealth::CATEGORY_REQUIRED_CLARITY }
+
+      expect(clarity[:item_links].map { |l| l[:label] }).to include("Clarity Item A")
+    end
+
+    it "builds linked opportunity sentences for clear and attention items" do
+      seed_all_categories(report, clarity_status: EngagementHealth::HEALTHY)
+      EngagementHealthStatus.find_by!(
+        teammate: report,
+        category: EngagementHealth::CATEGORY_OGO_RECEIVED,
+        level: "category"
+      ).update!(status: EngagementHealth::WARNING)
+      EngagementHealthStatus.create!(
+        teammate: report,
+        organization: company,
+        level: "item",
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: "Assignment",
+        entity_id: 101,
+        status: EngagementHealth::HEALTHY,
+        inputs: {
+          "name" => "Support Desk",
+          "healthy_until_at" => (Date.current + 10.days).iso8601
+        },
+        computed_at: Time.current
+      )
+
+      plan = described_class.call(
+        organization: company,
+        week_store: store,
+        teammates: [report],
+        viewer: manager
+      )
+      clarity = plan[:people].sole[:clear_items].find { |a| a[:category] == EngagementHealth::CATEGORY_REQUIRED_CLARITY }
+      ogo = plan[:people].sole[:attention_items].find { |a| a[:category] == EngagementHealth::CATEGORY_OGO_RECEIVED }
+
+      expect(clarity[:opportunity][:link_text]).to eq("checking in on Support Desk")
+      expect(clarity[:opportunity][:after]).to include(" by ")
+      expect(ogo[:opportunity][:before]).to eq("Haven't received an OGO in a while — ")
+      expect(ogo[:opportunity][:link_text]).to eq("send a feedback request")
+      expect(ogo[:opportunity][:link_method]).to eq(:post)
     end
 
     it "closes the prior week and allows browsing history" do

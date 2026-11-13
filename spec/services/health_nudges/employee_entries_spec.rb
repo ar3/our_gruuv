@@ -54,7 +54,7 @@ RSpec.describe HealthNudges::EmployeeEntries do
           worst_status: EngagementHealth::WARNING,
           start_steady_count: 3,
           steady_count: 4,
-          hero: { title: "Clarity Check-ins", why: "Stale clarity kills flow." }
+          attention_items: [{ title: "Clarity Check-ins", why: "Stale clarity kills flow." }]
         }
       ]
     )

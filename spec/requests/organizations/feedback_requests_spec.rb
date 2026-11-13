@@ -520,6 +520,14 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('Stories from working in this role?')
         expect(response.body).to include(position.display_name)
       end
+
+      it 'keeps Public to company locked on story-only (no rating) questions' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Question (no rating)')
+        expect(response.body).to include('Available for Exceptional or Strong ratings.')
+        expect(response.body).to include('data-fr-answer-privacy-target="companyInput" disabled')
+      end
     end
 
     context 'with assignment, aspiration, and ability questions' do
@@ -591,6 +599,18 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('observed_and_managers')
         expect(response.body).to include('public_to_company')
         expect(response.body).to include("Public to #{company.name}")
+      end
+
+      it 'locks Public to company until Exceptional/Strong and shows the gating hint' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="fr-answer-privacy"')
+        expect(response.body).to include('bi-info-circle')
+        expect(response.body).to include('data-bs-toggle="popover"')
+        expect(response.body).to include("Published and visible to all of #{company.name}")
+        expect(response.body).to include('Available for Exceptional or Strong ratings.')
+        # No rating selected yet — company radios start disabled (JS re-enables on positive).
+        expect(response.body).to include('data-fr-answer-privacy-target="companyInput" disabled')
       end
     end
 
@@ -666,6 +686,16 @@ RSpec.describe 'Organizations::FeedbackRequests', type: :request do
         expect(response.body).to include('My draft story.')
         expect(response.body).to include('Incomplete draft')
         expect(response.body).to include(organization_observation_path(company, draft_observation))
+      end
+
+      it 'unlocks Public to company when the draft rating is Strong' do
+        get answer_organization_feedback_request_path(company, feedback_request)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="fr-answer-privacy"')
+        # Positive draft rating → company input is present without disabled; hint icon hidden.
+        expect(response.body).to include('data-fr-answer-privacy-target="companyInput"')
+        expect(response.body).not_to include('data-fr-answer-privacy-target="companyInput" disabled')
+        expect(response.body).to match(/class="[^"]*\bd-none\b[^"]*"[^>]*data-fr-answer-privacy-target="hint"/)
       end
 
       it 'shows Skip this request disabled with warning-icon tooltip when drafts exist' do

@@ -25,4 +25,28 @@ module ProtectFlowHelper
   rescue ArgumentError, TypeError
     week_start.to_s
   end
+
+  # Renders an opportunity sentence hash with an inline action link (no bullet lists).
+  def protect_flow_opportunity_sentence(opportunity)
+    return if opportunity.blank?
+    return content_tag(:span, opportunity.to_s) unless opportunity.is_a?(Hash)
+
+    before = opportunity[:before].to_s
+    link_text = opportunity[:link_text]
+    link_path = opportunity[:link_path]
+    after = opportunity[:after].to_s
+    method = opportunity[:link_method]
+
+    parts = []
+    parts << before if before.present?
+    if link_text.present? && link_path.present?
+      link_opts = { class: "link-primary" }
+      link_opts[:data] = { turbo_method: method } if method.present?
+      parts << link_to(link_text, link_path, link_opts)
+    elsif link_text.present?
+      parts << link_text
+    end
+    parts << after if after.present?
+    safe_join(parts)
+  end
 end
