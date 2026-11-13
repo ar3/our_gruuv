@@ -1,0 +1,169 @@
+-# Shared SI feed body. locals:
+-#   categories: :all (SI page) or :those_i_serve (One Thing)
+-#   form_url:, since:, since_hint:
+-# Expects instance vars for each included category (same as GetShitDone#something_interesting).
+- categories = local_assigns.fetch(:categories, :all)
+- those_i_serve_only = categories == :those_i_serve
+
+= render 'organizations/get_shit_done/something_interesting_date_filter',
+         form_url: form_url,
+         since: since,
+         since_hint: since_hint
+
+- quiet_categories = []
+
+- if @goals_by_those_i_serve.any?
+  = render 'organizations/get_shit_done/interesting_goals_section',
+           activities: @goals_by_those_i_serve,
+           title: 'Goals updated by those I serve',
+           icon: 'bi-bullseye',
+           description: 'Goal changes and new confidence checks from your direct reports',
+           collapse_id: 'goalsByThoseIServeSection',
+           summary: "#{pluralize(@goals_by_those_i_serve.size, 'goal')} updated by those you serve"
+- else
+  - quiet_categories << { title: 'Goals updated by those I serve', icon: 'bi-bullseye', description: 'Goal changes and new confidence checks from your direct reports' }
+
+- unless those_i_serve_only
+  - if @goals_on_my_teams.any?
+    = render 'organizations/get_shit_done/interesting_goals_section',
+             activities: @goals_on_my_teams,
+             title: "Goals updated on teams I'm on",
+             icon: 'bi-people',
+             description: 'Changes to goals owned by your teams',
+             collapse_id: 'goalsOnMyTeamsSection',
+             summary: "#{pluralize(@goals_on_my_teams.size, 'goal')} updated on your teams"
+  - else
+    - quiet_categories << { title: "Goals updated on teams I'm on", icon: 'bi-people', description: 'Changes to goals owned by your teams' }
+
+  - if @assignments_updated.any?
+    = render 'organizations/get_shit_done/interesting_resources_section',
+             records: @assignments_updated,
+             title: "Assignments updated that I'm interested in",
+             icon: 'bi-briefcase',
+             description: 'Changes to assignments you hold or that are on your position',
+             collapse_id: 'assignmentsUpdatedSection',
+             summary: "#{pluralize(@assignments_updated.size, 'assignment')} you're interested in updated",
+             type_label: 'Assignment',
+             row_path: ->(assignment) { organization_assignment_path(organization, assignment) }
+  - else
+    - quiet_categories << { title: "Assignments updated that I'm interested in", icon: 'bi-briefcase', description: 'Changes to assignments you hold or that are on your position' }
+
+  - if @abilities_updated.any?
+    = render 'organizations/get_shit_done/interesting_resources_section',
+             records: @abilities_updated,
+             title: "Abilities updated that I'm interested in",
+             icon: 'bi-mortarboard',
+             description: 'Changes to abilities tied to your assignments, position, or milestones',
+             collapse_id: 'abilitiesUpdatedSection',
+             summary: "#{pluralize(@abilities_updated.size, 'ability')} you're interested in updated",
+             type_label: 'Ability',
+             row_path: ->(ability) { organization_ability_path(organization, ability) }
+  - else
+    - quiet_categories << { title: "Abilities updated that I'm interested in", icon: 'bi-mortarboard', description: 'Changes to abilities tied to your assignments, position, or milestones' }
+
+- if @observations_about_those_i_serve.any?
+  = render 'organizations/get_shit_done/interesting_observations_section',
+           observations: @observations_about_those_i_serve,
+           title: 'Observations made about those I serve',
+           icon: 'bi-eye',
+           description: 'Published observations about your direct reports',
+           collapse_id: 'observationsAboutThoseIServeSection',
+           summary: "#{pluralize(@observations_about_those_i_serve.count, 'observation')} made about those you serve"
+- else
+  - quiet_categories << { title: 'Observations made about those I serve', icon: 'bi-eye', description: 'Published observations about your direct reports' }
+
+- unless those_i_serve_only
+  - if @observations_about_me.any?
+    = render 'organizations/get_shit_done/interesting_observations_section',
+             observations: @observations_about_me,
+             title: 'Observations made about me',
+             icon: 'bi-chat-heart',
+             description: 'Published observations where you are an observee',
+             collapse_id: 'observationsAboutMeSection',
+             summary: "#{pluralize(@observations_about_me.count, 'observation')} made about you"
+  - else
+    - quiet_categories << { title: 'Observations made about me', icon: 'bi-chat-heart', description: 'Published observations where you are an observee' }
+
+  - if @observation_comments.any?
+    = render 'organizations/get_shit_done/interesting_observation_comments_section',
+             comments: @observation_comments,
+             title: 'New comments on observations',
+             icon: 'bi-chat-dots',
+             description: 'Comments on observations you wrote, received, or joined the conversation on',
+             collapse_id: 'observationCommentsSection',
+             summary: "#{pluralize(@observation_comments.size, 'comment')} on observations you care about"
+  - else
+    - quiet_categories << { title: 'New comments on observations', icon: 'bi-chat-dots', description: 'Comments on observations you wrote, received, or joined the conversation on' }
+
+- if @check_in_warnings_for_those_i_serve.any?
+  = render 'organizations/get_shit_done/interesting_check_in_warnings_section',
+           events: @check_in_warnings_for_those_i_serve,
+           title: 'Check-ins that reached Warning for those I serve',
+           icon: 'bi-exclamation-triangle',
+           description: 'The day an active assignment, position, or value check-in first reached Warning (61+ days since last finalize)',
+           collapse_id: 'checkInWarningsThoseIServeSection',
+           summary: "#{pluralize(@check_in_warnings_for_those_i_serve.size, 'check-in')} reached Warning for people you serve",
+           show_subject: true
+- else
+  - quiet_categories << { title: 'Check-ins that reached Warning for those I serve', icon: 'bi-exclamation-triangle', description: 'The day an active assignment, position, or value check-in first reached Warning (61+ days since last finalize)' }
+
+- unless those_i_serve_only
+  - if @check_in_warnings_for_me.any?
+    = render 'organizations/get_shit_done/interesting_check_in_warnings_section',
+             events: @check_in_warnings_for_me,
+             title: 'Check-ins that reached Warning for me',
+             icon: 'bi-exclamation-triangle',
+             description: 'The day one of your active assignment, position, or value check-ins first reached Warning (61+ days since last finalize)',
+             collapse_id: 'checkInWarningsForMeSection',
+             summary: "#{pluralize(@check_in_warnings_for_me.size, 'check-in')} of yours reached Warning",
+             show_subject: false
+  - else
+    - quiet_categories << { title: 'Check-ins that reached Warning for me', icon: 'bi-exclamation-triangle', description: 'The day one of your active assignment, position, or value check-ins first reached Warning (61+ days since last finalize)' }
+
+  - if @public_slack_pogos_about_me.any?
+    .card.border-0.shadow-sm.mb-4
+      .card-body
+        %h5.mb-1
+          %i.bi.bi-slack.me-1
+          New public Slack moments about you
+        %p.text-muted.mb-2
+          = "#{pluralize(@public_slack_pogos_about_me.count, 'public pOGO')} were added about you"
+        = link_to "View Slack moments",
+                  ogos_source_from_slack_organization_company_teammate_path(organization, teammate_route_param(@teammate)),
+                  class: "btn btn-sm btn-outline-primary"
+  - else
+    - quiet_categories << { title: 'New public Slack moments about you', icon: 'bi-slack', description: 'Public-channel potential OGOs found about you' }
+
+  - if @slack_pogos_i_discovered.any?
+    .card.border-0.shadow-sm.mb-4
+      .card-body
+        %h5.mb-1
+          %i.bi.bi-search.me-1
+          Slack moments you discovered
+        %p.text-muted.mb-2
+          = "#{pluralize(@slack_pogos_i_discovered.count, 'pOGO')} added from your Slack searches (including private / DMs)"
+        %ul.mb-0
+          - @slack_pogos_i_discovered.limit(10).each do |moment|
+            %li
+              = moment.subject_company_teammate.person.casual_name
+              ·
+              = moment.summary.presence || moment.quote.to_s.truncate(80)
+  - else
+    - quiet_categories << { title: 'Slack moments you discovered', icon: 'bi-search', description: 'Potential OGOs from Slack searches you ran' }
+
+- if quiet_categories.any?
+  .row.mt-5.pt-4
+    .col-12
+      %hr.border-secondary.mb-4
+      %p.text-center.text-muted.mb-4
+        Below are categories where nothing interesting has happened since
+        = since.strftime('%b %-d, %Y')
+        %i.bi.bi-check-circle-fill.text-success
+  - quiet_categories.each_with_index do |category, index|
+    = render 'shared/section_header',
+            title: category[:title],
+            icon: category[:icon],
+            description: category[:description],
+            collapsible: false,
+            status_indicator: :success,
+            include_top_header_margin: index.zero?

@@ -421,4 +421,49 @@ RSpec.describe SomethingInterestingQueryService do
       end
     end
   end
+
+  describe 'focus_teammate:' do
+    let(:report_a) { create(:company_teammate, organization: company) }
+    let(:report_b) { create(:company_teammate, organization: company) }
+    let(:observer_person) { create(:person) }
+    let(:focused) do
+      described_class.new(teammate: viewer, since: since, focus_teammate: report_a)
+    end
+
+    def observation_about(teammate, observer:, published_at: 1.hour.ago, privacy_level: :observed_and_managers)
+      observation = create(:observation, observer: observer, company: company, published_at: published_at, privacy_level: privacy_level)
+      observation.observees.destroy_all
+      observation.observees.create!(teammate: teammate)
+      observation
+    end
+
+    before do
+      create(:employment_tenure, company_teammate: report_a, company: company, manager: viewer)
+      create(:employment_tenure, company_teammate: report_b, company: company, manager: viewer)
+    end
+
+    it 'limits goals to the focused direct report' do
+      goal_a = create(:goal, owner: report_a, creator: report_a, company: company)
+      goal_b = create(:goal, owner: report_b, creator: report_b, company: company)
+
+      expect(focused.goals_updated_by_those_i_serve.map(&:goal)).to include(goal_a)
+      expect(focused.goals_updated_by_those_i_serve.map(&:goal)).not_to include(goal_b)
+    end
+
+    it 'limits observations to the focused direct report' do
+      obs_a = observation_about(report_a, observer: observer_person)
+      obs_b = observation_about(report_b, observer: observer_person)
+
+      expect(focused.observations_about_those_i_serve).to include(obs_a)
+      expect(focused.observations_about_those_i_serve).not_to include(obs_b)
+    end
+
+    it 'returns nothing when focus_teammate is not a direct report' do
+      stranger = create(:company_teammate, organization: company)
+      create(:goal, owner: stranger, creator: stranger, company: company)
+      scoped = described_class.new(teammate: viewer, since: since, focus_teammate: stranger)
+
+      expect(scoped.goals_updated_by_those_i_serve).to be_empty
+    end
+  end
 end

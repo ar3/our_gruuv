@@ -1,0 +1,16 @@
+- casual_name = @teammate.person.casual_name
+
+.mt-4#oneThingSomethingInteresting
+  %h3.mb-1
+    %i.bi.bi-stars.me-1
+    Something Interesting
+  %p.text-muted.mb-3
+    Things that happened with
+    = casual_name
+    that can make this 1:1 better
+
+  = render 'organizations/get_shit_done/something_interesting_feed',
+           categories: :those_i_serve,
+           form_url: organization_company_teammate_one_on_one_link_path(organization, teammate_route_param(@teammate)),
+           since: @si_since,
+           since_hint: 'Defaults to the last 14 days.'

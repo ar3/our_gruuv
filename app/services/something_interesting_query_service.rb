@@ -4,6 +4,11 @@
 # excluded wherever it can be attributed (check-in reporter, PaperTrail whodunnit).
 # Also includes calendar moments when a check-in first reaches Warning (day 61
 # after the last finalize) for the viewer and their direct reports.
+#
+# One Thing reuses the "those I serve" categories with optional `focus_teammate:`
+# to limit results to one direct report. When adding a new SI category that is
+# about people the viewer serves, add it to THOSE_I_SERVE_CATEGORIES and the
+# shared feed partial so One Thing picks it up automatically.
 class SomethingInterestingQueryService
   GoalActivity = Struct.new(:goal, :record_updated, :new_check_ins, keyword_init: true) do
     def latest_activity_at
@@ -34,10 +39,21 @@ class SomethingInterestingQueryService
     end
   end
 
+  # Categories scoped to direct reports. One Thing shows only these, filtered to
+  # the hub teammate via `focus_teammate:`.
+  THOSE_I_SERVE_CATEGORIES = %i[
+    goals_updated_by_those_i_serve
+    observations_about_those_i_serve
+    check_in_warnings_for_those_i_serve
+  ].freeze
+
   # Header pill cache: SI queries are heavy; 1h is fine, and SI visits reset the entry.
   HEADER_PENDING_COUNT_CACHE_EXPIRES_IN = 1.hour
 
-  attr_reader :teammate, :person, :company, :since
+  # One Thing default window (SI uses last visit / 7 days instead).
+  ONE_THING_BASELINE = 14.days
+
+  attr_reader :teammate, :person, :company, :since, :focus_teammate
 
   # Last visit to the Something Interesting page (with or without query params).
   def self.last_visited_at(teammate)
@@ -51,6 +67,10 @@ class SomethingInterestingQueryService
   # Default window: everything since the last page visit, or the past 7 days if never visited.
   def self.baseline(teammate)
     last_visited_at(teammate) || 7.days.ago
+  end
+
+  def self.one_thing_baseline
+    ONE_THING_BASELINE.ago
   end
 
   def self.header_pending_count_cache_key(teammate)
@@ -82,18 +102,19 @@ class SomethingInterestingQueryService
     )
   end
 
-  def initialize(teammate:, since:)
+  def initialize(teammate:, since:, focus_teammate: nil)
     @teammate = teammate
     @person = teammate&.person
     @company = teammate&.organization
     @since = since
+    @focus_teammate = focus_teammate
   end
 
   def goals_updated_by_those_i_serve
     return [] unless teammate
-    return [] if direct_report_ids.empty?
+    return [] if served_teammate_ids.empty?
 
-    goal_activities_for(Goal.where(owner_type: 'CompanyTeammate', owner_id: direct_report_ids))
+    goal_activities_for(Goal.where(owner_type: 'CompanyTeammate', owner_id: served_teammate_ids))
   end
 
   def goals_updated_on_my_teams
@@ -126,7 +147,7 @@ class SomethingInterestingQueryService
   def observations_about_those_i_serve
     return Observation.none unless teammate
 
-    observations_about(direct_report_ids)
+    observations_about(served_teammate_ids)
   end
 
   def observations_about_me
@@ -143,13 +164,20 @@ class SomethingInterestingQueryService
     check_in_warning_events_for([teammate])
   end
 
-  # Same Warning-day moments for direct reports.
+  # Same Warning-day moments for direct reports (optionally one focus teammate).
   def check_in_warnings_for_those_i_serve
     return [] unless teammate
-    return [] if direct_report_ids.empty?
+    return [] if served_teammate_ids.empty?
 
-    reports = CompanyTeammate.where(id: direct_report_ids).includes(:person).to_a
+    reports = CompanyTeammate.where(id: served_teammate_ids).includes(:person).to_a
     check_in_warning_events_for(reports)
+  end
+
+  # Count of only the "those I serve" categories (used by One Thing).
+  def those_i_serve_total_count
+    goals_updated_by_those_i_serve.size +
+      observations_about_those_i_serve.count +
+      check_in_warnings_for_those_i_serve.size
   end
 
   # New public Slack pOGOs about the viewer (observee-facing).
@@ -422,6 +450,19 @@ class SomethingInterestingQueryService
     @direct_report_ids ||= EmploymentTenure.where(manager_teammate: teammate, company: company, ended_at: nil)
                                            .distinct
                                            .pluck(:teammate_id)
+  end
+
+  # Direct reports, optionally intersected with `focus_teammate` (One Thing hub person).
+  # Focus teammate outside the viewer's direct reports yields an empty set.
+  def served_teammate_ids
+    @served_teammate_ids ||= begin
+      ids = direct_report_ids
+      if focus_teammate.blank?
+        ids
+      else
+        ids & [focus_teammate.id]
+      end
+    end
   end
 
   def my_team_ids

@@ -50,6 +50,66 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include("One Thing (Active)")
       expect(response.body).to include(detailed_organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(response.body).not_to include("Current Sync Link")
+      expect(response.body).to include("Something Interesting")
+      expect(response.body).to include("Defaults to the last 14 days")
+      expect(response.body).to include("Goals updated by those I serve")
+      expect(response.body).to include("Observations made about those I serve")
+      expect(response.body).to include("Check-ins that reached Warning for those I serve")
+      expect(response.body).not_to include("Observations made about me")
+      expect(response.body).not_to include("Slack moments you discovered")
+    end
+
+    it "shows focused Something Interesting entries for the hub teammate" do
+      goal = create(
+        :goal,
+        owner: employee_teammate,
+        creator: employee_teammate,
+        company: organization,
+        title: "One Thing SI Goal #{SecureRandom.hex(4)}",
+        goal_type: "quantitative_key_result"
+      )
+      other_report = create(:teammate, organization: organization)
+      create(
+        :employment_tenure,
+        teammate: other_report,
+        company: organization,
+        manager_teammate: CompanyTeammate.find(manager_teammate.id),
+        started_at: 1.year.ago,
+        ended_at: nil
+      )
+      other_goal = create(
+        :goal,
+        owner: other_report,
+        creator: other_report,
+        company: organization,
+        title: "Other Report Goal #{SecureRandom.hex(4)}",
+        goal_type: "quantitative_key_result"
+      )
+
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(goal.title)
+      expect(response.body).not_to include(other_goal.title)
+    end
+
+    it "respects an explicit since param on Something Interesting" do
+      goal = create(
+        :goal,
+        owner: employee_teammate,
+        creator: employee_teammate,
+        company: organization,
+        title: "Dated SI Goal #{SecureRandom.hex(4)}",
+        goal_type: "quantitative_key_result"
+      )
+      goal.update_column(:updated_at, 20.days.ago)
+
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      expect(response.body).not_to include(goal.title)
+
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate),
+          params: { since: 30.days.ago.to_date.to_s }
+      expect(response.body).to include(goal.title)
     end
 
     it "resolves company_teammate_id 'me' (and legacy 'my') to the signed-in teammate" do

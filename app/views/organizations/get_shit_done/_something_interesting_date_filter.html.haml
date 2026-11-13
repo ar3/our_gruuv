@@ -1,0 +1,8 @@
+-# locals: form_url:, since:, since_hint: (HTML-safe or plain string)
+.card.mb-4
+  .card-body.py-3
+    = form_with url: form_url, method: :get, class: 'd-flex flex-wrap align-items-center gap-2 mb-0' do |f|
+      %span.text-muted Showing things that happened since
+      = f.date_field :since, value: since.to_date, class: 'form-control form-control-sm w-auto'
+      = f.submit 'Update', class: 'btn btn-sm btn-outline-primary'
+      %small.text-muted= since_hint

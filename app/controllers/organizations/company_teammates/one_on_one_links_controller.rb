@@ -14,6 +14,7 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
 
   def show
     load_hub_state
+    load_something_interesting_for_one_thing
   end
 
   def detailed
@@ -235,6 +236,30 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
       one_on_one_link: @one_on_one_link,
       viewing_company_teammate: current_company_teammate
     )
+  end
+
+  # SI "those I serve" categories for the hub teammate only. Viewer = current
+  # teammate (same as the SI page); default window is last 14 days.
+  def load_something_interesting_for_one_thing
+    baseline = SomethingInterestingQueryService.one_thing_baseline
+    @si_since = parsed_si_since_param || baseline
+
+    query_service = SomethingInterestingQueryService.new(
+      teammate: current_company_teammate,
+      since: @si_since,
+      focus_teammate: @teammate
+    )
+    @goals_by_those_i_serve = query_service.goals_updated_by_those_i_serve
+    @observations_about_those_i_serve = query_service.observations_about_those_i_serve
+    @check_in_warnings_for_those_i_serve = query_service.check_in_warnings_for_those_i_serve
+  end
+
+  def parsed_si_since_param
+    return nil if params[:since].blank?
+
+    Date.parse(params[:since]).beginning_of_day
+  rescue ArgumentError, TypeError
+    nil
   end
 
   def load_execute_metrics
