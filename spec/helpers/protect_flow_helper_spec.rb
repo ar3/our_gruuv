@@ -13,6 +13,33 @@ RSpec.describe ProtectFlowHelper, type: :helper do
     end
   end
 
+  describe "#protect_flow_signal_box_border_class" do
+    it "maps statuses to border utility classes" do
+      expect(helper.protect_flow_signal_box_border_class(EngagementHealth::HEALTHY)).to eq("border-success")
+      expect(helper.protect_flow_signal_box_border_class(EngagementHealth::WARNING)).to eq("border-warning")
+      expect(helper.protect_flow_signal_box_border_class(EngagementHealth::NEEDS_ATTENTION)).to eq("border-danger")
+    end
+  end
+
+  describe "#protect_flow_glance_signals" do
+    it "orders attention and clear items by category priority and keeps paths" do
+      signals = helper.protect_flow_glance_signals(
+        attention_items: [
+          { category: EngagementHealth::CATEGORY_OGO_RECEIVED, path: "/ogo", short_title: "OGOs Received" }
+        ],
+        clear_items: [
+          { category: EngagementHealth::CATEGORY_REQUIRED_CLARITY, path: "/clarity", short_title: "Clarity Check-ins" }
+        ]
+      )
+
+      expect(signals.map { |s| s[:category] }).to eq([
+        EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        EngagementHealth::CATEGORY_OGO_RECEIVED
+      ])
+      expect(signals.first[:path]).to eq("/clarity")
+    end
+  end
+
   describe "#protect_flow_person_week_summary" do
     it "summarizes warning/unhealthy progress when work remains" do
       summary = helper.protect_flow_person_week_summary(

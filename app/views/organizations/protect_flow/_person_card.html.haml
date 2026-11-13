@@ -4,8 +4,9 @@
 - teammate = person[:teammate]
 - attention_items = Array(person[:attention_items])
 - clear_items = Array(person[:clear_items])
+- signals = protect_flow_glance_signals(person)
 
-.card.border.h-100.protect-flow-person-card
+.card.border.h-100.protect-flow-person-card{"data-protect-flow-people-target" => "card", "data-expanded" => "false"}
   .card-body
     .d-flex.align-items-start.gap-3.mb-3
       .flex-shrink-0
@@ -16,22 +17,35 @@
         %p.small.text-muted.mb-0
           = protect_flow_person_week_summary(person)
 
-    - if attention_items.any?
-      %h3.h6.fw-semibold.text-muted.mb-2 Needs work
-      .d-flex.flex-column.gap-2{class: clear_items.any? ? "mb-3" : "mb-0"}
-        - attention_items.each do |action|
-          = render "organizations/protect_flow/signal_row",
-                   action: action,
-                   organization: organization,
-                   historical: historical,
-                   clear_section: false
+    %div{"data-protect-flow-summary" => true}
+      - if signals.any?
+        .mb-2
+          = render "organizations/protect_flow/signal_boxes", signals: signals
+      %p.mb-0
+        %a.small{href: "#", "data-action" => "protect-flow-people#toggle", "data-protect-flow-toggle" => true, "aria-expanded" => "false"}
+          Show details
 
-    - if clear_items.any?
-      %h3.h6.fw-semibold.text-muted.mb-2 Clear
-      .d-flex.flex-column.gap-2.mb-0
-        - clear_items.each do |action|
-          = render "organizations/protect_flow/signal_row",
-                   action: action,
-                   organization: organization,
-                   historical: historical,
-                   clear_section: true
+    .d-none{"data-protect-flow-details" => true}
+      %p.mb-3
+        %a.small{href: "#", "data-action" => "protect-flow-people#toggle", "data-protect-flow-toggle" => true, "aria-expanded" => "false"}
+          Hide details
+
+      - if attention_items.any?
+        %h3.h6.fw-semibold.text-muted.mb-2 Needs work
+        .d-flex.flex-column.gap-2{class: clear_items.any? ? "mb-3" : "mb-0"}
+          - attention_items.each do |action|
+            = render "organizations/protect_flow/signal_row",
+                     action: action,
+                     organization: organization,
+                     historical: historical,
+                     clear_section: false
+
+      - if clear_items.any?
+        %h3.h6.fw-semibold.text-muted.mb-2 Clear
+        .d-flex.flex-column.gap-2.mb-0
+          - clear_items.each do |action|
+            = render "organizations/protect_flow/signal_row",
+                     action: action,
+                     organization: organization,
+                     historical: historical,
+                     clear_section: true

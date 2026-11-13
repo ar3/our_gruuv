@@ -14,6 +14,26 @@ module ProtectFlowHelper
     end
   end
 
+  def protect_flow_signal_box_border_class(status)
+    case status
+    when EngagementHealth::HEALTHY
+      "border-success"
+    when EngagementHealth::WARNING
+      "border-warning"
+    when EngagementHealth::NEEDS_ATTENTION
+      "border-danger"
+    else
+      "border-secondary"
+    end
+  end
+
+  # At-a-glance boxes: attention + clear actions in category order (includes CTA path).
+  def protect_flow_glance_signals(person)
+    priority = ProtectFlow::PlanBuilder::CATEGORY_PRIORITY
+    items = Array(person[:attention_items]) + Array(person[:clear_items])
+    items.sort_by { |item| priority.index(item[:category].to_s) || priority.size }
+  end
+
   def protect_flow_status_label(status)
     return "Pending" if status.blank?
 

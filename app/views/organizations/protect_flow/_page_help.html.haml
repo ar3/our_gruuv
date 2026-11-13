@@ -27,11 +27,19 @@
     %li When a new week opens, the prior week is closed with an end-state snapshot so you can compare week over week.
     %li Use the week picker to revisit closed weeks (read-only progress).
     %li
-      Each person card lists
+      Each person card starts
+      %strong collapsed
+      with five at-a-glance Health Signal boxes (short label + status).
+      %strong Show details
+      expands into
       %strong Needs work
-      (Warning / Needs Attention) as three-column rows — name with “Why is this important?” (hover for details), one action-oriented opportunity sentence with an inline link, status + CTA — then
+      / 
       %strong Clear
-      for Healthy signals (lighter). When everything is Healthy, you only see Clear rows.
+      three-column rows (and hides the boxes until you collapse again). Use
+      %strong Expand all
+      /
+      %strong Collapse all
+      above the grid.
 
   %h5.fw-semibold.mb-2 Example
   .border.rounded.p-3.bg-white.mb-3
@@ -39,11 +47,9 @@
     %p.small.text-muted.mb-1
       So far this week, of the 3 warning/unhealthy signals, we've improved 2 so far… and in less than 15 minutes a week, we can get all of these essential clarity signals steady.
     %p.small.mb-1
-      %strong Needs work:
-      Clarity Check-ins · Needs Attention; OGOs Received · Warning
+      At a glance: Clarity Check-ins · Needs Attention; OGOs Received · Warning; Goals / Milestones / OGOs Given · Healthy
     %p.small.mb-0
-      %strong Clear:
-      Goals, Milestones, OGOs Given · Healthy
+      Show details → Needs work rows + Clear rows
 
   %h5.fw-semibold.mb-2 Status legend
   %ul.list-unstyled.mb-0

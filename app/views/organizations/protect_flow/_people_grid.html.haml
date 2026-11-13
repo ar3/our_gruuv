@@ -1,0 +1,17 @@
+- people = local_assigns.fetch(:people)
+- organization = local_assigns.fetch(:organization)
+- historical = local_assigns.fetch(:historical, false)
+- col_class = local_assigns.fetch(:col_class, "col-12 col-md-6")
+
+%div{"data-controller" => "protect-flow-people"}
+  .d-flex.justify-content-end.gap-3.mb-2
+    %a.small{href: "#", "data-action" => "protect-flow-people#expandAll"} Expand all
+    %a.small{href: "#", "data-action" => "protect-flow-people#collapseAll"} Collapse all
+
+  .row.g-3.protect-flow-people
+    - people.each do |person|
+      %div{class: col_class}
+        = render "organizations/protect_flow/person_card",
+                 person: person,
+                 organization: organization,
+                 historical: historical

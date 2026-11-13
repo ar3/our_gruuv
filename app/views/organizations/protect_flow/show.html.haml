@@ -33,13 +33,11 @@
     .alert.alert-light.border
       %p.mb-0 Your engagement health has not been calculated yet. Check back after the next refresh.
   - else
-    .row.g-3.protect-flow-people
-      - people.each do |person|
-        .col-12.col-md-6.col-lg-6
-          = render "organizations/protect_flow/person_card",
-                   person: person,
-                   organization: @organization,
-                   historical: historical
+    = render "organizations/protect_flow/people_grid",
+             people: people,
+             organization: @organization,
+             historical: historical,
+             col_class: "col-12 col-md-6 col-lg-6"
 - else
   .row.justify-content-center.mb-3
     .col-lg-12
@@ -93,10 +91,8 @@
       %p.mb-0
         No people in this scope. Try another “Who to show” option, or make sure you have reports assigned.
   - else
-    .row.g-3.protect-flow-people
-      - people.each do |person|
-        .col-12.col-md-6
-          = render "organizations/protect_flow/person_card",
-                   person: person,
-                   organization: @organization,
-                   historical: historical
+    = render "organizations/protect_flow/people_grid",
+             people: people,
+             organization: @organization,
+             historical: historical,
+             col_class: "col-12 col-md-6"

@@ -1,0 +1,17 @@
+- signals = local_assigns.fetch(:signals)
+
+.row.g-2.row-cols-2.row-cols-sm-3.row-cols-xl-5
+  - signals.each do |signal|
+    - title = signal[:short_title].presence || signal[:label]
+    - box_classes = "border rounded px-2 py-2 h-100 text-center text-decoration-none text-body d-flex flex-column #{protect_flow_signal_box_border_class(signal[:status])}"
+    .col
+      - if signal[:path].present?
+        = link_to signal[:path], class: box_classes do
+          %div.small.fw-semibold.lh-sm.flex-grow-1.mb-2= title
+          %span.badge.align-self-center{class: protect_flow_status_badge_class(signal[:status])}
+            = signal[:status_label].presence || protect_flow_status_label(signal[:status])
+      - else
+        %div{class: box_classes}
+          %div.small.fw-semibold.lh-sm.flex-grow-1.mb-2= title
+          %span.badge.align-self-center{class: protect_flow_status_badge_class(signal[:status])}
+            = signal[:status_label].presence || protect_flow_status_label(signal[:status])
