@@ -122,7 +122,12 @@ class Organizations::CompanyTeammates::NotificationsController < Organizations::
     return unless params.key?(key)
 
     value = params[key].to_s == 'on' ? 'on' : 'off'
-    prefs.update_preference(key.to_s, value)
+    key_s = key.to_s
+    if UserPreference::DIGEST_TOGGLES_WITH_EXPLICIT_TRACKING.include?(key_s)
+      prefs.record_digest_toggle!(key_s, value)
+    else
+      prefs.update_preference(key_s, value)
+    end
   end
 
   def update_weekly_day!(prefs)

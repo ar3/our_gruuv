@@ -348,7 +348,7 @@ module ProtectFlow
       when EngagementHealth::CATEGORY_REQUIRED_CLARITY then "Open Clarity Check-ins"
       when EngagementHealth::CATEGORY_MILESTONES then "Review ability milestones"
       when EngagementHealth::CATEGORY_GOAL_CONFIDENCE then "Open goals"
-      when EngagementHealth::CATEGORY_OGO_GIVEN then "Coach OGOs given"
+      when EngagementHealth::CATEGORY_OGO_GIVEN then "Review their OGOs"
       when EngagementHealth::CATEGORY_OGO_RECEIVED then "Give or review OGOs"
       else "Open #{one_thing_label_for_teammate(teammate)}"
       end

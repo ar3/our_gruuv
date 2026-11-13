@@ -553,6 +553,21 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     chart_range = 12.weeks.ago.beginning_of_week(:monday)..Time.current
     @search_ask_og_weekly_charts = search_ask_og_weekly_charts(company, chart_range)
+
+    @can_bulk_enable_digests = policy(company).manage_employment?
+    @digest_bulk_enable_counts = Digest::BulkEnablePreference.eligible_counts(company: company)
+  end
+
+  def bulk_enable_digest
+    authorize company, :manage_employment?
+
+    result = Digest::BulkEnablePreference.call(company: company, kind: params[:kind])
+    label = bulk_enable_digest_label(result)
+    redirect_to organization_insights_who_is_doing_what_path(organization),
+                notice: "Turned on #{label} for #{result.enabled_count} #{"teammate".pluralize(result.enabled_count)}."
+  rescue ArgumentError
+    redirect_to organization_insights_who_is_doing_what_path(organization),
+                alert: 'Unknown digest type.'
   end
 
   def check_ins_progress
@@ -601,6 +616,14 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   end
 
   private
+
+  def bulk_enable_digest_label(result)
+    if result.kind == 'gsd'
+      helpers.company_label_for('get_shit_done', 'Get Shit Done')
+    else
+      result.label
+    end
+  end
 
   def apply_acknowledgements_filter_default!
     return if params[:teammate_filter].present?

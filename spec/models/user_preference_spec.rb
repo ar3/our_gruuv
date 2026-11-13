@@ -85,6 +85,27 @@ RSpec.describe UserPreference, type: :model do
       expect(preference.preference(:digest_sms)).to eq('off')
     end
 
+    describe 'explicit digest toggle tracking' do
+      it 'marks tracked digests as explicitly set when recorded via record_digest_toggle!' do
+        preference.record_digest_toggle!('gsd_digest_enabled', 'off')
+
+        expect(preference.reload.gsd_digest_enabled?).to be(false)
+        expect(preference.digest_explicitly_set?('gsd_digest_enabled')).to be(true)
+        expect(preference.eligible_for_bulk_digest_enable?('gsd_digest_enabled')).to be(false)
+      end
+
+      it 'treats default-off digests without an explicit flag as bulk-enable eligible' do
+        expect(preference.gsd_digest_enabled?).to be(false)
+        expect(preference.digest_explicitly_set?('gsd_digest_enabled')).to be(false)
+        expect(preference.eligible_for_bulk_digest_enable?('gsd_digest_enabled')).to be(true)
+      end
+
+      it 'does not treat already-on digests as bulk-enable eligible' do
+        preference.update_preference('interesting_things_digest_enabled', 'on')
+        expect(preference.eligible_for_bulk_digest_enable?('interesting_things_digest_enabled')).to be(false)
+      end
+    end
+
     it 'updates digest preferences' do
       preference.update_preference('digest_slack', 'on')
       preference.update_preference('digest_email', 'on')

@@ -78,12 +78,24 @@ RSpec.describe 'Notifications tab', type: :request do
     it 'saves the GSD toggle' do
       patch organization_company_teammate_notifications_path(organization, teammate), params: { gsd_digest_enabled: 'on' }
       expect(response).to redirect_to(organization_company_teammate_notifications_path(organization, teammate))
-      expect(UserPreference.for_person(person).gsd_digest_enabled?).to be(true)
+      prefs = UserPreference.for_person(person)
+      expect(prefs.gsd_digest_enabled?).to be(true)
+      expect(prefs.digest_explicitly_set?('gsd_digest_enabled')).to be(true)
     end
 
     it 'saves the Interesting Things toggle' do
       patch organization_company_teammate_notifications_path(organization, teammate), params: { interesting_things_digest_enabled: 'on' }
-      expect(UserPreference.for_person(person).interesting_things_digest_enabled?).to be(true)
+      prefs = UserPreference.for_person(person)
+      expect(prefs.interesting_things_digest_enabled?).to be(true)
+      expect(prefs.digest_explicitly_set?('interesting_things_digest_enabled')).to be(true)
+    end
+
+    it 'marks 1:1 guide as explicitly set when toggled off' do
+      patch organization_company_teammate_notifications_path(organization, teammate),
+            params: { one_on_one_digest_enabled: 'off' }
+      prefs = UserPreference.for_person(person)
+      expect(prefs.weekly_digest_enabled?(:one_on_one_digest_enabled)).to be(false)
+      expect(prefs.digest_explicitly_set?('one_on_one_digest_enabled')).to be(true)
     end
 
     it 'saves the weekly day and defaults the 1:1 guide on' do

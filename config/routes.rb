@@ -1041,6 +1041,7 @@ Rails.application.routes.draw do
       get 'teams', to: 'insights#teams'
       get 'departments', to: 'insights#departments'
       get 'who_is_doing_what', to: 'insights#who_is_doing_what'
+      post 'who_is_doing_what/bulk_enable_digest', to: 'insights#bulk_enable_digest', as: :who_is_doing_what_bulk_enable_digest
       get 'check_ins_progress', to: 'insights#check_ins_progress'
       get 'acknowledgements', to: 'insights#acknowledgements'
     end

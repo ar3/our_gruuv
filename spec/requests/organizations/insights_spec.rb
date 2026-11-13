@@ -117,6 +117,10 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('who-is-doing-what-weekly-digest-type-chart')
       expect(response.body).to include('who-is-doing-what-daily-digest-type-chart')
       expect(response.body).to include('who-is-doing-what-digest-medium-chart')
+      expect(response.body).to include('Turning on Interesting Things for')
+      expect(response.body).to include('Turning on')
+      expect(response.body).to include('for')
+      expect(response.body).to include('1:1 guide for')
       expect(response.body).to include('Weekly digest day of week')
       expect(response.body).to include('1:1 guide vs About Me')
       expect(response.body).to include('Interesting Things vs GSD')
@@ -140,6 +144,13 @@ RSpec.describe 'Organizations::Insights', type: :request do
           expect(response.body).to include('Recent searches (org-wide)')
           expect(response.body).to include('Recent Ask OG sessions (org-wide)')
         end
+
+        it 'shows enabled bulk-enable digest buttons without the warning icon' do
+          get organization_insights_who_is_doing_what_path(organization)
+
+          expect(response.body).to include('Turning on Interesting Things for')
+          expect(response.body).not_to include('Requires permission to manage employment to turn digests on for teammates.')
+        end
       end
 
       context 'when viewer cannot manage employment' do
@@ -151,6 +162,58 @@ RSpec.describe 'Organizations::Insights', type: :request do
           expect(response.body).to include('Search & Ask OG activity')
           expect(response.body).not_to include('Recent searches (org-wide)')
           expect(response.body).not_to include('Recent Ask OG sessions (org-wide)')
+        end
+
+        it 'shows disabled bulk-enable digest buttons with the warning icon tooltip' do
+          get organization_insights_who_is_doing_what_path(organization)
+
+          expect(response.body).to include('Turning on Interesting Things for')
+          expect(response.body).to include('Requires permission to manage employment to turn digests on for teammates.')
+          expect(response.body).to include('bi-exclamation-triangle')
+        end
+      end
+    end
+
+    describe 'POST /organizations/:organization_id/insights/who_is_doing_what/bulk_enable_digest' do
+      before do
+        allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(can_manage_employment)
+      end
+
+      context 'when viewer can manage employment' do
+        let(:can_manage_employment) { true }
+
+        it 'turns on Interesting Things for eligible teammates and redirects' do
+          expect(teammate).to be_present
+          expect(UserPreference.for_person(person).interesting_things_digest_enabled?).to be(false)
+
+          post organization_insights_who_is_doing_what_bulk_enable_digest_path(organization, kind: 'interesting_things')
+
+          expect(response).to redirect_to(organization_insights_who_is_doing_what_path(organization))
+          follow_redirect!
+          expect(response.body).to include('Turned on Interesting Things for 1 teammate')
+          expect(UserPreference.for_person(person).interesting_things_digest_enabled?).to be(true)
+          expect(UserPreference.for_person(person).digest_explicitly_set?('interesting_things_digest_enabled')).to be(false)
+        end
+
+        it 'does not turn on digests for teammates who explicitly turned them off' do
+          expect(teammate).to be_present
+          UserPreference.for_person(person).record_digest_toggle!('gsd_digest_enabled', 'off')
+
+          post organization_insights_who_is_doing_what_bulk_enable_digest_path(organization, kind: 'gsd')
+
+          expect(UserPreference.for_person(person).gsd_digest_enabled?).to be(false)
+        end
+      end
+
+      context 'when viewer cannot manage employment' do
+        let(:can_manage_employment) { false }
+
+        it 'denies the action' do
+          expect(teammate).to be_present
+          post organization_insights_who_is_doing_what_bulk_enable_digest_path(organization, kind: 'interesting_things')
+
+          expect(response).to have_http_status(:redirect)
+          expect(UserPreference.for_person(person).interesting_things_digest_enabled?).to be(false)
         end
       end
     end

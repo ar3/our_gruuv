@@ -33,6 +33,23 @@
           #who-is-doing-what-daily-digest-type-chart{style: "height: 220px;"}
           #who-is-doing-what-digest-medium-chart{style: "height: 220px;"}
 
+          - gsd_bulk_label = company_label_for('get_shit_done', 'Get Shit Done')
+          - digest_bulk_enable_tooltip = 'Requires permission to manage employment to turn digests on for teammates.'
+          - digest_bulk_actions = [['interesting_things', 'Interesting Things', @digest_bulk_enable_counts['interesting_things'].to_i], ['gsd', gsd_bulk_label, @digest_bulk_enable_counts['gsd'].to_i], ['one_on_one', '1:1 guide', @digest_bulk_enable_counts['one_on_one'].to_i]]
+          .mt-3
+            %p.text-muted.small.mb-2
+              One-time: turn each digest on for employed teammates who do not already have it on and have never manually turned it off.
+              For 1:1 guide, sets the weekly day to Monday when they do not already have a day.
+            .d-flex.flex-wrap.gap-2.align-items-center
+              - digest_bulk_actions.each do |kind, label, count|
+                - button_text = "Turning on #{label} for #{count} #{"teammate".pluralize(count)}"
+                - if @can_bulk_enable_digests
+                  = button_to button_text, organization_insights_who_is_doing_what_bulk_enable_digest_path(@organization, kind: kind), method: :post, class: 'btn btn-sm btn-outline-primary', disabled: count.zero?, data: { turbo_confirm: "Turn on #{label} for #{count} #{"teammate".pluralize(count)} who have never manually turned it off?" }
+                - else
+                  %span.d-inline-flex.align-items-center.gap-1
+                    = button_tag button_text, type: 'button', class: 'btn btn-sm btn-outline-primary', disabled: true
+                    %i.bi.bi-exclamation-triangle.text-warning{data: { bs_toggle: 'tooltip', bs_title: digest_bulk_enable_tooltip }, style: 'font-size: 1rem;'}
+
   .row.mb-4
     .col-12
       .card.border-0.shadow-sm

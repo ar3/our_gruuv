@@ -4,6 +4,15 @@ class UserPreference < ApplicationRecord
   # Default preferences structure
   WEEKLY_DIGEST_TOGGLE_KEYS = %w[about_me_digest_enabled one_on_one_digest_enabled].freeze
 
+  # Digests that record a companion "*_explicitly_set" flag when the person (or their
+  # manager) changes the toggle in Notifications. Used so admin bulk-enable can skip
+  # people who have already made a manual choice.
+  DIGEST_TOGGLES_WITH_EXPLICIT_TRACKING = %w[
+    gsd_digest_enabled
+    interesting_things_digest_enabled
+    one_on_one_digest_enabled
+  ].freeze
+
   DEFAULT_PREFERENCES = {
     vertical_nav_open: false,
     vertical_nav_locked: false,
@@ -24,6 +33,10 @@ class UserPreference < ApplicationRecord
   # Ensure preferences is always a hash with defaults
   before_validation :ensure_preferences_hash
   after_initialize :set_default_preferences, if: :new_record?
+
+  def self.explicit_set_key_for(digest_key)
+    "#{digest_key}_explicitly_set"
+  end
   
   # Get preference value with default fallback
   def preference(key)
@@ -40,6 +53,32 @@ class UserPreference < ApplicationRecord
 
   def interesting_things_digest_enabled?
     preference(:interesting_things_digest_enabled) == 'on'
+  end
+
+  def digest_toggle_enabled?(digest_key)
+    preference(digest_key) == 'on'
+  end
+
+  def digest_explicitly_set?(digest_key)
+    ActiveModel::Type::Boolean.new.cast(
+      preferences[self.class.explicit_set_key_for(digest_key)]
+    ) == true
+  end
+
+  # Eligible for admin bulk-enable: currently off and never manually toggled.
+  def eligible_for_bulk_digest_enable?(digest_key)
+    !digest_toggle_enabled?(digest_key) && !digest_explicitly_set?(digest_key)
+  end
+
+  # Persist a Notifications toggle and, for tracked digests, mark it as an explicit choice.
+  def record_digest_toggle!(digest_key, value)
+    key = digest_key.to_s
+    updates = { key => value }
+    if DIGEST_TOGGLES_WITH_EXPLICIT_TRACKING.include?(key)
+      updates[self.class.explicit_set_key_for(key)] = true
+    end
+    self.preferences = preferences.merge(updates)
+    save
   end
   
   # Set preference value
