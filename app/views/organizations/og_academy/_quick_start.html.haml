@@ -2,6 +2,7 @@
   - @quick_start_people.each do |tm|
     - person = tm.person
     - is_self = tm.id == current_company_teammate.id
+    - one_thing_path = organization_company_teammate_one_on_one_link_path(current_organization, tm)
     - observe_path = ogos_organization_company_teammate_path(current_organization, tm)
     - goals_path = my_growth_goals_organization_company_teammate_path(current_organization, tm)
     - check_in_path = up_next_organization_company_teammate_check_ins_path(current_organization, tm)
@@ -24,7 +25,7 @@
               = teammate_profile_image(tm, size: 48)
               %div.min-w-0
                 .fs-4.fw-semibold.text-body
-                  = person.casual_name
+                  = link_to person.casual_name, one_thing_path, class: "text-decoration-none text-body"
                   - if is_self
                     %span.badge.text-bg-secondary.ms-1 you
                 %button.btn.btn-link.btn-sm.text-decoration-none.p-0.small.text-muted.text-start{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{links_collapse_id}", "aria-expanded" => "false", "aria-controls" => links_collapse_id}

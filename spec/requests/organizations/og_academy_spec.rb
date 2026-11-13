@@ -93,6 +93,8 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
       expect(response).to have_http_status(:success)
       expect(response.body).to include(person.casual_name)
+      one_thing_path = organization_company_teammate_one_on_one_link_path(company, teammate)
+      expect(response.body).to include("href=\"#{one_thing_path}\"")
       expect(response.body).to include('rounded-circle')
       expect(response.body).to include('Check-in')
       expect(response.body).to include('Observe')
