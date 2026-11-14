@@ -81,10 +81,20 @@ module Organizations::OgAcademyHelper
     level.level == current.level
   end
 
-  def og_academy_healthy_goals_count(goal_eh_records)
-    GoalsHealthEngagementHealthSupport.items_for(goal_eh_records).count do |record|
-      record.status.to_s == EngagementHealth::HEALTHY
-    end
+  # Active = started / not completed / not archived (goal_state active on EH items).
+  # Healthy active = those with a recent confidence check (EH healthy).
+  # Completed recent = goals completed in the COMPLETED_GOAL_WINDOW_DAYS window.
+  def og_academy_goals_caption_counts(goal_eh_records)
+    items = GoalsHealthEngagementHealthSupport.items_for(goal_eh_records)
+    active_items = items.reject { |record| record.inputs.to_h["goal_state"].to_s == "completed" }
+    completed_recent = items.count { |record| record.inputs.to_h["goal_state"].to_s == "completed" }
+    healthy_active = active_items.count { |record| record.status.to_s == EngagementHealth::HEALTHY }
+
+    {
+      active: active_items.size,
+      healthy_active: healthy_active,
+      completed_recent: completed_recent
+    }
   end
 
   def og_academy_ogos_received_caption(count)
@@ -92,8 +102,29 @@ module Organizations::OgAcademyHelper
     "#{count} #{'OGO'.pluralize(count)} received in the past #{days} days"
   end
 
-  def og_academy_healthy_goals_caption(count)
-    "#{count} active and healthy #{'goal'.pluralize(count)}"
+  def og_academy_goals_caption(counts)
+    active = counts[:active].to_i
+    healthy_active = counts[:healthy_active].to_i
+    completed_recent = counts[:completed_recent].to_i
+    window_days = EngagementHealth::Thresholds::COMPLETED_GOAL_WINDOW_DAYS
+
+    if active.zero?
+      return safe_join([
+        content_tag(:strong, active),
+        " active. ",
+        content_tag(:strong, completed_recent),
+        " completed in #{window_days} days."
+      ])
+    end
+
+    safe_join([
+      content_tag(:strong, active),
+      " active, ",
+      content_tag(:strong, healthy_active),
+      " with recent confidence. ",
+      content_tag(:strong, completed_recent),
+      " completed in #{window_days} days."
+    ])
   end
 
   # Expand control under a Quick Start teammate: "show all of my links..." vs "show all of {casual}'s links..."
