@@ -8,6 +8,18 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless record == viewing_teammate.organization
     admin_bypass? || viewing_teammate.can_manage_employment?
   end
+
+  def manage_billing?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_billing?
+  end
+
+  def view_billing?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || true
+  end
   
   def create_employment?
     return false unless viewing_teammate

@@ -359,11 +359,11 @@ module OgAcademy
         ),
         criterion(
           :visited_insights_and_billing,
-          "Visited all Insights pages and Value / Billing",
+          "Visited all Insights pages and Value",
           visited_insights_and_billing?,
-          "Open every page under Insights, plus Value / Billing.",
-          "Insights & billing",
-          what: "Visited all Insights suite pages and Value / Billing.",
+          "Open every page under Insights, plus Value.",
+          "Insights & value",
+          what: "Visited all Insights suite pages and Value.",
           attained_at: insights_and_billing_attained_at
         )
       ]
@@ -640,17 +640,22 @@ module OgAcademy
     end
 
     def visited_insights_and_billing?
-      required_insight_and_billing_suffixes.all? { |suffix| visited_org_suffix?(suffix) }
+      INSIGHT_PATH_SEGMENTS.all? { |suffix| visited_org_suffix?(suffix) } && visited_value_page?
+    end
+
+    def visited_value_page?
+      visited_org_suffix?("value") || visited_org_suffix?("value_billing")
     end
 
     def required_insight_and_billing_suffixes
-      INSIGHT_PATH_SEGMENTS + ["value_billing"]
+      INSIGHT_PATH_SEGMENTS + ["value"]
     end
 
     def insights_and_billing_attained_at
       return nil unless visited_insights_and_billing?
 
-      required_insight_and_billing_suffixes.filter_map { |suffix| first_org_suffix_visit_at(suffix) }.max
+      value_at = [first_org_suffix_visit_at("value"), first_org_suffix_visit_at("value_billing")].compact.min
+      (INSIGHT_PATH_SEGMENTS.filter_map { |suffix| first_org_suffix_visit_at(suffix) } + [value_at]).compact.max
     end
 
     # PageVisit urls use Organization#to_param (`id-slug`) and often `/company_teammates/me/`

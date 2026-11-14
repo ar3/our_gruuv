@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_14_224100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -420,6 +420,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
     t.index ["company_id"], name: "index_assignments_on_company_id"
     t.index ["deleted_at"], name: "index_assignments_on_deleted_at"
     t.index ["department_id"], name: "index_assignments_on_department_id"
+  end
+
+  create_table "billing_invoices", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "status", default: "open", null: false
+    t.string "cadence", null: false
+    t.date "period_starts_on", null: false
+    t.date "period_ends_on", null: false
+    t.date "due_on", null: false
+    t.decimal "pepm", precision: 10, scale: 2, null: false
+    t.integer "teammate_count", default: 0, null: false
+    t.decimal "amount_due", precision: 12, scale: 2, null: false
+    t.decimal "value_delivered_total", precision: 12, scale: 2
+    t.decimal "value_based_pepm", precision: 10, scale: 2
+    t.datetime "paid_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "due_on"], name: "index_billing_invoices_on_organization_id_and_due_on"
+    t.index ["organization_id", "status"], name: "index_billing_invoices_on_organization_id_and_status"
+    t.index ["organization_id"], name: "index_billing_invoices_on_organization_id"
   end
 
   create_table "bulk_downloads", force: :cascade do |t|
@@ -1454,6 +1474,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
     t.index ["teammate_id"], name: "index_one_on_one_links_on_teammate_id"
   end
 
+  create_table "organization_billing_settings", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "cadence", default: "monthly", null: false
+    t.decimal "locked_pepm", precision: 10, scale: 2
+    t.date "current_period_starts_on"
+    t.date "next_payment_due_on"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_organization_billing_settings_on_organization_id", unique: true
+  end
+
   create_table "organizations", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -2317,7 +2348,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
     t.bigint "next_goal_position_id"
     t.date "clarity_check_in_grace_until"
     t.boolean "slack_pogo_auto_refresh_hub_enabled", default: false, null: false
+    t.boolean "can_manage_billing", default: false, null: false
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
+    t.index ["can_manage_billing"], name: "index_teammates_on_can_manage_billing"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
     t.index ["can_manage_kudos_rewards"], name: "index_teammates_on_can_manage_kudos_rewards"
@@ -2490,6 +2523,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
   add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "departments"
   add_foreign_key "assignments", "organizations", column: "company_id"
+  add_foreign_key "billing_invoices", "organizations"
   add_foreign_key "bulk_downloads", "organizations", column: "company_id"
   add_foreign_key "bulk_downloads", "teammates", column: "downloaded_by_id"
   add_foreign_key "bulk_sync_events", "organizations"
@@ -2612,6 +2646,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
   add_foreign_key "ogo_quality_results", "og_consultations"
   add_foreign_key "ogo_search_results", "og_consultations"
   add_foreign_key "one_on_one_links", "teammates"
+  add_foreign_key "organization_billing_settings", "organizations"
   add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_1_position_eligibility_requirement_id"
   add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_2_position_eligibility_requirement_id"
   add_foreign_key "organizations", "position_eligibility_requirements", column: "minor_3_position_eligibility_requirement_id"

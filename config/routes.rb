@@ -148,7 +148,14 @@ Rails.application.routes.draw do
     post 'og_academy/update_start_page', to: 'organizations/og_academy#update_start_page', as: :og_academy_update_start_page
 
     get 'integrations', to: 'organizations/integrations#show', as: :integrations
-    get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
+    get 'value', to: 'organizations/value_billing#show', as: :value
+    get 'value_billing', to: redirect { |path_params, _req|
+      "/organizations/#{path_params[:organization_id]}/value"
+    }
+    resource :billing, only: [:show], controller: 'organizations/billing' do
+      patch :update_cadence
+      post :stub_pay
+    end
 
     # Get Shit Done Dashboard
     resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done' do

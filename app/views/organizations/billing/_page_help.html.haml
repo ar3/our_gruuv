@@ -1,0 +1,21 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p
+    Review value-based PEPM pricing, choose how often the organization pays, and track open and paid invoices.
+
+  %h3.fw-semibold.mb-2 Context
+  %p
+    OG bills from value delivered. Anyone can see how value is defined on the
+    = succeed "." do
+      = link_to "OG Value page", organization_value_path(organization)
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-0
+    %li Only teammates with Manage Billing can change cadence or use Pay.
+    %li Upcoming PEPM is previewed from average value per teammate over the prior ~90 days, then adjusted for cadence discounts (quarterly 10%, semi-annual 20%).
+    %li Shows the next three billing dates. Until the calculation date (one week before due), the amount is “likely” and can still change with value delivered.
+
+    %li Charges round down to the nearest $0.50 — below $0.50 per teammate, you pay nothing.
+
+    %li Pay is a placeholder until online payments ship; invoices list open and paid amounts when they exist.
+

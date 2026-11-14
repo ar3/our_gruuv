@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Shared timeframe parsing for Insights pages and Value / Billing (Last 90 days, Year, All-Time, Custom).
+# Shared timeframe parsing for Insights pages and Value (Last 90 days, Year, All-Time, Custom).
 module InsightsTimeframeSelection
   extend ActiveSupport::Concern
 

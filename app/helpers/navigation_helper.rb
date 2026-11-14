@@ -712,10 +712,17 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Value / Billing',
-            icon: 'bi-cash-coin',
-            path: organization_value_billing_path(current_organization),
+            label: 'Value',
+            icon: 'bi-graph-up-arrow',
+            path: organization_value_path(current_organization),
             policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Billing',
+            icon: 'bi-receipt',
+            path: organization_billing_path(current_organization),
+            policy_check: -> { policy(current_organization).view_billing? },
             coming_soon: false
           }
         ]

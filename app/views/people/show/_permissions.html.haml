@@ -100,6 +100,19 @@
                 - else
                   %span.badge.bg-secondary Not Set
 
+          .mb-3
+            .d-flex.justify-content-between.align-items-center
+              .permission-label
+                %strong Manage Billing
+                %small.text-muted.d-block Can manage billing cadence, invoices, and payments
+              .permission-status
+                - if current_access&.can_manage_billing == true
+                  %span.badge.bg-success Yes
+                - elsif current_access&.can_manage_billing == false
+                  %span.badge.bg-danger No
+                - else
+                  %span.badge.bg-secondary Not Set
+
       .col-md-4.border-start.border-secondary
         .d-grid.gap-2
           - if teammate

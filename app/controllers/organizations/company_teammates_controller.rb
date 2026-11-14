@@ -429,6 +429,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @who_has_departments_and_teams_management = organization.teammates.with_departments_and_teams_management.includes(:person)
     @who_has_customize_company = organization.teammates.with_customize_company.includes(:person)
     @who_has_kudos_rewards_management = organization.teammates.with_kudos_management.includes(:person)
+    @who_has_billing_management = organization.teammates.with_billing_management.includes(:person)
     
     render layout: 'overlay'
   end
@@ -488,6 +489,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       params[:can_manage_kudos_rewards] == 'true'
     else
       access.can_manage_kudos_rewards
+    end
+
+    access.can_manage_billing = if params[:can_manage_billing].present?
+      params[:can_manage_billing] == 'true'
+    else
+      access.can_manage_billing
     end
     
     # Save the access record

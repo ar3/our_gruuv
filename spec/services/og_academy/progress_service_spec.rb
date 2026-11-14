@@ -180,7 +180,22 @@ RSpec.describe OgAcademy::ProgressService do
       expect(levels[2].criteria.find { |c| c.key == :visited_teammate_internals }.done).to eq(true)
     end
 
-    it 'marks visited_insights_and_billing when every insights page and billing were visited' do
+    it 'marks visited_insights_and_billing when every insights page and Value were visited' do
+      (OgAcademy::ProgressService::INSIGHT_PATH_SEGMENTS + ['value']).each do |segment|
+        create(
+          :page_visit,
+          person: person,
+          url: "/organizations/#{company.to_param}/#{segment}",
+          page_title: segment,
+          visited_at: Time.current
+        )
+      end
+
+      criterion = service.levels[3].criteria.find { |c| c.key == :visited_insights_and_billing }
+      expect(criterion.done).to eq(true)
+    end
+
+    it 'counts legacy value_billing visits toward the Value criterion' do
       (OgAcademy::ProgressService::INSIGHT_PATH_SEGMENTS + ['value_billing']).each do |segment|
         create(
           :page_visit,

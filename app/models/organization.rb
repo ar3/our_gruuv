@@ -50,6 +50,9 @@ class Organization < ApplicationRecord
   has_many :kudos_rewards, foreign_key: :organization_id, dependent: :destroy
   has_many :kudos_redemptions, foreign_key: :organization_id, dependent: :destroy
 
+  has_one :billing_setting, class_name: "OrganizationBillingSetting", dependent: :destroy
+  has_many :billing_invoices, dependent: :destroy
+
   # Company-specific associations (formerly in Company STI subclass)
   has_one :huddle_review_notification_channel_association,
           -> { where(association_type: 'huddle_review_notification_channel') },

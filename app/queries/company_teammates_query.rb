@@ -162,6 +162,8 @@ class CompanyTeammatesQuery
         filtered_teammates = filtered_teammates.where(can_customize_company: true)
       when 'kudos_rewards'
         filtered_teammates = filtered_teammates.where(can_manage_kudos_rewards: true)
+      when 'billing'
+        filtered_teammates = filtered_teammates.where(can_manage_billing: true)
       end
     end
 

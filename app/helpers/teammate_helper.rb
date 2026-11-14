@@ -101,6 +101,10 @@ module TeammateHelper
     if teammate.can_manage_kudos_rewards?
       badges << content_tag(:span, "Kudos", class: "badge bg-secondary me-1")
     end
+
+    if teammate.can_manage_billing?
+      badges << content_tag(:span, "Billing", class: "badge bg-dark me-1")
+    end
     
     badges.any? ? badges.join.html_safe : content_tag(:span, "No special permissions", class: "text-muted small")
   end
@@ -151,6 +155,7 @@ module TeammateHelper
       when 'maap_mgmt' then 'MAAP Management'
       when 'customize_company' then 'Customize Company'
       when 'kudos_rewards' then "#{company_label_plural('kudos_point', 'Kudos Point')} & Rewards Management"
+      when 'billing' then 'Manage Billing'
       else filter_value.to_s.humanize
       end
     when 'manager_teammate_id'

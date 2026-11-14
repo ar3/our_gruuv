@@ -1,0 +1,177 @@
+- content_for :title, "Billing"
+- page_help_id = "billingPageHelp"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-receipt.me-2
+      Billing
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Value-based billing — click for details."
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/billing/page_help"
+
+- unless @can_manage_billing
+  .alert.alert-light.border.mb-4
+    %p.mb-2
+      OG is committed to bringing value. Our philosophy is that we should only bill if value is delivered. We define value in a transparent way, which any teammate can see by visiting the
+      = succeed "." do
+        = link_to "OG Value page", organization_value_path(organization)
+    %p.mb-0
+      - if @billing_managers.any?
+        - names = @billing_managers.map { |t| t.person.casual_name }
+        Billing can be managed by
+        %strong= names.to_sentence
+        \.
+      - else
+        No one currently has
+        %strong Manage Billing
+        permission. Ask someone with Employment Management to grant it on a teammate's permissions page.
+
+- if @can_manage_billing
+  .row.mb-4
+    .col-lg-6
+      .card.border-0.shadow-sm.h-100
+        .card-header.bg-primary.text-white
+          %h4.mb-0 Upcoming PEPM
+        .card-body
+          - if @upcoming_pepm
+            %p.fs-3.fw-semibold.mb-2
+              = number_to_currency(@upcoming_pepm)
+              %span.fs-6.fw-normal.text-muted / teammate
+            %p.text-muted.mb-2
+              Based on average value delivered
+              = number_to_currency(@value_metrics[:total_value])
+              across
+              = pluralize(@value_metrics[:teammate_count], "active teammate")
+              in the prior ~90 days
+              (#{@value_metrics[:range_begin]}–#{@value_metrics[:range_end]}).
+            - if @billing_setting.discount_rate.positive?
+              %p.text-muted.mb-2
+                Includes the
+                = "#{@billing_setting.discount_percent}% #{@billing_setting.cadence}"
+                cadence discount.
+            %p.text-muted.mb-3
+              We round down to the nearest $0.50. Until value reaches at least $0.50 / teammate, you pay nothing.
+            - @billing_periods.each_with_index do |period, index|
+              .mb-3{class: (index == @billing_periods.size - 1 ? "mb-0" : nil)}
+                %p.mb-2
+                  On
+                  %strong= l(period.due_on, format: :long)
+                  - if period.calculation_passed?
+                    you'll pay
+                  - else
+                    you'll likely pay
+                  - if @upcoming_pepm.zero?
+                    %strong nothing
+                    per teammate
+                  - else
+                    %strong= number_to_currency(@upcoming_pepm)
+                    / teammate
+                  based on the average value you received in the past 90 days
+                  - if period.calculation_passed?
+                    \.
+                  - else
+                    (depending on the value delivered… see below).
+                = render "shared/context_callout", margin_class: "mb-0" do
+                  %p.mb-0
+                    On
+                    %strong= l(period.calculation_on, format: :long)
+                    we'll calculate the value delivered and what you'll pay for the next period.
+          - else
+            %p.mb-0.text-muted
+              Not enough active teammates or value activity yet to preview PEPM. See the
+              = link_to "OG Value page", organization_value_path(organization)
+              for how value is calculated.
+
+
+    .col-lg-6
+      .card.border-0.shadow-sm.h-100
+        .card-header
+          %h4.mb-0 Payment cadence
+        .card-body
+          = form_with model: @billing_setting,
+                      url: update_cadence_organization_billing_path(organization),
+                      method: :patch,
+                      local: true do |f|
+            .mb-3
+              - OrganizationBillingSetting::CADENCES.each do |cadence|
+                .form-check
+                  = f.radio_button :cadence, cadence, class: "form-check-input", id: "cadence_#{cadence}"
+                  = f.label :cadence, OrganizationBillingSetting.cadence_label_for(cadence), value: cadence, class: "form-check-label", for: "cadence_#{cadence}"
+            = f.submit "Save cadence", class: "btn btn-primary"
+
+  .row.mb-4
+    .col-12
+      .card.border-0.shadow-sm
+        .card-body.d-flex.flex-wrap.align-items-center.justify-content-between.gap-3
+          %div
+            %h4.mb-1 Pay
+            %p.text-muted.mb-0
+              Stub payment control — online checkout ships in a later phase.
+          = button_to "Pay",
+                      stub_pay_organization_billing_path(organization),
+                      method: :post,
+                      class: "btn btn-success btn-lg",
+                      form: { class: "mb-0" }
+
+  .row.mb-4
+    .col-lg-6
+      .card.border-0.shadow-sm.h-100
+        .card-header
+          %h4.mb-0 Open invoices
+        .card-body
+          - if @open_invoices.any?
+            .table-responsive
+              %table.table.table-sm.mb-0
+                %thead
+                  %tr
+                    %th Due
+                    %th Period
+                    %th.text-end Amount
+                %tbody
+                  - @open_invoices.each do |invoice|
+                    %tr
+                      %td= l(invoice.due_on, format: :long)
+                      %td
+                        = l(invoice.period_starts_on, format: :long)
+                        –
+                        = l(invoice.period_ends_on, format: :long)
+                      %td.text-end= number_to_currency(invoice.amount_due)
+          - else
+            %p.text-muted.mb-0 No open invoices yet.
+
+    .col-lg-6
+      .card.border-0.shadow-sm.h-100
+        .card-header
+          %h4.mb-0 Paid invoices
+        .card-body
+          - if @paid_invoices.any?
+            .table-responsive
+              %table.table.table-sm.mb-0
+                %thead
+                  %tr
+                    %th Paid
+                    %th Period
+                    %th.text-end Amount
+                %tbody
+                  - @paid_invoices.each do |invoice|
+                    %tr
+                      %td= invoice.paid_at ? l(invoice.paid_at.to_date, format: :long) : "—"
+                      %td
+                        = l(invoice.period_starts_on, format: :long)
+                        –
+                        = l(invoice.period_ends_on, format: :long)
+                      %td.text-end= number_to_currency(invoice.amount_due)
+          - else
+            %p.text-muted.mb-0 No paid invoices yet.
+
+  %p.text-muted
+    Value transparency lives on the
+    = succeed "." do
+      = link_to "OG Value page", organization_value_path(organization)

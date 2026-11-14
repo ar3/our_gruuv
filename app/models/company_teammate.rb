@@ -116,6 +116,7 @@ class CompanyTeammate < ApplicationRecord
   scope :with_departments_and_teams_management, -> { where(can_manage_departments_and_teams: true) }
   scope :with_customize_company, -> { where(can_customize_company: true) }
   scope :with_kudos_management, -> { where(can_manage_kudos_rewards: true) }
+  scope :with_billing_management, -> { where(can_manage_billing: true) }
 
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
@@ -152,6 +153,10 @@ class CompanyTeammate < ApplicationRecord
 
   def can_manage_kudos_rewards?
     self[:can_manage_kudos_rewards] == true
+  end
+
+  def can_manage_billing?
+    self[:can_manage_billing] == true
   end
 
   def can_be_points_banker?
@@ -471,6 +476,12 @@ class CompanyTeammate < ApplicationRecord
     return true if person.og_admin?
     access = find_by(person: person, organization: organization)
     access&.can_manage_kudos_rewards? || false
+  end
+
+  def self.can_manage_billing?(person, organization)
+    return true if person.og_admin?
+    access = find_by(person: person, organization: organization)
+    access&.can_manage_billing? || false
   end
 
   def self.can_manage_employment_in_hierarchy?(person, organization)

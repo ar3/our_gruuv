@@ -364,7 +364,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_prompts: 'false',
           can_manage_departments_and_teams: 'true',
           can_customize_company: 'true',
-          can_manage_kudos_rewards: 'true'
+          can_manage_kudos_rewards: 'true',
+          can_manage_billing: 'true'
         }
         
         expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
@@ -380,7 +381,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_prompts: false,
           can_manage_departments_and_teams: false,
           can_customize_company: false,
-          can_manage_kudos_rewards: false
+          can_manage_kudos_rewards: false,
+          can_manage_billing: false
         )
         
         post :update_permissions, params: {
@@ -392,7 +394,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_prompts: 'true',
           can_manage_departments_and_teams: 'false',
           can_customize_company: 'true',
-          can_manage_kudos_rewards: 'true'
+          can_manage_kudos_rewards: 'true',
+          can_manage_billing: 'true'
         }
         
         employee_teammate.reload
@@ -403,6 +406,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
         expect(employee_teammate.can_customize_company).to eq(true)
         expect(employee_teammate.can_manage_kudos_rewards).to eq(true)
+        expect(employee_teammate.can_manage_billing).to eq(true)
       end
 
       it 'handles setting permissions to false' do
@@ -414,7 +418,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_prompts: true,
           can_manage_departments_and_teams: true,
           can_customize_company: true,
-          can_manage_kudos_rewards: true
+          can_manage_kudos_rewards: true,
+          can_manage_billing: true
         )
         
         post :update_permissions, params: {
@@ -426,7 +431,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_manage_prompts: 'false',
           can_manage_departments_and_teams: 'false',
           can_customize_company: 'false',
-          can_manage_kudos_rewards: 'false'
+          can_manage_kudos_rewards: 'false',
+          can_manage_billing: 'false'
         }
         
         employee_teammate.reload
@@ -437,6 +443,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
         expect(employee_teammate.can_customize_company).to eq(false)
         expect(employee_teammate.can_manage_kudos_rewards).to eq(false)
+        expect(employee_teammate.can_manage_billing).to eq(false)
       end
     end
 

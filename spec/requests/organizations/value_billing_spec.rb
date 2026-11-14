@@ -8,18 +8,19 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
     sign_in_as_teammate_for_request(person, organization)
   end
 
-  describe 'GET /organizations/:organization_id/value_billing' do
+  describe 'GET /organizations/:organization_id/value' do
     it 'returns http success' do
-      get organization_value_billing_path(organization)
+      get organization_value_path(organization)
       expect(response).to have_http_status(:success)
     end
 
-    it 'renders the value and billing page content with charts' do
+    it 'renders the value page content with charts' do
       allow_any_instance_of(OrganizationPolicy).to receive(:check_ins_health?).and_return(true)
 
-      get organization_value_billing_path(organization)
+      get organization_value_path(organization)
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Value / Billing')
+      expect(response.body).to include('Value')
+      expect(response.body).not_to include('Value / Billing')
       expect(response.body).to include('Beta')
       expect(response.body).to include('Clarity leads to both personal and team growth.')
       expect(response.body).to include('OG helped')
@@ -52,13 +53,13 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
     end
 
     it 'accepts timeframe param like Insights' do
-      get organization_value_billing_path(organization, timeframe: 'year')
+      get organization_value_path(organization, timeframe: 'year')
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Last Year')
     end
 
     it 'shows per-employee value or no-teammates message when there are no active teammates' do
-      get organization_value_billing_path(organization)
+      get organization_value_path(organization)
       expect(response.body).to match(/weekly clarity value per active teammate|No active teammates/)
     end
 
@@ -72,7 +73,7 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
         completed_at: Time.current
       )
 
-      get organization_value_billing_path(organization, timeframe: 'year')
+      get organization_value_path(organization, timeframe: 'year')
 
       expect(response.body).to match(/weekly clarity value per active teammate\s*<span[^>]*>\s*\(~\$[\d,]+\.\d{2} monthly\)/m)
       weekly_amount = response.body[/\$(?<amount>[\d,]+\.\d{2}) weekly clarity value per active teammate/, :amount]
@@ -97,7 +98,7 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
         )
       end
 
-      get organization_value_billing_path(organization, timeframe: 'year')
+      get organization_value_path(organization, timeframe: 'year')
 
       expect(response.body).to include('2 completed Consult OG consultations')
       expect(response.body).to include('Which is valued at $2.00')
@@ -155,7 +156,7 @@ RSpec.describe 'Organizations::ValueBilling', type: :request do
         completed_at: completed_at
       )
 
-      get organization_value_billing_path(organization, timeframe: 'year')
+      get organization_value_path(organization, timeframe: 'year')
 
       expect(response.body).to include('4 completed Consult OG consultations')
       expect(response.body).to include('Which is valued at $4.00')

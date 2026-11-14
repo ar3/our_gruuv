@@ -413,6 +413,11 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(result).not_to include('Customize')
     end
 
+    it 'includes Billing badge when teammate has can_manage_billing' do
+      teammate.update!(can_manage_billing: true)
+      expect(helper.teammate_permissions_badges(teammate)).to include('Billing')
+    end
+
     it 'includes Kudos badge when teammate has can_manage_kudos_rewards' do
       teammate.update!(can_manage_kudos_rewards: true)
       result = helper.teammate_permissions_badges(teammate)
