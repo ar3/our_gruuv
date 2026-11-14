@@ -24,6 +24,7 @@ RSpec.describe "Milestones Health", type: :request do
       expect(response.body).to include("Who to show")
       expect(response.body).to include("milestones-health-spotlight-full")
       expect(response.body).to include("Other actions")
+      expect(response.body).to match(/Refresh all \(\d+\)/)
       expect(response.body).to include("health-dashboard-toolbar")
       expect(response.body).to include("Gruuv Health")
       expect(response.body).to include("Switch object")
@@ -60,12 +61,12 @@ RSpec.describe "Milestones Health", type: :request do
     end
   end
 
-  describe "POST /organizations/:organization_id/milestones_health_refresh" do
-    it "enqueues Gruuv Health refresh for the teammate" do
+  describe "POST /organizations/:organization_id/milestones_health_refresh_all" do
+    it "enqueues Gruuv Health refresh for filtered teammates" do
       expect {
-        post organization_milestones_health_refresh_path(company), params: { teammate_id: teammate.id }
+        post organization_milestones_health_refresh_all_path(company), params: { manager_id: "just_me" }
       }.to have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
-      expect(response).to redirect_to(organization_milestones_health_path(company))
+      expect(response).to redirect_to(organization_milestones_health_path(company, manager_id: "just_me"))
     end
   end
 end

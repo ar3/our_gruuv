@@ -58,4 +58,39 @@ RSpec.describe HealthDashboardsHelper, type: :helper do
       expect(helper.health_dashboard_switcher_button_class(:check_ins_health, :goals_health)).to include("btn-outline-primary")
     end
   end
+
+  describe "refresh other actions" do
+    it "puts counted Refresh all first on Gruuv Health dashboards" do
+      def helper.can_view_check_ins_health_by_manager? = true
+
+      {
+        goals_health_other_actions: helper.goals_health_other_actions(organization, manager_id: "just_me", teammate_count: 3),
+        milestones_health_other_actions: helper.milestones_health_other_actions(organization, manager_id: "just_me", teammate_count: 3),
+        observations_health_other_actions: helper.observations_health_other_actions(organization, manager_id: "just_me", teammate_count: 3),
+        check_ins_health_other_actions: helper.check_ins_health_other_actions(organization, manager_id: "just_me", teammate_count: 3)
+      }.each_value do |actions|
+        refresh = actions.first
+        expect(refresh[:label]).to eq("Refresh all (3)")
+        expect(refresh[:method]).to eq(:post)
+        expect(refresh[:icon]).to eq("bi-arrow-clockwise")
+        expect(refresh[:disabled]).to eq(false)
+      end
+    end
+
+    it "disables Refresh all when the filter is empty" do
+      action = helper.goals_health_other_actions(organization, manager_id: "just_me", teammate_count: 0).first
+      expect(action[:label]).to eq("Refresh all")
+      expect(action[:disabled]).to eq(true)
+    end
+
+    it "keeps EAS refresh labels with counts in the same pattern" do
+      assignments = helper.assignments_health_other_actions(organization, refreshable_count: 4).first
+      expect(assignments[:label]).to eq("Refresh missing & stale (4)")
+      expect(assignments[:method]).to eq(:post)
+
+      positions = helper.positions_health_other_actions(organization, title_count: 7).first
+      expect(positions[:label]).to eq("Refresh all (7)")
+      expect(positions[:method]).to eq(:post)
+    end
+  end
 end

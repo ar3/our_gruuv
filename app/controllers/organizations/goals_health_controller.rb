@@ -56,6 +56,17 @@ class Organizations::GoalsHealthController < Organizations::OrganizationNamespac
     send_data csv_content, filename: filename, type: "text/csv", disposition: "attachment"
   end
 
+  def refresh_all
+    authorize @organization, :goals_health?
+    apply_filter_default_if_needed
+
+    teammate_ids = goals_health_spotlight_service.filtered_teammate_ids(params[:manager_id])
+    teammate_ids.each { |teammate_id| EngagementHealth.schedule_refresh_for(teammate_id) }
+
+    redirect_to organization_goals_health_path(@organization, manager_id: params[:manager_id]),
+                notice: "Gruuv Health refresh queued for #{teammate_ids.size} teammate#{'s' if teammate_ids.size != 1}."
+  end
+
   private
 
   def goals_health_spotlight_service

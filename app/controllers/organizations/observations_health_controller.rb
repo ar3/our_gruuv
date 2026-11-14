@@ -34,21 +34,6 @@ class Organizations::ObservationsHealthController < Organizations::OrganizationN
     )
   end
 
-  def refresh
-    authorize @organization, :observations_health?
-
-    teammate = @organization.teammates.find_by(id: params[:teammate_id])
-    unless teammate
-      redirect_back fallback_location: organization_observations_health_path(@organization),
-                    alert: "Could not refresh: teammate not found."
-      return
-    end
-
-    queue_observations_health_refresh(teammate.id)
-    redirect_back fallback_location: organization_observations_health_path(@organization),
-                  notice: "Gruuv Health and mix refresh queued for #{teammate.person.display_name}."
-  end
-
   def refresh_all
     authorize @organization, :observations_health?
     apply_filter_default_if_needed

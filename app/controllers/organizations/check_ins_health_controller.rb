@@ -74,19 +74,6 @@ class Organizations::CheckInsHealthController < Organizations::OrganizationNames
     @sort_by = apply_by_manager_sort
   end
 
-  def refresh
-    authorize @organization, :check_ins_health?
-
-    teammate = @organization.teammates.find_by(id: params[:teammate_id])
-    unless teammate
-      redirect_back fallback_location: organization_check_ins_health_path(@organization), alert: 'Could not refresh: teammate not found.'
-      return
-    end
-
-    EngagementHealth.schedule_refresh_for(teammate.id)
-    redirect_back fallback_location: organization_check_ins_health_path(@organization), notice: "Gruuv Health refresh queued for #{teammate.person.display_name}."
-  end
-
   def refresh_all
     authorize @organization, :check_ins_health?
     apply_filter_default_if_needed

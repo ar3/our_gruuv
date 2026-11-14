@@ -85,7 +85,7 @@
       organization: @organization,
       current: :check_ins_health,
       manager_id: @current_manager_filter,
-      other_actions: check_ins_health_other_actions(@organization, manager_id: @current_manager_filter),
+      other_actions: check_ins_health_other_actions(@organization, manager_id: @current_manager_filter, teammate_count: @pagy.count),
       aside_html: nudge_captures[:aside_html],
       below_html: nudge_captures[:below_html]
 
@@ -108,17 +108,7 @@
             %col{style: "width: 15%"}
           %thead
             %tr
-              %th
-                .d-flex.align-items-center.justify-content-between.gap-2
-                  %span Employee
-                  = button_to organization_check_ins_health_refresh_all_path(@organization),
-                              method: :post,
-                              params: { manager_id: @current_manager_filter },
-                              class: "btn btn-link btn-sm p-0 text-muted",
-                              form: { class: "d-inline" },
-                              title: "Refresh all in current filter" do
-                    %i.bi.bi-arrow-repeat.me-1
-                    Refresh all
+              %th Employee
               %th Aspirations
               %th Assignments
               %th Position
@@ -128,18 +118,21 @@
               - teammate = data[:teammate]
               - engagement_records = data[:engagement_health_records]
               - manager_teammate = data[:manager_teammate]
+              - refreshed_at = CheckInsHealthEngagementHealthSupport.computed_at_for(engagement_records)
               %tr
                 %td.align-top{style: "width: 25%", rowspan: 2}
-                  .d-flex.align-items-center.gap-2
-                    = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
-                    - refreshed_tooltip = check_ins_health_engagement_refreshed_tooltip(engagement_records)
-                    = button_to organization_check_ins_health_refresh_path(@organization, teammate_id: teammate.id), method: :post, class: "btn btn-link btn-sm p-0 text-muted", title: refreshed_tooltip, form: { class: "d-inline" } do
-                      %i.bi.bi-arrow-clockwise
+                  = link_to person.display_name, organization_company_teammate_check_ins_path(@organization, teammate), class: "text-decoration-none fw-bold"
                   - if manager_teammate
+                    %br
                     %small.text-muted
                       = link_to manager_teammate.person&.display_name, organization_check_ins_health_path(@organization, manager_id: "CompanyTeammate_#{manager_teammate.id}"), class: "text-muted"
                   - else
+                    %br
                     %small.text-muted —
+                  - if refreshed_at
+                    %br
+                    %small.text-muted
+                      Computed #{time_ago_in_words(refreshed_at)} ago
                   - names = teammate_and_manager_short_names(teammate, @organization)
                   - action_popover_html = check_ins_health_action_popover_html(records: engagement_records, employee_name: names[:employee], manager_name: names[:manager])
                   .mt-1

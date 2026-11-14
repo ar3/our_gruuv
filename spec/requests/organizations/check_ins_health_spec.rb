@@ -68,7 +68,7 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it 'shows secondary Gruuv Health alert and refresh control when engagement health exists' do
+    it 'shows secondary Gruuv Health alert, computed-ago, and toolbar Refresh all when engagement health exists' do
       EngagementHealthStatus.create!(
         teammate: teammate,
         organization: company,
@@ -100,7 +100,9 @@ RSpec.describe 'Check-ins Health', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Consider checking in on: Task (Last check-in was 95 days ago)')
       expect(response.body).not_to include('(Needs Attention)')
-      expect(response.body).to include('bi-arrow-clockwise')
+      expect(response.body).to include('Computed')
+      expect(response.body).to include('ago')
+      expect(response.body).to match(/Refresh all \(\d+\)/)
       expect(response.body).to include('% clear')
       expect(response.body).to include('clarity-action-slots-summary')
       expect(response.body).to include(up_next_organization_company_teammate_check_ins_path(company, teammate))
@@ -153,22 +155,6 @@ RSpec.describe 'Check-ins Health', type: :request do
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(organization_check_ins_health_path(company))
       end
-    end
-  end
-
-  describe 'POST /organizations/:organization_id/check_ins_health_refresh' do
-    include ActiveJob::TestHelper
-
-    it 'enqueues a Gruuv Health refresh job for the teammate' do
-      expect do
-        post organization_check_ins_health_refresh_path(company), params: { teammate_id: teammate.id }
-      end.to have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
-
-      job_classes = enqueued_jobs.map { |job| job[:job] }
-      expect(job_classes).to include(EngagementHealthRefreshJob)
-
-      expect(response).to have_http_status(:redirect)
-      expect(response).to redirect_to(organization_check_ins_health_path(company))
     end
   end
 

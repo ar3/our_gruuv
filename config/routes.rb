@@ -263,7 +263,6 @@ Rails.application.routes.draw do
     get :check_ins_health_by_manager, to: 'organizations/check_ins_health#by_manager'
     get :check_ins_health_export, to: 'organizations/check_ins_health#export'
     get :check_ins_health_employee_summary_export, to: 'organizations/check_ins_health#export_employee_summary'
-    post :check_ins_health_refresh, to: 'organizations/check_ins_health#refresh', as: :check_ins_health_refresh
     post :check_ins_health_refresh_all, to: 'organizations/check_ins_health#refresh_all', as: :check_ins_health_refresh_all
     resource :goal_impact_scanner,
              only: [:show],
@@ -369,6 +368,7 @@ Rails.application.routes.draw do
     get :goals_health, to: 'organizations/goals_health#index'
     get :goals_health_export, to: 'organizations/goals_health#export'
     get :goals_health_employee_summary_export, to: 'organizations/goals_health#export_employee_summary'
+    post :goals_health_refresh_all, to: 'organizations/goals_health#refresh_all', as: :goals_health_refresh_all
     post :goals_health_nudge, to: 'organizations/goals_health#nudge'
     get :teams_health, to: 'organizations/teams_health#index'
     post :check_ins_health_nudge, to: 'organizations/check_ins_health#nudge'
@@ -376,12 +376,10 @@ Rails.application.routes.draw do
     post :observations_health_nudge, to: 'organizations/observations_health#nudge'
     get :milestones_health, to: 'organizations/milestones_health#index'
     get :milestones_health_employee_summary_export, to: 'organizations/milestones_health#export_employee_summary'
-    post :milestones_health_refresh, to: 'organizations/milestones_health#refresh', as: :milestones_health_refresh
     post :milestones_health_refresh_all, to: 'organizations/milestones_health#refresh_all', as: :milestones_health_refresh_all
     get :observations_health, to: 'organizations/observations_health#index'
     get :observations_health_export, to: 'organizations/observations_health#export'
     get :observations_health_employee_summary_export, to: 'organizations/observations_health#export_employee_summary'
-    post :observations_health_refresh, to: 'organizations/observations_health#refresh', as: :observations_health_refresh
     post :observations_health_refresh_all, to: 'organizations/observations_health#refresh_all', as: :observations_health_refresh_all
     get :assignments_health, to: 'organizations/assignments_health#index'
     post :assignments_health_refresh, to: 'organizations/assignments_health#refresh', as: :assignments_health_refresh

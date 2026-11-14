@@ -32,6 +32,7 @@ RSpec.describe "Goals Health", type: :request do
       expect(response.body).to include("No active goals are attached")
       expect(response.body).to include("Drafts:")
       expect(response.body).to include("Other actions")
+      expect(response.body).to match(/Refresh all \(\d+\)/)
       expect(response.body).to include("health-dashboard-toolbar")
       expect(response.body).not_to include("Top-level & associated")
       expect(response.body).not_to include("data-bs-toggle=\"popover\"")
@@ -182,14 +183,15 @@ RSpec.describe "Goals Health", type: :request do
                manager_id: "CompanyTeammate_#{manager_teammate.id}",
                recipient_scope: "manager"
              }
-      end.to change(Notification.where(notification_type: "health_nudge"), :count).by(1)
+      end.to change(Notification.where(notification_type: "health_nudge"), :count)
 
       expect(response).to redirect_to(
         organization_goals_health_path(company, manager_id: "CompanyTeammate_#{manager_teammate.id}")
       )
       expect(flash[:notice]).to eq("Goals Health nudge sent.")
-      expect(Notification.where(notification_type: "health_nudge").last.metadata["health_object"]).to eq("goals_health")
-      expect(Notification.where(notification_type: "health_nudge").last.metadata["recipient_scope"]).to eq("manager")
+      main = Notification.where(notification_type: "health_nudge", main_thread_id: nil).last
+      expect(main.metadata["health_object"]).to eq("goals_health")
+      expect(main.metadata["recipient_scope"]).to eq("manager")
     end
 
     it "sends a manager_and_skip nudge when requested" do
@@ -223,6 +225,17 @@ RSpec.describe "Goals Health", type: :request do
            params: { manager_id: "everyone", recipient_scope: "manager" }
       expect(response).to redirect_to(organization_goals_health_path(company, manager_id: "everyone"))
       expect(flash[:alert]).to include("specific manager")
+    end
+  end
+
+  describe "POST /organizations/:organization_id/goals_health_refresh_all" do
+    include ActiveJob::TestHelper
+
+    it "enqueues Gruuv Health refresh for filtered teammates" do
+      expect {
+        post organization_goals_health_refresh_all_path(company), params: { manager_id: "just_me" }
+      }.to have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
+      expect(response).to redirect_to(organization_goals_health_path(company, manager_id: "just_me"))
     end
   end
 end

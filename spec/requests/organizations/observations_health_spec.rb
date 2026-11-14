@@ -26,7 +26,7 @@ RSpec.describe "Observations Health", type: :request do
       expect(response.body).to include("Received")
       expect(response.body).to include("Kudos mix")
       expect(response.body).to include("Rating intensity")
-      expect(response.body).to include("Refresh all in this view")
+      expect(response.body).to match(/Refresh all \(\d+\)/)
       expect(response.body).to include("Switch object")
       expect(response.body).to include("Switch page type")
       expect(response.body).not_to include("Company Observations Insights")
@@ -94,7 +94,9 @@ RSpec.describe "Observations Health", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("2:1")
       expect(response.body).to include("Warning")
-      expect(response.body).to include("bi-arrow-clockwise")
+      expect(response.body).to include("Computed")
+      expect(response.body).to include("ago")
+      expect(response.body).to match(/Refresh all \(\d+\)/)
       expect(response.body).to include(ogos_organization_company_teammate_path(company, "me"))
     end
   end
@@ -117,22 +119,13 @@ RSpec.describe "Observations Health", type: :request do
     end
   end
 
-  describe "POST /organizations/:organization_id/observations_health_refresh" do
-    it "enqueues Gruuv Health and observation mix refresh for the teammate" do
-      expect {
-        post organization_observations_health_refresh_path(company), params: { teammate_id: teammate.id }
-      }.to have_enqueued_job(ObservationHealthCacheRefreshJob).with(teammate.id)
-        .and have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
-      expect(response).to redirect_to(organization_observations_health_path(company))
-    end
-  end
-
   describe "POST /organizations/:organization_id/observations_health_refresh_all" do
     it "enqueues refresh for filtered teammates" do
       expect {
         post organization_observations_health_refresh_all_path(company), params: { manager_id: "just_me" }
       }.to have_enqueued_job(ObservationHealthCacheRefreshJob).with(teammate.id)
         .and have_enqueued_job(EngagementHealthRefreshJob).with(teammate.id)
+      expect(response).to redirect_to(organization_observations_health_path(company, manager_id: "just_me"))
     end
   end
 end

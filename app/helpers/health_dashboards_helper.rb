@@ -53,8 +53,12 @@ module HealthDashboardsHelper
     page_key == current_key ? "#{base} btn-primary" : "#{base} btn-outline-primary"
   end
 
-  def goals_health_other_actions(organization, manager_id:)
+  def goals_health_other_actions(organization, manager_id:, teammate_count:)
     [
+      health_dashboard_refresh_all_action(
+        path: organization_goals_health_refresh_all_path(organization, manager_id: manager_id),
+        count: teammate_count
+      ),
       {
         label: "Download goals (CSV)",
         path: organization_goals_health_export_path(organization, manager_id: manager_id),
@@ -68,14 +72,13 @@ module HealthDashboardsHelper
     ]
   end
 
-  def observations_health_other_actions(organization, manager_id:)
+  def observations_health_other_actions(organization, manager_id:, teammate_count:)
     [
-      {
-        label: "Refresh all in this view",
+      health_dashboard_refresh_all_action(
         path: organization_observations_health_refresh_all_path(organization, manager_id: manager_id),
-        icon: "bi-arrow-clockwise",
-        method: :post
-      },
+        count: teammate_count,
+        title_when_enabled: "Queue Gruuv Health and mix refresh for everyone in this view"
+      ),
       {
         label: "Download OGOs (CSV)",
         path: organization_observations_health_export_path(organization, manager_id: manager_id),
@@ -89,8 +92,13 @@ module HealthDashboardsHelper
     ]
   end
 
-  def check_ins_health_other_actions(organization, manager_id:)
-    actions = []
+  def check_ins_health_other_actions(organization, manager_id:, teammate_count:)
+    actions = [
+      health_dashboard_refresh_all_action(
+        path: organization_check_ins_health_refresh_all_path(organization, manager_id: manager_id),
+        count: teammate_count
+      )
+    ]
 
     if can_view_check_ins_health_by_manager?
       actions << {
@@ -121,14 +129,12 @@ module HealthDashboardsHelper
     actions
   end
 
-  def milestones_health_other_actions(organization, manager_id:)
+  def milestones_health_other_actions(organization, manager_id:, teammate_count:)
     [
-      {
-        label: "Refresh all in this view",
+      health_dashboard_refresh_all_action(
         path: organization_milestones_health_refresh_all_path(organization, manager_id: manager_id),
-        icon: "bi-arrow-clockwise",
-        method: :post
-      },
+        count: teammate_count
+      ),
       {
         label: "Download employees milestones summary (CSV)",
         path: organization_milestones_health_employee_summary_export_path(organization, manager_id: manager_id),
@@ -139,66 +145,82 @@ module HealthDashboardsHelper
 
   def assignments_health_other_actions(organization, refreshable_count:)
     [
-      {
-        label: refreshable_count.positive? ? "Refresh missing & stale (#{refreshable_count})" : "Refresh missing & stale",
+      health_dashboard_counted_refresh_action(
+        label_base: "Refresh missing & stale",
         path: organization_assignments_health_refresh_missing_and_stale_path(organization),
-        icon: "bi-arrow-clockwise",
-        method: :post,
-        disabled: refreshable_count.zero?,
-        title: (refreshable_count.zero? ? "Nothing missing or stale right now" : nil)
-      }
+        count: refreshable_count,
+        title_when_empty: "Nothing missing or stale right now"
+      )
     ]
   end
 
   def values_health_other_actions(organization, refreshable_count:)
     [
-      {
-        label: refreshable_count.positive? ? "Refresh missing & stale (#{refreshable_count})" : "Refresh missing & stale",
+      health_dashboard_counted_refresh_action(
+        label_base: "Refresh missing & stale",
         path: organization_values_health_refresh_missing_and_stale_path(organization),
-        icon: "bi-arrow-clockwise",
-        method: :post,
-        disabled: refreshable_count.zero?,
-        title: (refreshable_count.zero? ? "Nothing missing or stale right now" : nil)
-      }
+        count: refreshable_count,
+        title_when_empty: "Nothing missing or stale right now"
+      )
     ]
   end
 
   def abilities_health_other_actions(organization, refreshable_count:)
     [
-      {
-        label: refreshable_count.positive? ? "Refresh missing & stale (#{refreshable_count})" : "Refresh missing & stale",
+      health_dashboard_counted_refresh_action(
+        label_base: "Refresh missing & stale",
         path: organization_abilities_health_refresh_missing_and_stale_path(organization),
-        icon: "bi-arrow-clockwise",
-        method: :post,
-        disabled: refreshable_count.zero?,
-        title: (refreshable_count.zero? ? "Nothing missing or stale right now" : "Ability Expectation Alignment scoring is coming soon")
-      }
+        count: refreshable_count,
+        title_when_empty: "Nothing missing or stale right now",
+        title_when_enabled: "Ability Expectation Alignment scoring is coming soon"
+      )
     ]
   end
 
   def positions_health_other_actions(organization, title_count:)
     [
-      {
-        label: title_count.positive? ? "Refresh all (#{title_count})" : "Refresh all",
+      health_dashboard_counted_refresh_action(
+        label_base: "Refresh all",
         path: organization_positions_health_refresh_all_path(organization),
-        icon: "bi-arrow-clockwise",
-        method: :post,
-        disabled: title_count.zero?,
-        title: (title_count.zero? ? "No titles to refresh" : "Recalculate Title EAS for every unarchived title")
-      }
+        count: title_count,
+        title_when_empty: "No titles to refresh",
+        title_when_enabled: "Recalculate Title EAS for every unarchived title"
+      )
     ]
   end
 
   def departments_health_other_actions(organization, record_count:)
     [
-      {
-        label: record_count.positive? ? "Refresh all (#{record_count})" : "Refresh all",
+      health_dashboard_counted_refresh_action(
+        label_base: "Refresh all",
         path: organization_departments_health_refresh_all_path(organization),
-        icon: "bi-arrow-clockwise",
-        method: :post,
-        disabled: record_count.zero?,
-        title: (record_count.zero? ? "Nothing to refresh" : "Recalculate Title, Position, and Assignment EAS for this organization")
-      }
+        count: record_count,
+        title_when_empty: "Nothing to refresh",
+        title_when_enabled: "Recalculate Title, Position, and Assignment EAS for this organization"
+      )
     ]
+  end
+
+  private
+
+  def health_dashboard_refresh_all_action(path:, count:, title_when_enabled: nil)
+    health_dashboard_counted_refresh_action(
+      label_base: "Refresh all",
+      path: path,
+      count: count,
+      title_when_empty: "No teammates in this view",
+      title_when_enabled: title_when_enabled || "Queue Gruuv Health refresh for everyone in this view"
+    )
+  end
+
+  def health_dashboard_counted_refresh_action(label_base:, path:, count:, title_when_empty:, title_when_enabled: nil)
+    {
+      label: count.positive? ? "#{label_base} (#{count})" : label_base,
+      path: path,
+      icon: "bi-arrow-clockwise",
+      method: :post,
+      disabled: count.zero?,
+      title: (count.zero? ? title_when_empty : title_when_enabled)
+    }
   end
 end

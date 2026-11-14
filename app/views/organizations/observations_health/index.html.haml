@@ -78,7 +78,7 @@
       organization: @organization,
       current: :observations_health,
       manager_id: @current_manager_filter,
-      other_actions: observations_health_other_actions(@organization, manager_id: @current_manager_filter),
+      other_actions: observations_health_other_actions(@organization, manager_id: @current_manager_filter, teammate_count: @pagy.count),
       aside_html: nudge_captures[:aside_html],
       below_html: nudge_captures[:below_html]
 
@@ -119,8 +119,6 @@
                     %br
                     %small.text-muted
                       Computed #{time_ago_in_words(row[:refreshed_at])} ago
-                      = button_to organization_observations_health_refresh_path(@organization, teammate_id: row[:teammate].id), method: :post, class: "btn btn-link btn-sm p-0 text-muted", title: "Queue Gruuv Health and mix refresh", form: { class: "d-inline" } do
-                        %i.bi.bi-arrow-clockwise
                 %td
                   %div{observations_health_cell_attrs(observations_health_status_alert_class(row[:given]["status"]), "Given", observations_health_status_popover_content("Given"))}
                     %strong= observations_health_status_copy(row[:given]["status"])

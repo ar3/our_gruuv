@@ -44,21 +44,6 @@ class Organizations::MilestonesHealthController < Organizations::OrganizationNam
     send_data csv_content, filename: filename, type: "text/csv", disposition: "attachment"
   end
 
-  def refresh
-    authorize @organization, :milestones_health?
-
-    teammate = @organization.teammates.find_by(id: params[:teammate_id])
-    unless teammate
-      redirect_back fallback_location: organization_milestones_health_path(@organization),
-                    alert: "Could not refresh: teammate not found."
-      return
-    end
-
-    EngagementHealth.schedule_refresh_for(teammate.id)
-    redirect_back fallback_location: organization_milestones_health_path(@organization),
-                  notice: "Gruuv Health refresh queued for #{teammate.person.display_name}."
-  end
-
   def refresh_all
     authorize @organization, :milestones_health?
     apply_filter_default_if_needed
