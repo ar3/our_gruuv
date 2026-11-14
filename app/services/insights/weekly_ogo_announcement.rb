@@ -2,7 +2,7 @@
 
 module Insights
   # Builds last-week OGO announcement copy for Observations Insights (Slack-ready rehearsal).
-  # Window is always the previous Monday–Sunday week, independent of Insights timeframe filters.
+  # Window is always the previous Monday-Sunday week, independent of Insights timeframe filters.
   class WeeklyOgoAnnouncement
     Result = Struct.new(
       :week_start,
@@ -81,7 +81,7 @@ module Insights
     end
 
     def week_label
-      "#{@week_start.strftime('%a %b %-d')} – #{@week_end.strftime('%a %b %-d, %Y')}"
+      "#{@week_start.strftime('%a %b %-d')} to #{@week_end.strftime('%a %b %-d, %Y')}"
     end
 
     def most_observed_rateable(rateable_type)
@@ -155,8 +155,14 @@ module Insights
       total = sourcing[:total]
       sourcing[:pie].map do |point|
         pct = total.positive? ? ((point[:y].to_f / total) * 100).round : 0
-        SourceCount.new(name: point[:name], count: point[:y], percent: pct)
+        SourceCount.new(name: announcement_source_label(point[:name]), count: point[:y], percent: pct)
       end
+    end
+
+    def announcement_source_label(raw_name)
+      return "Manual" if raw_name == ObservationsSourcingChart::NONE_LABEL
+
+      "From #{raw_name}"
     end
 
     def build_message(total:, assignment:, ability:, aspiration:, recognized:, givers:, sources:)
@@ -164,11 +170,11 @@ module Insights
       lines << "*Last week's OGOs (#{week_label})*"
       lines << ""
       if total.zero?
-        lines << "Quiet week — no published OGOs. Every story helps the organization grow because people get feedback about what's best. Notice something working this week? Add an OGO."
+        lines << "Quiet week... no published OGOs. #{week_over_week_sentence(total)} Every story helps the organization grow because people get feedback about what's best. Notice something working this week? Add an OGO."
         return lines.join("\n")
       end
 
-      lines << "We captured *#{total}* observation #{'story'.pluralize(total)} last week. Keep noticing what's best — every story helps the organization grow."
+      lines << "We captured *#{total}* observation #{'story'.pluralize(total)} last week. #{week_over_week_sentence(total)} Keep noticing what's best... every story helps the organization grow."
       lines << ""
       lines << "*What we noticed most*"
       lines.concat(object_lines(assignment: assignment, ability: ability, aspiration: aspiration))
@@ -190,6 +196,37 @@ module Insights
       lines << ""
       lines << "Saw something worth celebrating? Add an OGO in OurGruuv."
       lines.join("\n")
+    end
+
+    def week_over_week_sentence(total)
+      prior_week_start = @week_start - 7.days
+      prior_prior_week_start = @week_start - 14.days
+      prior_count = published_count_for_week_starting(prior_week_start)
+      prior_prior_count = published_count_for_week_starting(prior_prior_week_start)
+
+      first = vs_prior_week_phrase(total, prior_count, prior_week_start)
+      second = vs_prior_week_phrase(total, prior_prior_count, prior_prior_week_start)
+      "#{first.upcase_first}, and #{second}."
+    end
+
+    def vs_prior_week_phrase(current_count, prior_count, week_start)
+      label = week_of_label(week_start)
+      if current_count > prior_count
+        "more than the week of #{label}"
+      elsif current_count < prior_count
+        "less than the week of #{label}"
+      else
+        "the same as the week of #{label}"
+      end
+    end
+
+    def week_of_label(week_start)
+      week_start.strftime("%b %-d, %Y")
+    end
+
+    def published_count_for_week_starting(week_start)
+      range = week_start.beginning_of_day..week_start.end_of_week(:monday).end_of_day
+      Observation.for_company(@company).not_soft_deleted.published.where(observed_at: range).count
     end
 
     def object_lines(assignment:, ability:, aspiration:)

@@ -5,7 +5,9 @@ require "rails_helper"
 RSpec.describe Insights::WeeklyOgoAnnouncement do
   let(:company) { create(:organization, :company) }
   let(:now) { Time.zone.parse("2026-11-14 12:00:00") } # Saturday
-  let(:prev_week_mid) { Time.zone.parse("2026-11-05 12:00:00") } # Wed of previous Mon–Sun week
+  let(:prev_week_mid) { Time.zone.parse("2026-11-05 12:00:00") } # Wed of previous Mon-Sun week
+  let(:two_weeks_ago_mid) { Time.zone.parse("2026-10-29 12:00:00") }
+  let(:three_weeks_ago_mid) { Time.zone.parse("2026-10-22 12:00:00") }
   let(:this_week) { Time.zone.parse("2026-11-12 12:00:00") }
 
   let(:observer) { create(:person, first_name: "Dana", last_name: "Giver") }
@@ -59,12 +61,16 @@ RSpec.describe Insights::WeeklyOgoAnnouncement do
 
       expect(result.total_count).to eq(0)
       expect(result.message_text).to include("Last week's OGOs")
-      expect(result.message_text).to include("Quiet week")
+      expect(result.message_text).to include("Quiet week...")
+      expect(result.message_text).not_to include("—")
+      expect(result.message_text).to include(
+        "The same as the week of Oct 26, 2026, and the same as the week of Oct 19, 2026."
+      )
       expect(result.message_text).to include("Nov 2")
       expect(result.message_text).to include("Nov 8, 2026")
     end
 
-    it "builds Slack-ready copy with objects, people, and sources" do
+    it "builds Slack-ready copy with objects, people, sources, and week-over-week comparison" do
       publish_ogo(rateable: assignment, rating: :agree)
       publish_ogo(rateable: ability, rating: :strongly_agree)
       publish_ogo(rateable: aspiration, rating: :agree)
@@ -78,7 +84,11 @@ RSpec.describe Insights::WeeklyOgoAnnouncement do
       create(:company_teammate, organization: company, person: other_observer)
       publish_ogo(observer: other_observer, rateable: assignment, rating: :agree)
 
-      # Outside previous week — ignored
+      # Prior weeks for comparison (2 OGOs two weeks ago, 10 three weeks ago)
+      2.times { publish_ogo(observed_at: two_weeks_ago_mid, rateable: assignment, rating: :agree) }
+      10.times { publish_ogo(observed_at: three_weeks_ago_mid, rateable: assignment, rating: :agree) }
+
+      # Outside previous week... ignored for totals
       publish_ogo(observed_at: this_week, rateable: assignment, rating: :agree)
 
       result = described_class.call(company: company, now: now)
@@ -96,8 +106,16 @@ RSpec.describe Insights::WeeklyOgoAnnouncement do
       expect(result.top_givers.first.count).to eq(4)
       expect(result.top_givers.second.name).to include("Eve")
 
-      expect(result.sources.map(&:name)).to include("Slack")
+      expect(result.sources.map(&:name)).to include("From Slack")
+      expect(result.sources.map(&:name)).to include("Manual")
+      expect(result.sources.map(&:name)).not_to include("None")
+      expect(result.sources.map(&:name)).not_to include("Slack")
       expect(result.message_text).to include("We captured *5* observation stories")
+      expect(result.message_text).to include("More than the week of Oct 26, 2026, and less than the week of Oct 19, 2026.")
+      expect(result.message_text).to include("Keep noticing what's best...")
+      expect(result.message_text).not_to include("—")
+      expect(result.message_text).to include("From Slack:")
+      expect(result.message_text).to include("Manual:")
       expect(result.message_text).to include("Ship Features")
       expect(result.message_text).to include("Teammates recognized (positive OGOs received)")
       expect(result.message_text).to include("Teammates who gave the most OGOs")
