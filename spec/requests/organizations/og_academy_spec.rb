@@ -136,11 +136,93 @@ RSpec.describe 'Organizations::OgAcademy', type: :request do
       get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
       expect(response).to have_http_status(:success)
       body = response.body
+      expect(body).to include('% clear')
       expect(body).to include("Overdue as of #{due_on.strftime('%Y-%m-%d')}")
       expect(body).to include('bi-circle-fill')
       expect(body).to include('text-danger')
       expect(body).to include('title="Assignment · Frontend Craft"')
     end
+
+    it 'replaces percent clear with an asymmetric stall caption and keeps due/overdue' do
+      assignment = create(:assignment, company: company, title: 'Frontend Craft')
+      check_in = create(
+        :assignment_check_in,
+        :employee_completed,
+        teammate: teammate,
+        assignment: assignment,
+        employee_completed_at: 6.days.ago
+      )
+      last_finalized = 100.days.ago.to_date
+      due_on = last_finalized + EngagementHealth::Thresholds::REQUIRED_CLARITY_NEEDS_ATTENTION_AT_DAYS
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Assignment',
+        entity_id: assignment.id,
+        status: EngagementHealth::NEEDS_ATTENTION,
+        inputs: {
+          'name' => 'Frontend Craft',
+          'last_event_at' => last_finalized.iso8601,
+          'never' => false,
+          'days_since_last_event' => 100,
+          'open_check_in_present' => true,
+          'open_check_in_id' => check_in.id,
+          'open_employee_completed' => true,
+          'open_manager_completed' => false,
+          'open_ready_for_finalization' => false
+        },
+        computed_at: Time.current
+      )
+
+      get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body).to include('Waiting on')
+      expect(body).to include('— 6d')
+      expect(body).to include('text-warning')
+      expect(body).not_to include('% clear')
+      expect(body).to include("Overdue as of #{due_on.strftime('%Y-%m-%d')}")
+    end
+
+    it 'replaces percent clear with a stale review caption when joint review is waiting' do
+      assignment = create(:assignment, company: company, title: 'Frontend Craft')
+      check_in = create(
+        :assignment_check_in,
+        :ready_for_finalization,
+        teammate: teammate,
+        assignment: assignment,
+        employee_completed_at: 5.days.ago,
+        manager_completed_at: 4.days.ago
+      )
+      EngagementHealthStatus.create!(
+        teammate: teammate,
+        organization: company,
+        level: 'item',
+        category: EngagementHealth::CATEGORY_REQUIRED_CLARITY,
+        entity_type: 'Assignment',
+        entity_id: assignment.id,
+        status: EngagementHealth::WARNING,
+        inputs: {
+          'name' => 'Frontend Craft',
+          'open_check_in_present' => true,
+          'open_check_in_id' => check_in.id,
+          'open_employee_completed' => true,
+          'open_manager_completed' => true,
+          'open_ready_for_finalization' => true
+        },
+        computed_at: Time.current
+      )
+
+      get organization_og_academy_quick_start_path(company), headers: { 'Turbo-Frame' => 'og_academy_quick_start' }
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body).to include('Review waiting — 4d')
+      expect(body).to include('text-warning')
+      expect(body).not_to include('% clear')
+    end
+
 
     it 'shows Next due with a grey dot while the earliest item is in Grey Grace' do
       grace_until = 14.days.from_now.to_date

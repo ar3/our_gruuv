@@ -102,6 +102,78 @@ module Organizations::OgAcademyHelper
     "#{count} #{'OGO'.pluralize(count)} received in the past #{days} days"
   end
 
+  # Check-in card first line: timed mid-flow stall replaces % clear when present.
+  # Returns [stall_or_nil, caption_string].
+  def og_academy_check_in_primary_caption(
+    clarity_records:,
+    action_breakdown:,
+    teammate:,
+    viewer:,
+    employee_name:,
+    manager_name:
+  )
+    stall = CheckIns::OpenStallFinder.worst_for(clarity_records)
+    if stall
+      return [
+        stall,
+        og_academy_check_in_stall_caption(
+          stall,
+          teammate: teammate,
+          viewer: viewer,
+          employee_name: employee_name,
+          manager_name: manager_name
+        )
+      ]
+    end
+
+    caption =
+      if action_breakdown.present? && action_breakdown.total_slots.to_i.positive?
+        "#{format_percent_clear(action_breakdown.ok_percentage)}% clear"
+      else
+        "No clarity data yet"
+      end
+    [nil, caption]
+  end
+
+  def og_academy_check_in_stall_caption(stall, teammate:, viewer:, employee_name:, manager_name:)
+    case stall.kind
+    when :stale_review
+      "Review waiting — #{stall.days}d"
+    when :asymmetric
+      waiting_on = og_academy_stall_waiting_on_label(
+        stall,
+        teammate: teammate,
+        viewer: viewer,
+        employee_name: employee_name,
+        manager_name: manager_name
+      )
+      "Waiting on #{waiting_on} — #{stall.days}d"
+    else
+      "Check-in waiting — #{stall.days}d"
+    end
+  end
+
+  def og_academy_stall_waiting_on_label(stall, teammate:, viewer:, employee_name:, manager_name:)
+    case stall.waiting_on
+    when :employee
+      viewer.present? && viewer.id == teammate.id ? "you" : employee_name
+    when :manager
+      og_academy_viewer_is_subject_manager?(teammate, viewer) ? "you" : manager_name
+    else
+      employee_name
+    end
+  end
+
+  def og_academy_viewer_is_subject_manager?(teammate, viewer)
+    return false if viewer.blank? || teammate.blank?
+
+    company = teammate.organization
+    root = company.respond_to?(:root_company) ? (company.root_company || company) : company
+    manager_person = Goals::HealthManagerPerson.for(teammate, company: root)
+    manager_person.present? && manager_person.id == viewer.person_id
+  end
+
+
   def og_academy_goals_caption(counts)
     active = counts[:active].to_i
     healthy_active = counts[:healthy_active].to_i

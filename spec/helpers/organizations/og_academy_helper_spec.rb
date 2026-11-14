@@ -63,4 +63,85 @@ RSpec.describe Organizations::OgAcademyHelper, type: :helper do
       expect(html).to include("<strong>1</strong> completed in 90 days.")
     end
   end
+
+  describe "#og_academy_check_in_stall_caption" do
+    let(:stall) do
+      CheckIns::OpenStallFinder::Stall.new(
+        kind: :asymmetric,
+        days: 6,
+        waiting_on: :employee,
+        object_name: "Frontend Craft",
+        entity_type: "Assignment",
+        item: nil,
+        check_in: nil
+      )
+    end
+
+    it "uses you when the viewer is the lagging employee" do
+      caption = helper.og_academy_check_in_stall_caption(
+        stall,
+        teammate: teammate,
+        viewer: teammate,
+        employee_name: "Jamie",
+        manager_name: "Alex"
+      )
+      expect(caption).to eq("Waiting on you — 6d")
+    end
+
+    it "uses the employee name when someone else is viewing" do
+      viewer = create(:teammate, organization: organization)
+      caption = helper.og_academy_check_in_stall_caption(
+        stall,
+        teammate: teammate,
+        viewer: viewer,
+        employee_name: "Jamie",
+        manager_name: "Alex"
+      )
+      expect(caption).to eq("Waiting on Jamie — 6d")
+    end
+
+    it "formats stale review stalls" do
+      review_stall = CheckIns::OpenStallFinder::Stall.new(
+        kind: :stale_review,
+        days: 4,
+        waiting_on: :review,
+        object_name: "Frontend Craft",
+        entity_type: "Assignment",
+        item: nil,
+        check_in: nil
+      )
+      caption = helper.og_academy_check_in_stall_caption(
+        review_stall,
+        teammate: teammate,
+        viewer: teammate,
+        employee_name: "Jamie",
+        manager_name: "Alex"
+      )
+      expect(caption).to eq("Review waiting — 4d")
+    end
+  end
+
+  describe "#og_academy_check_in_primary_caption" do
+    it "falls back to percent clear when there is no stall" do
+      breakdown = EngagementHealth::ClarityActionMetrics::SlotBreakdown.new(
+        healthy_slots: 2,
+        warning_slots: 0,
+        needs_attention_slots: 1,
+        total_slots: 3,
+        healthy_percentage: 66.7,
+        warning_percentage: 0.0,
+        needs_attention_percentage: 33.3
+      )
+      stall, caption = helper.og_academy_check_in_primary_caption(
+        clarity_records: [],
+        action_breakdown: breakdown,
+        teammate: teammate,
+        viewer: teammate,
+        employee_name: "Jamie",
+        manager_name: "Alex"
+      )
+      expect(stall).to be_nil
+      expect(caption).to eq("66.7% clear")
+    end
+  end
 end

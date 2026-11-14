@@ -14,7 +14,8 @@
     - action_popover_html = check_ins_health_action_popover_html(records: clarity_records, employee_name: names[:employee], manager_name: names[:manager])
     - ogos_received_count = row_data&.ogos_received_30d_count.to_i
     - goals_caption_counts = og_academy_goals_caption_counts(goals_eh_records)
-    - clarity_caption = action_breakdown.present? && action_breakdown.total_slots.to_i.positive? ? "#{format_percent_clear(action_breakdown.ok_percentage)}% clear" : "No clarity data yet"
+    - check_in_stall, clarity_caption = og_academy_check_in_primary_caption(clarity_records: clarity_records, action_breakdown: action_breakdown, teammate: tm, viewer: current_company_teammate, employee_name: names[:employee], manager_name: names[:manager])
+    - stall_object_label = check_in_stall.present? ? check_ins_health_item_object_label(check_in_stall.item) : nil
     - links_collapse_id = "ogAcademyTeammateLinks#{tm.id}"
     - show_all_links_label = og_academy_show_all_links_label(tm, viewer: current_company_teammate)
     .card.border-0.shadow-sm
@@ -57,10 +58,14 @@
                     .card-body.p-4.d-flex.justify-content-between.align-items-start.gap-3
                       .flex-grow-1.min-w-0
                         %h4.fw-bold.mb-2 Check-in
+                        - primary_caption_class = check_in_stall.present? ? "text-warning" : "text-muted"
+                        - primary_caption_title = stall_object_label
                         - if action_popover_html.present?
-                          %p.text-muted.mb-0.small{role: "button", tabindex: 0, style: "cursor: help;", data: { bs_toggle: "popover", bs_trigger: "hover focus", bs_placement: "top", bs_html: "true", bs_content: action_popover_html }}= clarity_caption
+                          %p.mb-0.small{class: primary_caption_class, role: "button", tabindex: 0, style: "cursor: help;", data: { bs_toggle: "popover", bs_trigger: "hover focus", bs_placement: "top", bs_html: "true", bs_content: action_popover_html }}= clarity_caption
+                        - elsif primary_caption_title.present?
+                          %p.mb-0.small{class: primary_caption_class, title: primary_caption_title, data: { bs_toggle: "tooltip", bs_placement: "top" }}= clarity_caption
                         - else
-                          %p.text-muted.mb-0.small= clarity_caption
+                          %p.mb-0.small{class: primary_caption_class}= clarity_caption
                         - if next_due_caption.present?
                           %p.text-muted.mb-0.small.mt-1{title: next_due_object_label, data: (next_due_object_label.present? ? { bs_toggle: "tooltip", bs_placement: "top" } : {})}
                             %i.bi.bi-circle-fill.me-1{class: check_ins_health_action_summary_text_class(next_due_item), "aria-hidden" => "true"}
