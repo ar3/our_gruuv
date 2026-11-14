@@ -15,6 +15,7 @@ class OgConsultation < ApplicationRecord
     ogo_quality
     check_in_period_brief
     feedback_request_question_clarity
+    protect_flow_nudge
   ].freeze
 
   STATUSES = %w[pending processing completed failed].freeze
@@ -32,6 +33,7 @@ class OgConsultation < ApplicationRecord
   KIND_OGO_QUALITY = 'ogo_quality'
   KIND_CHECK_IN_PERIOD_BRIEF = 'check_in_period_brief'
   KIND_FEEDBACK_REQUEST_QUESTION_CLARITY = 'feedback_request_question_clarity'
+  KIND_PROTECT_FLOW_NUDGE = 'protect_flow_nudge'
 
   belongs_to :subject, polymorphic: true, optional: true
   belongs_to :organization, class_name: 'Organization'
@@ -50,6 +52,7 @@ class OgConsultation < ApplicationRecord
   has_one :ogo_quality_result, dependent: :destroy
   has_one :check_in_period_brief_result, dependent: :destroy
   has_one :feedback_request_question_clarity_result, dependent: :destroy
+  has_one :protect_flow_nudge_result, dependent: :destroy
 
   validates :kind, presence: true, inclusion: { in: ->(_) { OgConsultations::Kinds.kinds } }
   validates :status, presence: true, inclusion: { in: STATUSES }

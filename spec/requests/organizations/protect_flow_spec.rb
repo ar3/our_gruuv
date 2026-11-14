@@ -88,6 +88,43 @@ RSpec.describe "Organizations::ProtectFlow", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Overall Health, nudge for")
       expect(response.body).to include("healthNudge-protect_flow")
+      expect(response.body).to include("Want help with the content to send:")
+      expect(response.body).to include("Made changes you want to undo? Restore suggested")
+      expect(response.body).to include("Consult OG")
+      expect(response.body).to include("bi-stars")
+      expect(response.body).to include("name=\"body\"")
+      expect(response.body).to match(/focus on Clarity Check-ins/)
+      expect(response.body).to match(/class="collapse" id="healthNudge-protect_flow"/)
+      expect(response.body).not_to match(/class="collapse show" id="healthNudge-protect_flow"/)
+    end
+
+    it "opens the nudge accordion when nudge=1 is present" do
+      get organization_protect_flow_path(company, manager_id: "CompanyTeammate_#{manager.id}", nudge: 1)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/class="collapse show" id="healthNudge-protect_flow"/)
+      expect(response.body).to include('aria-controls="healthNudge-protect_flow" aria-expanded="true"')
+    end
+
+    it "renders the Consult OG status banner while a consultation is in flight" do
+      OgConsultation.create!(
+        kind: OgConsultation::KIND_PROTECT_FLOW_NUDGE,
+        subject: manager,
+        organization: company,
+        triggered_by_teammate: manager,
+        status: "processing",
+        billable: true,
+        prompt_version: HealthNudges::ProtectFlowNudgePrompts::PROMPT_VERSION,
+        units_total: 1,
+        units_completed: 0,
+        started_at: Time.current
+      )
+
+      get organization_protect_flow_path(company, manager_id: "CompanyTeammate_#{manager.id}", nudge: 1)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Overall Health Consult OG is processing")
+      expect(response.body).to include("og-consultation-status-poll")
     end
 
     it "rejects everyone scope and falls back to my direct employees" do

@@ -157,6 +157,9 @@ Rails.application.routes.draw do
     resource :protect_flow, only: [:show], controller: 'organizations/protect_flow' do
       post :nudge, on: :member
     end
+    resource :protect_flow_nudge_consult, only: [:create], controller: 'organizations/protect_flow_nudge_consults' do
+      get :status, on: :member
+    end
 
     # Org data integrity debug (employment managers)
     resource :debug, only: [:show], controller: 'organizations/debug' do

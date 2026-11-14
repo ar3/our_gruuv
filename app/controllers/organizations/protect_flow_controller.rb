@@ -17,10 +17,12 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
     load_protect_flow_plan!
     return if @protect_flow_self_only
 
+    stats = HealthNudges::Service.spotlight_stats_from_protect_flow_plan(@plan)
     assign_health_nudge_context!(
       health_object: "protect_flow",
-      spotlight_stats: HealthNudges::Service.spotlight_stats_from_protect_flow_plan(@plan)
+      spotlight_stats: stats
     )
+    assign_protect_flow_nudge_draft!(spotlight_stats: stats)
   end
 
   def nudge
@@ -38,6 +40,7 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
       health_object: "protect_flow",
       spotlight_stats: HealthNudges::Service.spotlight_stats_from_protect_flow_plan(@plan),
       employee_entries: HealthNudges::EmployeeEntries.from_protect_flow_people(@plan[:people]),
+      people: @plan[:people],
       redirect_path: organization_protect_flow_path(@organization, **redirect_params)
     )
   end
@@ -79,5 +82,43 @@ class Organizations::ProtectFlowController < Organizations::OrganizationNamespac
 
   def health_nudge_manager_filter_viewable?(manager_id)
     protect_flow_manager_viewable?(manager_id)
+  end
+
+  def assign_protect_flow_nudge_draft!(spotlight_stats:)
+    return unless @health_nudge_manager && @health_nudge_message
+
+    store = HealthNudges::DraftStore.for(
+      person: current_person,
+      organization: @organization,
+      manager_teammate: @health_nudge_manager
+    )
+    suggested = HealthNudges::SuggestedBody.call(
+      message: @health_nudge_message,
+      people: @plan[:people]
+    )
+    @health_nudge_draft = store.ensure_suggested!(suggested)
+    @health_nudge_suggested_body = @health_nudge_draft["suggested_body"].presence || suggested
+    @health_nudge_og_consulted_body = @health_nudge_draft["og_consulted_body"].presence
+    @health_nudge_body = @health_nudge_draft["body"].presence || @health_nudge_suggested_body
+    @health_nudge_consultation =
+      if @health_nudge_draft["og_consultation_id"].present?
+        OgConsultation.find_by(id: @health_nudge_draft["og_consultation_id"])
+      end
+    @health_nudge_consultation ||= latest_protect_flow_nudge_consultation
+  end
+
+  def latest_protect_flow_nudge_consultation
+    return nil unless @health_nudge_manager
+
+    OgConsultation
+      .where(
+        kind: OgConsultation::KIND_PROTECT_FLOW_NUDGE,
+        subject: @health_nudge_manager,
+        organization: @organization,
+        triggered_by_teammate: current_company_teammate
+      )
+      .where("created_at >= ?", Time.zone.now.beginning_of_day)
+      .latest_first
+      .first
   end
 end

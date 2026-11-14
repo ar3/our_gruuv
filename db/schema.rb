@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_09_160000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_14_094000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1930,6 +1930,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_09_160000) do
     t.index ["prompt_template_id"], name: "index_prompts_on_prompt_template_id"
   end
 
+  create_table "protect_flow_nudge_results", force: :cascade do |t|
+    t.bigint "og_consultation_id", null: false
+    t.text "output_text"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["og_consultation_id"], name: "index_protect_flow_nudge_results_on_og_consultation_id", unique: true
+  end
+
   create_table "search_query_logs", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.bigint "company_teammate_id", null: false
@@ -2656,6 +2665,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_09_160000) do
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
+  add_foreign_key "protect_flow_nudge_results", "og_consultations"
   add_foreign_key "search_query_logs", "organizations"
   add_foreign_key "search_query_logs", "teammates", column: "company_teammate_id"
   add_foreign_key "seat_titles", "seats"

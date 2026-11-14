@@ -40,12 +40,40 @@ module Organizations
       )
     end
 
-    def perform_health_nudge!(health_object:, spotlight_stats:, redirect_path:, employee_entries: [])
+    def perform_health_nudge!(health_object:, spotlight_stats:, redirect_path:, employee_entries: [], people: [])
       config = HealthNudges::Registry.fetch(health_object)
       manager = resolve_health_nudge_manager_teammate
       unless manager
         redirect_to redirect_path, alert: "Select a specific manager to send a #{config[:label]} nudge."
         return
+      end
+
+      body_kwargs = {}
+      if health_object.to_s == "protect_flow"
+        draft = HealthNudges::DraftStore.for(
+          person: current_person,
+          organization: @organization,
+          manager_teammate: manager
+        )
+        suggested = HealthNudges::SuggestedBody.call(
+          message: HealthNudges::Message.new(
+            health_object: health_object,
+            organization: @organization,
+            manager_teammate: manager,
+            spotlight_stats: spotlight_stats,
+            employee_count: employee_entries.size
+          ),
+          people: people
+        )
+        data = draft.ensure_suggested!(suggested)
+        sent_body = params[:body].to_s.strip.presence || data["body"].presence || suggested
+        draft.save_body!(sent_body)
+        body_kwargs = {
+          body: sent_body,
+          suggested_body: data["suggested_body"].presence || suggested,
+          og_consulted_body: data["og_consulted_body"],
+          body_base: data["base"]
+        }
       end
 
       result = HealthNudges::Service.call(
@@ -55,7 +83,8 @@ module Organizations
         nudger_company_teammate: current_company_teammate,
         spotlight_stats: spotlight_stats,
         recipient_scope: params[:recipient_scope],
-        employee_entries: employee_entries
+        employee_entries: employee_entries,
+        **body_kwargs
       )
 
       if result.ok?

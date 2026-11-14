@@ -84,7 +84,7 @@ module HealthNudges
         notice: "Overall Health nudge sent.",
         nudge_path_name: :nudge_organization_protect_flow_path,
         dashboard_url_name: :organization_protect_flow_url,
-        dashboard_link_label: "Open Overall Health for your team",
+        dashboard_link_label: "Open Overall Health (filtered)",
         title: "Overall Health check-in",
         greeting: "a quick look at Overall Health for your direct reports",
         metric_label: "Overall Health",

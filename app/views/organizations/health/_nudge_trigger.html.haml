@@ -1,8 +1,9 @@
--# locals: label, collapse_id, manager
+-# locals: label, collapse_id, manager, nudge_open (optional)
 - trigger_text = "#{label}, nudge for #{health_nudge_casual_name(manager)}"
+- nudge_open = local_assigns.fetch(:nudge_open, false)
 
 .health-dashboard-nudge-trigger
-  %button.btn.btn-link.btn-sm.text-decoration-none.text-body.p-0.w-100.text-start.d-flex.align-items-center.justify-content-between.gap-2{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": "false", "aria-controls": collapse_id}
+  %button.btn.btn-link.btn-sm.text-decoration-none.text-body.p-0.w-100.text-start.d-flex.align-items-center.justify-content-between.gap-2{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{collapse_id}", "aria-expanded": nudge_open ? "true" : "false", "aria-controls": collapse_id}
     %span.text-truncate
       %i.bi.bi-bell.me-1
       = trigger_text

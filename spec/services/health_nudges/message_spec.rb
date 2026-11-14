@@ -57,7 +57,7 @@ RSpec.describe HealthNudges::Message do
 
     expect(message.body_mrkdwn).to include("Overall Health check-in")
     expect(message.body_mrkdwn).to include("Overall Health for your direct reports")
-    expect(message.body_mrkdwn).to include("Open Overall Health for your team")
+    expect(message.body_mrkdwn).to include("Open Overall Health (filtered)")
     expect(message.body_mrkdwn).to include("steady signals across the team")
     expect(message.body_mrkdwn).to include("signals improved so far")
     expect(message.body_mrkdwn).not_to include("vector")

@@ -153,6 +153,15 @@ module OgConsultations
         runner_class_name: 'FeedbackRequests::QuestionClarityRunner',
         llm_purpose: 'feedback_request_question_clarity',
         billable: true
+      ),
+      OgConsultation::KIND_PROTECT_FLOW_NUDGE => Entry.new(
+        kind: OgConsultation::KIND_PROTECT_FLOW_NUDGE,
+        label: 'Overall Health nudge',
+        result_class_name: 'ProtectFlowNudgeResult',
+        job_class_name: 'ProtectFlowNudgeConsultJob',
+        runner_class_name: 'HealthNudges::ProtectFlowNudgeRunner',
+        llm_purpose: 'protect_flow_nudge',
+        billable: true
       )
     }.freeze
 

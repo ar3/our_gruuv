@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 module HealthNudges
-  # Auto-generated health nudge copy (preview + Slack). Not editable by the sender.
+  # Auto-generated health nudge copy (preview + Slack).
+  # Overall Health may supply an editable plain body for the main message.
   class Message
     include Rails.application.routes.url_helpers
 
-    def initialize(health_object:, organization:, manager_teammate:, spotlight_stats:, url_options: nil, employee_count: 0)
+    def initialize(health_object:, organization:, manager_teammate:, spotlight_stats:, url_options: nil, employee_count: 0, custom_body: nil)
       @health_object = health_object.to_s
       @config = Registry.fetch(@health_object)
       @organization = organization
@@ -13,6 +14,7 @@ module HealthNudges
       @stats = spotlight_stats.symbolize_keys
       @url_options = url_options || default_url_options
       @employee_count = employee_count.to_i
+      @custom_body = custom_body.presence
     end
 
     def manager_name
@@ -59,6 +61,8 @@ module HealthNudges
     end
 
     def body_mrkdwn
+      return custom_body_mrkdwn if @custom_body.present?
+
       lines = [
         "*#{@config.fetch(:title)}*",
         "",
@@ -77,6 +81,10 @@ module HealthNudges
     end
 
     def fallback_text
+      if @custom_body.present?
+        return "#{@config.fetch(:title)} for #{manager_name}'s team: #{@custom_body.to_s.truncate(200)} Open: #{dashboard_url}"
+      end
+
       parts = [
         "#{@config.fetch(:title)} for #{manager_name}'s team:",
         summary_line,
@@ -91,7 +99,7 @@ module HealthNudges
           type: "section",
           text: {
             type: "mrkdwn",
-            text: body_mrkdwn
+            text: body_mrkdwn.truncate(3000)
           }
         },
         {
@@ -114,6 +122,8 @@ module HealthNudges
     end
 
     def preview_plain
+      return @custom_body if @custom_body.present?
+
       parts = [ strip_mrkdwn(body_mrkdwn) ]
       if include_importance_thread?
         parts << ""
@@ -123,7 +133,29 @@ module HealthNudges
       parts.join("\n")
     end
 
+    # Seed lines for Overall Health editable suggested body (no dashboard URL).
+    def suggested_greeting_line
+      strip_mrkdwn(greeting_line)
+    end
+
+    def suggested_summary_line_plain
+      strip_mrkdwn(summary_line)
+    end
+
+    def suggested_closing_line
+      strip_mrkdwn(closing_line)
+    end
+
     private
+
+    def custom_body_mrkdwn
+      lines = [ @custom_body.to_s.strip ]
+      if @employee_count.positive?
+        lines << ""
+        lines << "Details for each person are in the thread (#{@employee_count} #{'person'.pluralize(@employee_count)})."
+      end
+      lines.join("\n")
+    end
 
     def strip_mrkdwn(text)
       text

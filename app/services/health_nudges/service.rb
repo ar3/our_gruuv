@@ -11,7 +11,7 @@ module HealthNudges
     NOTIFICATION_TYPE = "health_nudge"
     LEGACY_GOALS_NOTIFICATION_TYPE = "goals_health_nudge"
 
-    def self.call(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:, employee_entries: [])
+    def self.call(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:, employee_entries: [], body: nil, suggested_body: nil, og_consulted_body: nil, body_base: nil)
       new(
         organization: organization,
         health_object: health_object,
@@ -19,7 +19,11 @@ module HealthNudges
         nudger_company_teammate: nudger_company_teammate,
         spotlight_stats: spotlight_stats,
         recipient_scope: recipient_scope,
-        employee_entries: employee_entries
+        employee_entries: employee_entries,
+        body: body,
+        suggested_body: suggested_body,
+        og_consulted_body: og_consulted_body,
+        body_base: body_base
       ).call
     end
 
@@ -87,7 +91,7 @@ module HealthNudges
       }
     end
 
-    def initialize(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:, employee_entries: [])
+    def initialize(organization:, health_object:, manager_teammate:, nudger_company_teammate:, spotlight_stats:, recipient_scope:, employee_entries: [], body: nil, suggested_body: nil, og_consulted_body: nil, body_base: nil)
       @organization = organization
       @health_object = health_object.to_s
       @manager_teammate = manager_teammate
@@ -95,6 +99,10 @@ module HealthNudges
       @spotlight_stats = spotlight_stats
       @recipient_scope = self.class.normalize_recipient_scope(recipient_scope)
       @employee_entries = Array(employee_entries)
+      @body = body
+      @suggested_body = suggested_body
+      @og_consulted_body = og_consulted_body
+      @body_base = body_base
       @config = Registry.fetch(@health_object)
     end
 
@@ -136,13 +144,28 @@ module HealthNudges
       return Result.err(dm_result[:error].presence || "Could not open Slack group DM.") unless dm_result[:success]
 
       channel_id = dm_result[:channel_id]
+      custom_body = @body.to_s.strip.presence if @health_object == "protect_flow"
       message = Message.new(
         health_object: @health_object,
         organization: @organization,
         manager_teammate: @manager_teammate,
         spotlight_stats: @spotlight_stats,
-        employee_count: @employee_entries.size
+        employee_count: @employee_entries.size,
+        custom_body: custom_body
       )
+
+      suggested = @suggested_body.to_s.presence || custom_body
+      og_consulted = @og_consulted_body.to_s.presence
+      sent_body = custom_body.presence || message.preview_plain
+      body_source =
+        if @health_object == "protect_flow" && custom_body.present?
+          BodySource.resolve(
+            sent: sent_body,
+            suggested: suggested,
+            og_consulted: og_consulted,
+            base: @body_base
+          )
+        end
 
       shared_metadata = {
         "channel" => channel_id,
@@ -152,8 +175,12 @@ module HealthNudges
         "manager_company_teammate_id" => @manager_teammate.id,
         "recipient_company_teammate_ids" => intended.map(&:id),
         "spotlight_stats" => @spotlight_stats.stringify_keys,
-        "employee_entry_count" => @employee_entries.size
-      }
+        "employee_entry_count" => @employee_entries.size,
+        "suggested_body" => suggested,
+        "og_consulted_body" => og_consulted,
+        "sent_body" => sent_body,
+        "body_source" => body_source
+      }.compact
 
       notification = @manager_teammate.notifications.create!(
         notification_type: NOTIFICATION_TYPE,

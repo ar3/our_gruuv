@@ -38,9 +38,11 @@ module HealthNudgesHelper
 
   def health_nudge_panel_locals(manager_id:)
     config = @health_nudge_config
+    collapse_id = "healthNudge-#{@health_nudge_object}"
     {
       label: config[:label],
-      collapse_id: "healthNudge-#{@health_nudge_object}",
+      collapse_id: collapse_id,
+      nudge_open: params[:nudge].present?,
       nudge_path: public_send(config[:nudge_path_name], @organization),
       manager: @health_nudge_manager,
       skip_level: @health_nudge_skip_level,
@@ -48,7 +50,15 @@ module HealthNudgesHelper
       recipients_manager_and_skip: @health_nudge_recipients_manager_and_skip,
       message: @health_nudge_message,
       last_nudge: @last_health_nudge,
-      manager_id: manager_id
+      manager_id: manager_id,
+      health_object: @health_nudge_object,
+      editable: @health_nudge_object.to_s == "protect_flow",
+      body: @health_nudge_body,
+      suggested_body: @health_nudge_suggested_body,
+      og_consulted_body: @health_nudge_og_consulted_body,
+      consultation: @health_nudge_consultation,
+      consult_path: (@health_nudge_object.to_s == "protect_flow" ? organization_protect_flow_nudge_consult_path(@organization) : nil),
+      consult_status_path: (@health_nudge_object.to_s == "protect_flow" ? status_organization_protect_flow_nudge_consult_path(@organization) : nil)
     }
   end
 
