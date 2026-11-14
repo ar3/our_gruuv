@@ -84,9 +84,9 @@ module Assistant
           query: @query.presence || "seat title assignment position",
           detail: "expensive"
         ),
-        sitemap_seat_pages: {
-          seat_suggestion: "This chat",
-          proposed_seat_creates: "Proposed Seat creates list after Confirm"
+        sitemap_maap_suggestion_pages: {
+          maap_suggestion: "This chat (Seat / Assignment / Abilities focus)",
+          proposed_seat_creates: "Proposed Seat creates list after Seat Confirm"
         }
       }
     end

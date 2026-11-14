@@ -22,6 +22,8 @@ module AgentTools
       "create_draft_observation" => "AgentTools::CreateDraftObservation",
       "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence",
       "create_seat_suggestion_bundle" => "AgentTools::CreateSeatSuggestionBundle",
+      "create_assignment_suggestion_bundle" => "AgentTools::CreateAssignmentSuggestionBundle",
+      "create_ability_suggestion_bundle" => "AgentTools::CreateAbilitySuggestionBundle",
       "mint_feedback_link" => "AgentTools::MintFeedbackLink"
     }.freeze
 
@@ -29,7 +31,15 @@ module AgentTools
       create_draft_observation
       set_current_week_goal_confidence
       create_seat_suggestion_bundle
+      create_assignment_suggestion_bundle
+      create_ability_suggestion_bundle
       mint_feedback_link
+    ].freeze
+
+    MAAP_SUGGESTION_WRITE_TOOLS = %w[
+      create_seat_suggestion_bundle
+      create_assignment_suggestion_bundle
+      create_ability_suggestion_bundle
     ].freeze
 
     # JSON Schema–style input schemas for MCP and other machine clients.
@@ -320,6 +330,28 @@ module AgentTools
         required: ["bundle"],
         additionalProperties: false
       },
+      "create_assignment_suggestion_bundle" => {
+        type: "object",
+        properties: {
+          bundle: {
+            type: "object",
+            description: "Assignment suggestion bundle (assignments[] with nested abilities[]). Drafts only."
+          }
+        },
+        required: ["bundle"],
+        additionalProperties: false
+      },
+      "create_ability_suggestion_bundle" => {
+        type: "object",
+        properties: {
+          bundle: {
+            type: "object",
+            description: "Ability suggestion bundle (abilities[] create/edit drafts). Drafts only."
+          }
+        },
+        required: ["bundle"],
+        additionalProperties: false
+      },
       "mint_feedback_link" => {
         type: "object",
         properties: {
@@ -381,6 +413,8 @@ module AgentTools
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% completes the goal; Learnings optional.",
       "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them.",
+      "create_assignment_suggestion_bundle" => "After summarizing Assignment focus work, create draft Assignment (+ nested Ability) proposals. Never apply them.",
+      "create_ability_suggestion_bundle" => "After summarizing Abilities focus work, create one or more draft Ability proposals. Never apply them.",
       "mint_feedback_link" => "Find or create a Feedback Request for observer→observed + topics and return answer_url / public_answer_url. External observers get a public /f/:token link; org teammates get the org answer path. Reuses /internal system-offer find-or-create. Does not send notifications."
     }.freeze
 
@@ -402,6 +436,8 @@ module AgentTools
       "create_draft_observation" => "Create draft observation",
       "set_current_week_goal_confidence" => "Set current-week goal confidence",
       "create_seat_suggestion_bundle" => "Create seat suggestion proposal bundle",
+      "create_assignment_suggestion_bundle" => "Create assignment suggestion proposal bundle",
+      "create_ability_suggestion_bundle" => "Create ability suggestion proposal bundle",
       "mint_feedback_link" => "Mint feedback request link"
     }.freeze
 
@@ -527,6 +563,53 @@ module AgentTools
             }
           },
           "effect" => "Creates draft proposals only (Seat collective + children). Does not apply. Prefer reuse via existing/edit paths from tool context. Cadence/work-shape content belongs in Assignment outcomes/required_activities/handbook only."
+        },
+        "create_assignment_suggestion_bundle" => {
+          "args" => {
+            "bundle" => {
+              "assignments" => [
+                {
+                  "mode" => "create|edit|existing",
+                  "path" => "existing assignment path",
+                  "title" => "string",
+                  "tagline" => "string",
+                  "outcomes" => ["string or outcome hash"],
+                  "required_activities" => "string",
+                  "handbook" => "string",
+                  "abilities" => [
+                    {
+                      "mode" => "create|edit|existing",
+                      "path" => "existing ability path",
+                      "name" => "string",
+                      "description" => "string",
+                      "milestone_level" => "1-5"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "effect" => "Creates draft Assignment (+ Ability) proposals only. Does not apply."
+        },
+        "create_ability_suggestion_bundle" => {
+          "args" => {
+            "bundle" => {
+              "abilities" => [
+                {
+                  "mode" => "create|edit|existing",
+                  "path" => "existing ability path",
+                  "name" => "string",
+                  "description" => "string",
+                  "milestone_1_description" => "string optional",
+                  "milestone_2_description" => "string optional",
+                  "milestone_3_description" => "string optional",
+                  "milestone_4_description" => "string optional",
+                  "milestone_5_description" => "string optional"
+                }
+              ]
+            }
+          },
+          "effect" => "Creates draft Ability proposals only. Does not apply."
         }
       }
     end

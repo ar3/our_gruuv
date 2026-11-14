@@ -29,13 +29,13 @@
         Draft and submit apply-ready proposals to create a new Seat. Teammates who can create Seats can apply or reject submitted proposals.
         - if policy(@organization).seat_suggestion?
           Not sure yet?
-          = link_to "Suggest a Seat (Beta)", organization_seat_suggestion_path(@organization)
+          = link_to "Suggest MAAP changes (Beta)", organization_seat_suggestion_path(@organization)
           can interview you and draft proposals.
       .d-flex.flex-wrap.gap-2
         - if policy(@organization).seat_suggestion?
           = link_to organization_seat_suggestion_path(@organization), class: "btn btn-outline-primary" do
             %i.bi.bi-chat-dots.me-1
-            Suggest a Seat
+            Suggest MAAP changes
             %span.badge.text-bg-warning.ms-1 Beta
         - if policy(MaapProposal).upload_markdown?
           = link_to markdown_template_organization_maap_seat_creates_path(@organization), class: "btn btn-outline-secondary" do

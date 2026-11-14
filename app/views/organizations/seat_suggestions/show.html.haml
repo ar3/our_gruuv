@@ -1,17 +1,17 @@
-- page_help_id = "seatSuggestionPageHelp"
-- content_for :title, "Suggest a Seat"
+- page_help_id = "maapSuggestionPageHelp"
+- content_for :title, "Suggest MAAP changes"
 
 - content_for :go_back_link do
-  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Seats", url: organization_seats_path(@organization) }, { label: "Suggest a Seat", url: nil }])
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Suggest MAAP changes", url: nil }])
 
 - content_for :header do
   .d-flex.align-items-center.gap-2.flex-wrap
     %h1.mb-0.d-flex.align-items-center.gap-2
       %i.bi.bi-chat-dots.me-1
-      Suggest a Seat
+      Suggest MAAP changes
       = render "shared/page_help/header_info_button",
                collapse_id: page_help_id,
-               tooltip: "Chat to draft a Seat proposal when you are still figuring the role out. Click for details."
+               tooltip: "Chat to draft Seat, Assignment, or Ability proposals. Click for details."
       = link_to organization_seat_suggestion_path(@organization),
                 class: "btn btn-outline-primary btn-sm",
                 title: "Start new conversation",
@@ -28,7 +28,13 @@
 .row.justify-content-center
   .col-lg-9
     %p.text-muted.mb-3
-      Not sure what Titles, Assignments, or Abilities this Seat needs? Paste what you have and chat until OG can draft a Seat proposal — plus linked drafts for new or edited MAAP objects. Nothing is applied until someone applies each proposal separately.
+      Paste what you have. OG will ask or infer whether you are focusing on a
+      %strong Seat
+      (role + MAAP graph), an
+      %strong Assignment
+      (and its Abilities), or
+      %strong Abilities
+      alone — then draft proposals you Confirm. Nothing is applied until someone applies each proposal separately.
 
     .card.border.shadow-sm.seat-suggestion-chat
       .card-body.p-0
@@ -45,10 +51,21 @@
               .ask-og-bubble-row.ask-og-bubble-row--assistant
                 .ask-og-bubble.ask-og-bubble--assistant.markdown-content
                   %p.mb-2
-                    %strong Paste whatever you have
-                    about the Seat you are trying to define — job docs, notes, rough bullets, or a brain dump.
+                    %strong What are you trying to improve?
+                  %p.mb-2
+                    Paste notes if you have them, or say which focus fits:
+                  %ul.mb-2
+                    %li
+                      %strong Seat
+                      — hiring / role defense (Seat + Title + Position + Assignments + Abilities)
+                    %li
+                      %strong Assignment
+                      — make an Assignment clearer (and Abilities it needs)
+                    %li
+                      %strong Abilities
+                      — create or clarify Abilities
                   %p.mb-0.text-muted
-                    I will ask a few sharp questions, then show a summary of the Seat proposal drafts I can create for you to Confirm.
+                    I will confirm the focus, interview, then show draft proposals for you to Confirm.
 
           .ask-og-waiting.d-none.px-3.py-2.border-top{ data: { ask_og_target: "waiting" } }
             .d-flex.align-items-center.gap-2.text-muted.small
@@ -65,7 +82,7 @@
                 rows: 3,
                 placeholder: "Paste notes or reply…",
                 data: { ask_og_target: "input", action: "keydown.ctrl+enter->ask-og#handleSendShortcut keydown.meta+enter->ask-og#handleSendShortcut" },
-                "aria-label" => "Message Seat Suggestion"
+                "aria-label" => "Message MAAP Suggestion"
               %button.btn.btn-primary{ type: "button",
                 data: { ask_og_target: "sendButton", action: "ask-og#send" },
                 "aria-label" => "Send" }
@@ -80,6 +97,6 @@
           - @recent.each do |consultation|
             %li.list-group-item.d-flex.justify-content-between.align-items-center.gap-2
               = link_to organization_seat_suggestion_path(@organization, id: consultation.id) do
-                = consultation.result.try(:query).to_s.truncate(80).presence || "Seat suggestion ##{consultation.id}"
+                = consultation.result.try(:query).to_s.truncate(80).presence || "MAAP suggestion ##{consultation.id}"
               %span.badge{class: seat_suggestion_conversation_status_badge_class(consultation)}
                 = seat_suggestion_conversation_status(consultation)

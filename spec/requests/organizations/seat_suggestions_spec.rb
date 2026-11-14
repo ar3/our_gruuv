@@ -14,17 +14,20 @@ RSpec.describe "Organizations::SeatSuggestions", type: :request do
   end
 
   describe "GET /organizations/:organization_id/seat_suggestion" do
-    it "renders the beta Suggest a Seat chat page" do
+    it "renders the beta Suggest MAAP changes chat page" do
       get organization_seat_suggestion_path(organization)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Suggest a Seat")
+      expect(response.body).to include("Suggest MAAP changes")
       expect(response.body).to include("Beta")
-      expect(response.body).to include("Paste whatever you have")
+      expect(response.body).to include("What are you trying to improve?")
+      expect(response.body).to include("Seat")
+      expect(response.body).to include("Assignment")
+      expect(response.body).to include("Abilities")
       expect(response.body).to include("ask-og")
       expect(response.body).to include("Start new conversation")
       expect(response.body).to include("⌘/Ctrl+Enter to send")
-      expect(response.body).to include(page_help_id_fragment)
+      expect(response.body).to include("maapSuggestionPageHelp")
       expect(response.body).to include(organization_seat_suggestions_path(organization))
       expect(response.body).to include(organization_seat_suggestion_path(organization))
     end
@@ -81,7 +84,4 @@ RSpec.describe "Organizations::SeatSuggestions", type: :request do
     end
   end
 
-  def page_help_id_fragment
-    "seatSuggestionPageHelp"
-  end
 end

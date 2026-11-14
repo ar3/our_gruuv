@@ -1,9 +1,9 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p.mb-3
-    Help someone who does not yet know the MAAP shape of a Seat produce an impressive
-    %strong Seat create proposal
-    — including linked drafts for Titles, Teams, Positions, Assignments, and Abilities — through a guided chat.
+    Help someone produce apply-ready
+    %strong draft MAAP proposals
+    through a guided chat — starting with a focus on Seat, Assignment, or Abilities.
 
   %h3.fw-semibold.mb-2 Context
   = render "shared/maap/definition"
@@ -12,13 +12,22 @@
   %ul.mb-0
     %li
       %strong Beta.
-      Experimental. Expect rough edges; send feedback. Each Seat Suggestion conversation counts as one Consult OG Value Billing unit (not each reply).
-    %li Start by pasting docs or thoughts. The chat interviews for Seat defense (why / why now / risks), then shapes work as Assignments (nouns with measurable outcomes; cadence in required activities / handbook) and certifiable Abilities.
+      Experimental. Expect rough edges; send feedback. Each conversation counts as one Consult OG Value Billing unit (not each reply).
     %li
-      When ready, OG shows a summary and a Confirm action. Confirm creates
+      The chat asks or infers a
+      %strong focus
+      first:
+      %strong Seat
+      (Seat + Title + Position + Assignments + Abilities),
+      %strong Assignment
+      (Assignment + Abilities), or
+      %strong Abilities.
+      Team focus comes later.
+    %li Prefer editing existing objects when a close match exists; create only when needed. Near-misses should be disclosed.
+    %li
+      When ready, OG shows a summary and Confirm action(s). Confirm creates
       %em draft
-      proposals only — nothing is applied automatically.
-    %li When OG invents a new Title, Position, Assignment, or Ability despite close existing matches, the chat should name those near-misses and why it chose create.
+      proposals only — nothing is applied automatically. One Confirm may create multiple drafts.
     %li
       Recent conversations show
       %strong In progress
@@ -27,8 +36,7 @@
       (Confirm summary ready), or
       %strong Suggestion created
       (proposal drafts were created) — not raw completed/failed job statuses.
-    %li The Seat proposal tracks linked child proposals. Seat Apply waits until any new Title and Team proposals are applied; Assignment/Ability/Position drafts can be handled later.
     %li
-      Prefer
-      = succeed " if you already know the Titles and can fill the form yourself." do
-        = link_to "Propose a Seat", organization_maap_seat_creates_path(@organization)
+      Prefer direct propose forms when you already know the object shape —
+      = link_to "Proposed Seat creates", organization_maap_seat_creates_path(@organization)
+      = "."

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Assistant
-  # Multi-turn Seat Suggestion chat: MAAP-focused context + Sonnet-class model by default.
+  # Multi-turn MAAP Suggestion chat (kind still seat_suggestion for billing continuity).
+  # Routes by suggestion_focus: unset → ask/infer; seat / assignment / abilities → focused prompts.
   class SeatSuggestionRunner
     def self.call(og_consultation:)
       new(og_consultation: og_consultation).call
@@ -14,7 +15,7 @@ module Assistant
 
     def call
       unless @result.is_a?(AskOgResult)
-        fail_consultation("Seat Suggestion result missing")
+        fail_consultation("MAAP Suggestion result missing")
         return false
       end
 
@@ -41,31 +42,46 @@ module Assistant
         organization: @consultation.organization,
         company_teammate: teammate
       )
-      tool_context = GatherSeatSuggestionContext.call(
+
+      prior_focus = MaapSuggestionFocus.from_tool_context(@result.tool_context)
+      tool_context = gather_context(
+        focus: prior_focus,
         context: context,
         query: prompt_query,
         conversation_text: conversation_text
       )
+      tool_context = tool_context.stringify_keys
+      tool_context["suggestion_focus"] = prior_focus if prior_focus
       @result.update!(tool_context: tool_context)
+
+      focus = prior_focus
+      system_instructions, prompt_version, allowed_tools = prompt_pack_for(focus)
 
       model_id = ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.model_id }
       purpose = OgConsultations::Kinds.fetch(@consultation.kind).llm_purpose
-      user_prompt = build_user_prompt(tool_context)
+      user_prompt = build_user_prompt(tool_context, allowed_tools: allowed_tools, prompt_version: prompt_version)
 
       llm = Llm::Client.call(
         purpose: purpose,
         model_id: model_id,
-        system_instructions: Assistant::SeatSuggestionPrompts::SYSTEM,
+        system_instructions: system_instructions,
         user_prompt: user_prompt,
         organization_id: @consultation.organization_id,
         triggered_by_teammate_id: @consultation.triggered_by_teammate_id,
         parent: @consultation,
-        prompt_version: Assistant::SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION
+        prompt_version: prompt_version
       )
 
       parsed = ParseAskOgResponse.call(llm.content.to_s)
-      # Seat suggestion should only ever propose the bundle tool.
-      actions = Array(parsed[:proposed_actions]).select { |a| a["tool"] == "create_seat_suggestion_bundle" }.first(1)
+      next_focus = MaapSuggestionFocus.normalize(parsed[:focus]) || focus
+      if next_focus != focus
+        tool_context = tool_context.merge("suggestion_focus" => next_focus)
+        @result.update!(tool_context: tool_context)
+        focus = next_focus
+      end
+
+      allowed_tools = focus.present? ? MaapSuggestionFocus.tools_for(focus) : []
+      actions = Array(parsed[:proposed_actions]).select { |a| allowed_tools.include?(a["tool"]) }
 
       @result.append_message!(
         role: AskOgMessage::ROLE_ASSISTANT,
@@ -80,7 +96,7 @@ module Assistant
         status: "completed",
         result: @result,
         model_id: model_id,
-        prompt_version: Assistant::SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION,
+        prompt_version: prompt_version,
         completed_at: Time.current,
         units_completed: @consultation.units_total,
         error_message: nil
@@ -94,7 +110,60 @@ module Assistant
 
     private
 
-    def build_user_prompt(tool_context)
+    def prompt_pack_for(focus)
+      case focus
+      when MaapSuggestionFocus::ASSIGNMENT
+        [
+          AssignmentSuggestionPrompts::SYSTEM,
+          AssignmentSuggestionPrompts::ASSIGNMENT_SUGGESTION_PROMPT_VERSION,
+          MaapSuggestionFocus.tools_for(focus)
+        ]
+      when MaapSuggestionFocus::ABILITIES
+        [
+          AbilitySuggestionPrompts::SYSTEM,
+          AbilitySuggestionPrompts::ABILITY_SUGGESTION_PROMPT_VERSION,
+          MaapSuggestionFocus.tools_for(focus)
+        ]
+      when MaapSuggestionFocus::SEAT
+        [
+          SeatSuggestionPrompts::SYSTEM,
+          SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION,
+          MaapSuggestionFocus.tools_for(focus)
+        ]
+      else
+        [
+          MaapSuggestionFocusPrompts::SYSTEM,
+          MaapSuggestionFocusPrompts::FOCUS_PROMPT_VERSION,
+          []
+        ]
+      end
+    end
+
+    def gather_context(focus:, context:, query:, conversation_text:)
+      case focus
+      when MaapSuggestionFocus::ASSIGNMENT
+        GatherAssignmentSuggestionContext.call(
+          context: context,
+          query: query,
+          conversation_text: conversation_text
+        )
+      when MaapSuggestionFocus::ABILITIES
+        GatherAbilitySuggestionContext.call(
+          context: context,
+          query: query,
+          conversation_text: conversation_text
+        )
+      else
+        # Unset focus and Seat share the rich MAAP pack (helps infer Seat vs Assignment).
+        GatherSeatSuggestionContext.call(
+          context: context,
+          query: query,
+          conversation_text: conversation_text
+        )
+      end
+    end
+
+    def build_user_prompt(tool_context, allowed_tools:, prompt_version:)
       turns = @result.messages_for_prompt.map do |message|
         {
           role: message.role,
@@ -103,7 +172,7 @@ module Assistant
         }.compact
       end
 
-      schemas = AgentTools::Registry.write_tool_schemas.slice("create_seat_suggestion_bundle")
+      schemas = AgentTools::Registry.write_tool_schemas.slice(*allowed_tools)
 
       <<~PROMPT
         Conversation (most recent #{AskOgResult::TURN_WINDOW} turns, oldest first):
@@ -116,7 +185,7 @@ module Assistant
         #{JSON.pretty_generate(schemas)}
 
         ---
-        Prompt version: #{Assistant::SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION}
+        Prompt version: #{prompt_version}
       PROMPT
     end
 
@@ -125,7 +194,7 @@ module Assistant
         status: "failed",
         error_message: message.to_s.truncate(10_000),
         model_id: ENV.fetch("SEAT_SUGGESTION_BEDROCK_MODEL_ID") { Llm::SlackMomentsExtractor.model_id },
-        prompt_version: Assistant::SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION,
+        prompt_version: SeatSuggestionPrompts::SEAT_SUGGESTION_PROMPT_VERSION,
         completed_at: Time.current
       )
     end

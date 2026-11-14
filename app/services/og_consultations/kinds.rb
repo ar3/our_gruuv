@@ -116,11 +116,12 @@ module OgConsultations
         llm_purpose: 'ask_og',
         billable: false
       ),
-      # Seat Suggestion: one billable consultation per conversation (not per reply).
+      # MAAP Suggestion (kind seat_suggestion): one billable consultation per conversation.
       # Replies reuse the same OgConsultation row; Value Billing counts the completed row once.
+      # Focuses: Seat / Assignment / Abilities (Team deferred).
       OgConsultation::KIND_SEAT_SUGGESTION => Entry.new(
         kind: OgConsultation::KIND_SEAT_SUGGESTION,
-        label: 'Seat Suggestion',
+        label: 'MAAP Suggestion',
         result_class_name: 'AskOgResult',
         job_class_name: 'AskOgJob',
         runner_class_name: 'Assistant::SeatSuggestionRunner',

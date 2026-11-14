@@ -18,8 +18,13 @@ module Assistant
       answer = fallback_answer if answer.blank?
 
       actions = Array(json["proposed_actions"]).filter_map { |item| sanitize_action(item) }
+      focus = json["focus"]
 
-      { answer: answer, proposed_actions: actions.first(2) }
+      {
+        answer: answer,
+        proposed_actions: actions.first(5),
+        focus: focus
+      }
     end
 
     private

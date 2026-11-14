@@ -29,7 +29,7 @@ The old Beta **Meeting transcripts** upload → feedback-request path (`Possible
 **Check-in period brief:** Assignment / Values (Aspiration) / Position 1-by-1 Notes caption runs billable `check_in_period_brief` (`CheckIns::StartPeriodBriefConsult`) — viewer-scoped period summary in a results panel for copy/paste into Notes; never recommends a rating.
 **Not billable consultations:** HR enrich/match and teammate resolve go through `Llm::Client` (invocations only). **Ask OG** is the same for charging (`billable: false`) — still an LLM call (and keeps an `OgConsultation` shell for status/threads), but Value Billing does not count it.
 
-**Seat Suggestion** is **billable** (`billable: true`): one Value Billing unit per conversation (`OgConsultation` row). Multi-turn replies reuse the same row — not charged per reply.
+**MAAP Suggestion** (OgConsultation kind `seat_suggestion`) is **billable** (`billable: true`): one Value Billing unit per conversation (`OgConsultation` row). Multi-turn replies reuse the same row — not charged per reply. The chat asks/infers a focus (**Seat** / **Assignment** / **Abilities**), then Confirm writes draft MaapProposals only.
 
 ### Payloads
 

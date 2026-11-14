@@ -145,7 +145,7 @@ class OrganizationPolicy < ApplicationPolicy
     false
   end
 
-  # Beta Seat Suggestion chat — any employed teammate in this org.
+  # Beta MAAP Suggestion chat (kind seat_suggestion) — any employed teammate in this org.
   def seat_suggestion?
     return false unless viewing_teammate
     return false unless record == viewing_teammate.organization

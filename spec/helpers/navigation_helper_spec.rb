@@ -544,7 +544,7 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(labels).to include('Talent Density')
         expect(labels).to include('Coach Inbox')
         expect(labels).to include('MAAP Cleanup Inbox')
-        expect(labels).to include('Suggest a Seat')
+        expect(labels).to include('Suggest MAAP changes')
         expect(labels).not_to include("#{person.casual_name}'s Dashboard")
         expect(labels).not_to include('Start Here')
         expect(labels).not_to include('Something Interesting')

@@ -782,7 +782,7 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Suggest a Seat',
+            label: 'Suggest MAAP changes',
             icon: 'bi-chat-dots',
             path: organization_seat_suggestion_path(current_organization),
             policy_check: -> { policy(current_organization).seat_suggestion? },

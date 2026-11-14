@@ -734,7 +734,7 @@ module OrganizationSitemap
             policy: ->(ctx) { ctx.policy(ctx.organization).milestone_integrity_inbox? },
             goal: "Review milestone awards skipped without co-sign, and track awards still awaiting a co-signer.",
             synonyms: %w[milestone integrity cosign co-sign skipped awards moderation fairness]),
-          beta_page(:seat_suggestion, "Suggest a Seat", "bi-chat-dots", :organization_seat_suggestion_path,
+          beta_page(:seat_suggestion, "Suggest MAAP changes", "bi-chat-dots", :organization_seat_suggestion_path,
             policy: ->(ctx) { ctx.policy(ctx.organization).seat_suggestion? },
             goal: "Chat to draft a Seat create proposal with linked Title, Position, Assignment, and Ability drafts when you do not yet know the MAAP shape.",
             synonyms: %w[suggest seat seat suggestion seat defense temporary seat define seat chat icp])

@@ -33,9 +33,10 @@ RSpec.describe OgConsultations::Kinds do
     expect(entry.job_class).to eq(AskOgJob)
   end
 
-  it 'registers Seat Suggestion as billable per conversation (not per reply)' do
+  it 'registers MAAP Suggestion (seat_suggestion) as billable per conversation (not per reply)' do
     entry = described_class.fetch(OgConsultation::KIND_SEAT_SUGGESTION)
 
+    expect(entry.label).to eq('MAAP Suggestion')
     expect(entry.llm_purpose).to eq('seat_suggestion')
     expect(entry.billable).to be(true)
     expect(entry.job_class).to eq(AskOgJob)
