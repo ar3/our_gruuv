@@ -12,11 +12,16 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
     @billing_setting = OrganizationBillingSetting.for_organization!(organization)
     @value_metrics = Organizations::Billing::ValueBasedPepm.new(company).call
     @upcoming_pepm = discounted_pepm(@value_metrics[:per_employee_month], @billing_setting)
-    @billing_periods = Organizations::Billing::UpcomingPeriods.call(
+
+    ensure_locks_for_passed_calculations!
+
+    @billing_periods = Organizations::Billing::PeriodViews.call(
+      organization: organization,
       cadence: @billing_setting.cadence,
-      count: 3,
-      first_due_on: @billing_setting.next_payment_due_on
+      live_pepm: @upcoming_pepm,
+      first_due_on: @billing_setting.reload.next_payment_due_on
     )
+    @display_pepm = @billing_periods.find(&:locked?)&.pepm || @upcoming_pepm
     @open_invoices = organization.billing_invoices.open_invoices
     @paid_invoices = organization.billing_invoices.paid_invoices
   end
@@ -61,5 +66,21 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
     discounted = base_monthly * (1.0 - setting.discount_rate)
     Organizations::Billing::RoundDownToHalfDollar.call(discounted)
   end
-end
 
+  def ensure_locks_for_passed_calculations!
+    periods = Organizations::Billing::UpcomingPeriods.call(
+      cadence: @billing_setting.cadence,
+      count: 3,
+      first_due_on: @billing_setting.next_payment_due_on
+    )
+    periods.each do |period|
+      next unless period.calculation_passed?
+
+      Organizations::Billing::LockPepm.call(
+        organization: organization,
+        due_on: period.due_on,
+        as_of: Date.current
+      )
+    end
+  end
+end

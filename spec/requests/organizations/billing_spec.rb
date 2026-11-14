@@ -64,8 +64,7 @@ RSpec.describe 'Organizations::Billing', type: :request do
         expect(response.body).to include('Semi-annually (20% discount)')
         expect(response.body).to include('round down to the nearest $0.50')
         expect(response.body).to include("you'll likely pay")
-        expect(response.body).to include('(depending on the value delivered… see below).')
-        expect(response.body).to include("we'll calculate the value delivered and what you'll pay for the next period")
+        expect(response.body).to include('Incomplete until')
         expect(response.body).to include('context-callout')
         expect(response.body.scan(/you'll likely pay/).size).to eq(3)
         expect(response.body.scan(/context-callout/).size).to eq(3)
@@ -76,8 +75,47 @@ RSpec.describe 'Organizations::Billing', type: :request do
         expect(response.body).to include(organization_value_path(organization))
         expect(response.body).not_to include('Billing can be managed by')
       end
+
+      it 'shows locked copy and open invoice after calculation day' do
+        due_on = Date.new(2026, 12, 1)
+        calculation_on = due_on - 1.week
+        OrganizationBillingSetting.for_organization!(organization).update!(
+          cadence: 'monthly',
+          next_payment_due_on: due_on
+        )
+        allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+          instance_double(
+            Organizations::Billing::ValueBasedPepm,
+            call: {
+              total_value: 40.0,
+              week_count: 13,
+              teammate_count: 1,
+              per_employee_week: 1.0,
+              per_employee_month: 5.0,
+              range_begin: calculation_on - 90.days,
+              range_end: calculation_on
+            }
+          )
+        )
+        Organizations::Billing::LockPepm.call(
+          organization: organization,
+          due_on: due_on,
+          as_of: calculation_on
+        )
+
+        get organization_billing_path(organization)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("you'll pay")
+        expect(response.body).to include('Locked on')
+        expect(response.body).to include('First lock — no prior PEPM setpoint')
+        expect(response.body).to include('Incomplete until')
+        expect(organization.billing_invoices.open_invoices.count).to eq(1)
+        expect(response.body).not_to include('No open invoices yet')
+      end
     end
   end
+
 
   describe 'PATCH /organizations/:organization_id/billing/update_cadence' do
     context 'when the teammate can manage billing' do

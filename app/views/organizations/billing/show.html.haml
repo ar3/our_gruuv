@@ -40,9 +40,9 @@
         .card-header.bg-primary.text-white
           %h4.mb-0 Upcoming PEPM
         .card-body
-          - if @upcoming_pepm
+          - if @display_pepm
             %p.fs-3.fw-semibold.mb-2
-              = number_to_currency(@upcoming_pepm)
+              = number_to_currency(@display_pepm)
               %span.fs-6.fw-normal.text-muted / teammate
             %p.text-muted.mb-2
               Based on average value delivered
@@ -57,37 +57,58 @@
                 = "#{@billing_setting.discount_percent}% #{@billing_setting.cadence}"
                 cadence discount.
             %p.text-muted.mb-3
-              We round down to the nearest $0.50. Until value reaches at least $0.50 / teammate, you pay nothing.
+              We round down to the nearest $0.50. Until value reaches at least $0.50 / teammate, you pay nothing. Invoice totals never exceed value delivered for the lookback window.
             - @billing_periods.each_with_index do |period, index|
               .mb-3{class: (index == @billing_periods.size - 1 ? "mb-0" : nil)}
                 %p.mb-2
                   On
                   %strong= l(period.due_on, format: :long)
-                  - if period.calculation_passed?
+                  - if period.locked?
                     you'll pay
                   - else
                     you'll likely pay
-                  - if @upcoming_pepm.zero?
+                  - if period.pepm.to_f.zero?
                     %strong nothing
                     per teammate
                   - else
-                    %strong= number_to_currency(@upcoming_pepm)
+                    %strong= number_to_currency(period.pepm)
                     / teammate
-                  based on the average value you received in the past 90 days
-                  - if period.calculation_passed?
+                  - if period.locked?
                     \.
+                    - if period.amount_due
+                      Invoice total
+                      %strong= number_to_currency(period.amount_due)
+                      for
+                      = pluralize(period.teammate_count, "teammate")
+                      \.
+                    - if period.prior_pepm
+                      Prior setpoint was
+                      = number_to_currency(period.prior_pepm)
+                      / teammate; this lock is
+                      = number_to_currency(period.pepm)
+                      based on
+                      = number_to_currency(period.value_delivered_total)
+                      value delivered.
+                    - else
+                      First lock — no prior PEPM setpoint.
                   - else
-                    (depending on the value delivered… see below).
+                    based on the average value you received in the past 90 days (incomplete data — depending on the value delivered… see below).
                 = render "shared/context_callout", margin_class: "mb-0" do
                   %p.mb-0
-                    On
-                    %strong= l(period.calculation_on, format: :long)
-                    we'll calculate the value delivered and what you'll pay for the next period.
+                    - if period.locked?
+                      Locked on
+                      %strong= l(period.calculation_on, format: :long)
+                      from value delivered through that day.
+                    - else
+                      Incomplete until
+                      %strong= l(period.calculation_on, format: :long)
+                      — then we'll finalize value delivered and what you'll pay for this period.
           - else
             %p.mb-0.text-muted
               Not enough active teammates or value activity yet to preview PEPM. See the
               = link_to "OG Value page", organization_value_path(organization)
               for how value is calculated.
+
 
 
     .col-lg-6

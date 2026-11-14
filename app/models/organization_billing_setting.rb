@@ -7,6 +7,16 @@ class OrganizationBillingSetting < ApplicationRecord
     "quarterly" => 0.10,
     "semiannual" => 0.20
   }.freeze
+  MONTHS_PER_CADENCE = {
+    "monthly" => 1,
+    "quarterly" => 3,
+    "semiannual" => 6
+  }.freeze
+  CADENCE_LABELS = {
+    "monthly" => "Monthly (full price)",
+    "quarterly" => "Quarterly (10% discount)",
+    "semiannual" => "Semi-annually (20% discount)"
+  }.freeze
 
   belongs_to :organization
 
@@ -20,11 +30,9 @@ class OrganizationBillingSetting < ApplicationRecord
     (discount_rate * 100).to_i
   end
 
-  CADENCE_LABELS = {
-    "monthly" => "Monthly (full price)",
-    "quarterly" => "Quarterly (10% discount)",
-    "semiannual" => "Semi-annually (20% discount)"
-  }.freeze
+  def months_in_period
+    MONTHS_PER_CADENCE.fetch(cadence)
+  end
 
   def cadence_label
     CADENCE_LABELS.fetch(cadence, cadence.to_s.humanize)
@@ -40,3 +48,4 @@ class OrganizationBillingSetting < ApplicationRecord
     end
   end
 end
+
