@@ -1,0 +1,13 @@
+- announcement = local_assigns.fetch(:announcement)
+
+.card.border-0.shadow-sm.mb-3{ id: "weekly-ogo-announcement" }
+  .card-header.bg-dark.text-white
+    %h4.mb-0
+      %i.bi.bi-megaphone.me-2
+      Last week's OGO announcement
+    %p.mb-0.small.opacity-75.mt-1
+      Exact Slack messaging for #{announcement.week_label}. Independent of the timeframe filters below.
+  .card-body
+    %p.small.text-muted.mb-2
+      Preview of the org-wide post. Iterate here before scheduling a Slack send.
+    %pre.mb-0.p-3.bg-light.border.rounded.small{ style: "white-space: pre-wrap; font-family: inherit;" }= announcement.message_text

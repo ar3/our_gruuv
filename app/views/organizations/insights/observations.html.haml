@@ -10,6 +10,8 @@
            current_object: :observations,
            current_lens: :insights
 
+= render "organizations/insights/weekly_ogo_announcement", announcement: @weekly_ogo_announcement
+
 = render 'timeframe_selector',
   timeframe: @timeframe,
   path_for: ->(**opts) { organization_insights_observations_path(@organization, **opts) },

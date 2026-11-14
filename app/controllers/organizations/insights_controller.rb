@@ -330,6 +330,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @organization = company
     @timeframe = parse_timeframe(params[:timeframe])
     range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
+    @weekly_ogo_announcement = Insights::WeeklyOgoAnnouncement.call(company: company)
 
     base_scope = Observation.for_company(company).not_soft_deleted.published
     base_scope = base_scope.where(observed_at: range) if range
