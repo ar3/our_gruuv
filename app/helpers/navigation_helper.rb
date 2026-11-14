@@ -705,6 +705,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Integrations',
+            icon: 'bi-plug',
+            path: organization_integrations_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
             label: 'Value / Billing',
             icon: 'bi-cash-coin',
             path: organization_value_billing_path(current_organization),

@@ -1,0 +1,110 @@
+%p.mb-2.mt-4
+  %strong Topics
+%p.small.text-muted.mb-3
+  %code topics
+  chooses which Feedback Request to reuse or create (same spirit as
+  %code /internal
+  relevance offers). Omit it to pick the best available offer for the pair, defaulting to company values.
+  You can also pass
+  %code feedback_request_id
+  to reuse a specific FR and skip topic resolution.
+
+.mb-3
+  %h3.h6.fw-semibold Offer key: company values
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Offer key: assignment or ability
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": "assignment:42"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Offer key object form
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": { "offer_key": "ability:7" }
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Explicit MAAP objects
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": {
+          "objects": [
+            { "object_type": "Assignment", "object_id": 42 }
+          ]
+        }
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Objects as a top-level array
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": [
+          { "object_type": "Ability", "object_id": 7 }
+        ]
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Natural-language topic strings (matched to offers / names)
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": { "topics": ["customer support", "values"] }
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Exact Feedback Request subject line
+  %p.small.text-muted.mb-2
+    Reuses an existing FR in this org whose
+    %code subject_line
+    matches exactly.
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": "Company values feedback for Alex"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Subject line via object field
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": { "subject_line": "Company values feedback for Alex" }
+      }
+
+.mb-0
+  %h3.h6.fw-semibold Skip topics: reuse by Feedback Request id
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "feedback_request_id": 991
+      }

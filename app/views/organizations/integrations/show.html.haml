@@ -1,0 +1,127 @@
+- content_for :title, "Integrations"
+- page_help_id = "integrationsPageHelp"
+
+- content_for :header do
+  .d-flex.align-items-center.flex-wrap.gap-2
+    %h1.mb-0
+      %i.bi.bi-plug.me-2
+      Integrations
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "MCP and API endpoints for automating OurGruuv. Click for details."
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: organization, crumbs: [{ label: "Integrations", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/integrations/page_help"
+
+.alert.alert-light.border.mb-4
+  %p.mb-0
+    Call OurGruuv from Zapier, agents, or custom scripts. Start with authentication below — the same MCP/API access token works for MCP and the Mint HTTP API.
+
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0
+      %i.bi.bi-key.me-2
+      MCP/API access tokens
+  .card-body
+    %p.text-muted
+      Bearer tokens bind to
+      %strong your teammate identity
+      in this organization. Use them for both
+      %strong MCP
+      and
+      %strong Mint Feedback Request
+      HTTP calls.
+    %p.mb-2
+      %strong Header
+    %p.mb-3
+      %code Authorization: Bearer ogmcp_…
+    %p.mb-3
+      = link_to "Create or revoke MCP/API access tokens", @mcp_tokens_path, class: "btn btn-primary btn-sm"
+    %p.mb-0.small.text-muted
+      Claude Connectors can use OAuth instead (no pasteable token) — see the MCP section. OAuth access tokens also work as Bearer auth for Mint.
+
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0
+      %i.bi.bi-robot.me-2
+      MCP
+  .card-body
+    %p.text-muted
+      Model Context Protocol server. Tools run as the authenticated teammate (list teammates, mint feedback links, draft OGOs, and more).
+    %p.mb-2
+      %strong Endpoint
+    %code.user-select-all.d-inline-block.mb-3= @mcp_url
+    %p.mb-2
+      %strong Preferred setup (Claude Connectors + OAuth)
+    %ol.mb-3
+      %li
+        In Claude Settings → Connectors, add
+        %code= @mcp_url
+      %li Sign in with Google and pick this organization.
+      %li No pasteable token required.
+    %p.mb-2
+      %strong Or use an MCP/API access token
+    %p.mb-3.small.text-muted
+      Create one in
+      = link_to "MCP/API access tokens", @mcp_tokens_path
+      above, then send
+      %code Authorization: Bearer ogmcp_…
+      from Claude Code, Desktop bridges, or other MCP clients.
+    %p.mb-0.small.text-muted
+      Discover tools with MCP
+      %code tools/list
+      \. Includes
+      %code mint_feedback_link
+      for find-or-create Feedback Request answer URLs.
+
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0
+      %i.bi.bi-link-45deg.me-2
+      Mint Feedback Request link (HTTP)
+  .card-body
+    %p.text-muted
+      Find or create a Feedback Request for an observer → observed pair and return the answer URL.
+      External observers get a public
+      %code /f/:token
+      link; org teammates get the org answer path. Does not send email/SMS.
+    %p.mb-2
+      %strong Endpoint
+    %p.mb-1
+      %code POST
+      %code.user-select-all= @mint_url
+    %p.mb-3.small.text-muted
+      Auth: MCP/API access token or OAuth Bearer from the section above
+      (
+      %code Authorization: Bearer ogmcp_…
+      ).
+    = render "organizations/integrations/mint_body_examples"
+    = render "organizations/integrations/mint_topics_examples"
+    %p.mb-2.mt-4
+      %strong Success response (shape)
+    %pre.bg-light.border.rounded.p-3.small.mb-0
+      :plain
+        {
+          "ok": true,
+          "data": {
+            "feedback_request_id": 1,
+            "created": true,
+            "answer_url": "https://…/feedback_requests/…/answer",
+            "public_answer_url": "https://…/f/…",
+            "observer": { "external": true, "…": "…" },
+            "observed": { "teammate_id": 123, "…": "…" }
+          }
+        }
+
+.card.mb-4
+  .card-header
+    %h2.h5.mb-0
+      %i.bi.bi-hourglass-split.me-2
+      Coming later
+  .card-body
+    %ul.mb-0
+      %li Send the minted link (email / SMS / Slack) from OurGruuv
+      %li Native ticket / PR / calendar event adapters that call mint automatically

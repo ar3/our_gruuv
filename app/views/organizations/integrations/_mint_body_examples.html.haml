@@ -1,0 +1,90 @@
+%p.mb-2
+  %strong Example bodies
+%p.small.text-muted.mb-3
+  %code observed
+  must resolve to exactly one teammate in this org.
+  %code observer
+  may be a teammate or an external person (email/phone can create a Person stub).
+  If several identifiers are sent and they disagree, the call fails as ambiguous.
+
+.mb-3
+  %h3.h6.fw-semibold Doer by teammate id, external requestor by email
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "email": "client@example.com" },
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Doer by work email, external requestor by phone
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "email": "alex@acme.com" },
+        "observer": { "phone": "+13175550199" },
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Doer by phone, requestor is an org teammate
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "phone": "+13175550100" },
+        "observer": { "teammate_id": 456 },
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Requestor by person id (already known to OurGruuv)
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123 },
+        "observer": { "person_id": 789 },
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Both by email (doer must already be a teammate)
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "email": "alex@acme.com" },
+        "observer": { "email": "client@example.com" },
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Flat field aliases (handy for Zapier)
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed_teammate_id": 123,
+        "observer_email": "client@example.com",
+        "topics": "values"
+      }
+
+.mb-3
+  %h3.h6.fw-semibold Flat aliases with phone
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed_email": "alex@acme.com",
+        "observer_phone": "+13175550199",
+        "topics": { "offer_key": "values" }
+      }
+
+.mb-0
+  %h3.h6.fw-semibold Multiple hints that must agree
+  %p.small.text-muted.mb-2
+    Safe when they point at the same person. Fails if email and teammate_id resolve differently.
+  %pre.bg-light.border.rounded.p-3.small.mb-0
+    :plain
+      {
+        "observed": { "teammate_id": 123, "email": "alex@acme.com" },
+        "observer": { "email": "client@example.com", "phone": "+13175550199" },
+        "topics": "values"
+      }

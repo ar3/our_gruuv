@@ -23,5 +23,14 @@ RSpec.describe "Organizations::McpAccessTokens", type: :request do
     follow_redirect!
     expect(response.body).to include("Copy this token now")
     expect(response.body).to include("ogmcp_")
+    expect(response.body).to include("MCP/API access tokens")
+    expect(response.body).to include("Mint Feedback Request")
+  end
+
+  it "renders the token admin page titled MCP/API access tokens" do
+    get organization_mcp_access_tokens_path(organization)
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include("MCP/API access tokens")
+    expect(response.body).to include("These personal Bearer tokens authorize")
   end
 end

@@ -1,0 +1,28 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p
+    Give admins and builders a single place to authenticate and call OurGruuv from outside the product
+    (MCP tools and the mint Feedback Request HTTP endpoint) so automations can create the right answer links.
+
+  %h3.fw-semibold.mb-2 Context
+  %p
+    Integrations here are
+    %strong outbound call surfaces
+    (you call OG). Product connects like Slack install live elsewhere.
+    MCP/API access tokens bind to your teammate identity and authorize both MCP and Mint HTTP.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-0
+    %li
+      %strong MCP/API access tokens
+      — create first; one Bearer token for MCP and Mint.
+    %li
+      %strong MCP
+      — preferred path for agents (Claude Connectors + OAuth, or Bearer token).
+    %li
+      %strong Mint Feedback Request link
+      — HTTP POST for Zapier/scripts; returns
+      %code answer_url
+      and optionally
+      %code public_answer_url
+      \.

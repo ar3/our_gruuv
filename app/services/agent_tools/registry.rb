@@ -21,13 +21,15 @@ module AgentTools
       "search_organization" => "AgentTools::SearchOrganization",
       "create_draft_observation" => "AgentTools::CreateDraftObservation",
       "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence",
-      "create_seat_suggestion_bundle" => "AgentTools::CreateSeatSuggestionBundle"
+      "create_seat_suggestion_bundle" => "AgentTools::CreateSeatSuggestionBundle",
+      "mint_feedback_link" => "AgentTools::MintFeedbackLink"
     }.freeze
 
     WRITE_TOOLS = %w[
       create_draft_observation
       set_current_week_goal_confidence
       create_seat_suggestion_bundle
+      mint_feedback_link
     ].freeze
 
     # JSON Schema–style input schemas for MCP and other machine clients.
@@ -317,6 +319,47 @@ module AgentTools
         },
         required: ["bundle"],
         additionalProperties: false
+      },
+      "mint_feedback_link" => {
+        type: "object",
+        properties: {
+          observed: {
+            type: "object",
+            description: "Doer / subject of feedback. Provide teammate_id and/or email and/or phone.",
+            properties: {
+              teammate_id: { type: "integer" },
+              email: { type: "string" },
+              phone: { type: "string" }
+            },
+            additionalProperties: false
+          },
+          observer: {
+            type: "object",
+            description: "Requestor who will answer. teammate_id / person_id / email / phone. Creates a Person stub if only email/phone and no match.",
+            properties: {
+              teammate_id: { type: "integer" },
+              person_id: { type: "integer" },
+              email: { type: "string" },
+              phone: { type: "string" }
+            },
+            additionalProperties: false
+          },
+          topics: {
+            description: "Offer key (values|assignment:ID|ability:ID), subject_line string, topic strings, or {objects:[{object_type,object_id}]} / {offer_key:} / {topics:[]}."
+          },
+          feedback_request_id: {
+            type: "integer",
+            description: "Reuse an existing FR id in this org (skips topic find/create)."
+          },
+          observed_teammate_id: { type: "integer", description: "Flat alias for observed.teammate_id" },
+          observed_email: { type: "string" },
+          observed_phone: { type: "string" },
+          observer_person_id: { type: "integer" },
+          observer_teammate_id: { type: "integer" },
+          observer_email: { type: "string" },
+          observer_phone: { type: "string" }
+        },
+        additionalProperties: false
       }
     }.freeze
 
@@ -337,7 +380,8 @@ module AgentTools
       "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% completes the goal; Learnings optional.",
-      "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them."
+      "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them.",
+      "mint_feedback_link" => "Find or create a Feedback Request for observer→observed + topics and return answer_url / public_answer_url. External observers get a public /f/:token link; org teammates get the org answer path. Reuses /internal system-offer find-or-create. Does not send notifications."
     }.freeze
 
     TITLES = {
@@ -357,7 +401,8 @@ module AgentTools
       "search_organization" => "Search organization",
       "create_draft_observation" => "Create draft observation",
       "set_current_week_goal_confidence" => "Set current-week goal confidence",
-      "create_seat_suggestion_bundle" => "Create seat suggestion proposal bundle"
+      "create_seat_suggestion_bundle" => "Create seat suggestion proposal bundle",
+      "mint_feedback_link" => "Mint feedback request link"
     }.freeze
 
     module_function

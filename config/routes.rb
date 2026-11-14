@@ -53,6 +53,7 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     post 'companies/teams', to: 'companies#teams'
+    post 'feedback_requests/mint', to: 'feedback_request_mints#create'
   end
 
   # MCP OAuth 2.1 discovery (RFC 9728 / RFC 8414)
@@ -146,6 +147,7 @@ Rails.application.routes.draw do
     get 'og_academy/milestones', to: 'organizations/og_academy#milestones', as: :og_academy_milestones
     post 'og_academy/update_start_page', to: 'organizations/og_academy#update_start_page', as: :og_academy_update_start_page
 
+    get 'integrations', to: 'organizations/integrations#show', as: :integrations
     get 'value_billing', to: 'organizations/value_billing#show', as: :value_billing
 
     # Get Shit Done Dashboard

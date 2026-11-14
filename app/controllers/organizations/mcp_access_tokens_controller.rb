@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module Organizations
-  # Create/revoke personal MCP access tokens for Claude Desktop (etc.).
-  # Tokens bind to the current company teammate; MCP tools run as that identity.
+  # Create/revoke personal MCP/API access tokens (MCP + Mint HTTP, etc.).
+  # Tokens bind to the current company teammate; calls run as that identity.
   class McpAccessTokensController < OrganizationNamespaceBaseController
     before_action :authenticate_person!
     after_action :verify_authorized
@@ -25,7 +25,7 @@ module Organizations
       )
       flash[:mcp_raw_token] = raw
       redirect_to organization_mcp_access_tokens_path(@organization),
-                  notice: "MCP token “#{record.name}” created. Copy it now — it won’t be shown again."
+                  notice: "MCP/API token “#{record.name}” created. Copy it now — it won’t be shown again."
     rescue ActiveRecord::RecordInvalid => e
       redirect_to organization_mcp_access_tokens_path(@organization),
                   alert: e.record.errors.full_messages.to_sentence

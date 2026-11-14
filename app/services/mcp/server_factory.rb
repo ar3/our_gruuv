@@ -29,6 +29,8 @@ module Mcp
       one OGO (full story, observer/observees, ratings with rateable paths). create_draft_observation
       never publishes. set_current_week_goal_confidence only updates the current Monday week;
       0% or 100% completes the goal (Learnings optional; late vs on-time inferred from dates).
+      mint_feedback_link finds or creates a Feedback Request for observer→observed + topics and
+      returns answer_url / public_answer_url (no send). External observers get /f/:token.
     TEXT
 
     def self.build(agent_tools_context:)
