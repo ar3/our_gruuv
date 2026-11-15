@@ -1,7 +1,20 @@
 # frozen_string_literal: true
 
 class BillingInvoice < ApplicationRecord
-  STATUSES = %w[open paid].freeze
+  # Manual (impersonation dropdown): open, waived.
+  # Automation / processor only: processing, paid, failed, refunded.
+  MANUAL_STATUSES = %w[open waived].freeze
+  AUTOMATION_STATUSES = %w[processing paid failed refunded].freeze
+  STATUSES = (MANUAL_STATUSES + AUTOMATION_STATUSES).freeze
+
+  STATUS_LABELS = {
+    "open" => "Open",
+    "waived" => "Waived",
+    "processing" => "Processing",
+    "paid" => "Paid",
+    "failed" => "Failed",
+    "refunded" => "Refunded"
+  }.freeze
 
   belongs_to :organization
 
@@ -12,12 +25,56 @@ class BillingInvoice < ApplicationRecord
 
   scope :open_invoices, -> { where(status: "open").order(due_on: :asc) }
   scope :paid_invoices, -> { where(status: "paid").order(paid_at: :desc) }
+  scope :waived_invoices, -> { where(status: "waived").order(due_on: :desc) }
+  scope :closed_invoices, -> {
+    where(status: %w[paid waived refunded]).order(Arel.sql("COALESCE(paid_at, updated_at) DESC"))
+  }
 
   def open?
     status == "open"
   end
 
+  def waived?
+    status == "waived"
+  end
+
   def paid?
     status == "paid"
+  end
+
+  def processing?
+    status == "processing"
+  end
+
+  def failed?
+    status == "failed"
+  end
+
+  def refunded?
+    status == "refunded"
+  end
+
+  def payable?
+    open? || failed?
+  end
+
+  def closed?
+    paid? || waived? || refunded?
+  end
+
+  def status_label
+    STATUS_LABELS.fetch(status, status.to_s.humanize)
+  end
+
+  def self.manual_status_options
+    MANUAL_STATUSES.map { |status| [STATUS_LABELS.fetch(status), status] }
+  end
+
+  def apply_manual_status!(new_status)
+    raise ArgumentError, "not a manual status" unless MANUAL_STATUSES.include?(new_status.to_s)
+
+    attrs = { status: new_status.to_s }
+    attrs[:paid_at] = nil if new_status.to_s != "paid"
+    update!(attrs)
   end
 end

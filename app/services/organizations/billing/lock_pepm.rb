@@ -29,10 +29,11 @@ module Organizations
           pepm = discounted_pepm(metrics[:per_employee_month])
           teammate_count = metrics[:teammate_count].to_i
           value_delivered = metrics[:total_value].to_f
-          amount_due = period_amount(
+          amount_due = AmountDue.call(
             pepm: pepm,
             teammate_count: teammate_count,
-            value_delivered: value_delivered
+            value_delivered: value_delivered,
+            months: @setting.months_in_period
           )
 
           invoice = @organization.billing_invoices.create!(
@@ -99,12 +100,6 @@ module Organizations
 
         discounted = base_monthly * (1.0 - @setting.discount_rate)
         RoundDownToHalfDollar.call(discounted)
-      end
-
-      def period_amount(pepm:, teammate_count:, value_delivered:)
-        gross = pepm.to_f * teammate_count * @setting.months_in_period
-        floored = [gross, value_delivered.to_f].min
-        RoundDownToHalfDollar.call(floored)
       end
 
       def period_ends_on

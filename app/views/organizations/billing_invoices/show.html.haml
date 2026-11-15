@@ -1,0 +1,105 @@
+- content_for :title, "Invoice — #{l(@invoice.due_on, format: :long)}"
+- page_help_id = "billingInvoicePageHelp"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-receipt-cutoff.me-2
+      Invoice
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Invoice details and payment — click for details."
+    %span.badge{class: invoice_status_badge_class(@invoice)}
+      = @invoice.status_label
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/billing_invoices/page_help"
+
+%p.mb-3
+  = link_to organization_billing_path(organization), class: "text-decoration-none" do
+    %i.bi.bi-arrow-left.me-1
+    Back to Billing
+
+.row.mb-4
+  .col-lg-7
+    .card.border-0.shadow-sm.mb-4
+      .card-header
+        %h4.mb-0 Invoice details
+      .card-body
+        %dl.row.mb-0
+          %dt.col-sm-4 Status
+          %dd.col-sm-8
+            %span.badge{class: invoice_status_badge_class(@invoice)}
+              = @invoice.status_label
+          %dt.col-sm-4 Due
+          %dd.col-sm-8= l(@invoice.due_on, format: :long)
+          %dt.col-sm-4 Period
+          %dd.col-sm-8
+            = l(@invoice.period_starts_on, format: :long)
+            –
+            = l(@invoice.period_ends_on, format: :long)
+          %dt.col-sm-4 Cadence
+          %dd.col-sm-8= OrganizationBillingSetting.cadence_label_for(@invoice.cadence)
+          %dt.col-sm-4 PEPM
+          %dd.col-sm-8
+            - if @invoice.pepm.to_f.zero?
+              Nothing / teammate
+            - else
+              = number_to_currency(@invoice.pepm)
+              / teammate
+          %dt.col-sm-4 Teammates
+          %dd.col-sm-8= @invoice.teammate_count
+          %dt.col-sm-4 Amount due
+          %dd.col-sm-8.fs-4.fw-semibold= number_to_currency(@invoice.amount_due)
+          - if @invoice.paid?
+            %dt.col-sm-4 Paid
+            %dd.col-sm-8= @invoice.paid_at ? l(@invoice.paid_at.to_date, format: :long) : "—"
+
+    = render "shared/context_callout", margin_class: "mb-4" do
+      = render "organizations/billing/qbr_snapshot", period: @period_view
+
+  .col-lg-5
+    - if impersonating?
+      .card.border-0.shadow-sm.mb-4.border-start.border-5.border-danger
+        .card-header
+          %h4.mb-0 Manual status
+          %small.text-muted Impersonation only — open or waived
+        .card-body
+          = form_with model: @invoice,
+                      url: update_status_organization_billing_invoice_path(organization, @invoice),
+                      method: :patch,
+                      local: true do |f|
+            .mb-3
+              = f.label :status, "Status", class: "form-label"
+              = f.select :status,
+                         BillingInvoice.manual_status_options,
+                         {},
+                         class: "form-select"
+            = f.submit "Update status", class: "btn btn-outline-danger"
+
+    .card.border-0.shadow-sm
+      .card-body
+        - if @invoice.payable?
+          %h4.mb-2 Pay
+          %p.text-muted.mb-3
+            Stub payment control — online checkout ships in a later phase.
+          = button_to "Pay #{number_to_currency(@invoice.amount_due)}",
+                      stub_pay_organization_billing_invoice_path(organization, @invoice),
+                      method: :post,
+                      class: "btn btn-success btn-lg",
+                      form: { class: "mb-0" }
+        - elsif @invoice.waived?
+          %h4.mb-2 Waived
+          %p.text-muted.mb-0
+            This invoice was given away / discounted to free. No payment is due.
+        - elsif @invoice.paid?
+          %h4.mb-2 Paid
+          %p.text-muted.mb-0
+            This invoice is settled. No payment action is needed.
+        - else
+          %h4.mb-2= @invoice.status_label
+          %p.text-muted.mb-0
+            Status is managed by payment automation.

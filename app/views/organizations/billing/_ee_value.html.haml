@@ -1,0 +1,14 @@
+-# locals: value, total, teammate_count, projected (optional), company_name (optional), starts_on (optional), ends_on (optional)
+- projected = local_assigns.fetch(:projected, false)
+- if value
+  - if projected
+    - popover_content = "This is an estimated projection of the value #{company_name} will receive during the next period between #{l(starts_on, format: :long)} and #{l(ends_on, format: :long)}."
+  - else
+    - popover_content = "/ EE means per employee per month. #{number_to_currency(total)} across #{pluralize(teammate_count, 'teammate')}."
+  %span.border-bottom.border-dotted{tabindex: "0", style: "cursor: help;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => popover_content, "aria-label" => popover_content}
+    - if projected
+      %span.text-muted ~
+    = number_to_currency(value)
+    %span.text-muted= " / EE"
+- else
+  %span.text-muted —

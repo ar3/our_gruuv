@@ -34,6 +34,17 @@
         permission. Ask someone with Employment Management to grant it on a teammate's permissions page.
 
 - if @can_manage_billing
+  - if @show_backfill_snapshots
+    .alert.alert-warning.border.mb-4
+      %p.mb-2
+        Value has been delivered, but there are no historical billing snapshots yet for prior-setpoint comparisons.
+      = button_to "Create historical billing snapshots",
+                  backfill_snapshots_organization_billing_path(organization),
+                  method: :post,
+                  class: "btn btn-warning",
+                  form: { class: "mb-0" },
+                  data: { turbo_confirm: "Create open historical invoices for the last several billing periods based on value delivered at each calculation day?" }
+
   .row.mb-4
     .col-lg-6
       .card.border-0.shadow-sm.h-100
@@ -59,6 +70,7 @@
             %p.text-muted.mb-3
               We round down to the nearest $0.50. Until value reaches at least $0.50 / teammate, you pay nothing. Invoice totals never exceed value delivered for the lookback window.
             - @billing_periods.each_with_index do |period, index|
+              - show_value_analysis = period.locked? || (period.incomplete? && index.zero?)
               .mb-3{class: (index == @billing_periods.size - 1 ? "mb-0" : nil)}
                 %p.mb-2
                   On
@@ -73,26 +85,10 @@
                   - else
                     %strong= number_to_currency(period.pepm)
                     / teammate
-                  - if period.locked?
-                    \.
-                    - if period.amount_due
-                      Invoice total
-                      %strong= number_to_currency(period.amount_due)
-                      for
-                      = pluralize(period.teammate_count, "teammate")
-                      \.
-                    - if period.prior_pepm
-                      Prior setpoint was
-                      = number_to_currency(period.prior_pepm)
-                      / teammate; this lock is
-                      = number_to_currency(period.pepm)
-                      based on
-                      = number_to_currency(period.value_delivered_total)
-                      value delivered.
-                    - else
-                      First lock — no prior PEPM setpoint.
-                  - else
-                    based on the average value you received in the past 90 days (incomplete data — depending on the value delivered… see below).
+                  \.
+                - if show_value_analysis
+                  = render "shared/context_callout", margin_class: "mb-2" do
+                    = render "organizations/billing/qbr_snapshot", period: period
                 = render "shared/context_callout", margin_class: "mb-0" do
                   %p.mb-0
                     - if period.locked?
@@ -128,20 +124,6 @@
             = f.submit "Save cadence", class: "btn btn-primary"
 
   .row.mb-4
-    .col-12
-      .card.border-0.shadow-sm
-        .card-body.d-flex.flex-wrap.align-items-center.justify-content-between.gap-3
-          %div
-            %h4.mb-1 Pay
-            %p.text-muted.mb-0
-              Stub payment control — online checkout ships in a later phase.
-          = button_to "Pay",
-                      stub_pay_organization_billing_path(organization),
-                      method: :post,
-                      class: "btn btn-success btn-lg",
-                      form: { class: "mb-0" }
-
-  .row.mb-4
     .col-lg-6
       .card.border-0.shadow-sm.h-100
         .card-header
@@ -158,39 +140,51 @@
                 %tbody
                   - @open_invoices.each do |invoice|
                     %tr
-                      %td= l(invoice.due_on, format: :long)
+                      %td
+                        = link_to l(invoice.due_on, format: :long),
+                                  organization_billing_invoice_path(organization, invoice)
                       %td
                         = l(invoice.period_starts_on, format: :long)
                         –
                         = l(invoice.period_ends_on, format: :long)
-                      %td.text-end= number_to_currency(invoice.amount_due)
+                      %td.text-end
+                        = link_to number_to_currency(invoice.amount_due),
+                                  organization_billing_invoice_path(organization, invoice)
           - else
             %p.text-muted.mb-0 No open invoices yet.
 
     .col-lg-6
       .card.border-0.shadow-sm.h-100
         .card-header
-          %h4.mb-0 Paid invoices
+          %h4.mb-0 Closed invoices
         .card-body
-          - if @paid_invoices.any?
+          - if @closed_invoices.any?
             .table-responsive
               %table.table.table-sm.mb-0
                 %thead
                   %tr
-                    %th Paid
+                    %th Status
+                    %th Due
                     %th Period
                     %th.text-end Amount
                 %tbody
-                  - @paid_invoices.each do |invoice|
+                  - @closed_invoices.each do |invoice|
                     %tr
-                      %td= invoice.paid_at ? l(invoice.paid_at.to_date, format: :long) : "—"
+                      %td
+                        %span.badge{class: invoice_status_badge_class(invoice)}
+                          = invoice.status_label
+                      %td
+                        = link_to l(invoice.due_on, format: :long),
+                                  organization_billing_invoice_path(organization, invoice)
                       %td
                         = l(invoice.period_starts_on, format: :long)
                         –
                         = l(invoice.period_ends_on, format: :long)
-                      %td.text-end= number_to_currency(invoice.amount_due)
+                      %td.text-end
+                        = link_to number_to_currency(invoice.amount_due),
+                                  organization_billing_invoice_path(organization, invoice)
           - else
-            %p.text-muted.mb-0 No paid invoices yet.
+            %p.text-muted.mb-0 No closed invoices yet.
 
   %p.text-muted
     Value transparency lives on the

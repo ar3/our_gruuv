@@ -154,7 +154,11 @@ Rails.application.routes.draw do
     }
     resource :billing, only: [:show], controller: 'organizations/billing' do
       patch :update_cadence
-      post :stub_pay
+      post :backfill_snapshots
+    end
+    resources :billing_invoices, only: [:show], controller: 'organizations/billing_invoices' do
+      post :stub_pay, on: :member
+      patch :update_status, on: :member
     end
 
     # Get Shit Done Dashboard

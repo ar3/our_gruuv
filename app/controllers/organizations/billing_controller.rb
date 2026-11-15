@@ -19,11 +19,14 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
       organization: organization,
       cadence: @billing_setting.cadence,
       live_pepm: @upcoming_pepm,
+      live_metrics: @value_metrics,
+      months_in_period: @billing_setting.months_in_period,
       first_due_on: @billing_setting.reload.next_payment_due_on
     )
     @display_pepm = @billing_periods.find(&:locked?)&.pepm || @upcoming_pepm
     @open_invoices = organization.billing_invoices.open_invoices
-    @paid_invoices = organization.billing_invoices.paid_invoices
+    @closed_invoices = organization.billing_invoices.closed_invoices
+    @show_backfill_snapshots = show_backfill_snapshots?
   end
 
   def update_cadence
@@ -43,11 +46,21 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
     end
   end
 
-  def stub_pay
+  def backfill_snapshots
     authorize organization, :manage_billing?
 
-    redirect_to organization_billing_path(organization),
-                notice: "Online payment is coming soon. This Pay button is a placeholder for now."
+    result = Organizations::Billing::BackfillSnapshots.call(organization: organization)
+
+    if result.skipped_reason == "already_has_invoices"
+      redirect_to organization_billing_path(organization),
+                  alert: "Historical snapshots already exist."
+    elsif result.created_count.zero?
+      redirect_to organization_billing_path(organization),
+                  alert: "No past billing periods were available to snapshot."
+    else
+      redirect_to organization_billing_path(organization),
+                  notice: "Created #{result.created_count} historical billing #{'snapshot'.pluralize(result.created_count)}."
+    end
   end
 
   private
@@ -82,5 +95,10 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
         as_of: Date.current
       )
     end
+  end
+
+  def show_backfill_snapshots?
+    organization.billing_invoices.none? &&
+      @value_metrics[:total_value].to_f.positive?
   end
 end

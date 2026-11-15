@@ -53,7 +53,7 @@ RSpec.describe 'Organizations::Billing', type: :request do
     context 'when the teammate can manage billing' do
       let(:can_manage_billing) { true }
 
-      it 'shows the commercial billing surface with stub Pay' do
+      it 'shows the commercial billing surface with incomplete QBRs' do
         get organization_billing_path(organization)
 
         expect(response).to have_http_status(:success)
@@ -64,16 +64,49 @@ RSpec.describe 'Organizations::Billing', type: :request do
         expect(response.body).to include('Semi-annually (20% discount)')
         expect(response.body).to include('round down to the nearest $0.50')
         expect(response.body).to include("you'll likely pay")
+        expect(response.body).to include('OG Value Analysis')
+        expect(response.body).to include('(incomplete)')
+        expect(response.body).to include('Likely invoice total')
+        expect(response.body).to include('Projected this period')
+        expect(response.body).not_to include('Actual this period')
+        expect(response.body).to include('> / EE<')
+        expect(response.body).to include('/ EE means per employee per month')
+        expect(response.body).to include("This is an estimated projection of the value #{organization.display_name} will receive during the next period between")
+        expect(response.body).to include('Capture our Stories')
         expect(response.body).to include('Incomplete until')
         expect(response.body).to include('context-callout')
         expect(response.body.scan(/you'll likely pay/).size).to eq(3)
-        expect(response.body.scan(/context-callout/).size).to eq(3)
+        expect(response.body.scan(/qbr-snapshot/).size).to eq(1)
         expect(response.body).to include('Open invoices')
-        expect(response.body).to include('Paid invoices')
+        expect(response.body).to include('Closed invoices')
         expect(response.body).to include('No open invoices yet')
-        expect(response.body).to include('stub_pay')
+        expect(response.body).to include('No closed invoices yet')
+        expect(response.body).not_to include('stub_pay')
         expect(response.body).to include(organization_value_path(organization))
         expect(response.body).not_to include('Billing can be managed by')
+        expect(response.body).not_to include('Create historical billing snapshots')
+      end
+
+      it 'shows the one-time historical snapshot button when value exists without invoices' do
+        allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+          instance_double(
+            Organizations::Billing::ValueBasedPepm,
+            call: {
+              total_value: 40.0,
+              week_count: 13,
+              teammate_count: 1,
+              per_employee_week: 1.0,
+              per_employee_month: 5.0,
+              range_begin: 90.days.ago.to_date,
+              range_end: Date.current
+            }
+          )
+        )
+
+        get organization_billing_path(organization)
+
+        expect(response.body).to include('Create historical billing snapshots')
+        expect(response.body).to include('no historical billing snapshots yet')
       end
 
       it 'shows locked copy and open invoice after calculation day' do
@@ -107,14 +140,58 @@ RSpec.describe 'Organizations::Billing', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("you'll pay")
+        expect(response.body).to include('OG Value Analysis')
         expect(response.body).to include('Locked on')
-        expect(response.body).to include('First lock — no prior PEPM setpoint')
+        expect(response.body).to include('No prior PEPM setpoint yet')
         expect(response.body).to include('Incomplete until')
+        expect(response.body).not_to include('(incomplete)')
         expect(organization.billing_invoices.open_invoices.count).to eq(1)
         expect(response.body).not_to include('No open invoices yet')
+        expect(response.body).not_to include('Create historical billing snapshots')
       end
     end
   end
+
+  describe 'POST /organizations/:organization_id/billing/backfill_snapshots' do
+    let(:can_manage_billing) { true }
+
+    before do
+      OrganizationBillingSetting.for_organization!(organization).update!(
+        cadence: 'monthly',
+        next_payment_due_on: Date.new(2026, 12, 1)
+      )
+      allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+        instance_double(
+          Organizations::Billing::ValueBasedPepm,
+          call: {
+            total_value: 30.0,
+            week_count: 13,
+            teammate_count: 1,
+            per_employee_week: 1.0,
+            per_employee_month: 4.3,
+            range_begin: Date.new(2026, 8, 1),
+            range_end: Date.new(2026, 11, 14)
+          }
+        )
+      )
+    end
+
+    it 'creates historical open invoices' do
+      expect {
+        post backfill_snapshots_organization_billing_path(organization)
+      }.to change { organization.billing_invoices.open_invoices.count }.by(6)
+
+      expect(response).to redirect_to(organization_billing_path(organization))
+      follow_redirect!
+      expect(response.body).to include('Created 6 historical billing snapshots')
+      expect(response.body).not_to include('Create historical billing snapshots')
+      expect(response.body).not_to include('No open invoices yet')
+      expect(response.body).to include(
+        organization_billing_invoice_path(organization, organization.billing_invoices.open_invoices.first)
+      )
+    end
+  end
+
 
 
   describe 'PATCH /organizations/:organization_id/billing/update_cadence' do
@@ -141,15 +218,4 @@ RSpec.describe 'Organizations::Billing', type: :request do
     end
   end
 
-  describe 'POST /organizations/:organization_id/billing/stub_pay' do
-    let(:can_manage_billing) { true }
-
-    it 'redirects with a coming-soon notice' do
-      post stub_pay_organization_billing_path(organization)
-
-      expect(response).to redirect_to(organization_billing_path(organization))
-      follow_redirect!
-      expect(response.body).to include('Online payment is coming soon')
-    end
-  end
 end
