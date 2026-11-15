@@ -1,12 +1,13 @@
--# locals: total_cell, mode (optional), period_progress (optional), company_name (optional), starts_on (optional), ends_on (optional)
+-# locals: total_cell, mode (optional), period_progress (optional), full_week_count (optional), company_name (optional), starts_on (optional), ends_on (optional)
 - mode = local_assigns.fetch(:mode, :complete)
 - if total_cell&.pepm
   - if mode == :in_progress
-    - popover_content = billing_in_progress_pepm_popover(total_cell: total_cell, period_progress: period_progress)
+    - pace_week_count = local_assigns[:full_week_count].to_i.positive? ? local_assigns[:full_week_count].to_i : total_cell.week_count.to_i
+    - popover_content = billing_in_progress_pepm_popover(total_cell: total_cell, period_progress: period_progress, full_week_count: pace_week_count)
     - projected_pepm = nil
     - extrapolated_total = billing_extrapolate_money(total_cell.value_sum, period_progress)
-    - if extrapolated_total && total_cell.week_count.to_i.positive? && total_cell.teammate_count.to_i.positive?
-      - projected_pepm = ((extrapolated_total / total_cell.week_count / total_cell.teammate_count) * Organizations::Billing::ValueBasedPepm::APPROX_WEEKS_PER_MONTH).round(2)
+    - if extrapolated_total && pace_week_count.positive? && total_cell.teammate_count.to_i.positive?
+      - projected_pepm = ((extrapolated_total / pace_week_count / total_cell.teammate_count) * Organizations::Billing::ValueBasedPepm::APPROX_WEEKS_PER_MONTH).round(2)
   - elsif mode == :upcoming
     - popover_content = billing_upcoming_pepm_popover(total_cell: total_cell, company_name: company_name, starts_on: starts_on, ends_on: ends_on)
   - else

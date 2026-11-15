@@ -53,4 +53,26 @@ RSpec.describe Organizations::BillingHelper, type: :helper do
       expect(copy).to include('valued at $100.00')
     end
   end
+
+  describe '#billing_in_progress_pepm_popover' do
+    it 'pace-projects PEPM with full-period weeks, not so-far week_count' do
+      total_cell = Organizations::Billing::ValueAnalysisTable::TotalCell.new(
+        pepm: 0.26,
+        value_sum: 10.0,
+        week_count: 3, # so-far weeks (clipped)
+        teammate_count: 10,
+        per_employee_week: 0.06
+      )
+
+      copy = helper.billing_in_progress_pepm_popover(
+        total_cell: total_cell,
+        period_progress: 0.5,
+        full_week_count: 5
+      )
+
+      # extrapolated total 20 / 5 weeks / 10 EE * 4.3 = 1.72 — not 20/3/10*4.3
+      expect(copy).to include('At this pace, by 100% that may be $1.72 / EE')
+      expect(copy).not_to include('$2.87 / EE')
+    end
+  end
 end

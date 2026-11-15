@@ -88,7 +88,7 @@ module Organizations::BillingHelper
     "#{number_to_currency(total)} ÷ #{week_count} #{'week'.pluralize(week_count)} ÷ #{teammates}#{so_far_suffix} = #{number_to_currency(per_employee_week)} weekly (~#{number_to_currency(pepm)} monthly). / EE means per employee per month."
   end
 
-  def billing_in_progress_pepm_popover(total_cell:, period_progress:)
+  def billing_in_progress_pepm_popover(total_cell:, period_progress:, full_week_count: nil)
     percent = billing_period_progress_percent(period_progress)
     base = billing_value_page_pepm_popover(
       total: total_cell.value_sum,
@@ -99,13 +99,22 @@ module Organizations::BillingHelper
       so_far: true
     )
     extrapolated_total = billing_extrapolate_money(total_cell.value_sum, period_progress)
+    # Pace PEPM must use full-period weeks, not so-far week_count (otherwise (~…) is inflated).
+    pace_week_count = full_week_count.to_i.positive? ? full_week_count.to_i : total_cell.week_count.to_i
     parts = ["This period is about #{percent}% complete.", base]
-    if extrapolated_total && total_cell.week_count.to_i.positive? && total_cell.teammate_count.to_i.positive?
-      extrapolated_week = extrapolated_total / total_cell.week_count / total_cell.teammate_count
+    if extrapolated_total && pace_week_count.positive? && total_cell.teammate_count.to_i.positive?
+      extrapolated_week = extrapolated_total / pace_week_count / total_cell.teammate_count
       extrapolated_pepm = extrapolated_week * Organizations::Billing::ValueBasedPepm::APPROX_WEEKS_PER_MONTH
       parts << "At this pace, by 100% that may be #{number_to_currency(extrapolated_pepm.round(2))} / EE (#{number_to_currency(extrapolated_total)} across #{pluralize(total_cell.teammate_count, 'active teammate')})."
     end
     parts.join(" ")
+  end
+
+  # Weeks spanning the whole period column (for pace PEPM). Nil when the column has no dates.
+  def billing_column_full_week_count(column)
+    return nil if column.blank? || column.starts_on.blank? || column.ends_on.blank?
+
+    Organizations::Billing::ValueBasedPepm.week_count_for(column.starts_on..column.ends_on)
   end
 
   def billing_upcoming_activity_popover(key:, cell:, company_name:, starts_on:, ends_on:)
@@ -131,13 +140,20 @@ module Organizations::BillingHelper
   end
 
   def billing_column_mode_locals(column, company_name:)
+    full_week_count = billing_column_full_week_count(column)
     case column.status
     when :in_progress
-      { mode: :in_progress, period_progress: column.period_progress }
+      { mode: :in_progress, period_progress: column.period_progress, full_week_count: full_week_count }
     when :upcoming
-      { mode: :upcoming, company_name: company_name, starts_on: column.starts_on, ends_on: column.ends_on }
+      {
+        mode: :upcoming,
+        company_name: company_name,
+        starts_on: column.starts_on,
+        ends_on: column.ends_on,
+        full_week_count: full_week_count
+      }
     else
-      { mode: :complete }
+      { mode: :complete, full_week_count: full_week_count }
     end
   end
 end
