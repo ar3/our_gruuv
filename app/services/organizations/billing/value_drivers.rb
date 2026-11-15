@@ -25,11 +25,12 @@ module Organizations
       def breakdown(range)
         range = normalize_range(range)
         DRIVERS.map do |driver|
-          activity_count = activity_count_for(driver[:key], range)
+          activity_count, teammate_count = counts_for(driver[:key], range)
           {
             key: driver[:key],
             label: driver[:label],
             activity_count: activity_count,
+            teammate_count: teammate_count,
             value_sum: activity_count * driver[:unit_value]
           }
         end
@@ -45,51 +46,65 @@ module Organizations
         range.begin.to_time.beginning_of_day..range.end.to_time.end_of_day
       end
 
-      def activity_count_for(key, range)
+      def counts_for(key, range)
         case key
-        when :stories then stories_count(range)
-        when :stand then stand_count(range)
-        when :growth then growth_count(range)
-        when :goals then goals_count(range)
-        when :consultations then consultation_count(range)
-        else 0
+        when :stories then stories_counts(range)
+        when :stand then stand_counts(range)
+        when :growth then growth_counts(range)
+        when :goals then goals_counts(range)
+        when :consultations then consultation_counts(range)
+        else [0, 0]
         end
       end
 
-      def stories_count(chart_range)
-        Observee
+      def stories_counts(chart_range)
+        scope = Observee
           .joins(:observation)
           .where(observations: { company_id: @organization.id })
           .merge(Observation.not_soft_deleted.published)
           .where(observations: { published_at: chart_range })
-          .count
+
+        [scope.count, scope.distinct.count(:teammate_id)]
       end
 
-      def stand_count(chart_range)
+      def stand_counts(chart_range)
         teammate_ids_scope = CompanyTeammate.for_organization_hierarchy(@organization).select(:id)
-        AssignmentCheckIn.where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range).count +
-          AspirationCheckIn.where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range).count +
-          PositionCheckIn.where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range).count
+
+        assignment_scope = AssignmentCheckIn
+          .where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range)
+        aspiration_scope = AspirationCheckIn
+          .where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range)
+        position_scope = PositionCheckIn
+          .where(teammate_id: teammate_ids_scope, official_check_in_completed_at: chart_range)
+
+        activity_count = assignment_scope.count + aspiration_scope.count + position_scope.count
+        teammate_ids = assignment_scope.distinct.pluck(:teammate_id) |
+          aspiration_scope.distinct.pluck(:teammate_id) |
+          position_scope.distinct.pluck(:teammate_id)
+
+        [activity_count, teammate_ids.size]
       end
 
-      def growth_count(chart_range)
+      def growth_counts(chart_range)
         teammate_ids_scope = CompanyTeammate.for_organization_hierarchy(@organization).select(:id)
-        TeammateMilestone
+        scope = TeammateMilestone
           .where(teammate_id: teammate_ids_scope)
           .where(attained_at: chart_range.begin.to_date..chart_range.end.to_date)
-          .count
+
+        [scope.count, scope.distinct.count(:teammate_id)]
       end
 
-      def goals_count(chart_range)
-        GoalCheckIn
+      def goals_counts(chart_range)
+        scope = GoalCheckIn
           .joins(:goal)
           .where(goals: { company_id: @organization.id })
           .where(created_at: chart_range)
-          .count
+
+        [scope.count, scope.distinct.count("goals.creator_id")]
       end
 
-      def consultation_count(chart_range)
-        OgConsultation
+      def consultation_counts(chart_range)
+        scope = OgConsultation
           .billable
           .completed
           .where(organization_id: @organization.id)
@@ -98,7 +113,9 @@ module Organizations
             chart_range.begin,
             chart_range.end
           )
-          .count
+        activity_count = scope.count
+        teammate_count = scope.where.not(triggered_by_teammate_id: nil).distinct.count(:triggered_by_teammate_id)
+        [activity_count, teammate_count]
       end
     end
   end

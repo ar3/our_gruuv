@@ -51,9 +51,7 @@
     - current_col = analysis.columns[2]
     - teammate_count = analysis.teammate_count
     - company_name = organization.display_name
-    - current_ee_locals = { teammate_count: teammate_count }
-    - if analysis.projected?
-      - current_ee_locals = current_ee_locals.merge(projected: true, company_name: company_name, starts_on: current_col.starts_on, ends_on: current_col.ends_on)
+    - projected_locals = analysis.projected? ? { projected: true, company_name: company_name, starts_on: current_col.starts_on, ends_on: current_col.ends_on } : {}
     .table-responsive
       %table.table.table-sm.align-middle.mb-2
         %thead
@@ -93,22 +91,25 @@
             %tr
               %td= row.label
               %td.text-end
-                = render "organizations/billing/ee_value", value: row.prior_prior_value, total: row.prior_prior_total, teammate_count: teammate_count
+                = render "organizations/billing/driver_activity_value", cell: row.prior_prior, driver_key: row.key, company_name: company_name
               %td.text-end
-                = render "organizations/billing/ee_value", value: row.prior_value, total: row.prior_total, teammate_count: teammate_count
+                = render "organizations/billing/driver_activity_value", cell: row.prior, driver_key: row.key, company_name: company_name
               %td.text-end
-                = render "organizations/billing/ee_value", **current_ee_locals, value: row.current_value, total: row.current_total
+                = render "organizations/billing/driver_activity_value", **projected_locals, cell: row.current, driver_key: row.key, company_name: company_name
           %tr.fw-semibold
             %td Total
             %td.text-end
-              = render "organizations/billing/ee_value", value: analysis.totals[:prior_prior], total: analysis.total_sums[:prior_prior], teammate_count: teammate_count
+              - total = analysis.totals[:prior_prior]
+              = render "organizations/billing/ee_value", pepm: total&.pepm, total: total&.value_sum, teammate_count: teammate_count
             %td.text-end
-              = render "organizations/billing/ee_value", value: analysis.totals[:prior], total: analysis.total_sums[:prior], teammate_count: teammate_count
+              - total = analysis.totals[:prior]
+              = render "organizations/billing/ee_value", pepm: total&.pepm, total: total&.value_sum, teammate_count: teammate_count
             %td.text-end
-              = render "organizations/billing/ee_value", **current_ee_locals, value: analysis.totals[:current], total: analysis.total_sums[:current]
+              - total = analysis.totals[:current]
+              = render "organizations/billing/ee_value", **projected_locals, pepm: total&.pepm, total: total&.value_sum, teammate_count: teammate_count
     - if analysis.projected?
       %p.text-muted.small.mb-0
-        Projected uses the prior period when progress is flat or down; if prior-prior → prior improved, it continues that linear increase.
+        Driver cells are activity counts. Total is overall PEPM across all employed teammates. Projected uses the prior period when progress is flat or down; if prior-prior → prior improved, it continues that linear increase.
     - else
       %p.text-muted.small.mb-0
-        Actual reflects value delivered during this period after it ended — even if that is less than what was paid for.
+        Driver cells are activity counts. Total is overall PEPM across all employed teammates. Actual reflects value delivered during this period after it ended — even if that is less than what was paid for.

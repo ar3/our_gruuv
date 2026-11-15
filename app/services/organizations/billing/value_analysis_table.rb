@@ -2,26 +2,18 @@
 
 module Organizations
   module Billing
-    # Prior-prior / prior / current-period per-employee value by driver for OG Value Analysis.
+    # Prior-prior / prior / current-period driver activity for OG Value Analysis.
+    # Driver cells are activity counts; Total is overall PEPM (period value ÷ employed).
     # Third column is projected while the period is in progress; after it ends, actuals.
     class ValueAnalysisTable
       PeriodColumn = Struct.new(:key, :label, :starts_on, :ends_on, keyword_init: true)
-      DriverRow = Struct.new(
-        :key,
-        :label,
-        :prior_prior_value,
-        :prior_prior_total,
-        :prior_value,
-        :prior_total,
-        :current_value,
-        :current_total,
-        keyword_init: true
-      )
+      Cell = Struct.new(:activity_count, :teammate_count, :value_sum, keyword_init: true)
+      DriverRow = Struct.new(:key, :label, :prior_prior, :prior, :current, keyword_init: true)
+      TotalCell = Struct.new(:pepm, :value_sum, keyword_init: true)
       Result = Struct.new(
         :columns,
         :rows,
         :totals,
-        :total_sums,
         :teammate_count,
         :projected,
         keyword_init: true
@@ -53,37 +45,31 @@ module Organizations
         prior_range = period_range_for(prior_due)
         prior_prior_range = period_range_for(prior_prior_due)
         current_range = period_range_for(@period_due_on)
-        divisor = per_employee_divisor
         projected = current_range.end.to_date >= @as_of
+        teammate_count = employed_teammate_count
+        divisor = [teammate_count, 1].max
 
         prior_breakdown = prior_range ? indexed_breakdown(prior_range) : {}
         prior_prior_breakdown = prior_prior_range ? indexed_breakdown(prior_prior_range) : {}
         current_breakdown = projected ? {} : indexed_breakdown(current_range)
-        teammate_count = employed_teammate_count
 
         rows = ValueDrivers::DRIVERS.map do |driver|
-          prior_total = prior_range ? prior_breakdown.dig(driver[:key], :value_sum).to_f : nil
-          prior_prior_total = prior_prior_range ? prior_prior_breakdown.dig(driver[:key], :value_sum).to_f : nil
-          prior_value = prior_total && per_employee(prior_total, divisor)
-          prior_prior_value = prior_prior_total && per_employee(prior_prior_total, divisor)
-
-          if projected
-            current_value = project(prior_value, prior_prior_value)
-            current_total = current_value && (current_value * divisor).round(2)
-          else
-            current_total = current_breakdown.dig(driver[:key], :value_sum).to_f
-            current_value = per_employee(current_total, divisor)
-          end
+          unit_value = driver[:unit_value]
+          prior_prior_cell = cell_from_breakdown(prior_prior_breakdown, driver[:key], prior_prior_range)
+          prior_cell = cell_from_breakdown(prior_breakdown, driver[:key], prior_range)
+          current_cell =
+            if projected
+              project_cell(prior_cell, prior_prior_cell, unit_value)
+            else
+              cell_from_breakdown(current_breakdown, driver[:key], current_range)
+            end
 
           DriverRow.new(
             key: driver[:key],
             label: driver[:label],
-            prior_prior_value: prior_prior_value,
-            prior_prior_total: prior_prior_total,
-            prior_value: prior_value,
-            prior_total: prior_total,
-            current_value: current_value,
-            current_total: current_total
+            prior_prior: prior_prior_cell,
+            prior: prior_cell,
+            current: current_cell
           )
         end
 
@@ -110,14 +96,9 @@ module Organizations
           ],
           rows: rows,
           totals: {
-            prior_prior: prior_prior_range && rows.sum { |row| row.prior_prior_value.to_f },
-            prior: prior_range && rows.sum { |row| row.prior_value.to_f },
-            current: rows.sum { |row| row.current_value.to_f }
-          },
-          total_sums: {
-            prior_prior: prior_prior_range && rows.sum { |row| row.prior_prior_total.to_f },
-            prior: prior_range && rows.sum { |row| row.prior_total.to_f },
-            current: rows.sum { |row| row.current_total.to_f }
+            prior_prior: total_cell_for(rows, :prior_prior, prior_prior_range, divisor),
+            prior: total_cell_for(rows, :prior, prior_range, divisor),
+            current: total_cell_for(rows, :current, true, divisor)
           },
           teammate_count: teammate_count,
           projected: projected
@@ -141,22 +122,48 @@ module Organizations
         CompanyTeammate.for_organization_hierarchy(@organization).employed.count
       end
 
-      def per_employee_divisor
-        [employed_teammate_count, 1].max
+      def cell_from_breakdown(breakdown, key, range_present)
+        return nil unless range_present
+
+        row = breakdown[key] || {}
+        Cell.new(
+          activity_count: row[:activity_count].to_i,
+          teammate_count: row[:teammate_count].to_i,
+          value_sum: row[:value_sum].to_f
+        )
       end
 
-      def per_employee(total, divisor)
-        (total.to_f / divisor).round(2)
+      def project_cell(prior_cell, prior_prior_cell, unit_value)
+        return nil if prior_cell.nil?
+
+        activity = project_number(prior_cell.activity_count, prior_prior_cell&.activity_count)
+        teammates = project_number(prior_cell.teammate_count, prior_prior_cell&.teammate_count)
+        Cell.new(
+          activity_count: activity,
+          teammate_count: teammates,
+          value_sum: (activity * unit_value).round(2)
+        )
       end
 
-      def project(prior_value, prior_prior_value)
-        return nil if prior_value.nil?
+      def project_number(prior_value, prior_prior_value)
+        return prior_value.to_i if prior_prior_value.nil?
 
-        if prior_prior_value && (prior_value - prior_prior_value).positive?
-          (prior_value + (prior_value - prior_prior_value)).round(2)
+        delta = prior_value.to_i - prior_prior_value.to_i
+        if delta.positive?
+          prior_value.to_i + delta
         else
-          prior_value
+          prior_value.to_i
         end
+      end
+
+      def total_cell_for(rows, slot, range_present, divisor)
+        return nil unless range_present
+
+        value_sum = rows.sum { |row| row.public_send(slot)&.value_sum.to_f }
+        TotalCell.new(
+          pepm: (value_sum / divisor).round(2),
+          value_sum: value_sum.round(2)
+        )
       end
     end
   end

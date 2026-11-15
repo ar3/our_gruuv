@@ -49,6 +49,8 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response.body).not_to include('Actual this period')
         expect(response.body).to include('> / EE<')
         expect(response.body).to include('/ EE means per employee per month')
+        expect(response.body).to include('OG helped')
+        expect(response.body).to include('Which is valued at')
         expect(response.body).to include('$10.00')
         expect(response.body).to include('stub_pay')
         expect(response.body).to include(organization_billing_path(organization))

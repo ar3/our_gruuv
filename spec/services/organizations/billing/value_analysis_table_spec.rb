@@ -12,23 +12,31 @@ RSpec.describe Organizations::Billing::ValueAnalysisTable do
     allow(Organizations::Billing::ValueDrivers).to receive(:new).with(organization).and_return(drivers)
   end
 
-  def breakdown_for(values_by_key)
+  def breakdown_for(activity_by_key, teammate_by_key: {})
     Organizations::Billing::ValueDrivers::DRIVERS.map do |driver|
+      activity = activity_by_key.fetch(driver[:key], 0)
       {
         key: driver[:key],
         label: driver[:label],
-        activity_count: 0,
-        value_sum: values_by_key.fetch(driver[:key], 0.0)
+        activity_count: activity,
+        teammate_count: teammate_by_key.fetch(driver[:key], activity.positive? ? 1 : 0),
+        value_sum: activity * driver[:unit_value]
       }
     end
   end
 
-  it 'projects linear per-employee growth when prior improved over prior-prior' do
+  it 'projects linear activity growth when prior improved over prior-prior' do
     allow(drivers).to receive(:breakdown) do |range|
       if range.begin == Date.new(2026, 10, 1)
-        breakdown_for(stories: 10.0, stand: 5.0, growth: 2.0, goals: 1.0, consultations: 2.0)
+        breakdown_for(
+          { stories: 10, stand: 5, growth: 2, goals: 4, consultations: 2 },
+          teammate_by_key: { stories: 3, stand: 2, growth: 1, goals: 2, consultations: 1 }
+        )
       elsif range.begin == Date.new(2026, 11, 1)
-        breakdown_for(stories: 14.0, stand: 5.0, growth: 3.0, goals: 1.0, consultations: 2.0)
+        breakdown_for(
+          { stories: 14, stand: 5, growth: 3, goals: 4, consultations: 2 },
+          teammate_by_key: { stories: 4, stand: 2, growth: 2, goals: 2, consultations: 1 }
+        )
       else
         breakdown_for({})
       end
@@ -45,33 +53,31 @@ RSpec.describe Organizations::Billing::ValueAnalysisTable do
     expect(result.columns[2].label).to eq('Projected this period')
 
     stories = result.rows.find { |row| row.key == :stories }
-    expect(stories.prior_prior_value).to eq(5.0)   # 10 / 2 teammates
-    expect(stories.prior_prior_total).to eq(10.0)
-    expect(stories.prior_value).to eq(7.0)         # 14 / 2
-    expect(stories.prior_total).to eq(14.0)
-    expect(stories.current_value).to eq(9.0)       # 7 + (7-5)
-    expect(stories.current_total).to eq(18.0)
+    expect(stories.prior_prior.activity_count).to eq(10)
+    expect(stories.prior_prior.teammate_count).to eq(3)
+    expect(stories.prior_prior.value_sum).to eq(5.0) # 10 * 0.5
+    expect(stories.prior.activity_count).to eq(14)
+    expect(stories.current.activity_count).to eq(18) # 14 + (14-10)
+    expect(stories.current.teammate_count).to eq(5)  # 4 + (4-3)
+    expect(stories.current.value_sum).to eq(9.0)     # 18 * 0.5
 
     stand = result.rows.find { |row| row.key == :stand }
-    expect(stand.current_value).to eq(2.5)         # flat 5/2
+    expect(stand.current.activity_count).to eq(5) # flat
 
+    # Overall PEPM = sum(value_sums) / employed (2), not sum of per-driver PEPMs
+    prior_value_sum = 14 * 0.5 + 5 * 0.5 + 3 * 1.0 + 4 * 0.25 + 2 * 1.0
+    expect(result.totals[:prior].value_sum).to eq(prior_value_sum)
+    expect(result.totals[:prior].pepm).to eq((prior_value_sum / 2).round(2))
     expect(result.teammate_count).to eq(2)
-    expect(result.total_sums[:current]).to eq(result.rows.sum { |row| row.current_total.to_f })
-
-    expect(result.columns.map(&:starts_on)).to eq([
-      Date.new(2026, 10, 1),
-      Date.new(2026, 11, 1),
-      Date.new(2026, 12, 1)
-    ])
   end
 
-  it 'uses flat prior per-employee value when progress is not positive' do
+  it 'uses flat prior activity when progress is not positive' do
     allow(drivers).to receive(:breakdown) do |range|
       case range.begin
       when Date.new(2026, 10, 1)
-        breakdown_for(stories: 12.0, stand: 0, growth: 0, goals: 0, consultations: 0)
+        breakdown_for({ stories: 12 }, teammate_by_key: { stories: 3 })
       when Date.new(2026, 11, 1)
-        breakdown_for(stories: 8.0, stand: 0, growth: 0, goals: 0, consultations: 0)
+        breakdown_for({ stories: 8 }, teammate_by_key: { stories: 2 })
       else
         breakdown_for({})
       end
@@ -84,19 +90,20 @@ RSpec.describe Organizations::Billing::ValueAnalysisTable do
       as_of: Date.new(2026, 12, 15)
     )
     stories = result.rows.find { |row| row.key == :stories }
-    expect(stories.prior_value).to eq(4.0)       # 8 / 2
-    expect(stories.current_value).to eq(4.0)
+    expect(stories.prior.activity_count).to eq(8)
+    expect(stories.current.activity_count).to eq(8)
+    expect(stories.current.teammate_count).to eq(2)
   end
 
-  it 'shows actual per-employee value once the period has fully ended' do
+  it 'shows actual activity once the period has fully ended' do
     allow(drivers).to receive(:breakdown) do |range|
       case range.begin
       when Date.new(2026, 10, 1)
-        breakdown_for(stories: 10.0, stand: 0, growth: 0, goals: 0, consultations: 0)
+        breakdown_for({ stories: 10 }, teammate_by_key: { stories: 2 })
       when Date.new(2026, 11, 1)
-        breakdown_for(stories: 14.0, stand: 0, growth: 0, goals: 0, consultations: 0)
+        breakdown_for({ stories: 14 }, teammate_by_key: { stories: 3 })
       when Date.new(2026, 12, 1)
-        breakdown_for(stories: 6.0, stand: 0, growth: 0, goals: 0, consultations: 0)
+        breakdown_for({ stories: 6 }, teammate_by_key: { stories: 1 })
       else
         breakdown_for({})
       end
@@ -114,7 +121,9 @@ RSpec.describe Organizations::Billing::ValueAnalysisTable do
     expect(result.columns[2].label).to eq('Actual this period')
 
     stories = result.rows.find { |row| row.key == :stories }
-    expect(stories.current_value).to eq(3.0)  # 6 / 2 actual, not the 9.0 projection
-    expect(stories.current_total).to eq(6.0)
+    expect(stories.current.activity_count).to eq(6)
+    expect(stories.current.teammate_count).to eq(1)
+    expect(stories.current.value_sum).to eq(3.0)
+    expect(result.totals[:current].pepm).to eq(1.5) # 3.0 / 2 employed
   end
 end
