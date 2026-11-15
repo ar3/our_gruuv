@@ -13,17 +13,17 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
 
     @timeframe = parse_timeframe(params[:timeframe])
     range, @insights_custom_from, @insights_custom_to = insights_date_range_and_custom_fields
-    chart_range = range || (52.weeks.ago..Time.current)
-    @value_billing_period_label = insights_chart_title_period(@timeframe, range, chart_range)
+    @value_billing_chart_range = range || (52.weeks.ago..Time.current)
+    @value_billing_period_label = insights_chart_title_period(@timeframe, range, @value_billing_chart_range)
 
     teammate_ids_scope = CompanyTeammate.for_organization_hierarchy(company).select(:id)
-    week_dates = build_week_dates(chart_range)
+    week_dates = build_week_dates(@value_billing_chart_range)
 
-    milestone_counts = weekly_milestone_counts(teammate_ids_scope, chart_range)
-    observee_counts = weekly_observee_counts(chart_range)
-    completed_check_in_counts = weekly_completed_check_in_counts(teammate_ids_scope, chart_range)
-    goal_check_in_counts = weekly_goal_check_in_counts(chart_range)
-    consultation_counts = weekly_consultation_counts(chart_range)
+    milestone_counts = weekly_milestone_counts(teammate_ids_scope, @value_billing_chart_range)
+    observee_counts = weekly_observee_counts(@value_billing_chart_range)
+    completed_check_in_counts = weekly_completed_check_in_counts(teammate_ids_scope, @value_billing_chart_range)
+    goal_check_in_counts = weekly_goal_check_in_counts(@value_billing_chart_range)
+    consultation_counts = weekly_consultation_counts(@value_billing_chart_range)
 
     @value_billing_chart_data = build_chart_data(
       week_dates,
@@ -35,7 +35,7 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
     )
 
     assign_per_employee_value_metrics
-    assign_outcome_summary_metrics(chart_range)
+    assign_outcome_summary_metrics(@value_billing_chart_range)
     assign_component_value_captions
   end
 
@@ -138,18 +138,19 @@ class Organizations::ValueBillingController < Organizations::OrganizationNamespa
     @value_billing_active_teammate_count =
       CompanyTeammate.for_organization_hierarchy(company).employed.count
 
-    metrics = annualized_value_metrics(
+    # Shared with Billing PEPM / OG Value Analysis totals.
+    shared = Organizations::Billing::ValueBasedPepm.metrics(
       value_sum: @value_billing_total_value_sum,
-      week_count: @value_billing_week_count,
+      range: @value_billing_chart_range,
       teammate_count: @value_billing_active_teammate_count
     )
 
-    if metrics
-      @value_billing_per_employee_week = metrics[:per_employee_week]
-      @value_billing_per_employee_month_approx = @value_billing_per_employee_week * APPROX_WEEKS_PER_MONTH
-      @value_billing_per_employee_year = metrics[:per_employee_year]
-      @value_billing_annual_total = metrics[:annual_total]
-      @value_billing_monthly_total = metrics[:monthly_total]
+    if shared[:per_employee_week]
+      @value_billing_per_employee_week = shared[:per_employee_week]
+      @value_billing_per_employee_month_approx = shared[:per_employee_month]
+      @value_billing_per_employee_year = @value_billing_per_employee_week * 52
+      @value_billing_annual_total = @value_billing_per_employee_year * @value_billing_active_teammate_count
+      @value_billing_monthly_total = @value_billing_annual_total / 12.0
     else
       @value_billing_per_employee_week = nil
       @value_billing_per_employee_month_approx = nil

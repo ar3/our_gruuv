@@ -1,13 +1,29 @@
--# locals: pepm, total, teammate_count, projected (optional), company_name (optional), starts_on (optional), ends_on (optional)
-- projected = local_assigns.fetch(:projected, false)
-- if pepm
-  - popover_content = "/ EE means per employee per month. #{number_to_currency(total)} across #{pluralize(teammate_count, 'teammate')}."
-  - if projected
-    - popover_content = "This is an estimated projection of the value #{company_name} will receive during the next period between #{l(starts_on, format: :long)} and #{l(ends_on, format: :long)}. #{popover_content}"
+-# locals: total_cell, mode (optional), period_progress (optional), company_name (optional), starts_on (optional), ends_on (optional)
+- mode = local_assigns.fetch(:mode, :complete)
+- if total_cell&.pepm
+  - if mode == :in_progress
+    - popover_content = billing_in_progress_pepm_popover(total_cell: total_cell, period_progress: period_progress)
+    - projected_pepm = nil
+    - extrapolated_total = billing_extrapolate_money(total_cell.value_sum, period_progress)
+    - if extrapolated_total && total_cell.week_count.to_i.positive? && total_cell.teammate_count.to_i.positive?
+      - projected_pepm = ((extrapolated_total / total_cell.week_count / total_cell.teammate_count) * Organizations::Billing::ValueBasedPepm::APPROX_WEEKS_PER_MONTH).round(2)
+  - elsif mode == :upcoming
+    - popover_content = billing_upcoming_pepm_popover(total_cell: total_cell, company_name: company_name, starts_on: starts_on, ends_on: ends_on)
+  - else
+    - popover_content = billing_value_page_pepm_popover(total: total_cell.value_sum, week_count: total_cell.week_count, teammate_count: total_cell.teammate_count, per_employee_week: total_cell.per_employee_week, pepm: total_cell.pepm)
   %span.border-bottom.border-dotted{tabindex: "0", style: "cursor: help;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => popover_content, "aria-label" => popover_content}
-    - if projected
-      %span.text-muted ~
-    = number_to_currency(pepm)
-    %span.text-muted= " / EE"
+    - if mode == :upcoming
+      %span.text-muted= "~"
+      = number_to_currency(total_cell.pepm)
+      %span.text-muted= " / EE"
+    - elsif mode == :in_progress
+      = number_to_currency(total_cell.pepm)
+      %span.text-muted= "+"
+      %span.text-muted= " / EE"
+      - if projected_pepm
+        %span.text-muted.ms-1= "(~#{number_to_currency(projected_pepm)})"
+    - else
+      = number_to_currency(total_cell.pepm)
+      %span.text-muted= " / EE"
 - else
   %span.text-muted —

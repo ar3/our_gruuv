@@ -30,4 +30,27 @@ RSpec.describe Organizations::BillingHelper, type: :helper do
       expect(copy).to include('Which is valued at $162.00')
     end
   end
+
+  describe '#billing_in_progress_activity_popover' do
+    it 'includes percent complete and a pace estimate at 100%' do
+      cell = Organizations::Billing::ValueAnalysisTable::Cell.new(
+        activity_count: 100,
+        teammate_count: 10,
+        value_sum: 50.0
+      )
+
+      copy = helper.billing_in_progress_activity_popover(
+        key: :stories,
+        cell: cell,
+        company_name: 'CareerPlug',
+        period_progress: 0.5
+      )
+
+      expect(copy).to include('This period is about 50% complete')
+      expect(copy).to include('OG helped 10 teammates Capture 100 CareerPlug Stories')
+      expect(copy).to include('At this pace, by 100% that may be')
+      expect(copy).to include('Capture 200 CareerPlug Stories')
+      expect(copy).to include('valued at $100.00')
+    end
+  end
 end
