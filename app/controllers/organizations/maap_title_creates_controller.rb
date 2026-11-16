@@ -24,4 +24,8 @@ class Organizations::MaapTitleCreatesController < Organizations::OrganizationNam
   def show_path_helper
     :organization_maap_title_create_path
   end
+
+  def index_path_helper
+    :organization_maap_title_creates_path
+  end
 end

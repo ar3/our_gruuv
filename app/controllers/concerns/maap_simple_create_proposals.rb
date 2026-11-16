@@ -1,12 +1,28 @@
 # frozen_string_literal: true
 
-# Shared show/submit/apply/reject for Title, Team, and Position create proposals.
+# Shared index/show/submit/apply/reject for Title, Team, and Position create proposals.
 module MaapSimpleCreateProposals
   extend ActiveSupport::Concern
 
   included do
     before_action :set_proposal, only: %i[show submit apply reject]
     after_action :verify_authorized
+  end
+
+  def index
+    authorize MaapProposal
+    @filterable_statuses = %w[draft submitted applied rejected]
+    @selected_statuses = if params.key?(:statuses)
+      Array(params[:statuses]).map(&:to_s) & @filterable_statuses
+    else
+      @filterable_statuses.dup
+    end
+    @proposals = policy_scope(MaapProposal)
+      .merge(proposal_scope)
+      .for_organization(@organization)
+      .with_statuses(@selected_statuses)
+      .created_first
+      .includes(proposer: :person, proposable: [])
   end
 
   def show
@@ -47,7 +63,7 @@ module MaapSimpleCreateProposals
       decision_note: params[:decision_note]
     )
     if result.ok?
-      redirect_to organization_maap_seat_creates_path(@organization),
+      redirect_to polymorphic_index_path,
                   notice: "#{resource_label} create proposal rejected."
     else
       redirect_to polymorphic_show_path, alert: Array(result.error).join(", ")
@@ -62,5 +78,14 @@ module MaapSimpleCreateProposals
 
   def polymorphic_show_path
     public_send(show_path_helper, @organization, @proposal)
+  end
+
+  def polymorphic_index_path
+    public_send(index_path_helper, @organization)
+  end
+
+  # Team creates still reject back to Seat creates until a Team index exists.
+  def index_path_helper
+    :organization_maap_seat_creates_path
   end
 end

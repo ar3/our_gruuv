@@ -54,6 +54,7 @@ RSpec.describe Organizations::Billing::LockPepm do
     expect(invoice).to be_open
     expect(invoice.due_on).to eq(due_on)
     expect(invoice.pepm).to eq(17.0) # 17.2 rounded down to nearest $0.50
+    expect(invoice.value_based_pepm).to eq(17.2) # undiscounted value average
     expect(invoice.teammate_count).to eq(2)
     expect(invoice.amount_due).to eq(34.0) # min(17*2*1, 120) then half-dollar floor
     expect(invoice.value_delivered_total).to eq(120.0)

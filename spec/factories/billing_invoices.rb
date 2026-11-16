@@ -12,6 +12,6 @@ FactoryBot.define do
     teammate_count { 1 }
     amount_due { 1.5 }
     value_delivered_total { 10.0 }
-    value_based_pepm { pepm }
+    value_based_pepm { 1.5 }
   end
 end

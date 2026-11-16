@@ -19,6 +19,12 @@ module MaapProposals
         AbilityPayload.empty.to_h
       elsif @proposal.seat_create?
         SeatPayload.empty.to_h
+      elsif @proposal.title_create?
+        TitlePayload.blank_for_create(company: @proposal.organization).to_h
+      elsif @proposal.position_create?
+        PositionPayload.blank_for_create.to_h
+      elsif @proposal.team_create?
+        { "name" => nil }
       elsif @proposal.create_kind?
         AssignmentPayload.empty.to_h
       elsif @proposal.proposable_type == "Assignment" && @proposal.proposable
@@ -27,6 +33,10 @@ module MaapProposals
         AbilityPayload.from_ability(@proposal.proposable).to_h
       elsif @proposal.proposable_type == "Seat" && @proposal.proposable
         SeatPayload.from_seat(@proposal.proposable).to_h
+      elsif @proposal.proposable_type == "Title" && @proposal.proposable
+        TitlePayload.from_title(@proposal.proposable).to_h
+      elsif @proposal.proposable_type == "Position" && @proposal.proposable
+        PositionPayload.from_position(@proposal.proposable).to_h
       end
 
       if @proposal.update(

@@ -62,6 +62,9 @@ RSpec.describe 'Organizations::Billing', type: :request do
         expect(response.body).to include('Monthly (full price)')
         expect(response.body).to include('Quarterly (10% discount)')
         expect(response.body).to include('Semi-annually (20% discount)')
+        expect(response.body).to include('The current average value is')
+        expect(response.body).to include('per employee per month')
+        expect(response.body).not_to include('cadence discount, that brings the per employee per month price down to')
         expect(response.body).to include('round down to the nearest $0.50')
         expect(response.body).to include("you'll likely pay")
         expect(response.body).to include('OG Value Analysis')
@@ -116,6 +119,62 @@ RSpec.describe 'Organizations::Billing', type: :request do
 
         expect(response.body).to include('Create historical billing snapshots')
         expect(response.body).to include('no historical billing snapshots yet')
+      end
+
+      it 'explains current average PEPM and the cadence discount when not monthly' do
+        OrganizationBillingSetting.for_organization!(organization).update!(cadence: 'quarterly')
+        allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+          instance_double(
+            Organizations::Billing::ValueBasedPepm,
+            call: {
+              total_value: 1267.50,
+              week_count: 13,
+              teammate_count: 108,
+              per_employee_week: 0.9,
+              per_employee_month: 3.87,
+              range_begin: Date.new(2026, 8, 18),
+              range_end: Date.new(2026, 11, 16)
+            }
+          )
+        )
+
+        get organization_billing_path(organization)
+
+        expect(response.body).to include('Based on average value delivered')
+        expect(response.body).to include('$1,267.50')
+        expect(response.body).to include('108 active teammates')
+        expect(response.body).to include('The current average value is')
+        expect(response.body).to include('$3.87')
+        expect(response.body).to include('per employee per month')
+        # 3.87 × 0.9 = 3.483 → $3.48 before the $0.50 floor (display); charged PEPM floors to $3.00
+        expect(response.body).to include('With the 10% quarterly cadence discount, that brings the per employee per month price down to $3.48.')
+        expect(response.body).to include('$3.00')
+        expect(response.body).to include('/ teammate')
+      end
+
+      it 'shows free-until copy when floored PEPM is $0 and discount cents before the floor' do
+        OrganizationBillingSetting.for_organization!(organization).update!(cadence: 'quarterly')
+        allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+          instance_double(
+            Organizations::Billing::ValueBasedPepm,
+            call: {
+              total_value: 51.0,
+              week_count: 13,
+              teammate_count: 108,
+              per_employee_week: 0.036,
+              per_employee_month: 0.15,
+              range_begin: Date.new(2026, 8, 18),
+              range_end: Date.new(2026, 11, 16)
+            }
+          )
+        )
+
+        get organization_billing_path(organization)
+
+        expect(response.body).to include('$0.15')
+        expect(response.body).to include('With the 10% quarterly cadence discount, that brings the per employee per month price down to $0.14.')
+        expect(response.body).to include('$0.00')
+        expect(response.body).to include("OG is free until we've reached at least $0.50 per teammate in value")
       end
 
       it 'shows locked copy and open invoice after calculation day' do

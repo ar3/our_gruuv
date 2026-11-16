@@ -5,11 +5,9 @@
     %h1.mb-0 Position create proposal
 
 - content_for :go_back_link do
-  - crumbs = []
+  - crumbs = [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Proposed Position creates", url: organization_maap_position_creates_path(@organization) }]
   - if @parent_seat_proposal
-    - crumbs << { label: "Seats", url: organization_seats_path(@organization) }
-    - crumbs << { label: "Proposed Seat creates", url: organization_maap_seat_creates_path(@organization) }
-    - crumbs << { label: "Seat proposal", url: organization_maap_seat_create_path(@organization, @parent_seat_proposal) }
+    - crumbs = [{ label: "Seats", url: organization_seats_path(@organization) }, { label: "Proposed Seat creates", url: organization_maap_seat_creates_path(@organization) }, { label: "Seat proposal", url: organization_maap_seat_create_path(@organization, @parent_seat_proposal) }]
   - crumbs << { label: "Position proposal", url: nil }
   = nav_hierarchy_with_previous(organization: @organization, crumbs: crumbs)
 

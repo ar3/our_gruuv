@@ -43,6 +43,7 @@ module Organizations
             metrics = ValueBasedPepm.new(@organization).call(
               range: 90.days.ago(calculation_on.beginning_of_day)..calculation_on.end_of_day
             )
+            value_based_pepm = (metrics[:per_employee_month] || 0.0).to_f.round(2)
             pepm = discounted_pepm(metrics[:per_employee_month])
             teammate_count = metrics[:teammate_count].to_i
             value_delivered = metrics[:total_value].to_f
@@ -64,7 +65,7 @@ module Organizations
               teammate_count: teammate_count,
               amount_due: amount_due,
               value_delivered_total: value_delivered,
-              value_based_pepm: pepm
+              value_based_pepm: value_based_pepm
             )
             latest_pepm = pepm
             created += 1

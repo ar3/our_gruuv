@@ -104,7 +104,12 @@ class Position < ApplicationRecord
   end
   
   def company
-    title.company
+    title&.company
+  end
+
+  # Organization for policies / MAAP proposals (Position has no company_id column)
+  def company_id
+    title&.company_id
   end
   
   def required_assignments

@@ -12,6 +12,16 @@ module PositionsHelper
         label: "Position levels",
         path: organization_position_major_levels_path(organization),
         icon: "bi-layers"
+      },
+      {
+        label: "Proposed Title creates",
+        path: organization_maap_title_creates_path(organization),
+        icon: "bi-lightbulb"
+      },
+      {
+        label: "Proposed Position creates",
+        path: organization_maap_position_creates_path(organization),
+        icon: "bi-lightbulb"
       }
     ]
 

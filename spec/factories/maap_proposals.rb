@@ -143,5 +143,61 @@ FactoryBot.define do
         ).to_h
       end
     end
+
+    trait :title_create do
+      kind { "create" }
+      proposable { nil }
+      proposable_type { "Title" }
+      create_key { SecureRandom.uuid }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::TitlePayload::SCHEMA_VERSION }
+      proposed_payload do
+        MaapProposals::TitlePayload.blank_for_create(company: organization).to_h.merge(
+          "external_title" => "Suggested Title"
+        )
+      end
+    end
+
+    trait :title_edit do
+      transient do
+        title { nil }
+      end
+
+      proposable { title || association(:title, company: organization) }
+      organization { proposable.company }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::TitlePayload::SCHEMA_VERSION }
+      proposed_payload { MaapProposals::TitlePayload.from_title(proposable).to_h }
+    end
+
+    trait :position_create do
+      kind { "create" }
+      proposable { nil }
+      proposable_type { "Position" }
+      create_key { SecureRandom.uuid }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::PositionPayload::SCHEMA_VERSION }
+      proposed_payload do
+        title = organization.titles.first || create(:title, company: organization)
+        MaapProposals::PositionPayload.from_hash(
+          "title_id" => title.id,
+          "position_summary" => "Suggested position summary",
+          "position_level_hint" => "1",
+          "assignment_links" => []
+        ).to_h
+      end
+    end
+
+    trait :position_edit do
+      transient do
+        position { nil }
+      end
+
+      proposable { position || association(:position, title: association(:title, company: organization)) }
+      organization { proposable.company }
+      based_on_semantic_version { nil }
+      content_schema_version { MaapProposals::PositionPayload::SCHEMA_VERSION }
+      proposed_payload { MaapProposals::PositionPayload.from_position(proposable).to_h }
+    end
   end
 end

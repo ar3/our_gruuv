@@ -41,15 +41,25 @@
             = l(@invoice.period_starts_on, format: :long)
             –
             = l(@invoice.period_ends_on, format: :long)
+          %dt.col-sm-4 Value
+          %dd.col-sm-8
+            - if @invoice.free_until_value_floor?
+              Free until at least $0.50 per employee per month value has been achieved.
+            - else
+              Based on the value delivered between #{l(@invoice.value_lookback_starts_on, format: :long)} and #{l(@invoice.value_lookback_ends_on, format: :long)}, the OG cost is #{number_to_currency(@invoice.og_cost_pepm)} per employee per month.
           %dt.col-sm-4 Cadence
           %dd.col-sm-8= OrganizationBillingSetting.cadence_label_for(@invoice.cadence)
-          %dt.col-sm-4 PEPM
+          %dt.col-sm-4
+            PEPM
+            - pepm_help = billing_invoice_pepm_popover(@invoice)
+            %button.btn.btn-link.btn-sm.p-0.text-muted.align-baseline.ms-1{type: "button", "aria-label" => pepm_help, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => pepm_help}
+              %i.bi.bi-info-circle
           %dd.col-sm-8
             - if @invoice.pepm.to_f.zero?
-              Nothing / teammate
+              Nothing#{' / teammate'}
             - else
               = number_to_currency(@invoice.pepm)
-              / teammate
+              = " / teammate"
           %dt.col-sm-4 Teammates
           %dd.col-sm-8= @invoice.teammate_count
           %dt.col-sm-4 Amount due

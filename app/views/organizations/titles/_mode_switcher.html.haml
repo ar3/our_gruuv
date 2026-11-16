@@ -31,6 +31,20 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit titles"}
 
     %li
+      - if policy(MaapProposal).create?
+        = link_to new_organization_title_maap_proposal_path(@organization, @title), class: "dropdown-item" do
+          %i.bi.bi-lightbulb.me-2
+          Suggest Edit
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-lightbulb.me-2
+          Suggest Edit
+    %li
+      = link_to organization_title_maap_proposals_path(@organization, @title), class: "dropdown-item" do
+        %i.bi.bi-list-ul.me-2
+        Proposed edits
+
+    %li
       %hr.dropdown-divider
 
     %li

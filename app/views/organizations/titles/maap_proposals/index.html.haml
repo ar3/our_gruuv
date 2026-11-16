@@ -1,0 +1,55 @@
+- content_for :title, "Proposed Title edits · #{@title.external_title}"
+- page_help_id = "titleMaapProposalsPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span Proposed Title edits
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Anyone can propose Title edits. Click for how proposals work."
+      - if policy(MaapProposal).create?
+        = link_to new_organization_title_maap_proposal_path(@organization, @title),
+                  class: "btn btn-primary",
+                  title: "Propose edit",
+                  "aria-label" => "Propose edit",
+                  data: { "bs-toggle" => "tooltip", "bs-placement" => "top" } do
+          %i.bi.bi-pencil
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @title.external_title, url: organization_title_path(@organization, @title) }, { label: "Proposed edits", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/titles/maap_proposals/page_help"
+
+.row.justify-content-center
+  .col-lg-10
+    %p.text-muted.mb-4
+      Propose apply-ready edits to this Title. Teammates who can update Titles apply or reject submitted proposals.
+
+    = form_with url: organization_title_maap_proposals_path(@organization, @title), method: :get, local: true, class: "mb-3" do
+      .d-flex.flex-wrap.align-items-center.gap-3
+        %span.small.text-muted.fw-semibold Status
+        - @filterable_statuses.each do |status|
+          .form-check.form-check-inline.mb-0
+            = check_box_tag "statuses[]",
+                            status,
+                            @selected_statuses.include?(status),
+                            id: "title_proposal_status_#{status}",
+                            class: "form-check-input",
+                            onchange: "this.form.requestSubmit()"
+            = label_tag "title_proposal_status_#{status}", status.titleize, class: "form-check-label"
+
+    - if @proposals.any?
+      .list-group
+        - @proposals.each do |proposal|
+          = link_to organization_title_maap_proposal_path(@organization, @title, proposal), class: "list-group-item list-group-item-action" do
+            .d-flex.justify-content-between.align-items-start.gap-3
+              %div
+                %strong= proposal.proposed_title.presence || @title.external_title
+                .small.text-muted
+                  = proposal.proposer.person.display_name
+                  · created #{l(proposal.created_at, format: :short)}
+              %span.badge{class: proposal_status_badge_class(proposal.status)}= proposal.status
+    - else
+      %p.text-muted.mb-0 No proposals match these filters.

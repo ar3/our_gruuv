@@ -78,6 +78,10 @@ module MaapProposalsHelper
       organization_ability_maap_proposal_path(organization, proposal.proposable, proposal)
     elsif proposal.edit_kind? && proposal.proposable_type == "Seat" && proposal.proposable
       organization_seat_maap_proposal_path(organization, proposal.proposable, proposal)
+    elsif proposal.edit_kind? && proposal.proposable_type == "Title" && proposal.proposable
+      organization_title_maap_proposal_path(organization, proposal.proposable, proposal)
+    elsif proposal.edit_kind? && proposal.proposable_type == "Position" && proposal.proposable
+      organization_position_maap_proposal_path(organization, proposal.proposable, proposal)
     end
   end
 

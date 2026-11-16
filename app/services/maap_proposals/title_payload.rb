@@ -16,6 +16,16 @@ module MaapProposals
       new(normalize(raw))
     end
 
+    def self.from_title(title)
+      from_hash(
+        "external_title" => title.external_title,
+        "position_major_level_id" => title.position_major_level_id,
+        "department_id" => title.department_id,
+        "position_summary" => title.position_summary,
+        "alternative_titles" => title.alternative_titles
+      )
+    end
+
     def self.blank_for_create(company:)
       major = default_position_major_level(company)
       from_hash(
@@ -67,6 +77,10 @@ module MaapProposals
 
     ATTR_KEYS.each do |key|
       define_method(key) { @payload[key] }
+    end
+
+    def same_as?(other)
+      to_h == other.to_h
     end
 
     def validate!(company:)

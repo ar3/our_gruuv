@@ -340,7 +340,7 @@ Rails.application.routes.draw do
       end
     end
     resources :maap_title_creates,
-              only: [:show],
+              only: %i[index show],
               controller: "organizations/maap_title_creates" do
       member do
         post :submit
@@ -358,7 +358,7 @@ Rails.application.routes.draw do
       end
     end
     resources :maap_position_creates,
-              only: [:show],
+              only: %i[index show],
               controller: "organizations/maap_position_creates" do
       member do
         post :submit
@@ -863,6 +863,13 @@ Rails.application.routes.draw do
                only: %i[show update destroy],
                controller: "cytoscape_graph_layouts",
                defaults: { graph_kind: "position_reliance" }
+      resources :maap_proposals, module: :positions do
+        member do
+          post :submit
+          post :apply
+          post :reject
+        end
+      end
     end
     
     # Titles management
@@ -875,6 +882,13 @@ Rails.application.routes.draw do
         get :archive
         patch :execute_archive
         patch :restore
+      end
+      resources :maap_proposals, module: :titles do
+        member do
+          post :submit
+          post :apply
+          post :reject
+        end
       end
     end
 

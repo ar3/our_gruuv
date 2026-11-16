@@ -11,7 +11,11 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
 
     @billing_setting = OrganizationBillingSetting.for_organization!(organization)
     @value_metrics = Organizations::Billing::ValueBasedPepm.new(company).call
-    @upcoming_pepm = discounted_pepm(@value_metrics[:per_employee_month], @billing_setting)
+    @discounted_pepm_before_floor = apply_cadence_discount(
+      @value_metrics[:per_employee_month],
+      @billing_setting
+    )
+    @upcoming_pepm = floored_pepm(@discounted_pepm_before_floor)
 
     ensure_locks_for_passed_calculations!
 
@@ -73,11 +77,17 @@ class Organizations::BillingController < Organizations::OrganizationNamespaceBas
       .sort_by { |t| t.person.casual_name.to_s.downcase }
   end
 
-  def discounted_pepm(base_monthly, setting)
+  # Cadence discount only (nearest cent). Flooring to $0.50 is separate.
+  def apply_cadence_discount(base_monthly, setting)
     return nil if base_monthly.nil?
 
-    discounted = base_monthly * (1.0 - setting.discount_rate)
-    Organizations::Billing::RoundDownToHalfDollar.call(discounted)
+    (base_monthly.to_f * (1.0 - setting.discount_rate)).round(2)
+  end
+
+  def floored_pepm(discounted_monthly)
+    return nil if discounted_monthly.nil?
+
+    Organizations::Billing::RoundDownToHalfDollar.call(discounted_monthly)
   end
 
   def ensure_locks_for_passed_calculations!

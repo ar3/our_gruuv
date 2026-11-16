@@ -24,4 +24,8 @@ class Organizations::MaapPositionCreatesController < Organizations::Organization
   def show_path_helper
     :organization_maap_position_create_path
   end
+
+  def index_path_helper
+    :organization_maap_position_creates_path
+  end
 end

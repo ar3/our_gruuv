@@ -77,4 +77,22 @@ class BillingInvoice < ApplicationRecord
     attrs[:paid_at] = nil if new_status.to_s != "paid"
     update!(attrs)
   end
+
+  # Lookback window used when PEPM was locked (calculation day = due − 1 week).
+  def value_lookback_ends_on
+    due_on - 1.week
+  end
+
+  def value_lookback_starts_on
+    value_lookback_ends_on - 90.days
+  end
+
+  # Undiscounted value-based monthly amount; falls back to charged PEPM for older rows.
+  def og_cost_pepm
+    (value_based_pepm.presence || pepm).to_f
+  end
+
+  def free_until_value_floor?
+    og_cost_pepm.zero? || pepm.to_f.zero?
+  end
 end

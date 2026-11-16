@@ -75,7 +75,7 @@ module MaapCleanupInbox
       [
         subtype_summary(
           :submitted_maap_proposals,
-          "Assignment and Ability proposals awaiting apply or reject",
+          "MAAP proposals awaiting apply or reject",
           items: items,
           count: proposals.size
         )
@@ -99,6 +99,12 @@ module MaapCleanupInbox
         "new Ability"
       elsif proposal.seat_create?
         "new Seat"
+      elsif proposal.title_create?
+        "new Title"
+      elsif proposal.team_create?
+        "new Team"
+      elsif proposal.position_create?
+        "new Position"
       elsif proposal.create_kind?
         "new Assignment"
       elsif proposal.proposable_type == "Seat" && proposal.proposable
@@ -107,6 +113,10 @@ module MaapCleanupInbox
         proposal.proposable.title
       elsif proposal.proposable_type == "Ability" && proposal.proposable
         proposal.proposable.name
+      elsif proposal.proposable_type == "Title" && proposal.proposable
+        proposal.proposable.external_title
+      elsif proposal.proposable_type == "Position" && proposal.proposable
+        proposal.proposable.display_name
       elsif proposal.proposable.respond_to?(:name)
         proposal.proposable.name
       else
@@ -117,6 +127,12 @@ module MaapCleanupInbox
         routes.organization_maap_ability_create_path(organization, proposal)
       elsif proposal.seat_create?
         routes.organization_maap_seat_create_path(organization, proposal)
+      elsif proposal.title_create?
+        routes.organization_maap_title_create_path(organization, proposal)
+      elsif proposal.team_create?
+        routes.organization_maap_team_create_path(organization, proposal)
+      elsif proposal.position_create?
+        routes.organization_maap_position_create_path(organization, proposal)
       elsif proposal.create_kind?
         routes.organization_maap_assignment_create_path(organization, proposal)
       elsif proposal.proposable_type == "Assignment" && proposal.proposable
@@ -125,6 +141,10 @@ module MaapCleanupInbox
         routes.organization_ability_maap_proposal_path(organization, proposal.proposable, proposal)
       elsif proposal.proposable_type == "Seat" && proposal.proposable
         routes.organization_seat_maap_proposal_path(organization, proposal.proposable, proposal)
+      elsif proposal.proposable_type == "Title" && proposal.proposable
+        routes.organization_title_maap_proposal_path(organization, proposal.proposable, proposal)
+      elsif proposal.proposable_type == "Position" && proposal.proposable
+        routes.organization_position_maap_proposal_path(organization, proposal.proposable, proposal)
       end
 
       Item.new(

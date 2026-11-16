@@ -18,6 +18,21 @@ module MaapProposals
       new(normalize(raw))
     end
 
+    def self.from_position(position)
+      from_hash(
+        "title_id" => position.title_id,
+        "position_level_id" => position.position_level_id,
+        "position_summary" => position.position_summary,
+        "assignment_links" => position.position_assignments.includes(:assignment).map { |pa|
+          {
+            "assignment_id" => pa.assignment_id,
+            "assignment_type" => pa.assignment_type,
+            "energy_percentage" => pa.anticipated_energy_percentage
+          }
+        }
+      )
+    end
+
     def self.blank_for_create
       from_hash(
         "title_id" => nil,
@@ -43,10 +58,12 @@ module MaapProposals
     end
 
     def self.normalize_assignment_links(value)
-      Array(value).filter_map do |row|
+      links = Array(value).filter_map do |row|
         next unless row.is_a?(Hash)
 
         link = row.deep_stringify_keys
+        next if blank_to_nil_id(link["assignment_id"]).nil? && blank_to_nil_id(link["assignment_proposal_id"]).nil?
+
         {
           "assignment_id" => blank_to_nil_id(link["assignment_id"]),
           "assignment_proposal_id" => blank_to_nil_id(link["assignment_proposal_id"]),
@@ -54,6 +71,7 @@ module MaapProposals
           "energy_percentage" => link["energy_percentage"].presence&.to_i
         }
       end
+      links.sort_by { |link| [link["assignment_id"].to_i, link["assignment_proposal_id"].to_i] }
     end
 
     def self.blank_to_nil(value)
@@ -77,6 +95,10 @@ module MaapProposals
 
     ATTR_KEYS.each do |key|
       define_method(key) { @payload[key] }
+    end
+
+    def same_as?(other)
+      to_h == other.to_h
     end
 
     def validate!(company:)

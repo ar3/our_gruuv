@@ -28,7 +28,8 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
       pepm: 5.0,
       teammate_count: 2,
       amount_due: 10.0,
-      value_delivered_total: 40.0
+      value_delivered_total: 40.0,
+      value_based_pepm: 5.5
     )
   end
 
@@ -44,6 +45,13 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Invoice')
         expect(response.body).to include('billingInvoicePageHelp')
+        expect(response.body).to include('Based on the value delivered between')
+        expect(response.body).to include('the OG cost is $5.50 per employee per month')
+        expect(response.body).to include('We round down to the nearest $0.50. Monthly cadence has no discount.')
+        expect(response.body).to include('bi-info-circle')
+        expect(response.body).to include('$5.00')
+        expect(response.body).to include('/ teammate')
+        expect(response.body).not_to include('Free until at least $0.50')
         expect(response.body).to include('OG Value Analysis')
         expect(response.body).not_to include('Prior-prior')
         expect(response.body).not_to include('Projected this period')
@@ -62,6 +70,18 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response.body).to include(organization_billing_path(organization))
         expect(response.body).not_to include('Impersonation only')
         expect(response.body).not_to include(update_status_organization_billing_invoice_path(organization, invoice))
+      end
+    end
+
+    it 'shows free-until-value-floor copy when OG cost is $0' do
+      invoice.update!(pepm: 0, value_based_pepm: 0, amount_due: 0)
+
+      travel_to Date.new(2026, 11, 15) do
+        get organization_billing_invoice_path(organization, invoice)
+
+        expect(response.body).to include('Free until at least $0.50 per employee per month value has been achieved.')
+        expect(response.body).not_to include('the OG cost is')
+        expect(response.body).to include('Nothing / teammate')
       end
     end
 

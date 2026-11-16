@@ -1,0 +1,82 @@
+- content_for :title, "Proposal · #{@title.external_title}"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0 Title edit proposal
+    - if policy(@proposal).edit?
+      = link_to edit_organization_title_maap_proposal_path(@organization, @title, @proposal),
+                class: "btn btn-primary btn-sm",
+                title: "Edit draft",
+                "aria-label" => "Edit draft" do
+        %i.bi.bi-pencil
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @title.external_title, url: organization_title_path(@organization, @title) }, { label: "Proposed edits", url: organization_title_maap_proposals_path(@organization, @title) }, { label: "Proposal", url: nil }])
+
+.row.justify-content-center
+  .col-lg-8
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-3
+      %div
+        %span.badge.me-2{class: proposal_status_badge_class(@proposal.status)}= @proposal.status
+        %span.text-muted
+          Proposed by #{@proposal.proposer.person.display_name}
+      .d-flex.flex-wrap.gap-2
+        - if policy(@proposal).submit?
+          = button_to "Submit", submit_organization_title_maap_proposal_path(@organization, @title, @proposal), method: :post, class: "btn btn-primary btn-sm"
+        - if policy(@proposal).destroy?
+          = button_to "Delete", organization_title_maap_proposal_path(@organization, @title, @proposal), method: :delete, class: "btn btn-outline-danger btn-sm", data: { turbo_confirm: "Delete this proposal?" }
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          - if @proposal.baseline_payload.present?
+            Changes vs title at decision
+          - else
+            Changes vs current title
+      .card-body
+        - if @field_diffs.any?
+          - @field_diffs.each do |field_diff|
+            .mb-3
+              %strong= field_diff.label
+              .row.mt-1
+                .col-md-6
+                  %small.text-muted Before
+                  %p.mb-0= field_diff.before
+                .col-md-6
+                  %small.text-muted After
+                  %p.mb-0= field_diff.after
+        - else
+          %p.text-muted.mb-0 No differences from the current title.
+
+    - if @proposal.applied? || @proposal.rejected?
+      - decision_verb = @proposal.applied? ? "accepted" : "rejected"
+      - decision_alert_class = @proposal.applied? ? "alert-success" : "alert-danger"
+      .alert{class: "#{decision_alert_class} mb-4"}
+        %h5.alert-heading.mb-2 Proposal #{decision_verb}
+        %p.mb-0
+          = @proposal.decided_by&.person&.display_name || "Someone"
+          #{decision_verb} this proposal
+          - if @proposal.decided_at.present?
+            on #{l(@proposal.decided_at, format: :long)}
+          - if @proposal.decision_note.present?
+            \— #{@proposal.decision_note}
+    - elsif @proposal.submitted?
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Review
+        .card-body
+          - if policy(@proposal).apply?
+            = form_with url: apply_organization_title_maap_proposal_path(@organization, @title, @proposal), method: :post, local: true do
+              %p.text-muted.small Titles are not versioned. Applying updates the live Title.
+              .mb-3
+                = label_tag :decision_note, "Note (optional)", class: "form-label"
+                = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+              .d-flex.flex-wrap.gap-2
+                = submit_tag "Apply proposal", class: "btn btn-success"
+            = form_with url: reject_organization_title_maap_proposal_path(@organization, @title, @proposal), method: :post, local: true, class: "mt-3" do
+              .mb-3
+                = label_tag :decision_note, "Rejection note (optional)", class: "form-label"
+                = text_area_tag :decision_note, nil, class: "form-control", rows: 2
+              = submit_tag "Reject proposal", class: "btn btn-outline-danger", data: { turbo_confirm: "Reject this proposal?" }
+          - else
+            %p.text-muted.mb-0 Waiting for someone who can update Titles to apply or reject.

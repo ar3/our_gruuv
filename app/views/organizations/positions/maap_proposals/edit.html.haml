@@ -1,0 +1,50 @@
+- content_for :title, "Edit proposal · #{@position.display_name}"
+
+- content_for :header do
+  %h1.mb-0 Edit draft proposal
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: @position.display_name, url: organization_position_path(@organization, @position) }, { label: "Proposal", url: organization_position_maap_proposal_path(@organization, @position, @proposal) }, { label: "Edit", url: nil }])
+
+.row.justify-content-center
+  .col-lg-8
+    = form_with model: @proposal, url: organization_position_maap_proposal_path(@organization, @position, @proposal), method: :patch, local: true, scope: :maap_proposal do |f|
+      .mb-3
+        = f.label :position_level_id, "Position level", class: "form-label"
+        = f.collection_select :position_level_id, @position_levels, :id, :level, { selected: @payload.position_level_id }, { class: "form-select", required: true }
+      .mb-3
+        = f.label :position_summary, "Position summary", class: "form-label"
+        = f.text_area :position_summary, value: @payload.position_summary, class: "form-control", rows: 4
+
+      %h2.h5.mt-4.mb-3 Assignment links
+      %p.text-muted.small Leave energy blank if unknown. Remove a row by clearing the assignment.
+      - links = Array(@payload.assignment_links)
+      - (links + [{}]).each_with_index do |link, index|
+        - link = link.stringify_keys
+        .border.rounded.p-3.mb-3
+          .mb-2
+            = label_tag "maap_proposal_assignment_links_#{index}_assignment_id", "Assignment", class: "form-label"
+            = select_tag "maap_proposal[assignment_links][#{index}][assignment_id]",
+                         options_from_collection_for_select(@assignments, :id, :title, link["assignment_id"]),
+                         include_blank: "— none —",
+                         class: "form-select",
+                         id: "maap_proposal_assignment_links_#{index}_assignment_id"
+          .row.g-2
+            .col-md-6
+              = label_tag "maap_proposal_assignment_links_#{index}_assignment_type", "Type", class: "form-label"
+              = select_tag "maap_proposal[assignment_links][#{index}][assignment_type]",
+                           options_for_select(%w[required suggested], link["assignment_type"].presence || "required"),
+                           class: "form-select",
+                           id: "maap_proposal_assignment_links_#{index}_assignment_type"
+            .col-md-6
+              = label_tag "maap_proposal_assignment_links_#{index}_energy_percentage", "Energy %", class: "form-label"
+              = number_field_tag "maap_proposal[assignment_links][#{index}][energy_percentage]",
+                                 link["energy_percentage"],
+                                 class: "form-control",
+                                 min: 0,
+                                 max: 100,
+                                 id: "maap_proposal_assignment_links_#{index}_energy_percentage"
+
+      .d-flex.flex-wrap.gap-2.mt-4
+        = f.submit "Save draft", class: "btn btn-primary"
+        = link_to "Cancel", organization_position_maap_proposal_path(@organization, @position, @proposal), class: "btn btn-outline-secondary"

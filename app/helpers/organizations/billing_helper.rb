@@ -156,6 +156,16 @@ module Organizations::BillingHelper
       { mode: :complete, full_week_count: full_week_count }
     end
   end
+
+  def billing_invoice_pepm_popover(invoice)
+    discount = OrganizationBillingSetting::DISCOUNTS.fetch(invoice.cadence, 0.0)
+    if discount.positive?
+      percent = (discount * 100).to_i
+      "We round down to the nearest $0.50 and apply the #{percent}% #{invoice.cadence} cadence discount."
+    else
+      "We round down to the nearest $0.50. Monthly cadence has no discount."
+    end
+  end
 end
 
 

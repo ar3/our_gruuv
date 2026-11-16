@@ -1,0 +1,53 @@
+- content_for :title, "Proposed Title creates"
+- page_help_id = "maapTitleCreatesPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      %span Proposed Title creates
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Review Title create proposals from MAAP Suggestion. Click for how they work."
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "Positions", url: organization_positions_path(@organization) }, { label: "Proposed Title creates", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/maap_title_creates/page_help"
+
+.row.justify-content-center
+  .col-lg-10
+    .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-4
+      %p.text-muted.mb-0
+        Title create drafts usually come from
+        = link_to "Suggest MAAP changes", organization_seat_suggestion_path(@organization)
+        \. Teammates who can create Titles apply or reject submitted proposals.
+
+    = form_with url: organization_maap_title_creates_path(@organization), method: :get, local: true, class: "mb-3" do
+      .d-flex.flex-wrap.align-items-center.gap-3
+        %span.small.text-muted.fw-semibold Status
+        - @filterable_statuses.each do |status|
+          .form-check.form-check-inline.mb-0
+            = check_box_tag "statuses[]",
+                            status,
+                            @selected_statuses.include?(status),
+                            id: "title_create_proposal_status_#{status}",
+                            class: "form-check-input",
+                            onchange: "this.form.requestSubmit()"
+            = label_tag "title_create_proposal_status_#{status}", status.titleize, class: "form-check-label"
+
+    - if @proposals.any?
+      .list-group
+        - @proposals.each do |proposal|
+          = link_to organization_maap_title_create_path(@organization, proposal), class: "list-group-item list-group-item-action" do
+            .d-flex.justify-content-between.align-items-start.gap-3
+              %div
+                %strong= proposal.proposed_title.presence || "Untitled Title create"
+                .small.text-muted
+                  = proposal.proposer.person.display_name
+                  · created #{l(proposal.created_at, format: :short)}
+                  - if proposal.applied? && proposal.proposable
+                    · applied as #{proposal.proposable.external_title}
+              %span.badge{class: proposal_status_badge_class(proposal.status)}= proposal.status
+    - else
+      %p.text-muted.mb-0 No create proposals match these filters.
