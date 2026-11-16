@@ -1,79 +1,137 @@
 - priorities = observation_health[:priorities]
 - needs_attention_count = observation_health[:needs_attention_count]
 - total_count = observation_health[:total_count]
+- summary_id = "ogoHealthSummary"
+- details_id = "ogoHealthDetails"
 
 .card.mb-4.border-0.shadow-sm
   .card-header.bg-transparent.border-0.d-flex.flex-wrap.align-items-center.justify-content-between.gap-2
-    %h5.mb-0
-      %i.bi.bi-heart-pulse.me-2
-      OGO health (last 30 days)
+    .d-flex.flex-wrap.align-items-center.gap-2
+      %h5.mb-0
+        %i.bi.bi-heart-pulse.me-2
+        OGO health (last 30 days)
+      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{details_id}", "aria-expanded" => "false", "aria-controls" => details_id, href: "##{details_id}", role: "button", style: "cursor: pointer;"}
+        %span.not-collapsed
+          %i.bi.bi-chevron-up.me-1
+          %small.text-muted Hide details
+        %span.collapsed
+          %i.bi.bi-chevron-down.me-1
+          %small.text-muted Show details
     %span.badge{class: needs_attention_count.positive? ? "bg-warning text-dark" : "bg-success"}
       = "#{needs_attention_count} of #{total_count} need attention"
   .card-body
-    .row.g-3
-      - priorities.each_with_index do |priority, idx|
+    .row.g-3{id: summary_id}
+      - priorities.each do |priority|
         - renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: organization, teammate: @teammate, viewer: current_company_teammate, hub_return_url: request.fullpath, route_teammate_param: teammate_route_param(@teammate))
+        - primary_action = renderer.primary_action
+        - border_class = priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success")
         .col-12.col-lg-4
-          .card.h-100{class: (priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success"))}
-            .card-body
-              .d-flex.align-items-center.justify-content-between.mb-2
-                %span.badge.bg-secondary= "Check #{priority[:position]} of #{priority[:total]}"
+          .card.h-100{class: border_class}
+            .card-body.py-3
+              %h6.fw-semibold.mb-2= priority[:title]
+              .d-flex.flex-wrap.align-items-center.gap-2
                 - if priority[:needs_attention]
                   %span.badge.bg-warning.text-dark Needs attention
                 - elsif priority[:not_applicable]
                   %span.badge.bg-secondary N/A
                 - else
                   %span.badge.bg-success All set
-              %h6.fw-semibold.mb-2= priority[:title]
-              - explanation_markup = renderer.explanation_html
-              - if explanation_markup.present?
-                - collapse_id = "ogoHealthExplanation-#{idx}"
-                %button.btn.btn-sm.btn-outline-secondary.mb-2{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id}
-                  Why this matters
-                  %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
-                .collapse.mb-2{id: collapse_id}
-                  %div{class: priority[:needs_attention] ? "text-dark" : "text-success"}
-                    != explanation_markup
-              - if renderer.items.any?
-                %ul.mb-2.ps-3.small
-                  - renderer.items.each do |item|
-                    - case renderer.items_render_mode
-                    - when :html
-                      %li!= renderer.item_html(item)
-                    - when :link
-                      - attrs = renderer.item_label_url(item)
+                - if primary_action.present?
+                  - if primary_action[:disabled]
+                    %span.d-inline-flex.align-items-center.gap-2
+                      %button.btn.btn-sm.btn-primary{type: "button", disabled: true, "aria-disabled" => "true"}= primary_action[:label]
+                      %i.bi.bi-exclamation-triangle.text-warning{
+                        "data-bs-toggle" => "tooltip",
+                        "data-bs-placement" => "top",
+                        "data-bs-title" => primary_action[:disabled_reason],
+                        "aria-label" => primary_action[:disabled_reason],
+                        role: "img"
+                      }
+                  - else
+                    = link_to primary_action[:label], primary_action[:path], class: "btn btn-sm btn-primary"
+                - elsif !priority[:needs_attention]
+                  %span.small.text-muted
+                    %i.bi.bi-stars.me-1
+                    No action needed right now.
+
+    .collapse{id: details_id}
+      .row.g-3
+        - priorities.each_with_index do |priority, idx|
+          - renderer = OneOnOne::PriorityRenderer.new(priority: priority, organization: organization, teammate: @teammate, viewer: current_company_teammate, hub_return_url: request.fullpath, route_teammate_param: teammate_route_param(@teammate))
+          .col-12.col-lg-4
+            .card.h-100{class: (priority[:needs_attention] ? "border-warning" : (priority[:not_applicable] ? "border-secondary" : "border-success"))}
+              .card-body
+                .d-flex.align-items-center.justify-content-between.mb-2
+                  %span.badge.bg-secondary= "Check #{priority[:position]} of #{priority[:total]}"
+                  - if priority[:needs_attention]
+                    %span.badge.bg-warning.text-dark Needs attention
+                  - elsif priority[:not_applicable]
+                    %span.badge.bg-secondary N/A
+                  - else
+                    %span.badge.bg-success All set
+                %h6.fw-semibold.mb-2= priority[:title]
+                - explanation_markup = renderer.explanation_html
+                - if explanation_markup.present?
+                  - collapse_id = "ogoHealthExplanation-#{idx}"
+                  %button.btn.btn-sm.btn-outline-secondary.mb-2{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id}
+                    Why this matters
+                    %i.bi.bi-info-circle.ms-1{"aria-hidden" => "true"}
+                  .collapse.mb-2{id: collapse_id}
+                    %div{class: priority[:needs_attention] ? "text-dark" : "text-success"}
+                      != explanation_markup
+                - if renderer.items.any?
+                  %ul.mb-2.ps-3.small
+                    - renderer.items.each do |item|
+                      - case renderer.items_render_mode
+                      - when :html
+                        %li!= renderer.item_html(item)
+                      - when :link
+                        - attrs = renderer.item_label_url(item)
+                        %li
+                          - if attrs.is_a?(Hash) && attrs[:url].present?
+                            = link_to attrs[:label], attrs[:url]
+                          - elsif attrs.is_a?(Hash)
+                            = attrs[:label]
+                          - else
+                            = attrs
+                - elsif priority[:concrete_items].any?
+                  %ul.mb-2.ps-3.small
+                    - priority[:concrete_items].each do |item|
                       %li
-                        - if attrs.is_a?(Hash) && attrs[:url].present?
-                          = link_to attrs[:label], attrs[:url]
-                        - elsif attrs.is_a?(Hash)
-                          = attrs[:label]
+                        - if item.is_a?(Hash) && item[:url].present?
+                          = link_to item[:label], item[:url]
                         - else
-                          = attrs
-              - elsif priority[:concrete_items].any?
-                %ul.mb-2.ps-3.small
-                  - priority[:concrete_items].each do |item|
-                    %li
-                      - if item.is_a?(Hash) && item[:url].present?
-                        = link_to item[:label], item[:url]
-                      - else
-                        = item
-              - if priority[:remaining_count].to_i.positive?
-                %p.small.text-muted.mb-2= "+#{priority[:remaining_count]} more"
-              - primary_action = renderer.primary_action
-              - if primary_action.present?
-                - if primary_action[:disabled]
-                  %span.d-inline-flex.align-items-center.gap-2
-                    %button.btn.btn-sm.btn-primary{type: "button", disabled: true, "aria-disabled" => "true"}= primary_action[:label]
-                    %i.bi.bi-exclamation-triangle.text-warning{
-                      "data-bs-toggle" => "tooltip",
-                      "data-bs-placement" => "top",
-                      "data-bs-title" => primary_action[:disabled_reason],
-                      "aria-label" => primary_action[:disabled_reason],
-                      role: "img"
-                    }
-                - else
-                  = link_to primary_action[:label], primary_action[:path], class: "btn btn-sm btn-primary"
-              - elsif !priority[:needs_attention]
-                %p.small.mb-0.text-muted
-                  %i.bi.bi-stars.me-1
-                  No action needed right now.
+                          = item
+                - if priority[:remaining_count].to_i.positive?
+                  %p.small.text-muted.mb-2= "+#{priority[:remaining_count]} more"
+                - primary_action = renderer.primary_action
+                - if primary_action.present?
+                  - if primary_action[:disabled]
+                    %span.d-inline-flex.align-items-center.gap-2
+                      %button.btn.btn-sm.btn-primary{type: "button", disabled: true, "aria-disabled" => "true"}= primary_action[:label]
+                      %i.bi.bi-exclamation-triangle.text-warning{
+                        "data-bs-toggle" => "tooltip",
+                        "data-bs-placement" => "top",
+                        "data-bs-title" => primary_action[:disabled_reason],
+                        "aria-label" => primary_action[:disabled_reason],
+                        role: "img"
+                      }
+                  - else
+                    = link_to primary_action[:label], primary_action[:path], class: "btn btn-sm btn-primary"
+                - elsif !priority[:needs_attention]
+                  %p.small.mb-0.text-muted
+                    %i.bi.bi-stars.me-1
+                    No action needed right now.
+
+:javascript
+  (function() {
+    var details = document.getElementById("#{details_id}");
+    var summary = document.getElementById("#{summary_id}");
+    if (!details || !summary) return;
+    details.addEventListener("show.bs.collapse", function() {
+      summary.classList.add("d-none");
+    });
+    details.addEventListener("hide.bs.collapse", function() {
+      summary.classList.remove("d-none");
+    });
+  })();

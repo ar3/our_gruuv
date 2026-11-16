@@ -23,6 +23,14 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("s OGOs")
       expect(response.body).to include("About #{person.casual_name}")
       expect(response.body).to include("OGO health (last 30 days)")
+      expect(response.body).to include("Show details")
+      expect(response.body).to include("Hide details")
+      expect(response.body).to include('id="ogoHealthSummary"')
+      expect(response.body).to include('id="ogoHealthDetails"')
+      expect(response.body).to include("collapse")
+      expect(response.body).to include('aria-expanded="false"')
+      expect(response.body).to include("Why this matters")
+      expect(response.body).to include("Check 1 of 3")
     end
 
     it "shows notes-only self CTA, header add-any-teammate link, and hides self kudos/feedback" do

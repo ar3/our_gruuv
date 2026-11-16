@@ -70,6 +70,9 @@ RSpec.describe 'Organizations::Billing', type: :request do
         expect(response.body).to include('OG Value Analysis')
         expect(response.body).to include('(incomplete)')
         expect(response.body).to include('Likely invoice total')
+        expect(response.body).to include('Lookback')
+        expect(response.body).to include('This period')
+        expect(response.body).to include('Next period')
         expect(response.body).not_to include('Prior-prior')
         expect(response.body).not_to include('Projected this period')
         expect(response.body).not_to include('Actual this period')
@@ -77,14 +80,11 @@ RSpec.describe 'Organizations::Billing', type: :request do
         expect(response.body).to include('OG helped')
         expect(response.body).to include('Which is valued at')
         expect(response.body).to include('Capture our Stories')
-        expect(response.body).to include('same PEPM math as the Value page')
+        expect(response.body).to include('same ~90-day window used to set PEPM')
         expect(response.body).to include('active teammate')
-        # Incomplete next due period: current column is upcoming (~), and the prior
-        # calendar period is often still in progress (+ with pace projection).
-        expect(response.body).to include('Any period that has not ended yet')
+        # Incomplete next due: lookback may still be open (+), this/next often upcoming (~).
         expect(response.body).to match(/>~</)
-        expect(response.body).to match(/>\+</)
-        expect(response.body).to match(/\(~[\d,$]+/)
+        expect(response.body).to match(/\(~[\d,$]+|~\d|~\$/)
         expect(response.body).to include('Incomplete until')
         expect(response.body).to include('context-callout')
         expect(response.body.scan(/you'll likely pay/).size).to eq(3)

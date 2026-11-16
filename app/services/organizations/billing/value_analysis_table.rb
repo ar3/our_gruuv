@@ -2,13 +2,16 @@
 
 module Organizations
   module Billing
-    # Prior / current-period driver activity for OG Value Analysis.
-    # Driver cells are activity counts; Total is Value-page PEPM for that date range.
-    # Each column has its own status vs as_of:
-    # - upcoming: period not started → trend projection (current column only)
-    # - in_progress: so-far actuals (+ / pace) for any incomplete column
-    # - complete: full-period actuals
+    # Lookback / current-period / next-period driver activity for OG Value Analysis.
+    # First data column is always the PEPM lookback (~90 days), matching how PEPM
+    # is calculated — not a cadence-length prior billable period.
+    #
+    # Driver cells store period-native activity. Views multiply by
+    # PeriodColumn#activity_scale so monthly/semiannual columns compare to the
+    # 90-day lookback. Total PEPM uses real date-range Value-page math (already monthly).
     class ValueAnalysisTable
+      LOOKBACK_DAYS = 90
+
       PeriodColumn = Struct.new(
         :key,
         :label,
@@ -16,6 +19,7 @@ module Organizations
         :ends_on,
         :status,
         :period_progress,
+        :activity_scale,
         keyword_init: true
       ) do
         def upcoming?
@@ -31,7 +35,7 @@ module Organizations
         end
       end
       Cell = Struct.new(:activity_count, :teammate_count, :value_sum, keyword_init: true)
-      DriverRow = Struct.new(:key, :label, :prior_prior, :prior, :current, keyword_init: true)
+      DriverRow = Struct.new(:key, :label, :lookback, :current, :future, keyword_init: true)
       TotalCell = Struct.new(
         :pepm,
         :value_sum,
@@ -52,7 +56,7 @@ module Organizations
         end
 
         def upcoming?
-          column_for(:current)&.upcoming?
+          column_for(:current)&.upcoming? || column_for(:future)&.upcoming?
         end
 
         def in_progress?
@@ -90,60 +94,109 @@ module Organizations
       end
 
       def call
-        prior_due = PreviousDueDates.call(cadence: @cadence, before: @period_due_on, count: 1).first
-        prior_prior_due = prior_due && PreviousDueDates.call(cadence: @cadence, before: prior_due, count: 1).first
-
-        prior_range = period_range_for(prior_due)
-        prior_prior_range = period_range_for(prior_prior_due)
+        lookback_range = lookback_range_for_period
+        prior_lookback_range = prior_lookback_range_for(lookback_range)
         current_range = period_range_for(@period_due_on)
+        future_due = NextDueDate.call(cadence: @cadence, from: @period_due_on + 1.day)
+        future_range = period_range_for(future_due)
         teammate_count = employed_teammate_count
 
-        prior_prior_col = build_column(:prior_prior, prior_prior_range)
-        prior_col = build_column(:prior, prior_range)
-        current_col = build_column(:current, current_range)
+        lookback_col = build_column(
+          :lookback,
+          lookback_range,
+          activity_scale: 1.0,
+          label: "Lookback"
+        )
+        current_col = build_column(
+          :current,
+          current_range,
+          activity_scale: activity_scale_for(lookback_range, current_range)
+        )
+        future_col = build_column(
+          :future,
+          future_range,
+          activity_scale: activity_scale_for(lookback_range, future_range)
+        )
 
-        prior_prior_display = display_breakdown(prior_prior_range, prior_prior_col.status)
-        prior_display = display_breakdown(prior_range, prior_col.status)
+        lookback_display = display_breakdown(lookback_range, lookback_col.status)
+        prior_lookback_display = display_breakdown(
+          prior_lookback_range,
+          status_for(prior_lookback_range)
+        )
         current_display = display_breakdown(current_range, current_col.status)
 
         rows = ValueDrivers::DRIVERS.map do |driver|
-          prior_prior_cell = cell_from_breakdown(prior_prior_display, driver[:key], prior_prior_range)
-          prior_cell = cell_from_breakdown(prior_display, driver[:key], prior_range)
+          lookback_cell = cell_from_breakdown(lookback_display, driver[:key], lookback_range)
+          prior_lookback_cell = cell_from_breakdown(
+            prior_lookback_display,
+            driver[:key],
+            prior_lookback_range
+          )
+
           current_cell =
             if current_col.upcoming?
-              # If the prior period is still open, pace-project it to 100% before
-              # using it as the baseline for the future-period trend calculation.
-              prior_baseline = completed_or_pace_projected_cell(
-                prior_cell,
-                prior_col,
-                driver[:unit_value]
+              project_from_lookback(
+                lookback_cell: lookback_cell,
+                prior_lookback_cell: prior_lookback_cell,
+                lookback_range: lookback_range,
+                target_range: current_range,
+                unit_value: driver[:unit_value]
               )
-              prior_prior_baseline = completed_or_pace_projected_cell(
-                prior_prior_cell,
-                prior_prior_col,
-                driver[:unit_value]
-              )
-              project_cell(prior_baseline, prior_prior_baseline, driver[:unit_value])
             else
-              cell_from_breakdown(current_display, driver[:key], true)
+              cell_from_breakdown(current_display, driver[:key], current_range)
+            end
+
+          future_cell =
+            if future_col.upcoming?
+              current_baseline =
+                if current_col.upcoming?
+                  current_cell
+                else
+                  completed_or_pace_projected_cell(
+                    cell_from_breakdown(current_display, driver[:key], current_range),
+                    current_col,
+                    driver[:unit_value]
+                  )
+                end
+              lookback_as_current = rescale_cell(
+                lookback_cell,
+                day_count(current_range).to_f / day_count(lookback_range),
+                driver[:unit_value]
+              )
+              projected_current = project_cell(
+                current_baseline,
+                lookback_as_current,
+                driver[:unit_value]
+              )
+              rescale_cell(
+                projected_current,
+                day_count(future_range).to_f / day_count(current_range),
+                driver[:unit_value]
+              )
+            else
+              cell_from_breakdown(
+                display_breakdown(future_range, future_col.status),
+                driver[:key],
+                future_range
+              )
             end
 
           DriverRow.new(
             key: driver[:key],
             label: driver[:label],
-            prior_prior: prior_prior_cell,
-            prior: prior_cell,
-            current: current_cell
+            lookback: lookback_cell,
+            current: current_cell,
+            future: future_cell
           )
         end
 
         Result.new(
-          columns: [prior_prior_col, prior_col, current_col],
+          columns: [lookback_col, current_col, future_col],
           rows: rows,
           totals: {
-            prior_prior: total_for_column(prior_prior_range, prior_prior_col, rows, :prior_prior, teammate_count),
-            prior: total_for_column(prior_range, prior_col, rows, :prior, teammate_count),
-            current: total_for_column(current_range, current_col, rows, :current, teammate_count)
+            lookback: total_for_column(lookback_range, lookback_col, rows, :lookback, teammate_count),
+            current: total_for_column(current_range, current_col, rows, :current, teammate_count),
+            future: total_for_column(future_range, future_col, rows, :future, teammate_count)
           },
           teammate_count: teammate_count
         )
@@ -151,21 +204,71 @@ module Organizations
 
       private
 
-      def build_column(key, range)
-        return PeriodColumn.new(key: key, label: nil, starts_on: nil, ends_on: nil, status: :complete, period_progress: 1.0) if range.blank?
+      def lookback_range_for_period
+        calculation_on = @period_due_on - 1.week
+        ends_on = [@as_of, calculation_on].min
+        starts_on = ends_on - LOOKBACK_DAYS.days
+        starts_on..ends_on
+      end
 
-        status = status_for(range)
+      def prior_lookback_range_for(lookback_range)
+        ends_on = lookback_range.begin.to_date - 1.day
+        starts_on = ends_on - LOOKBACK_DAYS.days
+        starts_on..ends_on
+      end
+
+      def build_column(key, range, activity_scale:, label: nil)
+        if range.blank?
+          return PeriodColumn.new(
+            key: key,
+            label: label,
+            starts_on: nil,
+            ends_on: nil,
+            status: :complete,
+            period_progress: 1.0,
+            activity_scale: 1.0
+          )
+        end
+
+        status = status_for_column(key, range)
         PeriodColumn.new(
           key: key,
-          label: nil,
+          label: label,
           starts_on: range.begin.to_date,
           ends_on: range.end.to_date,
           status: status,
-          period_progress: period_progress_ratio(range, status)
+          period_progress: period_progress_ratio(range, status),
+          activity_scale: activity_scale.to_f
         )
       end
 
+      # Lookback ending today is the PEPM window in full — treat as complete.
+      def status_for_column(key, range)
+        if key == :lookback && @as_of >= range.end.to_date
+          :complete
+        else
+          status_for(range)
+        end
+      end
+
+      def activity_scale_for(lookback_range, period_range)
+        return 1.0 if lookback_range.blank? || period_range.blank?
+
+        period_days = day_count(period_range)
+        return 1.0 if period_days <= 0
+
+        day_count(lookback_range).to_f / period_days
+      end
+
+      def day_count(range)
+        return 0 if range.blank?
+
+        (range.end.to_date - range.begin.to_date).to_i + 1
+      end
+
       def status_for(range)
+        return :complete if range.blank?
+
         starts_on = range.begin.to_date
         ends_on = range.end.to_date
         if @as_of < starts_on
@@ -235,6 +338,19 @@ module Organizations
         )
       end
 
+      def rescale_cell(cell, factor, unit_value)
+        return nil if cell.nil?
+        return cell if factor.nil? || (factor - 1.0).abs < 0.0001
+
+        activity = (cell.activity_count.to_f * factor).round
+        teammates = (cell.teammate_count.to_f * factor).round
+        Cell.new(
+          activity_count: activity,
+          teammate_count: teammates,
+          value_sum: (activity * unit_value).round(2)
+        )
+      end
+
       def completed_or_pace_projected_cell(cell, column, unit_value)
         return nil if cell.nil?
         return cell unless column.in_progress?
@@ -252,6 +368,17 @@ module Organizations
           activity_count: activity,
           teammate_count: teammates,
           value_sum: (activity * unit_value).round(2)
+        )
+      end
+
+      def project_from_lookback(lookback_cell:, prior_lookback_cell:, lookback_range:, target_range:, unit_value:)
+        return nil if lookback_cell.nil? || target_range.blank? || lookback_range.blank?
+
+        projected_lookback = project_cell(lookback_cell, prior_lookback_cell, unit_value)
+        rescale_cell(
+          projected_lookback,
+          day_count(target_range).to_f / day_count(lookback_range),
+          unit_value
         )
       end
 

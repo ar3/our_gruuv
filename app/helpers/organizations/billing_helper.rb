@@ -52,7 +52,19 @@ module Organizations::BillingHelper
     (period_progress.to_f * 100).round
   end
 
-  def billing_in_progress_activity_popover(key:, cell:, company_name:, period_progress:)
+  # Scale period-native activity to lookback-comparable units for display.
+  def billing_scaled_activity_cell(cell, activity_scale)
+    scale = activity_scale.to_f
+    return cell if cell.nil? || scale <= 0 || (scale - 1.0).abs < 0.0001
+
+    Organizations::Billing::ValueAnalysisTable::Cell.new(
+      activity_count: (cell.activity_count.to_f * scale).round,
+      teammate_count: (cell.teammate_count.to_f * scale).round,
+      value_sum: (cell.value_sum.to_f * scale).round(2)
+    )
+  end
+
+  def billing_in_progress_activity_popover(key:, cell:, company_name:, period_progress:, activity_scale: 1.0)
     percent = billing_period_progress_percent(period_progress)
     outcome = billing_value_outcome_popover(
       key: key,
@@ -78,6 +90,9 @@ module Organizations::BillingHelper
         company_name: company_name
       )
       parts << "At this pace, by 100% that may be: #{full}"
+    end
+    if (activity_scale.to_f - 1.0).abs >= 0.0001
+      parts << "Activity is scaled to the ~90-day lookback length for comparison."
     end
     parts.join(" ")
   end
@@ -117,7 +132,7 @@ module Organizations::BillingHelper
     Organizations::Billing::ValueBasedPepm.week_count_for(column.starts_on..column.ends_on)
   end
 
-  def billing_upcoming_activity_popover(key:, cell:, company_name:, starts_on:, ends_on:)
+  def billing_upcoming_activity_popover(key:, cell:, company_name:, starts_on:, ends_on:, activity_scale: 1.0)
     outcome = billing_value_outcome_popover(
       key: key,
       teammate_count: cell.teammate_count,
@@ -125,7 +140,14 @@ module Organizations::BillingHelper
       value_sum: cell.value_sum,
       company_name: company_name
     )
-    "This is an estimated projection of the value #{company_name} will receive during the next period between #{l(starts_on, format: :long)} and #{l(ends_on, format: :long)}. #{outcome}"
+    parts = [
+      "This is an estimated projection of the value #{company_name} will receive during the next period between #{l(starts_on, format: :long)} and #{l(ends_on, format: :long)}.",
+      outcome
+    ]
+    if (activity_scale.to_f - 1.0).abs >= 0.0001
+      parts << "Activity is scaled to the ~90-day lookback length for comparison."
+    end
+    parts.join(" ")
   end
 
   def billing_upcoming_pepm_popover(total_cell:, company_name:, starts_on:, ends_on:)
@@ -165,6 +187,19 @@ module Organizations::BillingHelper
     else
       "We round down to the nearest $0.50. Monthly cadence has no discount."
     end
+  end
+
+  # Why PEPM for the upcoming period comes from the prior ~90-day lookback.
+  def billing_invoice_value_lookback_popover
+    "Transparency. Clarity. Fairness. That leads to Growth. That's the OG Way. " \
+      "We aim for it to show up in our values, in our support, in our software, and in this case; in our cost structure. " \
+      "When OG helps more, we charge more… In a way you can see and trust. " \
+      "We look at the last ~90 days of value delivered. However we performed then, we assume we'll keep performing that way, " \
+      "and we set what we charge for the upcoming period from that window. " \
+      "Far more often than not, what ends up happening is value delivered increases, " \
+      "but you are always paying for when the value delivered wasn't as high. " \
+      "So long as OG is helping foster Transparency, Clarity, and Fairness that leads to Growth... " \
+      "we will be making the impact we want to make... and that is most important."
   end
 end
 

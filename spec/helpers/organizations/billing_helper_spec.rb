@@ -75,4 +75,15 @@ RSpec.describe Organizations::BillingHelper, type: :helper do
       expect(copy).not_to include('$2.87 / EE')
     end
   end
+
+  describe '#billing_invoice_value_lookback_popover' do
+    it 'explains lookback-based PEPM in OG voice' do
+      copy = helper.billing_invoice_value_lookback_popover
+
+      expect(copy).to include('Transparency. Clarity. Fairness. That leads to Growth. That\'s the OG Way.')
+      expect(copy).to include('last ~90 days')
+      expect(copy).to include('upcoming period')
+      expect(copy).to include('that is most important')
+    end
+  end
 end

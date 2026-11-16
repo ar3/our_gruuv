@@ -1,4 +1,5 @@
 - content_for :title, "Invoice — #{l(@invoice.due_on, format: :long)}"
+- content_for :body_class, "jd-print-ready"
 - page_help_id = "billingInvoicePageHelp"
 
 - content_for :header do
@@ -6,22 +7,30 @@
     %h1.mb-0
       %i.bi.bi-receipt-cutoff.me-2
       Invoice
-    = render "shared/page_help/header_info_button",
-             collapse_id: page_help_id,
-             tooltip: "Invoice details and payment — click for details."
-    %span.badge{class: invoice_status_badge_class(@invoice)}
-      = @invoice.status_label
-    %span.badge.text-bg-warning
-      %i.bi.bi-flask.me-1
-      Beta
+    .jd-print-screen-only.d-inline-flex.align-items-center.gap-2.flex-wrap
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Invoice details and payment — click for details."
+      %span.badge{class: invoice_status_badge_class(@invoice)}
+        = @invoice.status_label
+      %span.badge.text-bg-warning
+        %i.bi.bi-flask.me-1
+        Beta
 
-.collapse.mb-4{id: page_help_id}
+.collapse.mb-4.jd-print-screen-only{id: page_help_id}
   = render "organizations/billing_invoices/page_help"
 
-%p.mb-3
+= render "layouts/jd_print_letterhead", organization: organization
+
+.d-flex.align-items-center.gap-3.flex-wrap.mb-3.jd-print-screen-only
   = link_to organization_billing_path(organization), class: "text-decoration-none" do
     %i.bi.bi-arrow-left.me-1
     Back to Billing
+  = link_to "#",
+            class: "text-decoration-none ms-auto",
+            onclick: "window.print(); return false;" do
+    %i.bi.bi-printer.me-1
+    Print to paper or PDF
 
 .row.mb-4
   .col-lg-7
@@ -41,18 +50,23 @@
             = l(@invoice.period_starts_on, format: :long)
             –
             = l(@invoice.period_ends_on, format: :long)
-          %dt.col-sm-4 Value
+          %dt.col-sm-4
+            Value
+            - value_help = billing_invoice_value_lookback_popover
+            %button.btn.btn-link.btn-sm.p-0.text-muted.align-baseline.ms-1.d-print-none{type: "button", "aria-label" => value_help, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => value_help}
+              %i.bi.bi-info-circle
           %dd.col-sm-8
             - if @invoice.free_until_value_floor?
               Free until at least $0.50 per employee per month value has been achieved.
             - else
               Based on the value delivered between #{l(@invoice.value_lookback_starts_on, format: :long)} and #{l(@invoice.value_lookback_ends_on, format: :long)}, the OG cost is #{number_to_currency(@invoice.og_cost_pepm)} per employee per month.
+            %p.small.text-muted.mt-2.mb-0.billing-invoice-print-caption= value_help
           %dt.col-sm-4 Cadence
           %dd.col-sm-8= OrganizationBillingSetting.cadence_label_for(@invoice.cadence)
           %dt.col-sm-4
             PEPM
             - pepm_help = billing_invoice_pepm_popover(@invoice)
-            %button.btn.btn-link.btn-sm.p-0.text-muted.align-baseline.ms-1{type: "button", "aria-label" => pepm_help, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => pepm_help}
+            %button.btn.btn-link.btn-sm.p-0.text-muted.align-baseline.ms-1.d-print-none{type: "button", "aria-label" => pepm_help, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => pepm_help}
               %i.bi.bi-info-circle
           %dd.col-sm-8
             - if @invoice.pepm.to_f.zero?
@@ -60,6 +74,7 @@
             - else
               = number_to_currency(@invoice.pepm)
               = " / teammate"
+            %p.small.text-muted.mt-2.mb-0.billing-invoice-print-caption= pepm_help
           %dt.col-sm-4 Teammates
           %dd.col-sm-8= @invoice.teammate_count
           %dt.col-sm-4 Amount due
@@ -68,10 +83,11 @@
             %dt.col-sm-4 Paid
             %dd.col-sm-8= @invoice.paid_at ? l(@invoice.paid_at.to_date, format: :long) : "—"
 
-    = render "shared/context_callout", margin_class: "mb-4" do
-      = render "organizations/billing/qbr_snapshot", period: @period_view
+    .jd-print-screen-only
+      = render "shared/context_callout", margin_class: "mb-4" do
+        = render "organizations/billing/qbr_snapshot", period: @period_view
 
-  .col-lg-5
+  .col-lg-5.jd-print-screen-only
     - if impersonating?
       .card.border-0.shadow-sm.mb-4.border-start.border-5.border-danger
         .card-header

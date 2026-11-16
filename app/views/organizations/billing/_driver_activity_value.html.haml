@@ -1,23 +1,27 @@
--# locals: cell, driver_key, company_name, mode (optional), period_progress (optional), starts_on (optional), ends_on (optional)
+-# locals: cell, driver_key, company_name, mode (optional), period_progress (optional), starts_on (optional), ends_on (optional), activity_scale (optional)
 - mode = local_assigns.fetch(:mode, :complete)
+- activity_scale = local_assigns.fetch(:activity_scale, 1.0).to_f
 - if cell
+  - display_cell = billing_scaled_activity_cell(cell, activity_scale)
   - if mode == :in_progress
-    - popover_content = billing_in_progress_activity_popover(key: driver_key, cell: cell, company_name: company_name, period_progress: period_progress)
-    - projected_count = billing_extrapolate_count(cell.activity_count, period_progress)
+    - popover_content = billing_in_progress_activity_popover(key: driver_key, cell: display_cell, company_name: company_name, period_progress: period_progress, activity_scale: activity_scale)
+    - projected_count = billing_extrapolate_count(display_cell.activity_count, period_progress)
   - elsif mode == :upcoming
-    - popover_content = billing_upcoming_activity_popover(key: driver_key, cell: cell, company_name: company_name, starts_on: starts_on, ends_on: ends_on)
+    - popover_content = billing_upcoming_activity_popover(key: driver_key, cell: display_cell, company_name: company_name, starts_on: starts_on, ends_on: ends_on, activity_scale: activity_scale)
   - else
-    - popover_content = billing_value_outcome_popover(key: driver_key, teammate_count: cell.teammate_count, activity_count: cell.activity_count, value_sum: cell.value_sum, company_name: company_name)
+    - popover_content = billing_value_outcome_popover(key: driver_key, teammate_count: display_cell.teammate_count, activity_count: display_cell.activity_count, value_sum: display_cell.value_sum, company_name: company_name)
+    - if (activity_scale - 1.0).abs >= 0.0001
+      - popover_content = "#{popover_content} Activity is scaled to the ~90-day lookback length for comparison."
   %span.border-bottom.border-dotted{tabindex: "0", style: "cursor: help;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => popover_content, "aria-label" => popover_content}
     - if mode == :upcoming
       %span.text-muted= "~"
-      = number_with_delimiter(cell.activity_count)
+      = number_with_delimiter(display_cell.activity_count)
     - elsif mode == :in_progress
-      = number_with_delimiter(cell.activity_count)
+      = number_with_delimiter(display_cell.activity_count)
       %span.text-muted= "+"
       - if projected_count
         %span.text-muted.ms-1= "(~#{number_with_delimiter(projected_count)})"
     - else
-      = number_with_delimiter(cell.activity_count)
+      = number_with_delimiter(display_cell.activity_count)
 - else
   %span.text-muted —

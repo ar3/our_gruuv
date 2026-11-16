@@ -45,20 +45,32 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Invoice')
         expect(response.body).to include('billingInvoicePageHelp')
+        expect(response.body).to include('jd-print-ready')
+        expect(response.body).to include('jd-print-letterhead')
+        expect(response.body).to include('Print to paper or PDF')
+        expect(response.body).to include('window.print()')
         expect(response.body).to include('Based on the value delivered between')
         expect(response.body).to include('the OG cost is $5.50 per employee per month')
+        expect(response.body).to include('Transparency. Clarity. Fairness. That leads to Growth.')
+        expect(response.body).to include('the OG Way')
+        expect(response.body).to include('that is most important')
         expect(response.body).to include('We round down to the nearest $0.50. Monthly cadence has no discount.')
+        expect(response.body).to include('billing-invoice-print-caption')
         expect(response.body).to include('bi-info-circle')
         expect(response.body).to include('$5.00')
         expect(response.body).to include('/ teammate')
         expect(response.body).not_to include('Free until at least $0.50')
         expect(response.body).to include('OG Value Analysis')
+        expect(response.body).to include('Lookback')
+        expect(response.body).to include('This period')
+        expect(response.body).to include('Next period')
+        expect(response.body).to include('jd-print-screen-only')
         expect(response.body).not_to include('Prior-prior')
         expect(response.body).not_to include('Projected this period')
         expect(response.body).to include('This period is about')
         expect(response.body).to include('% complete')
         expect(response.body).to include('At this pace, by 100%')
-        expect(response.body).to include('Any period that has not ended yet')
+        expect(response.body).to include('same ~90-day window used to set PEPM')
         expect(response.body).to include('pace projection to 100%')
         # In-progress marker + visible pace projection (Haml must emit these as text)
         expect(response.body).to match(/>\+</)
@@ -86,7 +98,8 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
     end
 
     it 'shows actual this-period value after the invoice period has ended' do
-      travel_to Date.new(2026, 12, 2) do
+      # Far enough out that lookback, this period, and next period columns are all complete.
+      travel_to Date.new(2027, 2, 1) do
         get organization_billing_invoice_path(organization, invoice)
 
         expect(response).to have_http_status(:success)

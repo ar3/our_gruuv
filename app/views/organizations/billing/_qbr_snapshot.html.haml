@@ -46,60 +46,66 @@
 
   - if period.value_analysis
     - analysis = period.value_analysis
-    - prior_prior_col = analysis.columns[0]
-    - prior_col = analysis.columns[1]
-    - current_col = analysis.columns[2]
+    - lookback_col = analysis.column_for(:lookback)
+    - current_col = analysis.column_for(:current)
+    - future_col = analysis.column_for(:future)
     - company_name = organization.display_name
-    - prior_prior_mode = billing_column_mode_locals(prior_prior_col, company_name: company_name)
-    - prior_mode = billing_column_mode_locals(prior_col, company_name: company_name)
+    - lookback_mode = billing_column_mode_locals(lookback_col, company_name: company_name)
     - current_mode = billing_column_mode_locals(current_col, company_name: company_name)
+    - future_mode = billing_column_mode_locals(future_col, company_name: company_name)
     .table-responsive
       %table.table.table-sm.align-middle.mb-2
         %thead
           %tr
             %th Value driver
             %th.text-end
-              - if prior_prior_col.starts_on
+              %div.fw-semibold Lookback
+              - if lookback_col&.starts_on
                 %span.fw-normal.text-muted.small
-                  = l(prior_prior_col.starts_on, format: :long)
+                  = l(lookback_col.starts_on, format: :long)
                   –
-                  = l(prior_prior_col.ends_on, format: :long)
+                  = l(lookback_col.ends_on, format: :long)
               - else
                 %span.fw-normal.text-muted.small n/a
             %th.text-end
-              - if prior_col.starts_on
+              %div.fw-semibold This period
+              - if current_col&.starts_on
                 %span.fw-normal.text-muted.small
-                  = l(prior_col.starts_on, format: :long)
+                  = l(current_col.starts_on, format: :long)
                   –
-                  = l(prior_col.ends_on, format: :long)
+                  = l(current_col.ends_on, format: :long)
               - else
                 %span.fw-normal.text-muted.small n/a
             %th.text-end
-              %span.fw-normal.text-muted.small
-                = l(current_col.starts_on, format: :long)
-                –
-                = l(current_col.ends_on, format: :long)
+              %div.fw-semibold Next period
+              - if future_col&.starts_on
+                %span.fw-normal.text-muted.small
+                  = l(future_col.starts_on, format: :long)
+                  –
+                  = l(future_col.ends_on, format: :long)
+              - else
+                %span.fw-normal.text-muted.small n/a
         %tbody
           - analysis.rows.each do |row|
             %tr
               %td= row.label
               %td.text-end
-                = render "organizations/billing/driver_activity_value", **prior_prior_mode, cell: row.prior_prior, driver_key: row.key, company_name: company_name
+                = render "organizations/billing/driver_activity_value", **lookback_mode, cell: row.lookback, driver_key: row.key, company_name: company_name, activity_scale: lookback_col.activity_scale
               %td.text-end
-                = render "organizations/billing/driver_activity_value", **prior_mode, cell: row.prior, driver_key: row.key, company_name: company_name
+                = render "organizations/billing/driver_activity_value", **current_mode, cell: row.current, driver_key: row.key, company_name: company_name, activity_scale: current_col.activity_scale
               %td.text-end
-                = render "organizations/billing/driver_activity_value", **current_mode, cell: row.current, driver_key: row.key, company_name: company_name
+                = render "organizations/billing/driver_activity_value", **future_mode, cell: row.future, driver_key: row.key, company_name: company_name, activity_scale: future_col.activity_scale
           %tr.fw-semibold
             %td Total
             %td.text-end
-              = render "organizations/billing/ee_value", **prior_prior_mode, total_cell: analysis.totals[:prior_prior]
-            %td.text-end
-              = render "organizations/billing/ee_value", **prior_mode, total_cell: analysis.totals[:prior]
+              = render "organizations/billing/ee_value", **lookback_mode, total_cell: analysis.totals[:lookback]
             %td.text-end
               = render "organizations/billing/ee_value", **current_mode, total_cell: analysis.totals[:current]
+            %td.text-end
+              = render "organizations/billing/ee_value", **future_mode, total_cell: analysis.totals[:future]
     - if analysis.any_incomplete?
       %p.text-muted.small.mb-0
-        Any period that has not ended yet shows activity so far (+) with a pace projection to 100% in (~…), or a trend projection (~) if that period has not started. Hover for percent complete and the Value-page sentence. Total uses the same PEPM math as the Value page.
+        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Incomplete periods show activity so far (+) with a pace projection to 100% in (~…), or a trend projection (~) if not started yet.
     - else
       %p.text-muted.small.mb-0
-        Driver cells are activity counts. Total uses the same PEPM math as the Value page. Actual reflects value delivered during this period after it ended — even if that is less than what was paid for.
+        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Actual reflects value delivered during this period after it ended — even if that is less than what was paid for.

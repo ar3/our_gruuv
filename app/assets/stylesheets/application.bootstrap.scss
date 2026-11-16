@@ -2935,6 +2935,11 @@ $likert-colors: (
   display: none;
 }
 
+// Invoice print: popover copy becomes captions; hidden on screen
+.billing-invoice-print-caption {
+  display: none;
+}
+
 .jd-signature-ink {
   font-family: "Great Vibes", "Segoe Script", "Apple Chancery", cursive;
   font-size: 1.75rem;
@@ -2986,6 +2991,10 @@ $likert-colors: (
       margin: 0 0 1.5rem;
       padding-bottom: 0.75rem;
       border-bottom: 1px solid #adb5bd;
+    }
+
+    .billing-invoice-print-caption {
+      display: block !important;
     }
 
     .jd-print-letterhead__inner {
