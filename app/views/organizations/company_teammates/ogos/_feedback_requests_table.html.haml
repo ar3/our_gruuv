@@ -9,13 +9,16 @@
         %th Request
         %th Questions
         %th Responses
-        %th Status
-        %th Actions
     %tbody
       - rows.each do |row|
         - request = row.feedback_request
         - subject = request.subject_of_feedback_teammate
         - questions = request.feedback_request_questions.sort_by(&:position)
+        - can_view = policy(request).show?
+        - can_answer = policy(request).answer?
+        - state_label = request.archived? ? 'Archived' : request.state.humanize
+        - state_class = request.archived? ? 'bg-secondary' : 'bg-success'
+        - state_tooltip = feedback_request_state_tooltip(request)
         %tr{class: "#{'text-muted' if request.archived?}"}
           %td
             .d-flex.align-items-center.gap-2
@@ -25,7 +28,16 @@
             %div= feedback_request_requestor_display_name(request)
             %small.text-muted= format_time_in_user_timezone(request.created_at)
           %td
-            %span= request.subject_line.presence || "Untitled request"
+            - request_label = request.subject_line.presence || "Untitled request"
+            .d-flex.flex-wrap.align-items-center.gap-2
+              %span.badge{class: state_class, "data-bs-toggle": "tooltip", "data-bs-title": state_tooltip, title: state_tooltip}= state_label
+              - if can_view
+                = link_to request_label, organization_feedback_request_path(organization, request)
+              - else
+                %span= request_label
+            - if can_answer
+              .mt-2
+                = link_to "Respond… Give Kudos and/or Feedback", answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-primary"
           %td
             - if questions.any?
               %span.badge.bg-secondary{style: "cursor: pointer;",
@@ -49,16 +61,3 @@
               %small.text-muted.d-block.mt-1
                 No visible response yet:
                 = row.awaiting_responders.map { |r| r.person.display_name }.join(", ")
-          %td
-            - state_label = request.archived? ? 'Archived' : request.state.humanize
-            - state_class = request.archived? ? 'bg-secondary' : 'bg-success'
-            - state_tooltip = feedback_request_state_tooltip(request)
-            %span.badge{class: state_class, "data-bs-toggle": "tooltip", "data-bs-title": state_tooltip, title: state_tooltip}= state_label
-          %td
-            .btn-group.btn-group-sm
-              - if policy(request).view_in_teammate_story?
-                = link_to organization_feedback_request_path(organization, request), class: "btn btn-outline-primary", title: "View" do
-                  %i.bi.bi-eye
-              - if policy(request).answer?
-                = link_to answer_organization_feedback_request_path(organization, request), class: "btn btn-outline-success", title: "Respond" do
-                  %i.bi.bi-reply

@@ -318,6 +318,9 @@ RSpec.describe "Teammate OGOs page", type: :request do
       expect(response.body).to include("Ship retro feedback")
       expect(response.body).to include(">Request<")
       expect(response.body).not_to include(">Focus<")
+      expect(response.body).not_to include(">Actions<")
+      expect(response.body).not_to include(">Status<")
+      expect(response.body).to include(organization_feedback_request_path(organization, FeedbackRequest.last))
       expect(response.body).to match(/data-bs-toggle=["']popover["']/)
     end
 
@@ -335,7 +338,7 @@ RSpec.describe "Teammate OGOs page", type: :request do
       let(:requestor) { create(:company_teammate, person: requestor_person, organization: organization) }
 
       let!(:waiting_request) do
-        create(:feedback_request,
+        create(:feedback_request, :ready_open_link,
                company: organization,
                requestor_teammate: requestor,
                subject_of_feedback_teammate: other_teammate).tap do |fr|
@@ -381,6 +384,11 @@ RSpec.describe "Teammate OGOs page", type: :request do
         expect(response.body).to include(other_teammate.person.display_name)
         expect(response.body).to include(requestor.person.display_name)
         expect(response.body).to include(waiting_request.subject_of_feedback_teammate.person.display_name)
+        expect(response.body).to include(answer_organization_feedback_request_path(organization, waiting_request))
+        expect(response.body).to include("Respond… Give Kudos and/or Feedback")
+        expect(response.body).to include("btn-outline-primary")
+        # Responder-only: can answer, but show page is not linked
+        expect(response.body).not_to include(%(href="#{organization_feedback_request_path(organization, waiting_request)}"))
         expect(response.body).not_to include("Archived")
       end
 
