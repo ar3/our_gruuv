@@ -26,7 +26,8 @@ module Mcp
 
       context = Assistant::ContextBuilder.call(
         organization: teammate.organization,
-        company_teammate: teammate
+        company_teammate: teammate,
+        mutation_gate: :tool_pending
       )
 
       Result.new(ok?: true, context: context, token: record, error: nil)

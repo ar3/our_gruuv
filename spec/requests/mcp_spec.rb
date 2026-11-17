@@ -60,6 +60,10 @@ RSpec.describe "MCP HTTP endpoint", type: :request do
       "get_observation",
       "search_organization",
       "create_draft_observation",
+      "create_draft_goal",
+      "start_goal",
+      "propose_goal_update",
+      "confirm_goal_change",
       "set_current_week_goal_confidence",
       "mint_feedback_link"
     )

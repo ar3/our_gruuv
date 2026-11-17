@@ -20,6 +20,10 @@ module AgentTools
       "list_sitemap" => "AgentTools::ListSitemap",
       "search_organization" => "AgentTools::SearchOrganization",
       "create_draft_observation" => "AgentTools::CreateDraftObservation",
+      "create_draft_goal" => "AgentTools::CreateDraftGoal",
+      "start_goal" => "AgentTools::StartGoal",
+      "propose_goal_update" => "AgentTools::ProposeGoalUpdate",
+      "confirm_goal_change" => "AgentTools::ConfirmGoalChange",
       "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence",
       "create_seat_suggestion_bundle" => "AgentTools::CreateSeatSuggestionBundle",
       "create_assignment_suggestion_bundle" => "AgentTools::CreateAssignmentSuggestionBundle",
@@ -29,6 +33,10 @@ module AgentTools
 
     WRITE_TOOLS = %w[
       create_draft_observation
+      create_draft_goal
+      start_goal
+      propose_goal_update
+      confirm_goal_change
       set_current_week_goal_confidence
       create_seat_suggestion_bundle
       create_assignment_suggestion_bundle
@@ -300,10 +308,110 @@ module AgentTools
         required: ["observee_path"],
         additionalProperties: false
       },
+      "create_draft_goal" => {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Goal title (required)" },
+          owner_path: {
+            type: "string",
+            description: "Path of the owner (org/department/team/teammate) from tool results. Prefer over owner_id."
+          },
+          owner_type: {
+            type: "string",
+            enum: %w[CompanyTeammate Organization Department Team Company],
+            description: "Owner type when using owner_id, or to disambiguate owner_path"
+          },
+          owner_id: { type: "integer", description: "Owner id when owner_path unavailable; requires owner_type" },
+          goal_type: {
+            type: "string",
+            enum: %w[inspirational_objective qualitative_key_result quantitative_key_result stepping_stone_activity],
+            description: "Defaults to inspirational_objective"
+          },
+          description: { type: "string", description: "Optional description" },
+          most_likely_target_date: { type: "string", description: "Optional ISO date (stretch / most likely)" },
+          earliest_target_date: { type: "string", description: "Optional ISO date (transform / earliest)" },
+          latest_target_date: { type: "string", description: "Optional ISO date (commit / latest)" },
+          initial_confidence: {
+            type: "string",
+            enum: %w[commit stretch transform],
+            description: "Optional starting confidence band (not a weekly check-in %)"
+          },
+          privacy_level: { type: "string", description: "Optional privacy; defaults from owner type" },
+          parent_goal_paths: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional parent goal paths (0..n). Company goals often have none; dept/team usually have parents."
+          }
+        },
+        required: ["title", "owner_path"],
+        additionalProperties: false
+      },
+      "start_goal" => {
+        type: "object",
+        properties: {
+          goal_path: { type: "string", description: "Draft goal path from create_draft_goal / list_goals" },
+          confidence_percentage: {
+            type: "integer",
+            minimum: 0,
+            maximum: 100,
+            description: "Optional: set current-week confidence while starting (also starts the goal)"
+          },
+          confidence_reason: { type: "string", description: "Optional notes / Learnings" },
+          learnings: { type: "string", description: "Optional Learnings; same as confidence_reason if both sent" }
+        },
+        required: ["goal_path"],
+        additionalProperties: false
+      },
+      "propose_goal_update" => {
+        type: "object",
+        properties: {
+          goal_path: { type: "string", description: "Goal path to update" },
+          title: { type: "string" },
+          description: { type: "string" },
+          goal_type: {
+            type: "string",
+            enum: %w[inspirational_objective qualitative_key_result quantitative_key_result stepping_stone_activity]
+          },
+          privacy_level: { type: "string" },
+          most_likely_target_date: { type: "string" },
+          earliest_target_date: { type: "string" },
+          latest_target_date: { type: "string" },
+          initial_confidence: { type: "string", enum: %w[commit stretch transform] },
+          owner_path: { type: "string", description: "New owner path" },
+          owner_type: {
+            type: "string",
+            enum: %w[CompanyTeammate Organization Department Team Company]
+          },
+          owner_id: { type: "integer" },
+          add_parent_paths: {
+            type: "array",
+            items: { type: "string" },
+            description: "Parent goal paths to link"
+          },
+          remove_parent_paths: {
+            type: "array",
+            items: { type: "string" },
+            description: "Parent goal paths to unlink"
+          }
+        },
+        required: ["goal_path"],
+        additionalProperties: false
+      },
+      "confirm_goal_change" => {
+        type: "object",
+        properties: {
+          change_token: {
+            type: "string",
+            description: "Token from propose_goal_update or set_current_week_goal_confidence (MCP). Applies the previewed change."
+          }
+        },
+        required: ["change_token"],
+        additionalProperties: false
+      },
       "set_current_week_goal_confidence" => {
         type: "object",
         properties: {
-          goal_path: { type: "string", description: "Goal path from tool results (active goals only)" },
+          goal_path: { type: "string", description: "Goal path from tool results" },
           confidence_percentage: {
             type: "integer",
             minimum: 0,
@@ -411,7 +519,11 @@ module AgentTools
       "get_observation" => "Get one observation (OGO) by path (preferred). Fully hydrated: full story, observer + observees (name/path), feelings, type/privacy/publish, goal, and ratings (rateable_type/id/name/path + rating + rating_label). Use after list_observations for analysis.",
       "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
-      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. 0% or 100% completes the goal; Learnings optional.",
+      "create_draft_goal" => "Create a draft goal (not started). Owner required via owner_path. Optional parent_goal_paths (0..n). Call start_goal to activate. Prefer paths over ids.",
+      "start_goal" => "Start a draft goal (sets started_at). Optional confidence_percentage sets current-week check-in while starting.",
+      "propose_goal_update" => "Preview a goal field and/or parent-link update. Does not persist. Apply with confirm_goal_change(change_token).",
+      "confirm_goal_change" => "Apply a pending goal mutation from propose_goal_update or set_current_week_goal_confidence (MCP). Requires change_token from the preview response.",
+      "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. On MCP: returns change_token preview — call confirm_goal_change to apply. 0% or 100% completes the goal; Learnings optional.",
       "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them.",
       "create_assignment_suggestion_bundle" => "After summarizing Assignment focus work, create draft Assignment (+ nested Ability) proposals. Never apply them.",
       "create_ability_suggestion_bundle" => "After summarizing Abilities focus work, create one or more draft Ability proposals. Never apply them.",
@@ -434,6 +546,10 @@ module AgentTools
       "get_observation" => "Get observation",
       "search_organization" => "Search organization",
       "create_draft_observation" => "Create draft observation",
+      "create_draft_goal" => "Create draft goal",
+      "start_goal" => "Start goal",
+      "propose_goal_update" => "Propose goal update",
+      "confirm_goal_change" => "Confirm goal change",
       "set_current_week_goal_confidence" => "Set current-week goal confidence",
       "create_seat_suggestion_bundle" => "Create seat suggestion proposal bundle",
       "create_assignment_suggestion_bundle" => "Create assignment suggestion proposal bundle",
@@ -498,7 +614,7 @@ module AgentTools
             "confidence_reason" => "string (optional notes / Learnings; encouraged when completing)",
             "learnings" => "string (optional Learnings when completing; same as confidence_reason)"
           },
-          "effect" => "Upserts confidence for the current Monday week only. Rejects completed/deleted goals. Completing (0%/100%) does not require Learnings; late vs on-time is inferred from dates."
+          "effect" => "Upserts confidence for the current Monday week only (Ask OG host-confirmed). Rejects completed/deleted goals. Completing (0%/100%) does not require Learnings; late vs on-time is inferred from dates."
         },
         "create_seat_suggestion_bundle" => {
           "args" => {

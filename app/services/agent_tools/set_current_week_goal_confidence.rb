@@ -3,6 +3,9 @@
 module AgentTools
   # Current-week goal confidence only. week_start is pinned server-side to this Monday.
   # 0% or 100% completes the goal; Learnings are encouraged but not required (late vs on-time inferred from dates).
+  #
+  # When context.tool_pending_mutations? (MCP), this validates and returns a change_token
+  # preview — call confirm_goal_change to apply. Ask OG host-confirmed contexts write immediately.
   class SetCurrentWeekGoalConfidence < Base
     include Rails.application.routes.url_helpers
 
@@ -45,6 +48,16 @@ module AgentTools
 
       reason = learnings.to_s.strip.presence || confidence_reason.to_s.strip.presence
 
+      if context.tool_pending_mutations?
+        return propose_pending(
+          context: context,
+          goal: goal,
+          pct: pct,
+          reason: reason,
+          current_monday: current_monday
+        )
+      end
+
       result = Goals::CheckInService.call(
         goal: goal,
         current_person: context.person,
@@ -69,9 +82,47 @@ module AgentTools
 
     private
 
+    def propose_pending(context:, goal:, pct:, reason:, current_monday:)
+      current = goal.goal_check_ins.find_by(check_in_week_start: current_monday)
+      preview = {
+        goal_path: RecordPaths.goal_path(context, goal),
+        week_start: current_monday.iso8601,
+        before: {
+          confidence_percentage: current&.confidence_percentage,
+          confidence_reason: current&.confidence_reason
+        },
+        after: {
+          confidence_percentage: pct,
+          confidence_reason: reason
+        }
+      }
+
+      token = PendingGoalChange.store(
+        context: context,
+        action: "set_confidence",
+        payload: {
+          goal_id: goal.id,
+          confidence_percentage: pct,
+          confidence_reason: reason,
+          week_start: current_monday.iso8601
+        },
+        preview: preview
+      )
+
+      ok(
+        needs_confirmation: true,
+        change_token: token,
+        expires_in_seconds: PendingGoalChange::TTL.to_i,
+        preview: preview,
+        path: organization_goal_path(context.organization, goal),
+        week_start: current_monday.iso8601,
+        confidence_percentage: pct,
+        redirect_path: "#{organization_goal_path(context.organization, goal)}#check-in"
+      )
+    end
+
     def company_for(context)
-      org = context.organization
-      org.respond_to?(:root_company) && org.root_company.present? ? org.root_company : org
+      GoalMutations.company_for(context)
     end
 
     def parse_date(value)

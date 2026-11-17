@@ -5,6 +5,10 @@ require "rails_helper"
 RSpec.describe AgentTools::Registry do
   it "exposes stable write tool names" do
     expect(described_class.write_tool?("create_draft_observation")).to be(true)
+    expect(described_class.write_tool?("create_draft_goal")).to be(true)
+    expect(described_class.write_tool?("start_goal")).to be(true)
+    expect(described_class.write_tool?("propose_goal_update")).to be(true)
+    expect(described_class.write_tool?("confirm_goal_change")).to be(true)
     expect(described_class.write_tool?("set_current_week_goal_confidence")).to be(true)
     expect(described_class.write_tool?("list_teammates")).to be(false)
   end
