@@ -1,0 +1,78 @@
+- content_for :title, "OG3 Goals ... OurGruuv"
+
+%section.marketing-hero
+  .container
+    %p.marketing-kicker= og3_label_medium
+    %h1.mb-3= og3_label_clear
+    %p.lead.mb-4
+      Challenging. Possible. Impactful. A clearer way to name ambition... Commit, Stretch, and Transform... With weekly confidence and learning at the center.
+    %p.mb-0
+      = link_to "← Back to Home", root_path, class: "btn btn-outline-dark me-2"
+      = link_to "See Solutions", solutions_path, class: "btn btn-dark"
+
+%section.marketing-section.marketing-section-alt
+  .container
+    %p.marketing-kicker Why OG3
+    %h2.h3.mb-3 Goals should stretch us without confusing us
+    %p.text-muted
+      Goals should be challenging, possible, and impactful. In other methodologies some say you should hit 80% of your goals (Rocks). That stifles creativity and ensures no innovation. Others say you should aim for 70% of whatever number you set... Which is confusing and forces people to do that math constantly.
+    %p.text-muted.mb-0
+      %strong= og3_label_medium
+      are different because they ask us to be more clear... Like everything in OurGruuv.
+
+%section.marketing-section
+  .container
+    %h2.h3.mb-4 The three aims
+    .row.g-4
+      .col-md-4
+        %h3.h5 Commit
+        %p.text-muted.mb-0
+          The version of the number you are certain you can hit... More than 80% confident at the start of the goal period. Commit communicates what’s possible based on research. It gives the team something comfortable to aim at. We all love that moment when we can cross off an accomplishment as DONE 💪🏾, and being recognized for it... It gives us the energy to keep striving for greater. Commit makes that real for every outcome-based goal, and encourages more outcome goals (clearer and higher impact than activity or output goals).
+      .col-md-4
+        %h3.h5 Stretch
+        %p.text-muted.mb-0
+          About 50/50 sure you can hit it. That forces real challenge. You hit Commit and you’re safe to explore... Different, maybe better, sometimes riskier approaches. If you hit Stretch, cheer loudly: you went into the unknown and came out with assumptions validated.
+      .col-md-4
+        %h3.h5 Transform
+        %p.text-muted.mb-0
+          Everything is impossible until someone does it... Hot-dog contest ceilings, the four-minute mile, deploying code dozens of times a day instead of once a quarter. Without Transform we keep looking at problems the old way. Transform names how the world could be completely different... Even when we don’t know the path... So we can strive toward it. So long as we are learning, all is well.
+
+%section.marketing-section.marketing-section-alt
+  .container
+    %h2.h3.mb-3 Weekly confidence... Not “on / off track”
+    %p.text-muted
+      “On track” / “off track” doesn’t tell you anything useful. More often than not it just means you’ll all be surprised at the end. It focuses on the result, not the learning throughout.
+    %p.text-muted
+      Get off the bench. Do confidence checks. Make learning a habit by writing a short blurb for
+      %em why
+      confidence changed week over week. You’re always answering: how confident are we that we’ll hit the
+      %strong current aim
+      (Commit, then Stretch, then Transform)?
+    %p.text-muted.mb-4
+      It’s simple on purpose... So the habit sticks.
+
+    .card.border.shadow-sm.mb-0
+      .card-header.bg-white
+        %h3.h6.mb-0 Demo confidence check
+        %p.small.text-muted.mb-0 Not live... Just so you can feel how light the habit is.
+      .card-body
+        = render "pages/og3_confidence_check_demo"
+
+%section.marketing-section
+  .container
+    %h2.h3.mb-3 Completion... Always learn
+    %p.text-muted
+      Some folks think in binary: hit or miss. That is a weak frame. We still care whether we hit Commit, Stretch, or Transform... But the difference between average and great is that OGs
+      %strong ALWAYS LEARN.
+    %p.text-muted.mb-0
+      When you complete an aim, capture the learning. Then, if time remains, you can advance the ladder and keep striving. The result matters. The learning is what compounds.
+
+%section.marketing-section.marketing-section-alt
+  .container
+    %h2.h3.mb-3 Example
+    %p.lead.mb-2 Move retention from 50% to [60|70|80]%
+    %p.text-muted.mb-4
+      Commit 60% · Stretch 70% · Transform 80%. Start confidence on Commit. Advance when you’re ready to aim higher.
+    .d-flex.flex-wrap.gap-2
+      = link_to "Start Free", start_free_path, class: "btn btn-dark btn-lg px-4"
+      = link_to "Home", root_path, class: "btn btn-outline-dark btn-lg"

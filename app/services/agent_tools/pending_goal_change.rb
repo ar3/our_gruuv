@@ -6,7 +6,7 @@ module AgentTools
   # will not round-trip tokens.
   class PendingGoalChange
     TTL = 30.minutes
-    ACTIONS = %w[update_goal set_confidence].freeze
+    ACTIONS = %w[update_goal set_confidence advance_progressive_aim].freeze
 
     def self.store(context:, action:, payload:, preview:)
       action_name = action.to_s

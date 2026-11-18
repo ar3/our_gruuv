@@ -123,7 +123,9 @@ module Goals
       goal.earliest_target_date = nil
       goal.latest_target_date = nil
 
-      goal.save
+      if goal.save
+        Goals::ScheduleProgressiveOutcomeDefault.call(goal, title_changed: true)
+      end
       goal
     end
 
@@ -155,7 +157,9 @@ module Goals
       goal.earliest_target_date = nil
       goal.latest_target_date = nil
 
-      goal.save
+      if goal.save
+        Goals::ScheduleProgressiveOutcomeDefault.call(goal, title_changed: true)
+      end
       goal
     end
 

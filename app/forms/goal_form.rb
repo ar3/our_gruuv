@@ -14,9 +14,18 @@ class GoalForm < Reform::Form
   property :started_at
   property :completed_at
   property :became_top_priority
+  property :outcome_baseline
+  property :outcome_commit
+  property :outcome_stretch
+  property :outcome_transform
+  property :outcome_unit
+  property :progressive_current_aim
+  property :outcome_fields_manually_edited_at
 
   # Virtual property for timeframe selection (near_term, medium_term, long_term, vision)
   property :timeframe, virtual: true
+  # progressive = single live aim; expand_now = parent + C/S/T children
+  property :progressive_create_mode, virtual: true
   
   # Use ActiveModel validations for now - we can upgrade to dry-validation later
   validates :title, presence: true
@@ -54,16 +63,24 @@ class GoalForm < Reform::Form
     
     # Let Reform sync the form data to the model and persist
     super
+
+    # Capture create/title-change from Reform's save before the follow-up model.save
+    # below clears ActiveModel::Dirty / previously_new_record? flags.
+    og3_title_changed = model.previously_new_record? || model.saved_change_to_title?
     
     # Set owner polymorphic association (already parsed in before_validation)
     # Only allow CompanyTeammate, Company, Department, or Team as owner types
     # Goal model stores Organization (not Company); normalize for validation
     model.owner_type = (owner_type == 'Company' ? 'Organization' : owner_type)
     model.owner_id = owner_id
+
+    sync_progressive_outcome_from_prose_before_save
     
     # Save the model
     if model.save
+      og3_title_changed ||= model.saved_change_to_title?
       Goals::SchedulePropagateMostLikelyTargetDate.call(model)
+      Goals::ScheduleProgressiveOutcomeDefault.call(model, title_changed: og3_title_changed)
       true
     else
       # Copy model errors to form errors so they're displayed
@@ -233,6 +250,12 @@ class GoalForm < Reform::Form
     return if current_teammate.present? && !current_teammate.destroyed?
 
     errors.add(:base, 'You must be a company teammate to create goals')
+  end
+
+  def sync_progressive_outcome_from_prose_before_save
+    return unless model.goal_type.to_s == "progressive_outcome"
+
+    Goals::SyncProgressiveOutcomeFromProse.call(goal: model)
   end
   
   def owner_exists

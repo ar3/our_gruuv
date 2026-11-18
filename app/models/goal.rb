@@ -29,8 +29,15 @@ class Goal < ApplicationRecord
     inspirational_objective: 'inspirational_objective',
     qualitative_key_result: 'qualitative_key_result',
     quantitative_key_result: 'quantitative_key_result',
+    progressive_outcome: 'progressive_outcome',
     stepping_stone_activity: 'stepping_stone_activity'
   }
+
+  enum :progressive_current_aim, {
+    commit: 'commit',
+    stretch: 'stretch',
+    transform: 'transform'
+  }, prefix: true, allow_nil: true
   
   enum :privacy_level, {
     only_creator: 'only_creator',
@@ -136,9 +143,33 @@ class Goal < ApplicationRecord
   def goal_category
     return :vision if goal_type == 'inspirational_objective' && most_likely_target_date.nil?
     return :objective if goal_type == 'inspirational_objective' && most_likely_target_date.present?
+    return :progressive_outcome if progressive_outcome?
     return :bad_key_result if %w[qualitative_key_result quantitative_key_result].include?(goal_type) && most_likely_target_date.nil?
     return :key_result if %w[qualitative_key_result quantitative_key_result].include?(goal_type) && most_likely_target_date.present?
     nil
+  end
+
+  def progressive_next_aim
+    return nil unless progressive_outcome?
+
+    current = progressive_current_aim.presence || "commit"
+    order = %w[commit stretch transform]
+    idx = order.index(current)
+    return nil if idx.nil?
+
+    order[(idx + 1)..].find { |aim| progressive_outcome_value_for(aim).present? }
+  end
+
+  def progressive_outcome_value_for(aim)
+    case aim.to_s
+    when "commit" then outcome_commit
+    when "stretch" then outcome_stretch
+    when "transform" then outcome_transform
+    end
+  end
+
+  def progressive_can_advance?
+    progressive_outcome? && deleted_at.blank? && progressive_next_aim.present?
   end
   
   def vision?
@@ -166,6 +197,8 @@ class Goal < ApplicationRecord
   end
   
   def check_in_eligible?
+    return true if progressive_outcome? && most_likely_target_date.present?
+
     !objective? && most_likely_target_date.present?
   end
   

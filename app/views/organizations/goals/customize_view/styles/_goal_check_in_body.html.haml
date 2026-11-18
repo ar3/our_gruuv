@@ -25,7 +25,7 @@
           - else
             %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
           %span.small.text-nowrap —
-          = select_tag :confidence_percentage, options_for_select(confidence_percentage_options, selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select' }
+          = select_tag :confidence_percentage, options_for_select(confidence_percentage_options(goal: goal), selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select' }
         = text_field_tag :confidence_reason, current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: confidence_reason_placeholder
       %button.btn.btn-primary.btn-lg.goal-check-in-inline-layout__update-btn{type: "submit", "aria-label" => update_confidence_label}
         %i.bi.bi-check-lg{"aria-hidden": "true"}
@@ -39,7 +39,7 @@
           %span.small.text-nowrap By
           %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
           %span.small.text-nowrap —
-          = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options, selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select', disabled: true }
+          = select_tag "goal_check_in_disabled_#{goal.id}", options_for_select(confidence_percentage_options(goal: goal), selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select', disabled: true }
         = text_field_tag "goal_check_in_reason_disabled_#{goal.id}", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: confidence_reason_placeholder, disabled: true
       .goal-check-in-inline-layout__update-wrap
         %span.btn.btn-primary.btn-lg.goal-check-in-inline-layout__update-btn.disabled{"aria-label" => update_confidence_label}

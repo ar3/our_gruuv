@@ -92,6 +92,7 @@ RSpec.describe Goal, type: :model do
         'inspirational_objective' => 'inspirational_objective',
         'qualitative_key_result' => 'qualitative_key_result',
         'quantitative_key_result' => 'quantitative_key_result',
+        'progressive_outcome' => 'progressive_outcome',
         'stepping_stone_activity' => 'stepping_stone_activity'
       })
     end

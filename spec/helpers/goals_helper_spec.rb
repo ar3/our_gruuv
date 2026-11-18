@@ -197,6 +197,33 @@ RSpec.describe GoalsHelper, type: :helper do
 
       expect(active_values).to eq(active_values.sort)
     end
+
+    it 'appends OG3 advance options when the goal can progress to a next aim' do
+      goal = create(
+        :goal,
+        creator: creator_teammate,
+        owner: creator_teammate,
+        company: company,
+        goal_type: 'progressive_outcome',
+        outcome_baseline: 50,
+        outcome_commit: 60,
+        outcome_stretch: 70,
+        outcome_transform: 80,
+        outcome_unit: '%',
+        progressive_current_aim: 'commit',
+        started_at: 1.week.ago
+      )
+
+      options = helper.confidence_percentage_options(goal: goal)
+      values = options.map { |opt| opt[1] }
+
+      expect(values).to include(
+        GoalsHelper::CONFIDENCE_TERMINAL_HIT_ADVANCE,
+        GoalsHelper::CONFIDENCE_TERMINAL_HIT_LATE_ADVANCE
+      )
+      expect(options[-2][0]).to include('advance the OG3 ladder to Stretch')
+      expect(options[-1][0]).to include('advance the OG3 ladder to Stretch')
+    end
   end
 
   describe '#selected_confidence_percentage_option' do

@@ -1733,6 +1733,34 @@ body:has(.vertical-nav.open) .floating-toggle {
   }
 }
 
+// OG3 Progressive Outcome show sentence: highlight numeric aims in-line
+.og3-outcome-sentence {
+  line-height: 1.65;
+}
+
+.og3-outcome-value {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  margin: 0 0.1rem;
+  border-radius: 0.35rem;
+  background: rgba(13, 202, 240, 0.14);
+  border: 1px solid rgba(13, 202, 240, 0.45);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.og3-outcome-value--current {
+  background: rgba(25, 135, 84, 0.14);
+  border-color: rgba(25, 135, 84, 0.5);
+}
+
+.og3-outcome-value--empty {
+  background: rgba(108, 117, 125, 0.12);
+  border-color: rgba(108, 117, 125, 0.35);
+  font-weight: 500;
+  font-style: italic;
+}
+
 // Goals hierarchy (collapsible): inline confidence check — main + update
 .goal-check-in-inline-layout {
   display: grid;

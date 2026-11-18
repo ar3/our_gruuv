@@ -1,0 +1,20 @@
+-# Static demo of the goal confidence check UI for the OG3 marketing page.
+.goal-check-in-inline-layout
+  .goal-check-in-inline-layout__main
+    .mb-3
+      .goal-check-in-inline-layout__sentence.d-flex.align-items-center.flex-wrap.gap-2
+        %span.text-nowrap By
+        %span.form-control.form-control-sm.goal-check-in-inline-layout__date{style: "max-width: 11rem; background: #f8f9fa;"}
+          = (Date.today + 90.days).strftime("%b %d, %Y")
+        %span.text-nowrap ...
+        = select_tag "og3_demo_confidence",
+          options_for_select([["70% confident", 70], ["80% confident", 80], ["50% confident", 50], ["100% ... Hit!", 100], ["0% ... Miss / stop", 0]], 70),
+          class: "form-select form-select-sm goal-check-in-inline-layout__confidence-select",
+          disabled: true
+    .mb-3
+      %label.form-label{for: "og3_demo_learnings"} Notes / Learnings
+      %textarea#og3_demo_learnings.form-control.goal-check-in-inline-layout__reason{rows: 3, disabled: true, placeholder: "Why did confidence change this week?"}
+        Shipping the onboarding email earlier than planned. Still risky on activation, so holding at 70%.
+    %button.btn.btn-primary{type: "button", disabled: true} Update confidence
+    %p.small.text-muted.mt-2.mb-0
+      Real check-ins take seconds... Confidence for the current aim, plus a short “why” so learning becomes the habit.

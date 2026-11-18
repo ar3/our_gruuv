@@ -131,5 +131,20 @@ RSpec.describe Goals::BulkCreateUnlinkedService, type: :service do
         expect(goal.owner_type).to eq('Organization')
       end
     end
+
+    it 'defaults bracket-form titles to OG3 Progressive Outcome without waiting on LLM' do
+      og3_parsed = [
+        { title: 'Move retention from 50% to [60|70|80]%', goal_type: 'quantitative_key_result', parent_index: nil }
+      ]
+      service = described_class.new(
+        organization, person, teammate, owner_teammate, og3_parsed
+      )
+
+      expect(service.call).to be(true)
+      goal = service.created_goals.first
+      expect(goal.goal_type).to eq('progressive_outcome')
+      expect(goal.outcome_commit).to eq(BigDecimal('60'))
+      expect(goal.progressive_current_aim).to eq('commit')
+    end
   end
 end

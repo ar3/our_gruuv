@@ -21,6 +21,7 @@ module AgentTools
       initial_confidence: nil,
       privacy_level: nil,
       parent_goal_paths: nil,
+      progressive_create_mode: nil,
       **_ignored
     )
       return err("title is required", code: "validation_failed") if title.to_s.strip.blank?
@@ -39,6 +40,21 @@ module AgentTools
 
       owner_value = GoalMutations.owner_value_for(owner_type: owner[:type], owner_id: owner[:id])
       privacy = privacy_level.presence || GoalMutations.privacy_for_owner_type(owner[:type])
+      type = goal_type.presence || "inspirational_objective"
+      create_mode = progressive_create_mode.to_s
+
+      if type == "progressive_outcome" && create_mode == "expand_now"
+        return expand_now(
+          context: context,
+          title: title,
+          description: description,
+          owner_value: owner_value,
+          privacy: privacy,
+          most_likely_target_date: most_likely_target_date,
+          earliest_target_date: earliest_target_date,
+          latest_target_date: latest_target_date
+        )
+      end
 
       goal = Goal.new(company: company)
       form = GoalForm.new(goal)
@@ -47,7 +63,7 @@ module AgentTools
 
       payload = {
         title: title.to_s.strip,
-        goal_type: goal_type.presence || "inspirational_objective",
+        goal_type: type,
         description: description.to_s,
         most_likely_target_date: most_likely_target_date.presence,
         earliest_target_date: earliest_target_date.presence,
@@ -84,6 +100,37 @@ module AgentTools
       err(e.message, code: "validation_failed")
     rescue ActiveRecord::RecordInvalid => e
       err(e.record.errors.full_messages.presence || e.message, code: "validation_failed")
+    end
+
+    private
+
+    def expand_now(context:, title:, description:, owner_value:, privacy:, most_likely_target_date:, earliest_target_date:, latest_target_date:)
+      result = Goals::ExpandProgressiveOutcome.call(
+        organization: context.organization,
+        current_person: context.person,
+        current_teammate: context.company_teammate,
+        attrs: {
+          title: title.to_s.strip,
+          description: description,
+          owner_id: owner_value,
+          privacy_level: privacy,
+          most_likely_target_date: most_likely_target_date,
+          earliest_target_date: earliest_target_date,
+          latest_target_date: latest_target_date
+        }
+      )
+      return err(result.error, code: "validation_failed") unless result.ok?
+
+      ok(
+        GoalMutations.serialize_goal(context, result.parent).merge(
+          draft: true,
+          needs_start: true,
+          expand_now: true,
+          child_paths: result.children.map { |c| RecordPaths.goal_path(context, c) },
+          path: RecordPaths.goal_path(context, result.parent),
+          redirect_path: organization_goal_path(context.organization, result.parent)
+        )
+      )
     end
   end
 end

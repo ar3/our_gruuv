@@ -49,9 +49,11 @@ module Goals
         return add_error(goal_id, "You don't have permission to update confidence checks for this goal")
       end
 
-      # Parse and normalize values
-      confidence_percentage = check_in_data[:confidence_percentage].present? ? check_in_data[:confidence_percentage].to_i : nil
+      # Keep raw string so OG3 "100_advance" tokens survive until after CheckInService.
+      confidence_raw = check_in_data[:confidence_percentage]
+      confidence_percentage = confidence_raw.present? ? confidence_raw.to_s.to_i : nil
       confidence_reason = check_in_data[:confidence_reason]&.strip.presence
+      advance_requested = confidence_raw.to_s.include?("advance")
       
       # If both fields are empty, delete existing check-in if it exists
       if confidence_percentage.nil? && confidence_reason.nil?
@@ -99,13 +101,25 @@ module Goals
         goal: goal,
         current_person: current_person,
         current_company_teammate: teammate,
-        confidence_percentage: confidence_percentage,
+        confidence_percentage: confidence_raw.presence || confidence_percentage,
         confidence_reason: confidence_reason,
         most_likely_target_date: check_in_data[:most_likely_target_date],
         week_start: week_start
       )
 
       if result.ok?
+        if advance_requested && goal.reload.progressive_can_advance?
+          advance = AdvanceProgressiveAim.call(
+            goal: goal,
+            current_person: current_person,
+            current_teammate: teammate
+          )
+          unless advance.ok?
+            @failure_count += 1
+            add_error(goal_id, "Check-in saved, but could not advance OG3 ladder: #{advance.error}")
+            return
+          end
+        end
         @success_count += 1
       else
         @failure_count += 1

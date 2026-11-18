@@ -4,7 +4,7 @@ class PagesController < ApplicationController
   MARKETING_ACTIONS = %w[
     home
     solutions flow_state pricing start_free
-    about
+    about og3_goals
   ].freeze
 
   def home
@@ -15,6 +15,7 @@ class PagesController < ApplicationController
   def flow_state; end
   def pricing; end
   def start_free; end
+  def og3_goals; end
 
   # Coming Soon placeholder pages
   def seats_coming_soon

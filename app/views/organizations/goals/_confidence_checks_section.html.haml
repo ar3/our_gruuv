@@ -61,7 +61,7 @@
                         %span= @goal.most_likely_target_date.present? ? @goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
                       %span.text-nowrap —
                       = f.select :confidence_percentage,
-                          options_for_select(confidence_percentage_options, selected_confidence_percentage_option(@goal, @current_check_in)),
+                          options_for_select(confidence_percentage_options(goal: @goal), selected_confidence_percentage_option(@goal, @current_check_in)),
                           { include_blank: 'Select confidence...' },
                           { class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select', disabled: !can_save_check_in }
                   .mb-3

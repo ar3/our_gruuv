@@ -49,6 +49,8 @@ module GoalsHelper
       'bg-info'
     when 'quantitative_key_result'
       'bg-success'
+    when 'progressive_outcome'
+      'bg-success'
     else
       'bg-secondary'
     end
@@ -92,6 +94,8 @@ module GoalsHelper
       'Key Result'
     when :bad_key_result
       'Bad Key Result'
+    when :progressive_outcome
+      og3_label_clear
     else
       goal.goal_type.humanize
     end
@@ -107,6 +111,8 @@ module GoalsHelper
       'bg-success'
     when :bad_key_result
       'bg-danger'
+    when :progressive_outcome
+      'bg-success'
     else
       'bg-secondary'
     end
@@ -453,8 +459,11 @@ module GoalsHelper
   
   # Select value for "hit late" terminal option; maps to 100 via Integer/String#to_i.
   CONFIDENCE_TERMINAL_HIT_LATE = "100_late"
+  # OG3: hit current aim and create the next Progressive Outcome aim.
+  CONFIDENCE_TERMINAL_HIT_ADVANCE = "100_advance"
+  CONFIDENCE_TERMINAL_HIT_LATE_ADVANCE = "100_late_advance"
 
-  def confidence_percentage_options
+  def confidence_percentage_options(goal: nil)
     options = []
     # 0% done sits at the top next to the low active band; 100% done options stay at the end.
     options << [confidence_missed_option_label, 0]
@@ -463,6 +472,13 @@ module GoalsHelper
     end
     options << [confidence_hit_on_time_option_label, 100]
     options << [confidence_hit_late_option_label, CONFIDENCE_TERMINAL_HIT_LATE]
+
+    if goal&.progressive_outcome? && goal.progressive_next_aim.present?
+      next_aim = goal.progressive_next_aim.humanize
+      options << [confidence_hit_and_advance_on_time_option_label(next_aim), CONFIDENCE_TERMINAL_HIT_ADVANCE]
+      options << [confidence_hit_and_advance_late_option_label(next_aim), CONFIDENCE_TERMINAL_HIT_LATE_ADVANCE]
+    end
+
     options
   end
 
@@ -480,6 +496,18 @@ module GoalsHelper
 
   def confidence_hit_late_option_label
     "I'm calling this done (100%) and it was hit 🎉, though it took longer than originally thought... The most important part is that I'll put Learnings below"
+  end
+
+  def confidence_hit_and_advance_on_time_option_label(next_aim)
+    "I'm calling this done (100%) and it was hit 🎉 on time... And advance the OG3 ladder to #{next_aim}. Learnings below still matter most."
+  end
+
+  def confidence_hit_and_advance_late_option_label(next_aim)
+    "I'm calling this done (100%) and it was hit 🎉 late... And advance the OG3 ladder to #{next_aim}. Learnings below still matter most."
+  end
+
+  def confidence_advance_requested?(confidence_param)
+    confidence_param.to_s.include?("advance")
   end
 
   # Selected option value for a check-in (distinguishes the two 100% labels via date inference).

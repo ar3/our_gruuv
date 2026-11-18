@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_14_233000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_18_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -821,6 +821,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_14_233000) do
     t.bigint "company_id", null: false
     t.string "initial_confidence", default: "stretch"
     t.string "edit_check_in_permission", default: "anyone_who_can_view", null: false
+    t.decimal "outcome_baseline", precision: 12, scale: 4
+    t.decimal "outcome_commit", precision: 12, scale: 4
+    t.decimal "outcome_stretch", precision: 12, scale: 4
+    t.decimal "outcome_transform", precision: 12, scale: 4
+    t.string "outcome_unit"
+    t.string "progressive_current_aim"
+    t.datetime "outcome_fields_manually_edited_at"
+    t.text "og3_default_check_result"
     t.index ["company_id"], name: "index_goals_on_company_id"
     t.index ["completed_at"], name: "index_goals_on_completed_at"
     t.index ["creator_id"], name: "index_goals_on_creator_id"

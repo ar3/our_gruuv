@@ -434,7 +434,28 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @form.current_teammate = current_company_teammate
 
     goal_params = params[:goal] || {}
-    
+    create_mode = goal_params[:progressive_create_mode].to_s
+    goal_type = goal_params[:goal_type].to_s
+
+    if goal_type == "progressive_outcome" && create_mode == "expand_now"
+      result = Goals::ExpandProgressiveOutcome.call(
+        organization: @organization,
+        current_person: current_person,
+        current_teammate: current_company_teammate,
+        attrs: goal_params
+      )
+      if result.ok?
+        redirect_to organization_goal_path(@organization, result.parent, anchor: 'check-in'),
+          return_text: 'Edit Goal / Add Child Goals',
+          notice: "Progressive Outcome expanded into #{result.children.size} aims under a parent goal."
+      else
+        @form.validate(goal_params)
+        flash.now[:alert] = result.error
+        render :new, status: :unprocessable_entity
+      end
+      return
+    end
+
     if @form.validate(goal_params) && @form.save
       EngagementHealth.schedule_refresh_for_goal(@goal)
       redirect_to organization_goal_path(@organization, @goal, anchor: 'check-in'),
@@ -620,7 +641,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @form.current_teammate = current_company_teammate
     
     goal_params = params[:goal] || {}
-    
+    apply_progressive_manual_override_flag!(@goal, goal_params)
+
     if @form.validate(goal_params) && @form.save
       EngagementHealth.schedule_refresh_for_goal(@goal)
       redirect_to organization_goal_path(@organization, @goal), 
@@ -675,6 +697,24 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                   alert: 'Failed to start goal.'
     end
   end
+
+  def advance_progressive_aim
+    authorize @goal, :update?
+
+    result = Goals::AdvanceProgressiveAim.call(
+      goal: @goal,
+      current_person: current_person,
+      current_teammate: current_company_teammate
+    )
+
+    if result.ok?
+      redirect_to organization_goal_path(@organization, result.next_goal, anchor: "check-in"),
+                  notice: "Hit #{@goal.progressive_current_aim || 'commit'}; now aiming at #{result.next_goal.progressive_current_aim}."
+    else
+      redirect_to organization_goal_path(@organization, @goal),
+                  alert: result.error
+    end
+  end
   
   def check_in
     authorize @goal, :show?
@@ -688,11 +728,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       authorize @goal, :update?
     end
     
+    confidence_param = params[:confidence_percentage]
     result = Goals::CheckInService.call(
       goal: @goal,
       current_person: current_person,
       current_company_teammate: current_company_teammate,
-      confidence_percentage: params[:confidence_percentage],
+      confidence_percentage: confidence_param,
       confidence_reason: params[:confidence_reason],
       most_likely_target_date: params[:most_likely_target_date]
     )
@@ -702,6 +743,20 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     if result.ok?
       if result.value[:no_changes]
         redirect_to return_url
+      elsif helpers.confidence_advance_requested?(confidence_param) && @goal.reload.progressive_can_advance?
+        advance = Goals::AdvanceProgressiveAim.call(
+          goal: @goal,
+          current_person: current_person,
+          current_teammate: current_company_teammate
+        )
+        if advance.ok?
+          redirect_to organization_goal_path(@organization, advance.next_goal, anchor: "check-in"),
+                      notice: "Hit recorded. Advanced OG3 ladder to #{advance.next_goal.progressive_current_aim&.humanize}."
+        else
+          redirect_to return_url,
+                      notice: "Goal marked as done successfully.",
+                      alert: "Could not advance OG3 ladder: #{advance.error}"
+        end
       else
         notice = if result.value[:completed]
           'Goal marked as done successfully.'
@@ -885,6 +940,16 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
   
   private
+
+  def apply_progressive_manual_override_flag!(goal, goal_params)
+    return unless goal_params.key?(:mark_outcome_fields_manual)
+
+    if ActiveModel::Type::Boolean.new.cast(goal_params[:mark_outcome_fields_manual])
+      goal.outcome_fields_manually_edited_at ||= Time.current
+    else
+      goal.outcome_fields_manually_edited_at = nil
+    end
+  end
 
   # Departments for goal owner dropdown: hierarchically and alphabetically (root first, then children by name).
   # Example: AAA, BBB, BBB > Sub-B1, BBB > Sub-B2, CCC, CCC > Sub-C1, DDD, EEE

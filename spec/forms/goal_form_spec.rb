@@ -412,6 +412,42 @@ RSpec.describe GoalForm, type: :form do
       expect(goal.reload.owner_type).to eq('CompanyTeammate')
     end
   end
+
+  describe 'OG3 default scheduling after double-save' do
+    include ActiveJob::TestHelper
+
+    it 'treats a title update as changed even though Reform save clears dirty flags before the follow-up save' do
+      existing = create(
+        :goal,
+        creator: creator_teammate,
+        owner: creator_teammate,
+        company: company,
+        goal_type: 'quantitative_key_result',
+        title: 'Old title without numbers',
+        started_at: nil,
+        privacy_level: 'only_creator_owner_and_managers'
+      )
+      edit_form = GoalForm.new(existing)
+      edit_form.current_person = person
+      edit_form.current_teammate = creator_teammate
+
+      expect(
+        edit_form.validate(
+          title: 'Grow paid seats from 120 to about 200 this year',
+          goal_type: 'quantitative_key_result',
+          privacy_level: 'only_creator_owner_and_managers',
+          owner_id: "CompanyTeammate_#{creator_teammate.id}"
+        )
+      ).to be(true)
+
+      expect do
+        expect(edit_form.save).to be(true)
+      end.to have_enqueued_job(Goals::DefaultProgressiveOutcomeFromTitleJob)
+
+      expect(existing.reload.og3_default_check_result).to include('status=enqueued_llm')
+      expect(existing.og3_default_check_result).not_to include('skipped_title_unchanged')
+    end
+  end
 end
 
 

@@ -71,16 +71,17 @@ module Goals
       percentage = if raw_percentage.nil? || raw_percentage.to_s.strip.empty?
         nil
       else
-        raw_percentage.to_s.to_i # "100_late" => 100, "0" => 0
+        raw_percentage.to_s.to_i # "100_late" / "100_advance" => 100, "0" => 0
       end
       reason = @attrs[:confidence_reason].to_s.strip.presence
+      advance_requested = raw_percentage.to_s.include?("advance")
 
       # Clearing both is a no-op on the sheet (do not destroy check-ins here).
       return [] if percentage.nil? && reason.blank?
 
       week_start = Date.current.beginning_of_week(:monday)
       current = @goal.goal_check_ins.find_by(check_in_week_start: week_start)
-      if current && current.confidence_percentage == percentage && current.confidence_reason.to_s.strip.presence == reason
+      if current && current.confidence_percentage == percentage && current.confidence_reason.to_s.strip.presence == reason && !advance_requested
         return []
       end
 
@@ -88,12 +89,21 @@ module Goals
         goal: @goal,
         current_person: @current_person,
         current_company_teammate: @current_teammate,
-        confidence_percentage: percentage,
+        confidence_percentage: raw_percentage.presence || percentage,
         confidence_reason: reason
       )
-      return [] if result.ok?
+      return Array(result.error) unless result.ok?
 
-      Array(result.error)
+      if advance_requested && @goal.reload.progressive_can_advance?
+        advance = Goals::AdvanceProgressiveAim.call(
+          goal: @goal,
+          current_person: @current_person,
+          current_teammate: @current_teammate
+        )
+        return ["Check-in saved, but could not advance OG3 ladder: #{advance.error}"] unless advance.ok?
+      end
+
+      []
     end
 
     def parse_sheet_date(value)

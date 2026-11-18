@@ -29,6 +29,8 @@ RSpec.describe 'Public marketing pages', type: :request do
       expect(response.body).to include('Clarity')
       expect(response.body).to include('Continuous Feedback')
       expect(response.body).to include('MAAP')
+      expect(response.body).to include(og3_goals_path)
+      expect(response.body).to include('OG3 Goals')
     end
   end
 
@@ -41,6 +43,26 @@ RSpec.describe 'Public marketing pages', type: :request do
       expect(response.body).to include('research behind peak work')
       expect(response.body).to include('What we believe')
       expect(response.body).to include('Csikszentmihalyi')
+    end
+  end
+
+  describe 'GET /og3-goals' do
+    it 'returns the OG3 Progressive Outcome theory page' do
+      get og3_goals_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('OG3 Progressive Outcome')
+      expect(response.body).to include('Commit')
+      expect(response.body).to include('Stretch')
+      expect(response.body).to include('Transform')
+      expect(response.body).to include('ALWAYS LEARN')
+      expect(response.body).to include('on / off track')
+      expect(response.body).to include('Demo confidence check')
+      expect(response.body).to include('Notes / Learnings')
+      expect(response.body).to include('Rocks')
+      expect(response.body).to include('cross off an accomplishment as DONE')
+      expect(response.body).not_to include('progressive_outcome')
+      expect(response.body).not_to include('Internally we')
     end
   end
 

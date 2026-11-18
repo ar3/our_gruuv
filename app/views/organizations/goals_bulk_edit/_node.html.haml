@@ -64,7 +64,7 @@
                   %label.form-label.small.mb-0 Confidence
                   - if can_check_in
                     = select_tag "goal[confidence_percentage]",
-                                 options_for_select([["—", ""]] + confidence_percentage_options, selected_confidence_percentage_option(goal, check_in)),
+                                 options_for_select([["—", ""]] + confidence_percentage_options(goal: goal), selected_confidence_percentage_option(goal, check_in)),
                                  class: "form-select form-select-sm"
                   - else
                     %span.form-control.form-control-sm.bg-light= check_in&.confidence_percentage.present? ? "#{check_in.confidence_percentage}%" : "—"

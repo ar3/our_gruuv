@@ -51,6 +51,24 @@
             
             .mb-4 
               = render 'goal_type_selection', form: form
+
+            #progressive-outcome-create-mode.mb-4{style: (@form.goal_type == 'progressive_outcome' ? nil : 'display: none;')}
+              %label.form-label{title: og3_hover_blurb, "data-bs-toggle" => "tooltip"}
+                = og3_label_clear
+                create mode
+              = render "shared/og3/bands_legend"
+              .form-check
+                = form.radio_button :progressive_create_mode, 'progressive', class: 'form-check-input', id: 'progressive_create_mode_progressive', checked: (@form.progressive_create_mode.blank? || @form.progressive_create_mode == 'progressive')
+                = form.label :progressive_create_mode, nil, value: 'progressive', class: 'form-check-label', for: 'progressive_create_mode_progressive' do
+                  %strong Single progressive aim
+                  %small.text-muted.d-block One live goal; hitting Commit can advance to Stretch, then Transform.
+              .form-check
+                = form.radio_button :progressive_create_mode, 'expand_now', class: 'form-check-input', id: 'progressive_create_mode_expand_now', checked: (@form.progressive_create_mode == 'expand_now')
+                = form.label :progressive_create_mode, nil, value: 'expand_now', class: 'form-check-label', for: 'progressive_create_mode_expand_now' do
+                  %strong Expand now (parent + 3 aims)
+                  %small.text-muted.d-block Creates a parent objective and Commit / Stretch / Transform child goals immediately.
+              %small.form-text.text-muted
+                Tip: put the ladder in the title, e.g. "Move retention from 50% to [60|70|80]%" or "… Commit:60%, Stretch:70%, Transform:80%".
               
             / Timeframe Selection - Large Button Group
             .mb-4#timeframe-selection
@@ -188,11 +206,25 @@
     });
   }
   
+  function setupProgressiveOutcomeMode() {
+    var modeBlock = document.getElementById('progressive-outcome-create-mode');
+    if (!modeBlock) return;
+    var radios = document.querySelectorAll('input[name="goal[goal_type]"]');
+    function sync() {
+      var selected = document.querySelector('input[name="goal[goal_type]"]:checked');
+      modeBlock.style.display = (selected && selected.value === 'progressive_outcome') ? 'block' : 'none';
+    }
+    radios.forEach(function(radio) { radio.addEventListener('change', sync); });
+    sync();
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     setupTimeframeListeners();
     setupFormSubmit();
+    setupProgressiveOutcomeMode();
   });
   document.addEventListener('turbo:load', function() {
     setupTimeframeListeners();
     setupFormSubmit();
+    setupProgressiveOutcomeMode();
   });

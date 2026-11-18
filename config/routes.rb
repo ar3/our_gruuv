@@ -924,6 +924,7 @@ Rails.application.routes.draw do
       member do
         patch :start
         post :check_in
+        post :advance_progressive_aim
         patch :set_timeframe
         patch :undelete
         get :weekly_update
@@ -1308,6 +1309,7 @@ Rails.application.routes.draw do
   # Public marketing / founder pages
   get '/solutions', to: 'pages#solutions', as: :solutions
   get '/flow-state', to: 'pages#flow_state', as: :flow_state
+  get '/og3-goals', to: 'pages#og3_goals', as: :og3_goals
   get '/pricing', to: 'pages#pricing', as: :pricing
   get '/start-free', to: 'pages#start_free', as: :start_free
   get '/about', to: 'pages#about', as: :about

@@ -64,6 +64,7 @@ RSpec.describe "MCP HTTP endpoint", type: :request do
       "start_goal",
       "propose_goal_update",
       "confirm_goal_change",
+      "advance_progressive_aim",
       "set_current_week_goal_confidence",
       "mint_feedback_link"
     )

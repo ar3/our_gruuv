@@ -24,6 +24,7 @@ module AgentTools
       "start_goal" => "AgentTools::StartGoal",
       "propose_goal_update" => "AgentTools::ProposeGoalUpdate",
       "confirm_goal_change" => "AgentTools::ConfirmGoalChange",
+      "advance_progressive_aim" => "AgentTools::AdvanceProgressiveAim",
       "set_current_week_goal_confidence" => "AgentTools::SetCurrentWeekGoalConfidence",
       "create_seat_suggestion_bundle" => "AgentTools::CreateSeatSuggestionBundle",
       "create_assignment_suggestion_bundle" => "AgentTools::CreateAssignmentSuggestionBundle",
@@ -37,6 +38,7 @@ module AgentTools
       start_goal
       propose_goal_update
       confirm_goal_change
+      advance_progressive_aim
       set_current_week_goal_confidence
       create_seat_suggestion_bundle
       create_assignment_suggestion_bundle
@@ -324,8 +326,13 @@ module AgentTools
           owner_id: { type: "integer", description: "Owner id when owner_path unavailable; requires owner_type" },
           goal_type: {
             type: "string",
-            enum: %w[inspirational_objective qualitative_key_result quantitative_key_result stepping_stone_activity],
-            description: "Defaults to inspirational_objective"
+            enum: %w[inspirational_objective qualitative_key_result quantitative_key_result progressive_outcome stepping_stone_activity],
+            description: "Defaults to inspirational_objective. Use progressive_outcome for Commit/Stretch/Transform ladders."
+          },
+          progressive_create_mode: {
+            type: "string",
+            enum: %w[progressive expand_now],
+            description: "For progressive_outcome: progressive (single aim, default) or expand_now (parent + 3 children)."
           },
           description: { type: "string", description: "Optional description" },
           most_likely_target_date: { type: "string", description: "Optional ISO date (stretch / most likely)" },
@@ -344,6 +351,17 @@ module AgentTools
           }
         },
         required: ["title", "owner_path"],
+        additionalProperties: false
+      },
+      "advance_progressive_aim" => {
+        type: "object",
+        properties: {
+          goal_path: {
+            type: "string",
+            description: "Progressive Outcome goal path. On MCP returns change_token; confirm_goal_change applies."
+          }
+        },
+        required: ["goal_path"],
         additionalProperties: false
       },
       "start_goal" => {
@@ -519,10 +537,11 @@ module AgentTools
       "get_observation" => "Get one observation (OGO) by path (preferred). Fully hydrated: full story, observer + observees (name/path), feelings, type/privacy/publish, goal, and ratings (rateable_type/id/name/path + rating + rating_label). Use after list_observations for analysis.",
       "search_organization" => "Search people, assignments, abilities, titles, values, and observations in the org. Title hits are NOT Assignment carriers (carries_assignments: false) — use positions for Assignments. Assignment/ability hits respect detail (default expensive full body fields; pass minimal to save tokens).",
       "create_draft_observation" => "Create a draft OGO only (never publishes). Use observee_path from other tools.",
-      "create_draft_goal" => "Create a draft goal (not started). Owner required via owner_path. Optional parent_goal_paths (0..n). Call start_goal to activate. Prefer paths over ids.",
+      "create_draft_goal" => "Create a draft goal (not started). Owner required via owner_path. Optional parent_goal_paths (0..n). For OG3 Progressive Outcome (goal_type progressive_outcome), put C/S/T in the title (e.g. from 50% to [60|70|80]%) and optionally progressive_create_mode=expand_now. Call start_goal to activate. Prefer paths over ids.",
       "start_goal" => "Start a draft goal (sets started_at). Optional confidence_percentage sets current-week check-in while starting.",
       "propose_goal_update" => "Preview a goal field and/or parent-link update. Does not persist. Apply with confirm_goal_change(change_token).",
-      "confirm_goal_change" => "Apply a pending goal mutation from propose_goal_update or set_current_week_goal_confidence (MCP). Requires change_token from the preview response.",
+      "confirm_goal_change" => "Apply a pending goal mutation from propose_goal_update, advance_progressive_aim, or set_current_week_goal_confidence (MCP). Requires change_token from the preview response.",
+      "advance_progressive_aim" => "Hit the current OG3 Progressive Outcome aim and create the next linked aim (Commit→Stretch→Transform). On MCP: preview + change_token; confirm_goal_change applies.",
       "set_current_week_goal_confidence" => "Set goal confidence for the current Monday week only. On MCP: returns change_token preview — call confirm_goal_change to apply. 0% or 100% completes the goal; Learnings optional.",
       "create_seat_suggestion_bundle" => "After summarizing a Seat suggestion, create draft Seat + linked Title/Team/Position/Assignment/Ability proposals. Never apply them.",
       "create_assignment_suggestion_bundle" => "After summarizing Assignment focus work, create draft Assignment (+ nested Ability) proposals. Never apply them.",
@@ -550,6 +569,7 @@ module AgentTools
       "start_goal" => "Start goal",
       "propose_goal_update" => "Propose goal update",
       "confirm_goal_change" => "Confirm goal change",
+      "advance_progressive_aim" => "Advance progressive aim",
       "set_current_week_goal_confidence" => "Set current-week goal confidence",
       "create_seat_suggestion_bundle" => "Create seat suggestion proposal bundle",
       "create_assignment_suggestion_bundle" => "Create assignment suggestion proposal bundle",

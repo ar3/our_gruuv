@@ -17,6 +17,8 @@ module AgentTools
         apply_update(context, pending)
       when "set_confidence"
         apply_confidence(context, pending)
+      when "advance_progressive_aim"
+        apply_advance(context, pending)
       else
         err("unknown pending action", code: "validation_failed")
       end
@@ -79,6 +81,32 @@ module AgentTools
         goal: GoalMutations.serialize_goal(context, goal),
         path: RecordPaths.goal_path(context, goal),
         redirect_path: organization_goal_path(context.organization, goal)
+      )
+    end
+
+    def apply_advance(context, pending)
+      payload = pending["payload"] || {}
+      goal = Goal.find_by(id: payload["goal_id"])
+      return err("goal not found", code: "not_found") if goal.nil?
+      return err("goal not in organization", code: "validation_failed") unless goal.company_id == GoalMutations.company_for(context).id
+      return err("goal not viewable", code: "not_authorized") unless goal.can_be_viewed_by?(context.person)
+
+      context.authorize!(goal, :update?)
+
+      result = Goals::AdvanceProgressiveAim.call(
+        goal: goal,
+        current_person: context.person,
+        current_teammate: context.company_teammate
+      )
+      return err(result.error, code: "validation_failed") unless result.ok?
+
+      ok(
+        confirmed: true,
+        action: "advance_progressive_aim",
+        completed_goal: GoalMutations.serialize_goal(context, result.completed_goal),
+        next_goal: GoalMutations.serialize_goal(context, result.next_goal),
+        path: RecordPaths.goal_path(context, result.next_goal),
+        redirect_path: organization_goal_path(context.organization, result.next_goal)
       )
     end
 

@@ -1,0 +1,11 @@
+-# locals: variant (:short|:medium|:clear|:clear_goal), badge_class (optional), tag (:span default)
+- variant = local_assigns.fetch(:variant, :clear)
+- badge_class = local_assigns.fetch(:badge_class, "badge bg-success")
+- tag_name = local_assigns.fetch(:tag, :span)
+- text = og3_label(variant)
+
+= content_tag tag_name, text,
+  class: badge_class,
+  title: og3_hover_blurb,
+  "data-bs-toggle": "tooltip",
+  "data-bs-placement": "top"

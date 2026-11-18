@@ -1,0 +1,78 @@
+-# locals: goal (required)
+- return unless goal.progressive_outcome?
+
+- details_id = "og3BandsDetails#{goal.id}"
+- unit = goal.outcome_unit.to_s
+- baseline_text = og3_format_outcome_value(goal.outcome_baseline, unit)
+- commit_text = og3_format_outcome_value(goal.outcome_commit, unit)
+- stretch_text = og3_format_outcome_value(goal.outcome_stretch, unit)
+- transform_text = og3_format_outcome_value(goal.outcome_transform, unit)
+- current_aim = og3_current_aim_label(goal)
+
+.card.mb-4.border-success{role: "region", "aria-label": og3_label_clear}
+  .card-header.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+    %h5.mb-0
+      %i.bi.bi-layers.me-2
+      %span{title: og3_hover_blurb, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
+        = og3_label_clear
+    - if goal.progressive_current_aim.present?
+      %span.badge.text-bg-success
+        Current aim: #{goal.progressive_current_aim.humanize}
+  .card-body
+    %p.og3-outcome-sentence.mb-3
+      %span{title: og3_hover_blurb, "data-bs-toggle" => "tooltip"}
+        %strong= og3_label_clear
+      \:
+      %strong The Baseline
+      of
+      %span.og3-outcome-value{class: (baseline_text ? nil : "og3-outcome-value--empty")}= baseline_text.presence || "not set yet"
+      is where we started.
+      %strong The COMMIT
+      (the outcome we are ≈80%+ confident we can hit) is
+      %span.og3-outcome-value{class: [current_aim == "COMMIT" ? "og3-outcome-value--current" : nil, commit_text ? nil : "og3-outcome-value--empty"].compact}= commit_text.presence || "not set yet"
+      \;
+      %strong The STRETCH
+      (the outcome that will push us and we are ≈50/50 confident we can hit) is
+      %span.og3-outcome-value{class: [current_aim == "STRETCH" ? "og3-outcome-value--current" : nil, stretch_text ? nil : "og3-outcome-value--empty"].compact}= stretch_text.presence || "not set yet"
+      \;
+      %strong The TRANSFORM
+      (the innovation-required “everything is impossible until someone does it” outcome that we don’t know if possible, but will change everything if hit) is
+      %span.og3-outcome-value{class: [current_aim == "TRANSFORM" ? "og3-outcome-value--current" : nil, transform_text ? nil : "og3-outcome-value--empty"].compact}= transform_text.presence || "not set yet"
+      \.
+      Confidence checks track the current aim, which is
+      %span.og3-outcome-value.og3-outcome-value--current= current_aim
+      \.
+
+    %p.mb-3
+      %button.btn.btn-link.btn-sm.p-0{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "##{details_id}", "aria-expanded" => "false", "aria-controls" => details_id}
+        Show details
+
+    .collapse.mb-3{id: details_id}
+      %dl.row.mb-0
+        %dt.col-sm-4 Baseline
+        %dd.col-sm-8= baseline_text.presence || "Not set"
+        %dt.col-sm-4 Commit
+        %dd.col-sm-8
+          = commit_text.presence || "Not set"
+          - if current_aim == "COMMIT"
+            %span.badge.text-bg-success.ms-1 Current
+        %dt.col-sm-4 Stretch
+        %dd.col-sm-8
+          = stretch_text.presence || "Not set"
+          - if current_aim == "STRETCH"
+            %span.badge.text-bg-success.ms-1 Current
+        %dt.col-sm-4 Transform
+        %dd.col-sm-8
+          = transform_text.presence || "Not set"
+          - if current_aim == "TRANSFORM"
+            %span.badge.text-bg-success.ms-1 Current
+      %p.small.text-muted.mt-2.mb-0
+        = link_to "Learn more about OG3 Goals", og3_marketing_path, target: "_blank", rel: "noopener"
+
+    - if policy(goal).update? && !goal_is_completed?(goal) && goal.deleted_at.blank?
+      .d-flex.flex-wrap.gap-2.align-items-center
+        = link_to "Record hit in confidence checks",
+          organization_goal_path(@organization, goal, anchor: "check-in"),
+          class: "btn btn-success"
+      %p.small.text-muted.mt-2.mb-0
+        To hit this aim and optionally advance the OG3 ladder, use the confidence dropdown below... Choose a 100% option that stops here or advances to the next aim.

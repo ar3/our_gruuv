@@ -79,7 +79,7 @@
                         - else
                           %span.small= goal.most_likely_target_date.present? ? goal.most_likely_target_date.strftime('%b %d, %Y') : '—'
                         %span.small.text-nowrap —
-                        = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", options_for_select(confidence_percentage_options, selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select' }
+                        = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", options_for_select(confidence_percentage_options(goal: goal), selected_confidence_percentage_option(goal, current_week_check_in)), { include_blank: 'Select...', class: 'form-select form-select-sm goal-check-in-inline-layout__confidence-select' }
                       = text_field_tag "goal_check_ins[#{goal.id}][confidence_reason]", current_week_check_in&.confidence_reason, class: 'form-control form-control-sm goal-check-in-inline-layout__reason', placeholder: confidence_reason_placeholder
 
 - if has_children

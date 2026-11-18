@@ -1,0 +1,39 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    See what this goal is, who owns it, how confidence is tracking, and what to do next... So the aim stays clear week to week.
+
+  %h3.fw-semibold.mb-2 Context
+  %p.mb-3
+    Goals in OurGruuv are meant to be challenging, possible, and impactful. For outcome ladders we use
+    %strong{title: og3_hover_blurb, "data-bs-toggle" => "tooltip"}= og3_label_medium
+    \: Commit, Stretch, and Transform on one progressive path, with weekly confidence on the
+    %em current aim.
+    The most important thing when you complete an aim is what you learned... Not only the result. OGs always learn.
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %h5.fw-semibold.mb-2 What you’ll find here
+  %ul.mb-3
+    %li Goal details, owner, privacy, and history
+    %li Confidence checks for the current week (and past weeks)... Not vague on/off track labels
+    %li Linked parent/child goals when this goal is part of a hierarchy
+    %li
+      For
+      = succeed ":" do
+        %strong= og3_label_clear
+      the bands panel (Baseline / Commit / Stretch / Transform), current aim, and advance-to-next-aim when you’re ready
+
+  %h5.fw-semibold.mb-2= og3_label_clear
+  %p.mb-2
+    Other systems say “hit 80% of your goals” (Rocks) or “aim for 70% of the number”... Both muddy creativity or force constant math.
+    = succeed " " do
+      %strong= og3_label_medium
+    ask you to be clearer: name a Commit you are ≈80%+ sure you can hit, a Stretch you’re about 50/50 on, and a Transform that is nearly impossible until someone does it. Hit Commit, then (when you choose) advance the ladder. Cheer loudly for Stretch. Transform names a different world even when the path is unknown.
+  %p.mb-3
+    = link_to "Read the full OG3 Goals theory (marketing)", og3_marketing_path, target: "_blank", rel: "noopener"
+
+  %h5.fw-semibold.mb-2 Example
+  .border.rounded.p-3.bg-white.mb-0
+    %p.mb-1.fw-semibold Move retention from 50% to [60|70|80]%
+    %p.small.text-muted.mb-0
+      Commit 60% (current aim) · Stretch 70% · Transform 80%. Weekly confidence is about hitting 60% until you advance.

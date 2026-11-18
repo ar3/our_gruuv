@@ -17,6 +17,11 @@
     = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_quantitative_key_result' do
       .fw-bold Quantitative Key Result
       %small.d-block Measurable by counting or percentage
+
+    = form.radio_button :goal_type, 'progressive_outcome', class: 'btn-check', id: 'goal_type_progressive_outcome', required: true, checked: (@form.goal_type == 'progressive_outcome')
+    = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_progressive_outcome', title: og3_hover_blurb, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top" do
+      .fw-bold= og3_label_clear_goal
+      %small.d-block Commit / Stretch / Transform ladder — confidence tracks the current aim
     
     = form.radio_button :goal_type, 'stepping_stone_activity', class: 'btn-check', id: 'goal_type_stepping_stone_activity', required: true, checked: (@form.goal_type == 'stepping_stone_activity')
     = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_stepping_stone_activity' do

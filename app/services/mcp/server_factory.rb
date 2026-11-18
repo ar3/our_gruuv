@@ -27,9 +27,12 @@ module Mcp
       list_assignments(ability_path=...). list_observations returns thin story previews;
       filter with timeframe / rateable_path / observation_type. get_observation hydrates
       one OGO (full story, observer/observees, ratings with rateable paths).       create_draft_observation never publishes. create_draft_goal creates an unstarted draft
-      (owner_path required; optional parent_goal_paths); start_goal activates it (optional
-      confidence_percentage). propose_goal_update previews field/parent changes; set_current_week_goal_confidence
-      on MCP returns a change_token preview — call confirm_goal_change to apply either.
+      (owner_path required; optional parent_goal_paths); goal_type progressive_outcome parses
+      Commit/Stretch/Transform from the title (optional progressive_create_mode=expand_now).
+      start_goal activates it (optional confidence_percentage). advance_progressive_aim hits the
+      current aim and creates the next linked aim (MCP: change_token → confirm_goal_change).
+      propose_goal_update previews field/parent changes; set_current_week_goal_confidence
+      on MCP returns a change_token preview — call confirm_goal_change to apply.
       0% or 100% confidence completes the goal (Learnings optional; late vs on-time inferred from dates).
       mint_feedback_link finds or creates a Feedback Request for observer→observed + topics and
       returns answer_url / public_answer_url (no send). External observers get /f/:token.

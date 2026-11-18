@@ -51,6 +51,48 @@
             .mb-3
               = render 'goal_type_selection', form: form
 
+            - if @goal.progressive_outcome? || @form.goal_type == 'progressive_outcome'
+              .mb-4
+                %h5.fw-semibold{title: og3_hover_blurb, "data-bs-toggle" => "tooltip"}
+                  = og3_label_clear
+                  \— advanced bands
+                = render "shared/og3/bands_legend"
+                %p.small.text-muted
+                  These numbers power the ladder on the show page. They are usually filled from title prose (e.g. "from 50% to [60|70|80]%"). Edit here only if you need to override.
+                .row.g-2
+                  .col-md-4
+                    = form.label :outcome_baseline, 'Baseline', class: 'form-label'
+                    = form.number_field :outcome_baseline, class: 'form-control', step: 'any'
+                    %small.form-text.text-muted Where you started before this push (not an aim you “hit”).
+                  .col-md-4
+                    = form.label :outcome_unit, 'Unit', class: 'form-label'
+                    = form.text_field :outcome_unit, class: 'form-control', placeholder: '%'
+                    %small.form-text.text-muted What the numbers are in… %, customers, NPS points, etc.
+                  .col-md-4
+                    = form.label :progressive_current_aim, 'Current aim', class: 'form-label'
+                    = form.select :progressive_current_aim, options_for_select([%w[Commit commit], %w[Stretch stretch], %w[Transform transform]], @form.progressive_current_aim), { include_blank: true }, class: 'form-select'
+                    %small.form-text.text-muted Which band weekly confidence checks track right now.
+                .row.g-2.mt-1
+                  .col-md-4
+                    = form.label :outcome_commit, 'Commit', class: 'form-control-label form-label'
+                    = form.number_field :outcome_commit, class: 'form-control', step: 'any'
+                    %small.form-text.text-muted The outcome you are ≈80%+ confident you can hit.
+                  .col-md-4
+                    = form.label :outcome_stretch, 'Stretch', class: 'form-label'
+                    = form.number_field :outcome_stretch, class: 'form-control', step: 'any'
+                    %small.form-text.text-muted The push aim… about a coin-flip (≈50/50) to hit.
+                  .col-md-4
+                    = form.label :outcome_transform, 'Transform', class: 'form-label'
+                    = form.number_field :outcome_transform, class: 'form-control', step: 'any'
+                    %small.form-text.text-muted The near-impossible bar… everything is impossible until someone does it.
+                .form-check.mt-2
+                  = hidden_field_tag 'goal[mark_outcome_fields_manual]', '0'
+                  = check_box_tag 'goal[mark_outcome_fields_manual]', '1', @goal.outcome_fields_manually_edited_at.present?, class: 'form-check-input', id: 'goal_mark_outcome_fields_manual'
+                  %label.form-check-label{for: 'goal_mark_outcome_fields_manual'}
+                    Keep these field values (don't re-parse from title on save)
+                  %small.form-text.text-muted.d-block
+                    Check this if you hand-edited the numbers above and don’t want a title change to overwrite them.
+
             .mb-3
               = form.label :privacy_level, class: 'form-label' do
                 Privacy Level

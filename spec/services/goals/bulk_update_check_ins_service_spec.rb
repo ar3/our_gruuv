@@ -681,6 +681,54 @@ RSpec.describe Goals::BulkUpdateCheckInsService, type: :service do
       # The service checks update permission when target date is provided
       # This is tested implicitly through the successful update specs above
     end
+
+    context 'when OG3 advance is selected on check-in' do
+      let(:progressive_goal) do
+        create(
+          :goal,
+          :active,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          goal_type: 'progressive_outcome',
+          title: 'Move retention from 50% to [60|70|80]%',
+          outcome_baseline: 50,
+          outcome_commit: 60,
+          outcome_stretch: 70,
+          outcome_transform: 80,
+          outcome_unit: '%',
+          progressive_current_aim: 'commit',
+          most_likely_target_date: Date.today + 1.month
+        )
+      end
+
+      before do
+        create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      it 'completes the aim and creates the next progressive goal' do
+        params = {
+          progressive_goal.id => {
+            confidence_percentage: '100_advance',
+            confidence_reason: 'Hit commit, advancing'
+          }
+        }
+
+        expect do
+          result = described_class.call(
+            organization: organization,
+            current_person: person,
+            goal_check_ins_params: params,
+            week_start: week_start
+          )
+          expect(result.ok?).to be(true), -> { result.value.inspect }
+          expect(result.value[:success_count]).to eq(1)
+        end.to change(Goal, :count).by(1)
+
+        expect(progressive_goal.reload.completed_at).to be_present
+        expect(Goal.order(:id).last.progressive_current_aim).to eq('stretch')
+      end
+    end
   end
 end
 

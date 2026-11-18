@@ -1,13 +1,22 @@
 - content_for :title, @goal.title
+- page_help_id = "goalShowPageHelp"
 
 - content_for :header do
-  %h1.mb-0= @goal.title
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.gap-2
+      = @goal.title
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "What this goal page is for, including OG3 Progressive Outcomes. Click for details."
 
 - content_for :header_action do
   = render 'mode_switcher', organization: @organization, goal: @goal, current_mode: :view
 
 - content_for :go_back_link do
   = nav_hierarchy_with_previous(organization: @organization, crumbs: goal_show_breadcrumb_crumbs(@organization, @goal))
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/goals/page_help"
 
 - if goal_is_completed?(@goal)
   = render "organizations/goals/goal_completion_banner", goal: @goal
@@ -46,7 +55,10 @@
               %dd.col-sm-8
                 .d-inline-flex.flex-wrap.align-items-center.column-gap-2.row-gap-1
                   %span= @goal.title
-                  %span.badge{class: goal_badge_class(@goal.goal_type)}= goal_category_label(@goal)
+                  - if @goal.progressive_outcome?
+                    = render "shared/og3/label", variant: :clear, badge_class: "badge #{goal_badge_class(@goal.goal_type)}"
+                  - else
+                    %span.badge{class: goal_badge_class(@goal.goal_type)}= goal_category_label(@goal)
 
               %dt.col-sm-4 Description
               %dd.col-sm-8
@@ -88,6 +100,8 @@
                   = link_to organization_paper_trail_path(@organization, item_type: 'Goal', item_id: @goal.id), class: 'text-decoration-none' do
                     %i.bi.bi-clock-history.me-1
                     View full change history
+
+        = render "organizations/goals/progressive_outcome_panel", goal: @goal
 
       .col-md-4
         .card.mb-4
