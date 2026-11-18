@@ -1,48 +1,66 @@
 -# locals: period
+- lookback_value = billing_analysis_lookback_value(period)
+- this_period_value = billing_analysis_this_period_value(period)
+- savings = billing_analysis_savings_vs_delivery(period)
+- this_period_likely = billing_analysis_this_period_value_likely?(period)
 .qbr-snapshot
-  %p.fw-semibold.mb-2
+  %p.fw-semibold.mb-1
     - if period.locked?
-      OG Value Analysis
+      OG cost vs value
     - else
-      OG Value Analysis
+      OG cost vs value
       %span.text-muted.fw-normal (incomplete)
-  %ul.mb-3
-    %li
-      Value delivered
-      %strong= number_to_currency(period.value_delivered_total)
-      across
-      = pluralize(period.teammate_count, "teammate")
-      - unless period.locked?
-        %span.text-muted (so far)
-    %li
-      - if period.locked?
-        Locked PEPM
-      - else
-        Likely PEPM
-      %strong
-        - if period.pepm.to_f.zero?
-          nothing
+  %p.text-muted.small.mb-3
+    What you pay vs what OG delivered — and what you keep.
+
+  .billing-cost-vs-value.mb-3
+    %ul.list-unstyled.mb-0
+      %li.mb-2
+        Priced from lookback
+        %strong= number_to_currency(lookback_value)
+        %span.text-muted.small
+          across
+          = pluralize(period.teammate_count, "teammate")
+      %li.mb-2
+        - if this_period_likely
+          Likely value this period
         - else
-          = number_to_currency(period.pepm)
-          / teammate
-    %li
-      - if period.locked?
-        Invoice total
+          Value delivered this period
+        - if this_period_value
+          %strong= number_to_currency(this_period_value)
+        - else
+          %strong.text-muted —
+      %li.mb-2
+        You pay
+        %strong= number_to_currency(period.amount_due)
+        %span.text-muted.small
+          - if period.pepm.to_f.zero?
+            (OG cost: nothing / teammate)
+          - else
+            = "(OG cost: #{number_to_currency(period.pepm)} / teammate)"
+      %li.mb-0
+        - if this_period_likely
+          Likely cost savings vs delivery
+        - else
+          Cost savings vs delivery
+        - if savings
+          %strong.text-success= number_to_currency(savings)
+        - else
+          %strong.text-muted —
+
+  %p.text-muted.small.mb-3
+    - if period.prior_pepm
+      Prior setpoint
+      = number_to_currency(period.prior_pepm)
+      / teammate — this
+      = period.locked? ? "lock" : "preview"
+      is
+      - if period.pepm.to_f.zero?
+        nothing / teammate.
       - else
-        Likely invoice total
-      %strong= number_to_currency(period.amount_due)
-    %li
-      - if period.prior_pepm
-        Prior setpoint
-        %strong= number_to_currency(period.prior_pepm)
-        / teammate
-        — this
-        = period.locked? ? "lock" : "preview"
-        is
-        %strong= number_to_currency(period.pepm)
-        / teammate
-      - else
-        No prior PEPM setpoint yet.
+        = "#{number_to_currency(period.pepm)} / teammate."
+    - else
+      No prior PEPM setpoint yet.
 
   - if period.value_analysis
     - analysis = period.value_analysis
@@ -60,6 +78,7 @@
             %th Value driver
             %th.text-end
               %div.fw-semibold Lookback
+              %div.fw-normal.text-muted.small Sets what you pay
               - if lookback_col&.starts_on
                 %span.fw-normal.text-muted.small
                   = l(lookback_col.starts_on, format: :long)
@@ -69,6 +88,7 @@
                 %span.fw-normal.text-muted.small n/a
             %th.text-end
               %div.fw-semibold This period
+              %div.fw-normal.text-muted.small Value while you're on this invoice
               - if current_col&.starts_on
                 %span.fw-normal.text-muted.small
                   = l(current_col.starts_on, format: :long)
@@ -78,6 +98,7 @@
                 %span.fw-normal.text-muted.small n/a
             %th.text-end
               %div.fw-semibold Next period
+              %div.fw-normal.text-muted.small Where value is heading
               - if future_col&.starts_on
                 %span.fw-normal.text-muted.small
                   = l(future_col.starts_on, format: :long)
@@ -105,7 +126,7 @@
               = render "organizations/billing/ee_value", **future_mode, total_cell: analysis.totals[:future]
     - if analysis.any_incomplete?
       %p.text-muted.small.mb-0
-        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Incomplete periods show activity so far (+) with a pace projection to 100% in (~…), or a trend projection (~) if not started yet.
+        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Incomplete periods show activity so far (+) with a pace projection to 100% in (~…), or a trend projection (~) if not started yet. Cost savings compares this-period value to what you pay.
     - else
       %p.text-muted.small.mb-0
-        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Actual reflects value delivered during this period after it ended — even if that is less than what was paid for.
+        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Cost savings compares this-period value to what you pay — even when delivery ends up lower than the lookback that set the price.

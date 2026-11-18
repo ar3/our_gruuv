@@ -201,6 +201,41 @@ module Organizations::BillingHelper
       "So long as OG is helping foster Transparency, Clarity, and Fairness that leads to Growth... " \
       "we will be making the impact we want to make... and that is most important."
   end
+
+  # Framing C: priced-from lookback, this-period delivery, you pay, savings vs delivery.
+  def billing_analysis_lookback_value(period)
+    period.value_delivered_total.to_f
+  end
+
+  def billing_analysis_this_period_value(period)
+    analysis = period.value_analysis
+    return nil if analysis.blank?
+
+    column = analysis.column_for(:current)
+    total = analysis.totals[:current]
+    return nil if column.blank? || total.blank?
+
+    if column.in_progress?
+      billing_extrapolate_money(total.value_sum, column.period_progress)
+    else
+      total.value_sum.to_f
+    end
+  end
+
+  def billing_analysis_this_period_value_likely?(period)
+    column = period.value_analysis&.column_for(:current)
+    return true if period.incomplete?
+    return false if column.blank?
+
+    column.in_progress? || column.upcoming?
+  end
+
+  def billing_analysis_savings_vs_delivery(period)
+    this_period_value = billing_analysis_this_period_value(period)
+    return nil if this_period_value.nil?
+
+    [this_period_value - period.amount_due.to_f, 0.0].max.round(2)
+  end
 end
 
 

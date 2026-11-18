@@ -86,4 +86,72 @@ RSpec.describe Organizations::BillingHelper, type: :helper do
       expect(copy).to include('that is most important')
     end
   end
+
+  describe 'cost vs value framing helpers' do
+    let(:current_col) do
+      Organizations::Billing::ValueAnalysisTable::PeriodColumn.new(
+        key: :current,
+        label: nil,
+        starts_on: Date.new(2026, 12, 1),
+        ends_on: Date.new(2026, 12, 31),
+        status: :complete,
+        period_progress: 1.0,
+        activity_scale: 3.0
+      )
+    end
+    let(:total_cell) do
+      Organizations::Billing::ValueAnalysisTable::TotalCell.new(
+        pepm: 2.0,
+        value_sum: 40.0,
+        week_count: 4,
+        teammate_count: 2,
+        per_employee_week: 0.5
+      )
+    end
+    let(:analysis) do
+      Organizations::Billing::ValueAnalysisTable::Result.new(
+        columns: [current_col],
+        rows: [],
+        totals: { current: total_cell },
+        teammate_count: 2
+      )
+    end
+    let(:period) do
+      Organizations::Billing::PeriodViews::View.new(
+        due_on: Date.new(2026, 12, 1),
+        calculation_on: Date.new(2026, 11, 24),
+        locked?: true,
+        pepm: 5.0,
+        amount_due: 10.0,
+        prior_pepm: nil,
+        value_delivered_total: 25.0,
+        teammate_count: 2,
+        incomplete?: false,
+        value_analysis: analysis
+      )
+    end
+
+    it 'reads lookback value from the period and savings vs this-period delivery' do
+      expect(helper.billing_analysis_lookback_value(period)).to eq(25.0)
+      expect(helper.billing_analysis_this_period_value(period)).to eq(40.0)
+      expect(helper.billing_analysis_this_period_value_likely?(period)).to eq(false)
+      expect(helper.billing_analysis_savings_vs_delivery(period)).to eq(30.0)
+    end
+
+    it 'pace-projects this-period value while the period is in progress' do
+      current_col.status = :in_progress
+      current_col.period_progress = 0.5
+      total_cell.value_sum = 20.0
+
+      expect(helper.billing_analysis_this_period_value(period)).to eq(40.0)
+      expect(helper.billing_analysis_this_period_value_likely?(period)).to eq(true)
+      expect(helper.billing_analysis_savings_vs_delivery(period)).to eq(30.0)
+    end
+
+    it 'floors savings at zero when you pay more than this-period value' do
+      total_cell.value_sum = 5.0
+
+      expect(helper.billing_analysis_savings_vs_delivery(period)).to eq(0.0)
+    end
+  end
 end
