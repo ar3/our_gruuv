@@ -826,6 +826,8 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       expect(response.body).to include("One-by-one vs bulk")
       expect(response.body).to include("... meaning;")
       expect(response.body).to include("needed for clarity")
+      expect(response.body).to include("Just tell me what to do next")
+      expect(response.body).to include("Check-in on #{employee_person.casual_name} and the")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/assignments/#{assignment.id}")
       expect(response.body).to include("/organizations/#{organization.to_param}/teammates/#{employee_teammate.id}/aspirations/#{aspiration.id}")
       expect(response.body).to include(position_check_in_organization_teammate_path(organization, employee_teammate))
@@ -839,6 +841,79 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         assignment_selection_organization_company_teammate_path(organization, employee_teammate)
       )
     end
+
+    it "shows the review tell-me-next CTA when check-ins are ready for joint review" do
+      aspiration = create(:aspiration, company: organization, name: "Ready Aspiration")
+      create(
+        :aspiration_check_in,
+        :ready_for_finalization,
+        teammate: employee_teammate,
+        aspiration: aspiration,
+        manager_completed_by_teammate: manager_teammate
+      )
+      create(
+        :position_check_in,
+        :closed,
+        teammate: employee_teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 5.days.ago
+      )
+      EngagementHealth::Refresher.call(employee_teammate)
+
+      get up_next_organization_company_teammate_check_ins_path(organization, employee_teammate)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Just tell me what to do next")
+      expect(response.body).to include("Review")
+      expect(response.body).to include("together")
+      expect(response.body).to include("go review them together right now")
+      expect(response.body).to include(
+        organization_company_teammate_finalization_path(organization, employee_teammate)
+      )
+    end
+
+    it "sends the waiting Slack nudge from tell-me-next" do
+      create(:teammate_identity, :slack, teammate: employee_teammate, uid: "U111EMPLOYEE")
+      create(:teammate_identity, :slack, teammate: manager_teammate, uid: "U222MANAGER")
+
+      aspiration = create(:aspiration, company: organization, name: "Waiting Aspiration")
+      create(
+        :aspiration_check_in,
+        :manager_completed,
+        teammate: employee_teammate,
+        aspiration: aspiration,
+        manager_completed_by_teammate: manager_teammate
+      )
+      create(
+        :position_check_in,
+        :closed,
+        teammate: employee_teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 5.days.ago
+      )
+      EngagementHealth::Refresher.call(employee_teammate)
+
+      slack_service = instance_double(SlackService)
+      allow(SlackService).to receive(:new).and_return(slack_service)
+      allow(slack_service).to receive(:open_or_create_group_dm)
+        .and_return({ success: true, channel_id: "G01234567" })
+      allow(slack_service).to receive(:post_message) do |notification_id|
+        Notification.find(notification_id).update!(status: "sent_successfully", message_id: "1234.5678")
+        { success: true, message_id: "1234.5678" }
+      end
+
+      get up_next_organization_company_teammate_check_ins_path(organization, employee_teammate)
+      expect(response.body).to include("Just tell me what to do next")
+      expect(response.body).to include("Send Slack nudge")
+      expect(CGI.unescapeHTML(response.body)).to include("Tag you're it")
+
+      post waiting_nudge_organization_company_teammate_check_ins_path(organization, employee_teammate)
+      expect(response).to redirect_to(up_next_organization_company_teammate_check_ins_path(organization, employee_teammate))
+      follow_redirect!
+      expect(response.body).to include("Slack nudge sent")
+      expect(response.body).to include("Send Again")
+    end
+
 
     it "hides items without an action for that person behind show the other" do
       healthy_aspiration = create(:aspiration, company: organization, name: "Healthy Aspiration")

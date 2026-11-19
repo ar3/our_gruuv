@@ -745,6 +745,7 @@ Rails.application.routes.draw do
         get :hub, on: :member
         get :up_next, on: :member
         post :refresh_engagement_health, on: :member
+        post :waiting_nudge, on: :member
       end
       
       resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do

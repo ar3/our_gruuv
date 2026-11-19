@@ -242,6 +242,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @employee_up_next_items = build_up_next_explainer_items_for(@employee_perspective_person)
     @manager_up_next_items = build_up_next_explainer_items_for(@manager_perspective_person)
     assign_up_next_actions_spotlight!
+    assign_up_next_tell_me_next!
   end
 
   def refresh_engagement_health
@@ -250,6 +251,33 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     EngagementHealth.schedule_refresh_for(@teammate.id)
     redirect_to up_next_organization_company_teammate_check_ins_path(organization, @teammate),
                 notice: "Gruuv Health refresh queued for #{@teammate.person.display_name}."
+  end
+
+  def waiting_nudge
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+
+    assign_up_next_tell_me_next!
+    unless @up_next_tell_me_next&.dig(:state) == :nudge
+      redirect_to up_next_organization_company_teammate_check_ins_path(organization, @teammate),
+                  alert: "That nudge is not available right now."
+      return
+    end
+
+    result = CheckIns::UpNextWaitingNudgeService.call(
+      organization: organization,
+      employee_teammate: @teammate,
+      viewing_person: current_person,
+      viewing_teammate: current_company_teammate,
+      waiting_count: @up_next_tell_me_next[:count]
+    )
+
+    if result.ok?
+      redirect_to up_next_organization_company_teammate_check_ins_path(organization, @teammate),
+                  notice: "Slack nudge sent."
+    else
+      redirect_to up_next_organization_company_teammate_check_ins_path(organization, @teammate),
+                  alert: result.error
+    end
   end
   
   def update
@@ -1298,6 +1326,16 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @manager_up_next_actions_total = @manager_up_next_items.sum { |row| row[:actions_total_count] }
     @up_next_actions_needed = @employee_up_next_actions_needed + @manager_up_next_actions_needed
     @up_next_actions_total = @employee_up_next_actions_total + @manager_up_next_actions_total
+  end
+
+  def assign_up_next_tell_me_next!
+    @up_next_tell_me_next = CheckIns::UpNextTellMeNextService.call(
+      teammate: @teammate,
+      organization: organization,
+      viewing_person: current_person,
+      viewing_teammate: current_company_teammate,
+      eh_by_key: @engagement_health_by_item_key
+    )
   end
 
   def up_next_manager_perspective?(perspective_person)
