@@ -32,6 +32,16 @@
     %i.bi.bi-printer.me-1
     Print to paper or PDF
 
+.card.border-0.shadow-sm.mb-4.jd-print-screen-only
+  .card-header.bg-primary.text-white
+    %h4.mb-0 Current PEPM
+  .card-body
+    = render "organizations/billing/pepm_explanation",
+             display_pepm: @display_pepm,
+             value_metrics: @value_metrics,
+             billing_setting: @billing_setting,
+             discounted_pepm_before_floor: @discounted_pepm_before_floor
+
 .row.mb-4
   .col-lg-7
     .card.border-0.shadow-sm.mb-4
@@ -70,7 +80,7 @@
               %i.bi.bi-info-circle
           %dd.col-sm-8
             - if @invoice.pepm.to_f.zero?
-              Nothing#{' / teammate'}
+              Free#{' / teammate'}
             - else
               = number_to_currency(@invoice.pepm)
               = " / teammate"

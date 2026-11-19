@@ -1,0 +1,54 @@
+-# locals: outcome_rows, period_label (optional)
+- outcome_rows = local_assigns.fetch(:outcome_rows, [])
+- period_label = local_assigns[:period_label]
+.card.border-0.shadow-sm
+  .card-body.border-start.border-5.border-primary{style: "background-color: #f8fbff;"}
+    %p.fw-semibold.fs-3.mb-1 Clarity leads to both personal and team growth.
+    - if period_label.present?
+      %p.text-muted.small.mb-3= period_label
+    - else
+      .mb-3
+    - company_name = organization.display_name
+    .d-grid.gap-2
+      - outcome_rows.each_with_index do |row, index|
+        - hover_copy = case row[:key]; when :stories then "The foundation of clarity is communication. We help teams communicate with radical candor and nonviolent communication by capturing observation-based stories. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :stand then "The only thing worse than being surprised in a performance review is vague and unactionable feedback in that review. We help people get specific feedback they can act on. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :growth then "Being clear about the behaviors, skills, and knowledge needed to exceed expectations drives continuous and predictable greatness. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :goals then "Goals you set and forget create the illusion of alignment. We help teams stay clear about why confidence is rising or falling so communication leads to real change. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} activities in this timeframe."; when :consultations then "Consult OG takes years of servant leadership, MAAP coaching, and organizational design expertise and delivers it to you using AI agents trained on this experience, delivering focused clarity reviews. This represents #{number_with_delimiter(row[:teammate_count])} teammates across #{number_with_delimiter(row[:activity_count])} completed consultations in this timeframe."; end
+        .py-2{ class: ('border-top border-primary-subtle' unless index.zero?) }
+          .mb-1
+            - if row[:key] == :stories
+              %span OG helped
+              %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
+              %span Capture
+              %strong= " #{number_with_delimiter(row[:activity_count])} #{company_name} #{'Story'.pluralize(row[:activity_count])}"
+            - elsif row[:key] == :stand
+              %span OG helped
+              %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
+              %span Know where they stand across
+              %strong= " #{number_with_delimiter(row[:activity_count])} Performance Clarity Check-ins"
+            - elsif row[:key] == :growth
+              %span OG helped
+              %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
+              %span be Recognized for demonstrating Growth across
+              %strong= " #{number_with_delimiter(row[:activity_count])} Milestone achievements"
+              %span awarded
+            - elsif row[:key] == :goals
+              %span OG helped
+              %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
+              %span Communicate Real Progress across
+              %strong= " #{number_with_delimiter(row[:activity_count])} Goal Confidence Checks"
+            - elsif row[:key] == :consultations
+              %span OG provided
+              %strong= " #{number_with_delimiter(row[:teammate_count])} teammates"
+              %span with
+              %strong= " #{number_with_delimiter(row[:activity_count])} completed Consult OG #{'consultation'.pluralize(row[:activity_count])}"
+          %small.text-muted.d-flex.align-items-center.gap-1
+            %span Which is valued at #{number_to_currency(row[:value_sum])}
+            %button.btn.btn-link.btn-sm.p-0.text-muted{type: "button", "aria-label" => "More details", "data-bs-toggle" => "tooltip", "data-bs-placement" => "top", title: hover_copy}
+              %i.bi.bi-info-circle
+    %details.mt-3
+      %summary.text-muted.fw-semibold How value is calculated
+      %ul.mb-0.mt-2
+        %li Every milestone attained is worth $1.00
+        %li Every person named as an observee in a published observation is worth $0.50
+        %li Every completed aspiration, assignment, or position check-in is worth $0.50
+        %li Every goal confidence check made is worth $0.25
+        %li Every completed Consult OG consultation is worth $1.00

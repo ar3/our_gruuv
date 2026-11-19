@@ -4,8 +4,8 @@ class OrganizationBillingSetting < ApplicationRecord
   CADENCES = %w[monthly quarterly semiannual].freeze
   DISCOUNTS = {
     "monthly" => 0.0,
-    "quarterly" => 0.10,
-    "semiannual" => 0.20
+    "quarterly" => 0.05,
+    "semiannual" => 0.10
   }.freeze
   MONTHS_PER_CADENCE = {
     "monthly" => 1,
@@ -14,8 +14,8 @@ class OrganizationBillingSetting < ApplicationRecord
   }.freeze
   CADENCE_LABELS = {
     "monthly" => "Monthly (full price)",
-    "quarterly" => "Quarterly (10% discount)",
-    "semiannual" => "Semi-annually (20% discount)"
+    "quarterly" => "Quarterly (5% discount)",
+    "semiannual" => "Semi-annually (10% discount)"
   }.freeze
 
   belongs_to :organization
@@ -44,7 +44,7 @@ class OrganizationBillingSetting < ApplicationRecord
 
   def self.for_organization!(organization)
     find_or_create_by!(organization: organization) do |setting|
-      setting.cadence = "monthly"
+      setting.cadence = "quarterly"
     end
   end
 end

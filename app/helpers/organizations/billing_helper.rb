@@ -13,6 +13,16 @@ module Organizations::BillingHelper
     end
   end
 
+  def billing_list_status_badge_class(status)
+    case status.to_s
+    when "Due" then "text-bg-warning"
+    when "Paid" then "text-bg-success"
+    when "Waived" then "text-bg-info"
+    when "Future" then "text-bg-secondary"
+    else "text-bg-secondary"
+    end
+  end
+
   # Plain-text Value-page outcome sentence + "Which is valued at $X" for popovers.
   def billing_value_outcome_popover(key:, teammate_count:, activity_count:, value_sum:, company_name:)
     teammates = number_with_delimiter(teammate_count)
@@ -235,6 +245,46 @@ module Organizations::BillingHelper
     return nil if this_period_value.nil?
 
     [this_period_value - period.amount_due.to_f, 0.0].max.round(2)
+  end
+
+  def billing_analysis_show_next_period?(period)
+    column = period.value_analysis&.column_for(:current)
+    return false if column.blank?
+
+    !column.complete?
+  end
+
+  def billing_this_period_value_so_far(period)
+    period.value_analysis&.totals&.dig(:current)&.value_sum&.to_f
+  end
+
+  def billing_this_period_pepm_so_far(period)
+    period.value_analysis&.totals&.dig(:current)&.pepm
+  end
+
+  def billing_this_period_value_math_popover(period)
+    total = period.value_analysis&.totals&.dig(:current)
+    column = period.value_analysis&.column_for(:current)
+    return "Not enough this-period activity yet to compute PEPM." if total.blank? || column.blank?
+
+    base = billing_value_page_pepm_popover(
+      total: total.value_sum,
+      week_count: total.week_count,
+      teammate_count: total.teammate_count,
+      per_employee_week: total.per_employee_week,
+      pepm: total.pepm,
+      so_far: column.in_progress? || column.upcoming?
+    )
+    extras = []
+    if column.in_progress?
+      extras << "This uses value delivered in the current billable period so far (not the ~90-day lookback that set PEPM)."
+      extras << "Likely savings below pace-projects this so-far total to 100% of the period."
+    elsif column.upcoming?
+      extras << "This period has not started; the figure is a trend projection from lookback onto the billable window."
+    else
+      extras << "This is actual value delivered during the billable period."
+    end
+    ([base] + extras).join(" ")
   end
 end
 

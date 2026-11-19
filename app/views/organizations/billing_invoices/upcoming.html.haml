@@ -1,0 +1,106 @@
+- content_for :title, "Upcoming invoice — #{l(@due_on, format: :long)}"
+- page_help_id = "billingUpcomingInvoicePageHelp"
+
+- content_for :header do
+  .d-flex.align-items-center.gap-2.flex-wrap
+    %h1.mb-0
+      %i.bi.bi-receipt-cutoff.me-2
+      Upcoming invoice
+    = render "shared/page_help/header_info_button",
+             collapse_id: page_help_id,
+             tooltip: "Likely invoice details — click for details."
+    %span.badge.text-bg-secondary Future
+    %span.badge.text-bg-warning
+      %i.bi.bi-flask.me-1
+      Beta
+
+.collapse.mb-4{id: page_help_id}
+  .alert.alert-light.border
+    %h3.fw-semibold.mb-2 Goal of this page
+    %p
+      Preview what is likely for an upcoming billing period before PEPM locks and an invoice opens.
+    %h3.fw-semibold.mb-2 Specifics of this page
+    %ul.mb-0
+      %li Amounts are likely until calculation day (one week before due).
+      %li OG cost vs value and the driver table use the same lookback / this-period framing as locked invoices.
+      %li Return to Billing for the full invoice list.
+
+.d-flex.align-items-center.gap-3.flex-wrap.mb-3
+  = link_to organization_billing_path(organization), class: "text-decoration-none" do
+    %i.bi.bi-arrow-left.me-1
+    Back to Billing
+
+.card.border-0.shadow-sm.mb-4
+  .card-header.bg-primary.text-white
+    %h4.mb-0 Current PEPM
+  .card-body
+    = render "organizations/billing/pepm_explanation",
+             display_pepm: @display_pepm,
+             value_metrics: @value_metrics,
+             billing_setting: @billing_setting,
+             discounted_pepm_before_floor: @discounted_pepm_before_floor
+
+.row.mb-4
+  .col-lg-7
+    .card.border-0.shadow-sm.mb-4
+      .card-header
+        %h4.mb-0 Likely invoice details
+      .card-body
+        %dl.row.mb-0
+          %dt.col-sm-4 Status
+          %dd.col-sm-8
+            %span.badge.text-bg-secondary Future
+          %dt.col-sm-4 Due
+          %dd.col-sm-8= l(@due_on, format: :long)
+          %dt.col-sm-4 Period
+          %dd.col-sm-8
+            = l(@period_starts_on, format: :long)
+            –
+            = l(@period_ends_on, format: :long)
+          %dt.col-sm-4
+            Value
+            - value_help = billing_invoice_value_lookback_popover
+            %button.btn.btn-link.btn-sm.p-0.text-muted.align-baseline.ms-1{type: "button", "aria-label" => value_help, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => value_help}
+              %i.bi.bi-info-circle
+          %dd.col-sm-8
+            - if @period_view.value_delivered_total.to_f.zero? || @period_view.pepm.to_f.zero?
+              Free until at least $0.50 per employee per month value has been achieved.
+            - else
+              Based on average value delivered
+              = number_to_currency(@value_metrics[:total_value])
+              across
+              = pluralize(@value_metrics[:teammate_count], "active teammate")
+              in the prior ~90 days
+              (#{@value_metrics[:range_begin]}–#{@value_metrics[:range_end]}),
+              the likely OG cost is
+              #{number_to_currency(@value_metrics[:per_employee_month])}
+              per employee per month before cadence discount and rounding.
+          %dt.col-sm-4 Cadence
+          %dd.col-sm-8= @billing_setting.cadence_label
+          %dt.col-sm-4
+            Likely PEPM
+            - pepm_help = @billing_setting.discount_rate.positive? ? "We round down to the nearest $0.50 and apply the #{@billing_setting.discount_percent}% #{@billing_setting.cadence} cadence discount." : "We round down to the nearest $0.50. Monthly cadence has no discount."
+            %button.btn.btn-link.btn-sm.p-0.text-muted.align-baseline.ms-1{type: "button", "aria-label" => pepm_help, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => pepm_help}
+              %i.bi.bi-info-circle
+          %dd.col-sm-8
+            - if @period_view.pepm.to_f.zero?
+              Free#{' / teammate'}
+            - else
+              = number_to_currency(@period_view.pepm)
+              = " / teammate"
+          %dt.col-sm-4 Teammates
+          %dd.col-sm-8= @period_view.teammate_count
+          %dt.col-sm-4 Likely amount due
+          %dd.col-sm-8.fs-4.fw-semibold= number_to_currency(@period_view.amount_due)
+
+    = render "shared/context_callout", margin_class: "mb-4" do
+      = render "organizations/billing/qbr_snapshot", period: @period_view
+
+  .col-lg-5
+    .card.border-0.shadow-sm
+      .card-body
+        %h4.mb-2 Not due yet
+        %p.text-muted.mb-0
+          This period is still incomplete. On
+          %strong= l(@period_view.calculation_on, format: :long)
+          we'll lock PEPM from value delivered through that day and open a payable invoice.

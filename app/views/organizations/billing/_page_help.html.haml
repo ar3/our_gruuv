@@ -1,7 +1,7 @@
 .alert.alert-light.border
   %h3.fw-semibold.mb-2 Goal of this page
   %p
-    Review value-based PEPM pricing, choose how often the organization pays, and track open and paid invoices.
+    See this period at a glance — what you pay, value delivered so far, and estimated savings — then scan invoices in one list.
 
   %h3.fw-semibold.mb-2 Context
   %p
@@ -11,9 +11,10 @@
 
   %h3.fw-semibold.mb-2 Specifics of this page
   %ul.mb-0
-    %li Only teammates with Manage Billing can change cadence or open invoices.
-    %li Shows the next three billing dates. OG cost vs value appears for locked periods and for the current incomplete period only — priced-from lookback, this-period value, what you pay, and cost savings vs delivery. The table (Lookback / This / Next) is the evidence; lookback is always the ~90-day PEPM window.
+    %li Splash view for the current billing period: paid / likely OG cost, this-period value so far, and estimated savings vs delivery.
+    %li The Clarity outcomes card uses this period's timeframe. Full PEPM math and invoice detail live on each invoice page.
+    %li One invoice table (newest first): Due, Paid, Waived, plus Future rows for unlocked current/next periods. Future rows link to a likely-invoice preview. Columns include teammates, value PEPM, cost PEPM, and total.
+    %li Cadence is visible to billing managers; only an impersonating admin can change it (default is quarterly).
     %li Until the calculation date (one week before due), amounts are “likely”; on that day we lock PEPM and open an invoice.
     %li Charges round down to the nearest $0.50 — below $0.50 per teammate, you pay nothing. Invoice totals are capped at value delivered.
     %li If value already existed before billing, a one-time control can create historical open invoices for prior-setpoint comparisons.
-    %li Open each invoice to review details and use Pay (stub until checkout ships). Closed invoices include paid and waived.

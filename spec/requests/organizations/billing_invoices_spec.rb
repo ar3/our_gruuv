@@ -60,6 +60,9 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response.body).to include('$5.00')
         expect(response.body).to include('/ teammate')
         expect(response.body).not_to include('Free until at least $0.50')
+        expect(response.body).to include('Current PEPM')
+        expect(response.body).to include('Based on average value delivered')
+        expect(response.body).to include('round down to the nearest $0.50')
         expect(response.body).to include('OG cost vs value')
         expect(response.body).to include('Priced from lookback')
         expect(response.body).to include('You pay')
@@ -98,12 +101,41 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
 
         expect(response.body).to include('Free until at least $0.50 per employee per month value has been achieved.')
         expect(response.body).not_to include('the OG cost is')
-        expect(response.body).to include('Nothing / teammate')
+        expect(response.body).to include('Free / teammate')
       end
     end
 
-    it 'shows actual this-period value after the invoice period has ended' do
-      # Far enough out that lookback, this period, and next period columns are all complete.
+    it 'shows current PEPM discount math on the invoice when cadence is quarterly' do
+      OrganizationBillingSetting.for_organization!(organization).update!(cadence: 'quarterly')
+      allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+        instance_double(
+          Organizations::Billing::ValueBasedPepm,
+          call: {
+            total_value: 1267.50,
+            week_count: 13,
+            teammate_count: 108,
+            per_employee_week: 0.9,
+            per_employee_month: 3.87,
+            range_begin: Date.new(2026, 8, 18),
+            range_end: Date.new(2026, 11, 16)
+          }
+        )
+      )
+
+      travel_to Date.new(2026, 11, 15) do
+        get organization_billing_invoice_path(organization, invoice)
+
+        expect(response.body).to include('Based on average value delivered')
+        expect(response.body).to include('$1,267.50')
+        expect(response.body).to include('108 active teammates')
+        # 3.87 × 0.95 = 3.6765 → $3.68 before the $0.50 floor; charged PEPM floors to $3.50
+        expect(response.body).to include('With the 5% quarterly cadence discount, that brings the per employee per month price down to $3.68.')
+        expect(response.body).to include('$3.50')
+      end
+    end
+
+    it 'hides Next period after the invoice period has ended' do
+      # Far enough out that lookback and this period are complete.
       travel_to Date.new(2027, 2, 1) do
         get organization_billing_invoice_path(organization, invoice)
 
@@ -112,6 +144,7 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response.body).not_to include('activity counts so far')
         expect(response.body).to include('Cost savings vs delivery')
         expect(response.body).to include('even when delivery ends up lower than the lookback that set the price')
+        expect(response.body).not_to include('Where value is heading')
         expect(response.body).not_to include('This period is about')
         expect(response.body).not_to include('At this pace, by 100%')
       end
@@ -182,6 +215,50 @@ RSpec.describe 'Organizations::BillingInvoices', type: :request do
         expect(response).to redirect_to(organization_billing_invoice_path(organization, invoice))
         expect(invoice.reload.status).to eq('open')
       end
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/billing_invoices/upcoming/:due_on' do
+    it 'shows likely invoice details and OG cost vs value for a future due date' do
+      due_on = Date.new(2027, 1, 1)
+      OrganizationBillingSetting.for_organization!(organization).update!(
+        cadence: 'quarterly',
+        next_payment_due_on: due_on
+      )
+      allow(Organizations::Billing::ValueBasedPepm).to receive(:new).and_return(
+        instance_double(
+          Organizations::Billing::ValueBasedPepm,
+          call: {
+            total_value: 100.0,
+            week_count: 13,
+            teammate_count: 2,
+            per_employee_week: 1.0,
+            per_employee_month: 4.3,
+            range_begin: Date.new(2026, 9, 25),
+            range_end: Date.new(2026, 12, 24)
+          }
+        )
+      )
+
+      travel_to Date.new(2026, 12, 1) do
+        get upcoming_organization_billing_invoices_path(organization, due_on)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Upcoming invoice')
+        expect(response.body).to include('Future')
+        expect(response.body).to include('Likely invoice details')
+        expect(response.body).to include('Likely amount due')
+        expect(response.body).to include('Not due yet')
+        expect(response.body).to include('OG cost vs value')
+        expect(response.body).to include('Current PEPM')
+        expect(response.body).not_to include('stub_pay')
+      end
+    end
+
+    it 'redirects to the locked invoice when one already exists for that due date' do
+      get upcoming_organization_billing_invoices_path(organization, invoice.due_on)
+
+      expect(response).to redirect_to(organization_billing_invoice_path(organization, invoice))
     end
   end
 end

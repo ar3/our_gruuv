@@ -1,0 +1,32 @@
+-# locals: display_pepm, value_metrics, billing_setting, discounted_pepm_before_floor
+- display_pepm = local_assigns[:display_pepm]
+- value_metrics = local_assigns[:value_metrics]
+- billing_setting = local_assigns[:billing_setting]
+- discounted_pepm_before_floor = local_assigns[:discounted_pepm_before_floor]
+- if display_pepm
+  %p.fs-3.fw-semibold.mb-2
+    = number_to_currency(display_pepm)
+    %span.fs-6.fw-normal.text-muted / teammate
+    - if display_pepm.to_f.zero?
+      %span.fs-6.fw-normal.text-muted
+        (OG is free until we've reached at least $0.50 per teammate in value)
+  %p.text-muted.mb-2
+    Based on average value delivered
+    = number_to_currency(value_metrics[:total_value])
+    across
+    = pluralize(value_metrics[:teammate_count], "active teammate")
+    in the prior ~90 days
+    (#{value_metrics[:range_begin]}–#{value_metrics[:range_end]}).
+    The current average value is
+    #{number_to_currency(value_metrics[:per_employee_month])}
+    per employee per month.
+  - if billing_setting.discount_rate.positive? && discounted_pepm_before_floor
+    %p.text-muted.mb-2
+      With the #{billing_setting.discount_percent}% #{billing_setting.cadence} cadence discount, that brings the per employee per month price down to #{number_to_currency(discounted_pepm_before_floor)}.
+  %p.text-muted.mb-0
+    We round down to the nearest $0.50. Until value reaches at least $0.50 / teammate, you pay nothing. Invoice totals never exceed value delivered for the lookback window.
+- else
+  %p.mb-0.text-muted
+    Not enough active teammates or value activity yet to preview PEPM. See the
+    = link_to "OG Value page", organization_value_path(organization)
+    for how value is calculated.

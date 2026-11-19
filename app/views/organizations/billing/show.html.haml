@@ -45,152 +45,163 @@
                   form: { class: "mb-0" },
                   data: { turbo_confirm: "Create open historical invoices for the last several billing periods based on value delivered at each calculation day?" }
 
-  .row.mb-4
-    .col-lg-6
-      .card.border-0.shadow-sm.h-100
-        .card-header.bg-primary.text-white
-          %h4.mb-0 Upcoming PEPM
-        .card-body
-          - if @display_pepm
-            %p.fs-3.fw-semibold.mb-2
-              = number_to_currency(@display_pepm)
+  - if @focus_period
+    - paid_pepm = @focus_period.pepm
+    - paid_total = @focus_period.amount_due
+    - value_pepm = billing_this_period_pepm_so_far(@focus_period)
+    - value_total = billing_this_period_value_so_far(@focus_period)
+    - savings = billing_analysis_savings_vs_delivery(@focus_period)
+    - value_math = billing_this_period_value_math_popover(@focus_period)
+    - period_col = @focus_period.value_analysis&.column_for(:current)
+    .row.g-3.mb-4
+      .col-md-4
+        .card.border-0.shadow-sm.h-100
+          .card-body
+            %p.text-muted.small.mb-1
+              - if @focus_period.locked?
+                Paid for this period
+              - else
+                Likely OG cost for this period
+            %p.fs-2.fw-semibold.mb-1
+              - if paid_pepm.to_f.zero?
+                Free
+              - else
+                = number_to_currency(paid_pepm)
               %span.fs-6.fw-normal.text-muted / teammate
-              - if @display_pepm.to_f.zero?
-                %span.fs-6.fw-normal.text-muted
-                  (OG is free until we've reached at least $0.50 per teammate in value)
-            %p.text-muted.mb-2
-              Based on average value delivered
-              = number_to_currency(@value_metrics[:total_value])
-              across
-              = pluralize(@value_metrics[:teammate_count], "active teammate")
-              in the prior ~90 days
-              (#{@value_metrics[:range_begin]}–#{@value_metrics[:range_end]}).
-              The current average value is
-              #{number_to_currency(@value_metrics[:per_employee_month])}
-              per employee per month.
-            - if @billing_setting.discount_rate.positive? && @discounted_pepm_before_floor
-              %p.text-muted.mb-2
-                With the #{@billing_setting.discount_percent}% #{@billing_setting.cadence} cadence discount, that brings the per employee per month price down to #{number_to_currency(@discounted_pepm_before_floor)}.
-            %p.text-muted.mb-3
-              We round down to the nearest $0.50. Until value reaches at least $0.50 / teammate, you pay nothing. Invoice totals never exceed value delivered for the lookback window.
-            - @billing_periods.each_with_index do |period, index|
-              - show_value_analysis = period.locked? || (period.incomplete? && index.zero?)
-              .mb-3{class: (index == @billing_periods.size - 1 ? "mb-0" : nil)}
-                %p.mb-2
-                  On
-                  %strong= l(period.due_on, format: :long)
-                  - if period.locked?
-                    you'll pay
-                  - else
-                    you'll likely pay
-                  - if period.pepm.to_f.zero?
-                    %strong nothing
-                    per teammate
-                  - else
-                    %strong= number_to_currency(period.pepm)
-                    / teammate
-                  \.
-                - if show_value_analysis
-                  = render "shared/context_callout", margin_class: "mb-2" do
-                    = render "organizations/billing/qbr_snapshot", period: period
-                = render "shared/context_callout", margin_class: "mb-0" do
-                  %p.mb-0
-                    - if period.locked?
-                      Locked on
-                      %strong= l(period.calculation_on, format: :long)
-                      from value delivered through that day.
+            %p.text-muted.small.mb-0
+              = number_to_currency(paid_total)
+              total
+      .col-md-4
+        .card.border-0.shadow-sm.h-100
+          .card-body
+            %p.text-muted.small.mb-1.d-flex.align-items-center.gap-1
+              - if period_col&.complete?
+                Value delivered this period
+              - else
+                Value delivered this period so far
+              %button.btn.btn-link.btn-sm.p-0.text-muted{type: "button", "aria-label" => value_math, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-content" => value_math}
+                %i.bi.bi-info-circle
+            %p.fs-2.fw-semibold.mb-1
+              - if value_pepm
+                = number_to_currency(value_pepm)
+                %span.fs-6.fw-normal.text-muted / teammate
+              - else
+                %span.text-muted —
+            %p.text-muted.small.mb-0
+              - if value_total
+                = number_to_currency(value_total)
+                total
+              - else
+                No this-period value yet
+      .col-md-4
+        .card.border-0.shadow-sm.h-100
+          .card-body
+            %p.text-muted.small.mb-1
+              - if billing_analysis_this_period_value_likely?(@focus_period)
+                Estimated savings
+              - else
+                Savings vs delivery
+            %p.fs-2.fw-semibold.mb-1.text-success
+              - if savings
+                = number_to_currency(savings)
+              - else
+                %span.text-muted —
+            - if @billing_setting.discount_rate.positive?
+              %p.text-muted.small.mb-0
+                Includes
+                = "#{@billing_setting.discount_percent}% #{@billing_setting.cadence}"
+                cadence discount
+            - else
+              %p.text-muted.small.mb-0 Monthly cadence — no cadence discount
+
+    .mb-4
+      = render "organizations/billing/clarity_outcomes",
+               outcome_rows: @clarity_outcome_rows,
+               period_label: @clarity_period_label
+
+  .card.border-0.shadow-sm.mb-4
+    .card-header
+      %h4.mb-0 Invoices
+    .card-body
+      - if @invoice_table_rows.any?
+        .table-responsive
+          %table.table.table-sm.align-middle.mb-0
+            %thead
+              %tr
+                %th Status
+                %th Due
+                %th Period
+                %th.text-end Teammates
+                %th.text-end Value / teammate / mo
+                %th.text-end Cost / teammate / mo
+                %th.text-end Total
+            %tbody
+              - @invoice_table_rows.each do |row|
+                - row_path = row.invoice ? organization_billing_invoice_path(organization, row.invoice) : upcoming_organization_billing_invoices_path(organization, row.due_on)
+                - current_period = @focus_period.present? && row.due_on == @focus_period.due_on
+                %tr{class: ("billing-invoice-row--current" if current_period)}
+                  %td
+                    .d-flex.align-items-center.gap-2
+                      - if current_period
+                        %span.billing-invoice-current-marker{title: "Current period", "aria-label" => "Current period"}
+                          %i.bi.bi-star-fill{"aria-hidden" => "true"}
+                      %span.badge{class: billing_list_status_badge_class(row.status)}
+                        = row.status
+                  %td
+                    = link_to l(row.due_on, format: :long), row_path
+                  %td
+                    = l(row.period_starts_on, format: :long)
+                    –
+                    = l(row.period_ends_on, format: :long)
+                    - if current_period
+                      %div.small.text-muted.mt-1 Current period
+                  %td.text-end= number_with_delimiter(row.teammate_count)
+                  %td.text-end
+                    - if row.value_pepm.nil?
+                      —
+                    - elsif row.value_pepm.to_f.zero?
+                      Free
                     - else
-                      Incomplete until
-                      %strong= l(period.calculation_on, format: :long)
-                      — then we'll finalize value delivered and what you'll pay for this period.
-          - else
-            %p.mb-0.text-muted
-              Not enough active teammates or value activity yet to preview PEPM. See the
-              = link_to "OG Value page", organization_value_path(organization)
-              for how value is calculated.
+                      = number_to_currency(row.value_pepm)
+                  %td.text-end
+                    - if row.pepm.to_f.zero?
+                      Free
+                    - else
+                      = number_to_currency(row.pepm)
+                  %td.text-end
+                    = link_to number_to_currency(row.amount_due), row_path
+      - else
+        %p.text-muted.mb-0 No invoices yet.
 
-
-
-    .col-lg-6
-      .card.border-0.shadow-sm.h-100
-        .card-header
-          %h4.mb-0 Payment cadence
-        .card-body
-          = form_with model: @billing_setting,
-                      url: update_cadence_organization_billing_path(organization),
-                      method: :patch,
-                      local: true do |f|
-            .mb-3
-              - OrganizationBillingSetting::CADENCES.each do |cadence|
-                .form-check
-                  = f.radio_button :cadence, cadence, class: "form-check-input", id: "cadence_#{cadence}"
-                  = f.label :cadence, OrganizationBillingSetting.cadence_label_for(cadence), value: cadence, class: "form-check-label", for: "cadence_#{cadence}"
-            = f.submit "Save cadence", class: "btn btn-primary"
-
-  .row.mb-4
-    .col-lg-6
-      .card.border-0.shadow-sm.h-100
-        .card-header
-          %h4.mb-0 Open invoices
-        .card-body
-          - if @open_invoices.any?
-            .table-responsive
-              %table.table.table-sm.mb-0
-                %thead
-                  %tr
-                    %th Due
-                    %th Period
-                    %th.text-end Amount
-                %tbody
-                  - @open_invoices.each do |invoice|
-                    %tr
-                      %td
-                        = link_to l(invoice.due_on, format: :long),
-                                  organization_billing_invoice_path(organization, invoice)
-                      %td
-                        = l(invoice.period_starts_on, format: :long)
-                        –
-                        = l(invoice.period_ends_on, format: :long)
-                      %td.text-end
-                        = link_to number_to_currency(invoice.amount_due),
-                                  organization_billing_invoice_path(organization, invoice)
-          - else
-            %p.text-muted.mb-0 No open invoices yet.
-
-    .col-lg-6
-      .card.border-0.shadow-sm.h-100
-        .card-header
-          %h4.mb-0 Closed invoices
-        .card-body
-          - if @closed_invoices.any?
-            .table-responsive
-              %table.table.table-sm.mb-0
-                %thead
-                  %tr
-                    %th Status
-                    %th Due
-                    %th Period
-                    %th.text-end Amount
-                %tbody
-                  - @closed_invoices.each do |invoice|
-                    %tr
-                      %td
-                        %span.badge{class: invoice_status_badge_class(invoice)}
-                          = invoice.status_label
-                      %td
-                        = link_to l(invoice.due_on, format: :long),
-                                  organization_billing_invoice_path(organization, invoice)
-                      %td
-                        = l(invoice.period_starts_on, format: :long)
-                        –
-                        = l(invoice.period_ends_on, format: :long)
-                      %td.text-end
-                        = link_to number_to_currency(invoice.amount_due),
-                                  organization_billing_invoice_path(organization, invoice)
-          - else
-            %p.text-muted.mb-0 No closed invoices yet.
+  .card.border-0.shadow-sm.mb-4
+    .card-header
+      %h4.mb-0 Payment cadence
+    .card-body
+      - cadence_editable = impersonating?
+      - unless cadence_editable
+        .alert.alert-warning.border.d-flex.align-items-start.gap-2.mb-3{role: "status"}
+          %i.bi.bi-exclamation-triangle-fill.mt-1{"aria-hidden" => "true"}
+          %div
+            Cadence is visible here, but only an impersonating admin can change it.
+            Use an invoice page for PEPM math and payment details.
+      = form_with model: @billing_setting,
+                  url: update_cadence_organization_billing_path(organization),
+                  method: :patch,
+                  local: true do |f|
+        .mb-3
+          - OrganizationBillingSetting::CADENCES.each do |cadence|
+            .form-check
+              = f.radio_button :cadence, cadence, class: "form-check-input", id: "cadence_#{cadence}", disabled: !cadence_editable
+              = f.label :cadence, OrganizationBillingSetting.cadence_label_for(cadence), value: cadence, class: "form-check-label", for: "cadence_#{cadence}"
+        - if cadence_editable
+          = f.submit "Save cadence", class: "btn btn-primary"
+        - else
+          %button.btn.btn-primary{type: "button", disabled: true}
+            %i.bi.bi-exclamation-triangle.me-1{"aria-hidden" => "true"}
+            Save cadence
 
   %p.text-muted
     Value transparency lives on the
     = succeed "." do
       = link_to "OG Value page", organization_value_path(organization)
+    Invoice pages include the full PEPM explanation and payment controls.

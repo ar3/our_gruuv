@@ -2968,6 +2968,29 @@ $likert-colors: (
   display: none;
 }
 
+// Billing homepage: emphasize the current period invoice row
+.billing-invoice-row--current > td {
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+  background-color: rgba(13, 110, 253, 0.06);
+  vertical-align: middle;
+}
+
+.billing-invoice-current-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--bs-primary);
+  color: var(--bs-primary);
+  background-color: #fff;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
 .jd-signature-ink {
   font-family: "Great Vibes", "Segoe Script", "Apple Chancery", cursive;
   font-size: 1.75rem;

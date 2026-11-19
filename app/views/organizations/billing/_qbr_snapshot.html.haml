@@ -35,7 +35,7 @@
         %strong= number_to_currency(period.amount_due)
         %span.text-muted.small
           - if period.pepm.to_f.zero?
-            (OG cost: nothing / teammate)
+            (OG cost: free / teammate)
           - else
             = "(OG cost: #{number_to_currency(period.pepm)} / teammate)"
       %li.mb-0
@@ -56,7 +56,7 @@
       = period.locked? ? "lock" : "preview"
       is
       - if period.pepm.to_f.zero?
-        nothing / teammate.
+        free / teammate.
       - else
         = "#{number_to_currency(period.pepm)} / teammate."
     - else
@@ -67,10 +67,11 @@
     - lookback_col = analysis.column_for(:lookback)
     - current_col = analysis.column_for(:current)
     - future_col = analysis.column_for(:future)
+    - show_next = billing_analysis_show_next_period?(period)
     - company_name = organization.display_name
     - lookback_mode = billing_column_mode_locals(lookback_col, company_name: company_name)
     - current_mode = billing_column_mode_locals(current_col, company_name: company_name)
-    - future_mode = billing_column_mode_locals(future_col, company_name: company_name)
+    - future_mode = show_next ? billing_column_mode_locals(future_col, company_name: company_name) : nil
     .table-responsive
       %table.table.table-sm.align-middle.mb-2
         %thead
@@ -96,16 +97,17 @@
                   = l(current_col.ends_on, format: :long)
               - else
                 %span.fw-normal.text-muted.small n/a
-            %th.text-end
-              %div.fw-semibold Next period
-              %div.fw-normal.text-muted.small Where value is heading
-              - if future_col&.starts_on
-                %span.fw-normal.text-muted.small
-                  = l(future_col.starts_on, format: :long)
-                  –
-                  = l(future_col.ends_on, format: :long)
-              - else
-                %span.fw-normal.text-muted.small n/a
+            - if show_next
+              %th.text-end
+                %div.fw-semibold Next period
+                %div.fw-normal.text-muted.small Where value is heading
+                - if future_col&.starts_on
+                  %span.fw-normal.text-muted.small
+                    = l(future_col.starts_on, format: :long)
+                    –
+                    = l(future_col.ends_on, format: :long)
+                - else
+                  %span.fw-normal.text-muted.small n/a
         %tbody
           - analysis.rows.each do |row|
             %tr
@@ -114,19 +116,22 @@
                 = render "organizations/billing/driver_activity_value", **lookback_mode, cell: row.lookback, driver_key: row.key, company_name: company_name, activity_scale: lookback_col.activity_scale
               %td.text-end
                 = render "organizations/billing/driver_activity_value", **current_mode, cell: row.current, driver_key: row.key, company_name: company_name, activity_scale: current_col.activity_scale
-              %td.text-end
-                = render "organizations/billing/driver_activity_value", **future_mode, cell: row.future, driver_key: row.key, company_name: company_name, activity_scale: future_col.activity_scale
+              - if show_next
+                %td.text-end
+                  = render "organizations/billing/driver_activity_value", **future_mode, cell: row.future, driver_key: row.key, company_name: company_name, activity_scale: future_col.activity_scale
           %tr.fw-semibold
             %td Total
             %td.text-end
               = render "organizations/billing/ee_value", **lookback_mode, total_cell: analysis.totals[:lookback]
             %td.text-end
               = render "organizations/billing/ee_value", **current_mode, total_cell: analysis.totals[:current]
-            %td.text-end
-              = render "organizations/billing/ee_value", **future_mode, total_cell: analysis.totals[:future]
+            - if show_next
+              %td.text-end
+                = render "organizations/billing/ee_value", **future_mode, total_cell: analysis.totals[:future]
     - if analysis.any_incomplete?
       %p.text-muted.small.mb-0
-        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Incomplete periods show activity so far (+) with a pace projection to 100% in (~…), or a trend projection (~) if not started yet. Cost savings compares this-period value to what you pay.
+        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Incomplete periods show activity so far (+) with a pace projection to 100% in (~…), or a trend projection (~) if not started yet. Cost savings compares this-period value to what you pay. Next period only appears while this period is still open.
     - else
       %p.text-muted.small.mb-0
-        Lookback is the same ~90-day window used to set PEPM. Driver activity in This / Next period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Cost savings compares this-period value to what you pay — even when delivery ends up lower than the lookback that set the price.
+        Lookback is the same ~90-day window used to set PEPM. Driver activity in This period is scaled to that lookback length so monthly and six-month cadences compare fairly; Total PEPM is always monthly Value-page math. Cost savings compares this-period value to what you pay — even when delivery ends up lower than the lookback that set the price.
+

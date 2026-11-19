@@ -157,6 +157,8 @@ Rails.application.routes.draw do
       post :backfill_snapshots
     end
     resources :billing_invoices, only: [:show], controller: 'organizations/billing_invoices' do
+      get "upcoming/:due_on", on: :collection, action: :upcoming, as: :upcoming,
+          constraints: { due_on: /\d{4}-\d{2}-\d{2}/ }
       post :stub_pay, on: :member
       patch :update_status, on: :member
     end
