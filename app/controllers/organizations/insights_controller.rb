@@ -412,23 +412,8 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @active_teammates_with_visit = with_visit_count
     @active_teammates_without_visit = without_visit_count
 
-    # Top 10 pages (by total visit_count) in this org
-    top_by_url = PageVisit
-      .where(person_id: teammate_person_ids)
-      .group(:url)
-      .sum(:visit_count)
-      .sort_by { |_url, count| -count }
-      .first(10)
-    # Get one page_title per url for display
-    urls = top_by_url.map(&:first)
-    titles_by_url = PageVisit
-      .where(person_id: teammate_person_ids, url: urls)
-      .order(visited_at: :desc)
-      .pluck(:url, :page_title)
-      .each_with_object({}) { |(url, title), h| h[url] = title.presence || url unless h.key?(url) }
-    @top_pages = top_by_url.map do |url, count|
-      { url: url, visit_count: count, page_title: titles_by_url[url] || url }
-    end
+    # Top 10 pages by visit count, grouped by route pattern (not raw teammate-scoped URLs)
+    @top_pages = top_pages_grouped_by_pattern(teammate_person_ids)
 
     # Histogram: each active teammate labeled by department + id, value = total page visits (top 30)
     active_teammates_with_dept = active_teammates
@@ -617,6 +602,30 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   end
 
   private
+
+  # Sum visit_counts by normalized route pattern so teammate-/resource-scoped URLs roll up.
+  def top_pages_grouped_by_pattern(teammate_person_ids)
+    totals = Hash.new(0)
+
+    PageVisit
+      .where(person_id: teammate_person_ids)
+      .pluck(:url, :visit_count)
+      .each do |url, visit_count|
+        pattern = Insights::PageVisitPathNormalizer.call(url)
+        totals[pattern] += visit_count.to_i
+      end
+
+    totals
+      .sort_by { |_pattern, count| -count }
+      .first(10)
+      .map do |pattern, count|
+        {
+          url: pattern,
+          visit_count: count,
+          page_title: Insights::PageVisitPathNormalizer.label_for(pattern)
+        }
+      end
+  end
 
   def bulk_enable_digest_label(result)
     if result.kind == 'gsd'

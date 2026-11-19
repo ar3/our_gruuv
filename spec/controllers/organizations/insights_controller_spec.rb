@@ -579,6 +579,46 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       end
     end
 
+    it 'groups top_pages by route pattern across teammate-scoped urls' do
+      org_param = company.to_param
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{org_param}/company_teammates/12/check_ins",
+        page_title: 'Alex Check-ins',
+        visit_count: 4,
+        visited_at: 2.hours.ago
+      )
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{org_param}/company_teammates/99/check_ins",
+        page_title: 'Blake Check-ins',
+        visit_count: 6,
+        visited_at: 1.hour.ago
+      )
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{org_param}/insights/who_is_doing_what",
+        page_title: 'Insights: Who is doing what',
+        visit_count: 2,
+        visited_at: 30.minutes.ago
+      )
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      top_pages = assigns(:top_pages)
+      check_ins = top_pages.find { |page| page[:url].include?('check_ins') }
+      expect(check_ins).to be_present
+      expect(check_ins[:visit_count]).to eq(10)
+      expect(check_ins[:url]).to eq(
+        '/organizations/:organization_id/company_teammates/:company_teammate_id/check_ins'
+      )
+      expect(check_ins[:page_title]).to eq('Company teammates / Check ins')
+      expect(top_pages.count { |page| page[:url].include?('check_ins') }).to eq(1)
+    end
+
     it 'assigns teammate_visit_counts with label and count' do
       get :who_is_doing_what, params: { organization_id: company.id }
       expect(assigns(:teammate_visit_counts)).to be_an(Array)
