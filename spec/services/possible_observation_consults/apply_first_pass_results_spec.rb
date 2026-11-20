@@ -52,6 +52,8 @@ RSpec.describe PossibleObservationConsults::ApplyFirstPassResults do
     expect(row[:observee_company_teammate_id]).to eq(brett_tm.id)
     expect(row[:observee_company_teammate_ids]).to eq([brett_tm.id])
     expect(consult.moment_cues.map { |c| c[:id] }).to eq([cue_id])
+    snapshot_row = consult.first_pass_snapshot_hash.dig(:cue_annotations, :cues, cue_id)
+    expect(snapshot_row[:observee_company_teammate_id]).to eq(brett_tm.id)
   end
 
   it "falls back to deterministic name match when ids are blank (no LLM resolve)" do

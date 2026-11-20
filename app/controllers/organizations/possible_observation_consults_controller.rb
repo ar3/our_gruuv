@@ -92,6 +92,10 @@ module Organizations
           cue_annotations_params: params[:cue_annotations]
         )
         @consult.reload
+        Transcripts::LearnTeammateNameAliases.call(
+          consult: @consult,
+          created_by: current_company_teammate
+        )
         ids = PossibleObservationConsults::DeriveConfirmedTeammateIds.call(consult: @consult)
       else
         ids = Array(params[:confirmed_teammate_ids]).map(&:to_i).reject(&:zero?).uniq

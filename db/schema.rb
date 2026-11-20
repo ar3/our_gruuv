@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_18_130000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -1849,6 +1849,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_18_130000) do
     t.jsonb "cue_annotations", default: {}, null: false
     t.string "first_pass_status", default: "ready", null: false
     t.text "first_pass_error"
+    t.jsonb "first_pass_snapshot", default: {}, null: false
     t.index ["creator_company_teammate_id"], name: "idx_on_creator_company_teammate_id_3cbc8c0c14"
     t.index ["extraction_status"], name: "index_possible_observation_consults_on_extraction_status"
     t.index ["first_pass_status"], name: "index_possible_observation_consults_on_first_pass_status"
@@ -2339,6 +2340,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_18_130000) do
     t.index ["teammate_id"], name: "index_teammate_milestones_on_teammate_id"
   end
 
+  create_table "teammate_name_aliases", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.string "name", null: false
+    t.string "normalized_name", null: false
+    t.string "source", default: "manual", null: false
+    t.bigint "created_by_company_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_company_teammate_id"], name: "index_teammate_name_aliases_on_created_by_company_teammate_id"
+    t.index ["normalized_name"], name: "index_teammate_name_aliases_on_normalized_name"
+    t.index ["teammate_id", "normalized_name"], name: "index_teammate_name_aliases_on_teammate_and_normalized_name", unique: true
+    t.index ["teammate_id"], name: "index_teammate_name_aliases_on_teammate_id"
+  end
+
   create_table "teammates", force: :cascade do |t|
     t.bigint "person_id", null: false
     t.bigint "organization_id", null: false
@@ -2750,6 +2765,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_18_130000) do
   add_foreign_key "teammate_milestones", "teammates"
   add_foreign_key "teammate_milestones", "teammates", column: "certifying_teammate_id"
   add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
+  add_foreign_key "teammate_name_aliases", "teammates"
+  add_foreign_key "teammate_name_aliases", "teammates", column: "created_by_company_teammate_id"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
   add_foreign_key "teammates", "positions", column: "next_goal_position_id"

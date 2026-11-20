@@ -73,7 +73,7 @@ RSpec.describe Llm::TranscriptCueFirstPass do
 
     expect(Llm::Client).to have_received(:call) do |kwargs|
       expect(kwargs[:system_instructions]).to include("STAY FAITHFUL TO THE TRANSCRIPT")
-      expect(kwargs[:prompt_version]).to eq("1.20261108.2")
+      expect(kwargs[:prompt_version]).to eq("1.20261120.0")
       expect(kwargs[:system_instructions]).to include("SPLIT RULE (who changed)")
       expect(kwargs[:system_instructions]).to include("thank-you pivots")
       expect(kwargs[:system_instructions]).to include("DO NOT SPLIT when the who did not change")

@@ -202,6 +202,12 @@ class PossibleObservationConsult < ApplicationRecord
     first_pass_status == "completed"
   end
 
+  # Frozen AI Step 2 defaults (speaker_map + cue_annotations) from ApplyFirstPassResults.
+  # Human edits write the live maps; compare with PossibleObservationConsults::FirstPassDiff.
+  def first_pass_snapshot_hash
+    first_pass_snapshot.is_a?(Hash) ? first_pass_snapshot.with_indifferent_access : {}.with_indifferent_access
+  end
+
   # Step 3 keeps observer/observee editable so misses from Step 2 can be fixed
   # without going back. Rows that already became draft OGOs stay locked in the UI
   # via observation_id on the candidate row.

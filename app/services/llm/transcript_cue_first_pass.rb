@@ -17,7 +17,8 @@ module Llm
     # 1.20261108.0 — balance: split only on new observee/delimiter; never split same-person paragraph beats
     # 1.20261108.1 — require every cue id in the batch; smaller batches + omit retry (avoid model_omitted dropouts)
     # 1.20261108.2 — thank-you pivots; who-changed rule; marker rescue when model under-splits
-    PROMPT_VERSION = "1.20261108.2"
+    # 1.20261120.0 — roster also_known_as from teammate name aliases
+    PROMPT_VERSION = "1.20261120.0"
     # Verbose multi-moment JSON burns output tokens; keep batches small so Nova finishes every cue id.
     BATCH_SIZE = 12
     RETRY_BATCH_SIZE = 6
@@ -184,7 +185,8 @@ module Llm
           "preferred_name" => person.preferred_name.to_s,
           "casual_name" => person.casual_name.to_s,
           "first_name" => person.first_name.to_s,
-          "last_name" => person.last_name.to_s
+          "last_name" => person.last_name.to_s,
+          "also_known_as" => Array(tm.name_aliases).map(&:name).compact_blank.uniq
         }
       end
     end

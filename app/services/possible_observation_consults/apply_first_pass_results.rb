@@ -147,12 +147,24 @@ module PossibleObservationConsults
       collapsed_annotations = collapsed[:annotations]
       labels = recount_labels(labels, collapsed_cues)
 
+      speaker_map = { "version" => 1, "labels" => labels }
+      cue_annotations = {
+        "version" => 1,
+        "cues" => collapsed_annotations,
+        "moments" => collapsed_cues
+      }
       @consult.update!(
-        speaker_map: { "version" => 1, "labels" => labels },
-        cue_annotations: {
+        speaker_map: speaker_map,
+        cue_annotations: cue_annotations,
+        first_pass_snapshot: {
           "version" => 1,
-          "cues" => collapsed_annotations,
-          "moments" => collapsed_cues
+          "captured_at" => Time.current.iso8601,
+          "speaker_map" => speaker_map.deep_dup,
+          "cue_annotations" => {
+            "version" => 1,
+            "cues" => collapsed_annotations.deep_dup,
+            "moments" => collapsed_cues.deep_dup
+          }
         },
         first_pass_status: "completed",
         first_pass_error: nil
@@ -225,7 +237,7 @@ module PossibleObservationConsults
 
     def roster_teammates
       org_ids = @organization.self_and_descendants.map(&:id)
-      CompanyTeammate.employed.where(organization_id: org_ids).includes(:person).to_a
+      CompanyTeammate.employed.where(organization_id: org_ids).includes(:person, :name_aliases).to_a
     end
   end
 end

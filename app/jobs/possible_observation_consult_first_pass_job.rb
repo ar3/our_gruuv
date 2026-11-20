@@ -12,9 +12,17 @@ class PossibleObservationConsultFirstPassJob < ApplicationJob
 
     if cues.empty?
       # No timed cues — seed empty maps and complete so UI can fall back to checkboxes.
+      empty_map = { "version" => 1, "labels" => {} }
+      empty_cues = { "version" => 1, "cues" => {} }
       consult.update!(
-        speaker_map: { "version" => 1, "labels" => {} },
-        cue_annotations: { "version" => 1, "cues" => {} },
+        speaker_map: empty_map,
+        cue_annotations: empty_cues,
+        first_pass_snapshot: {
+          "version" => 1,
+          "captured_at" => Time.current.iso8601,
+          "speaker_map" => empty_map,
+          "cue_annotations" => empty_cues
+        },
         first_pass_status: "completed",
         first_pass_error: nil
       )
@@ -22,7 +30,7 @@ class PossibleObservationConsultFirstPassJob < ApplicationJob
     end
 
     org_ids = consult.organization.self_and_descendants.map(&:id)
-    teammates = CompanyTeammate.employed.where(organization_id: org_ids).includes(:person).to_a
+    teammates = CompanyTeammate.employed.where(organization_id: org_ids).includes(:person, :name_aliases).to_a
 
     llm_by_cue_id = Llm::TranscriptCueFirstPass.call(
       cues: cues,

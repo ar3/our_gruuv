@@ -21,7 +21,7 @@ module PossibleObservationConsults
       org_ids = @organization.self_and_descendants.map(&:id)
       CompanyTeammate
         .where(organization_id: org_ids)
-        .includes(:person)
+        .includes(:person, :name_aliases)
         .find_each
         .select { |tm| mentioned?(tm) }
         .sort_by { |tm| tm.person.casual_name.to_s.downcase }
@@ -37,7 +37,8 @@ module PossibleObservationConsults
         person.casual_name,
         person.display_name,
         person.first_name,
-        person.preferred_name
+        person.preferred_name,
+        *Array(teammate.name_aliases).map(&:name)
       ].compact_blank.map { |t| t.to_s.strip }.uniq
 
       tokens.any? do |token|

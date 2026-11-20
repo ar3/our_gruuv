@@ -27,7 +27,7 @@ module Transcripts
       blank_result = { company_teammate_id: nil, unknown: true, alternates: [] }
       return blank_result if @label.blank?
 
-      teammates = @teammates || CompanyTeammate.employed.where(organization: @organization).includes(:person).to_a
+      teammates = @teammates || CompanyTeammate.employed.where(organization: @organization).includes(:person, :name_aliases).to_a
       return blank_result if teammates.empty?
 
       ranked = ranked_candidates(teammates)
@@ -52,14 +52,15 @@ module Transcripts
     def ranked_candidates(teammates)
       needle = normalize(@label)
       teammates.filter_map do |teammate|
-        score = score_for(teammate.person, needle)
+        score = score_for(teammate, needle)
         next if score <= 0
 
         { teammate: teammate, score: score }
       end.sort_by { |row| [-row[:score], row[:teammate].id] }
     end
 
-    def score_for(person, needle)
+    def score_for(teammate_or_person, needle)
+      person = teammate_or_person.is_a?(CompanyTeammate) ? teammate_or_person.person : teammate_or_person
       return 0 unless person
 
       display = normalize(person.display_name)
@@ -67,20 +68,29 @@ module Transcripts
       first = normalize(person.first_name)
       preferred = normalize(person.preferred_name)
       last = normalize(person.last_name)
+      aliases = alias_names_for(teammate_or_person)
 
       return 100 if display.present? && display == needle
+      return 98 if aliases.include?(needle)
       return 95 if casual.present? && casual == needle
       return 92 if first.present? && last.present? && needle == "#{first} #{last}"
 
-      tokens = [first, preferred, last].compact_blank.uniq
+      tokens = [first, preferred, last, *aliases].compact_blank.uniq
       hits = tokens.count { |token| token.length >= 2 && needle.match?(/(?:\A|\s)#{Regexp.escape(token)}(?:\s|\z)/) }
       return 80 if hits >= 2
       return 55 if first.present? && needle == first
       return 50 if preferred.present? && needle == preferred
+      return 48 if aliases.any? { |aka| aka.length >= 2 && needle.include?(aka) }
       return 45 if last.present? && needle == last
       return 40 if tokens.any? { |token| token.length >= 3 && needle.include?(token) }
 
       0
+    end
+
+    def alias_names_for(teammate_or_person)
+      return [] unless teammate_or_person.is_a?(CompanyTeammate)
+
+      Array(teammate_or_person.name_aliases).map { |row| normalize(row.normalized_name.presence || row.name) }.compact_blank.uniq
     end
 
     def normalize(value)
@@ -105,7 +115,8 @@ module Transcripts
           casual_name: person.casual_name.to_s,
           first_name: person.first_name.to_s,
           preferred_name: person.preferred_name.to_s,
-          last_name: person.last_name.to_s
+          last_name: person.last_name.to_s,
+          also_known_as: Array(t.name_aliases).map(&:name).compact_blank.uniq
         }
       end
 

@@ -20,6 +20,8 @@ class CompanyTeammate < ApplicationRecord
   has_many :observees, foreign_key: 'teammate_id', dependent: :destroy
   has_many :observations, through: :observees
   has_many :teammate_identities, foreign_key: 'teammate_id', dependent: :destroy
+  has_many :name_aliases, class_name: "TeammateNameAlias", foreign_key: "teammate_id", dependent: :destroy,
+                          inverse_of: :company_teammate
   has_one :one_on_one_link, foreign_key: 'teammate_id', dependent: :destroy
   has_many :talent_density_stances, foreign_key: :company_teammate_id, dependent: :destroy
   has_many :huddle_feedbacks, foreign_key: 'teammate_id', dependent: :nullify

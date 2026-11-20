@@ -51,4 +51,14 @@ RSpec.describe Transcripts::TeammateResolverService do
     expect(result[:unknown]).to eq(true)
     expect(result[:alternates]).to eq([])
   end
+
+  it "matches learned teammate name aliases" do
+    create(:teammate_name_alias, company_teammate: pat, name: "PJ", source: "transcript_learn")
+
+    result = call("PJ")
+
+    expect(result[:company_teammate_id]).to eq(pat.id)
+    expect(result[:unknown]).to eq(false)
+  end
 end
+
