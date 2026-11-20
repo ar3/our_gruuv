@@ -19,6 +19,12 @@ RSpec.describe TeammateNameAlias, type: :model do
     expect(row).not_to be_valid
   end
 
+  it "rejects middle names that already match the person" do
+    teammate.person.update!(middle_name: "Lee")
+    row = described_class.new(company_teammate: teammate, name: "Lee", source: "manual")
+    expect(row).not_to be_valid
+  end
+
   it "rejects blocked team words" do
     row = described_class.new(company_teammate: teammate, name: "the team", source: "manual")
     expect(row).not_to be_valid

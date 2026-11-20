@@ -60,9 +60,11 @@ class TeammateNameAlias < ApplicationRecord
       person.display_name,
       person.casual_name,
       person.first_name,
+      person.middle_name,
       person.preferred_name,
       person.last_name,
-      [person.first_name, person.last_name].compact_blank.join(" ")
+      [person.first_name, person.last_name].compact_blank.join(" "),
+      [person.first_name, person.middle_name, person.last_name].compact_blank.join(" ")
     ].map { |value| self.class.normalize(value) }.compact_blank.uniq
 
     return unless known.include?(normalized_name)
