@@ -1,0 +1,30 @@
+-# Highcharts Prize lab style. locals: chart_kind (required)
+- chart_kind = local_assigns.fetch(:chart_kind)
+- check_ins = @most_recent_check_ins_by_goal || {}
+- soft_statuses = @goals.index_with { |goal| goal_soft_status(goal, organization: @organization, check_in: check_ins[goal.id], include_empty: false) || {} }
+- payload = Goals::HighchartsVizData.new(goals: @goals, organization: @organization, soft_statuses: soft_statuses).payload_for(chart_kind)
+
+-# Modules beyond head_common (sankey + organization already loaded globally)
+%script{src: "https://code.highcharts.com/modules/networkgraph.js", "data-turbo-track": "reload"}
+%script{src: "https://code.highcharts.com/modules/treemap.js", "data-turbo-track": "reload"}
+%script{src: "https://code.highcharts.com/modules/treegraph.js", "data-turbo-track": "reload"}
+
+- if @goals.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals to visualize
+- else
+  .mb-2
+    %p.small.text-muted.mb-1
+      Soft colors match On Track / Off Track / Hit / Draft. Click a node to open that goal.
+      %span.ms-1
+        Multi-parent goals show
+        %strong ⧉
+        \— extras appear as duplicated nodes under each additional parent.
+    - if @show_performance_warning
+      .alert.alert-warning.py-2.small.mb-2
+        Large goal sets can make Highcharts layouts slow. Filter the owner/slice if this feels sticky.
+
+  %div{data: { controller: "goals-highcharts-viz", goals_highcharts_viz_chart_kind_value: chart_kind, goals_highcharts_viz_data_json_value: payload.to_json }}
+    %div{style: "min-height: 420px; width: 100%;", data: { goals_highcharts_viz_target: "container" }}

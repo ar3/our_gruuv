@@ -1383,6 +1383,56 @@ module GoalsHelper
     end
   end
 
+  GOAL_INDEX_VIEW_STYLES = (%w[
+    table cards list network tree nested timeline
+    hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks
+  ] + Goals::HighchartsVizData::CHART_KINDS).freeze
+
+  GOAL_INDEX_VIEW_STYLE_LABELS = {
+    "table" => "Table",
+    "cards" => "Cards",
+    "list" => "List",
+    "network" => "Network (SVG)",
+    "tree" => "Tree (SVG)",
+    "nested" => "Nested",
+    "timeline" => "Timeline",
+    "hierarchical-indented" => "Hierarchical indented",
+    "hierarchical-collapsible" => "Hierarchical collapsible (with checks)",
+    "hierarchical-collapsible-hidden-checks" => "Hierarchical collapsible (hidden checks)",
+    "hc-networkgraph" => "HC Network graph",
+    "hc-treegraph" => "HC Treegraph",
+    "hc-treegraph-boxes" => "HC Treegraph (boxes)",
+    "hc-sankey-horizontal" => "HC Sankey (horizontal)",
+    "hc-sankey-vertical" => "HC Sankey (vertical)",
+    "hc-organization-vertical" => "HC Org chart (vertical)",
+    "hc-organization-horizontal" => "HC Org chart (horizontal)"
+  }.freeze
+
+  def goal_index_view_style_valid?(view)
+    GOAL_INDEX_VIEW_STYLES.include?(view.to_s)
+  end
+
+  def goal_index_view_style_label(view)
+    GOAL_INDEX_VIEW_STYLE_LABELS[view.to_s] || view.to_s.humanize
+  end
+
+  def goal_index_view_style_groups
+    classic = %w[
+      table cards list network tree nested timeline
+      hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks
+    ]
+    [
+      ["Classic", classic],
+      ["Highcharts Prize lab", Goals::HighchartsVizData::CHART_KINDS]
+    ]
+  end
+
+  def goal_index_path_with_view(organization, view, filters: {})
+    params_hash = filters.to_h.symbolize_keys.except(:controller, :action, :page)
+    params_hash[:view] = view
+    organization_goals_path(organization, params_hash)
+  end
+
   TOOLTIP_NESTED_BULK_GOALS_EXAMPLE = <<~TEXT.squish.freeze
     This is here to help you create clear goals the OG way—which means goals that are organized and nested.
     Completion of one thing makes everything else either easier or unnecessary, continuously pushing you toward your ultimate goals!

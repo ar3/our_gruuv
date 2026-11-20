@@ -1224,6 +1224,21 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Soft status (click through)')
       expect(response.body).to include(organization_goal_path(organization, active_goal, anchor: 'check-in'))
     end
+
+    Goals::HighchartsVizData::CHART_KINDS.each do |chart_kind|
+      it "renders Highcharts style #{chart_kind}" do
+        get organization_goals_path(organization), params: {
+          owner_id: "CompanyTeammate_#{teammate.id}",
+          view: chart_kind
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('goals-highcharts-viz')
+        expect(response.body).to include(chart_kind)
+        expect(response.body).to match(/Multi-parent goals show/i)
+        expect(response.body).to include('networkgraph.js')
+      end
+    end
   end
   
   describe 'GET /organizations/:organization_id/goals with list view' do
@@ -1692,6 +1707,24 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Goals for:')
       expect(response.body).to include(template.title)
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/goals index spotlight footer view switcher' do
+    it 'renders a link-style dropdown of view styles including Highcharts options' do
+      create(:goal, creator: teammate, owner: teammate, title: 'Footer View Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization), params: {
+        owner_id: "CompanyTeammate_#{teammate.id}",
+        view: 'hierarchical-collapsible-hidden-checks'
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Hierarchical collapsible (hidden checks)')
+      expect(response.body).to include('HC Network graph')
+      expect(response.body).to include('HC Org chart (vertical)')
+      expect(response.body).to include('view=hc-networkgraph')
+      expect(response.body).to include('dropdown-toggle')
     end
   end
 

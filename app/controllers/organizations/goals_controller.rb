@@ -38,7 +38,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       else
         @goals = policy_scope(Goal.none)
         @view_style = params[:view] || 'hierarchical-collapsible'
-        @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks].include?(@view_style)
+        @view_style = 'hierarchical-collapsible' unless helpers.goal_index_view_style_valid?(@view_style)
         @goal_count = 0
         @show_performance_warning = false
         selected_statuses = normalized_status_filters(params)
@@ -187,7 +187,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Set view style
     @view_style = params[:view] || 'hierarchical-collapsible'
-    @view_style = 'hierarchical-collapsible' unless %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks].include?(@view_style)
+    @view_style = 'hierarchical-collapsible' unless helpers.goal_index_view_style_valid?(@view_style)
     
     # Eager load links for table/cards/list to avoid N+1.
     # Note: owner is polymorphic so we cannot use includes(owner: :person).
@@ -205,7 +205,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     # Soft-status / on-track chips for Prize viz styles that are not HierarchyWithCheckInsQuery-backed.
-    if @view_style.in?(%w[hierarchical-indented tree network nested])
+    soft_status_views = %w[hierarchical-indented tree network nested] + Goals::HighchartsVizData::CHART_KINDS
+    if @view_style.in?(soft_status_views)
       goal_ids = @goals.unscope(:includes).pluck(:id)
       @most_recent_check_ins_by_goal = GoalCheckIn
         .where(goal_id: goal_ids)
@@ -236,7 +237,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Performance check for visualizations
     @goal_count = @goals.count
-    @show_performance_warning = @goal_count > 100 && %w[network tree nested timeline].include?(@view_style)
+    @show_performance_warning = @goal_count > 100 && (
+      %w[network tree nested timeline] + Goals::HighchartsVizData::CHART_KINDS
+    ).include?(@view_style)
 
     # Store filter/sort params for view
     @current_filters = {
@@ -886,8 +889,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     }
     
     # Validate view style
-    valid_views = %w[table cards list network tree nested timeline hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks]
-    @current_filters[:view] = 'hierarchical-collapsible' unless valid_views.include?(@current_filters[:view])
+    @current_filters[:view] = 'hierarchical-collapsible' unless helpers.goal_index_view_style_valid?(@current_filters[:view])
     
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]

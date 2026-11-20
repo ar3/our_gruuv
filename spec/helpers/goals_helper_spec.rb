@@ -168,6 +168,13 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goal_index_view_style_label' do
+    it 'returns friendly labels for classic and Highcharts styles' do
+      expect(helper.goal_index_view_style_label('hc-networkgraph')).to eq('HC Network graph')
+      expect(helper.goal_index_view_style_label('hierarchical-collapsible-hidden-checks')).to include('hidden checks')
+    end
+  end
+
   describe '#goal_soft_status' do
     let(:organization) { company }
 

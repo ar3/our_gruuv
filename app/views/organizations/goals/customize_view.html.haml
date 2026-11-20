@@ -147,6 +147,46 @@
             = label_tag 'view_hierarchical_collapsible_hidden_checks', class: 'form-check-label' do
               %i.bi.bi-chevron-bar-contract.me-2
               = hierarchical_collapsible_hidden_checks_label
+
+          %hr.my-3
+          %p.small.text-muted.mb-2
+            Highcharts Prize lab (soft status + multi-parent duplicates marked with ⧉)
+
+          .form-check
+            = radio_button_tag 'view', 'hc-networkgraph', @current_view == 'hc-networkgraph', class: 'form-check-input', id: 'view_hc_networkgraph'
+            = label_tag 'view_hc_networkgraph', class: 'form-check-label' do
+              %i.bi.bi-share.me-2
+              HC Network graph
+          .form-check
+            = radio_button_tag 'view', 'hc-treegraph', @current_view == 'hc-treegraph', class: 'form-check-input', id: 'view_hc_treegraph'
+            = label_tag 'view_hc_treegraph', class: 'form-check-label' do
+              %i.bi.bi-diagram-3.me-2
+              HC Treegraph
+          .form-check
+            = radio_button_tag 'view', 'hc-treegraph-boxes', @current_view == 'hc-treegraph-boxes', class: 'form-check-input', id: 'view_hc_treegraph_boxes'
+            = label_tag 'view_hc_treegraph_boxes', class: 'form-check-label' do
+              %i.bi.bi-grid-3x3-gap.me-2
+              HC Treegraph (boxes)
+          .form-check
+            = radio_button_tag 'view', 'hc-sankey-horizontal', @current_view == 'hc-sankey-horizontal', class: 'form-check-input', id: 'view_hc_sankey_horizontal'
+            = label_tag 'view_hc_sankey_horizontal', class: 'form-check-label' do
+              %i.bi.bi-subtract.me-2
+              HC Sankey (horizontal)
+          .form-check
+            = radio_button_tag 'view', 'hc-sankey-vertical', @current_view == 'hc-sankey-vertical', class: 'form-check-input', id: 'view_hc_sankey_vertical'
+            = label_tag 'view_hc_sankey_vertical', class: 'form-check-label' do
+              %i.bi.bi-bar-chart-steps.me-2
+              HC Sankey (vertical)
+          .form-check
+            = radio_button_tag 'view', 'hc-organization-vertical', @current_view == 'hc-organization-vertical', class: 'form-check-input', id: 'view_hc_organization_vertical'
+            = label_tag 'view_hc_organization_vertical', class: 'form-check-label' do
+              %i.bi.bi-diagram-2.me-2
+              HC Org chart (vertical)
+          .form-check
+            = radio_button_tag 'view', 'hc-organization-horizontal', @current_view == 'hc-organization-horizontal', class: 'form-check-input', id: 'view_hc_organization_horizontal'
+            = label_tag 'view_hc_organization_horizontal', class: 'form-check-label' do
+              %i.bi.bi-layout-sidebar.me-2
+              HC Org chart (horizontal)
   
   .row
     .col-md-4

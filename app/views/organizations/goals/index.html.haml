@@ -162,7 +162,22 @@
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-table.me-1
-              View: #{@view_style.capitalize}
+              View:
+              .dropdown.d-inline
+                %button.btn.btn-link.btn-sm.p-0.text-decoration-underline.dropdown-toggle.text-muted{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
+                  = goal_index_view_style_label(@view_style)
+                %ul.dropdown-menu.dropdown-menu-end{style: "max-height: 320px; overflow-y: auto;"}
+                  - goal_index_view_style_groups.each_with_index do |(group_label, styles), index|
+                    - if index > 0
+                      %li
+                        %hr.dropdown-divider
+                    %li
+                      %h6.dropdown-header= group_label
+                    - styles.each do |style|
+                      %li
+                        = link_to goal_index_view_style_label(style),
+                          goal_index_path_with_view(@organization, style, filters: request.query_parameters),
+                          class: ["dropdown-item", ("active" if style == @view_style)]
               %br
               %i.bi.bi-eye.me-1
               Spotlight: #{@current_spotlight&.humanize || 'None'}
@@ -201,6 +216,8 @@
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
       - when 'hierarchical-collapsible-hidden-checks'
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible_hidden_checks'
+      - when *Goals::HighchartsVizData::CHART_KINDS
+        = render partial: 'organizations/goals/customize_view/styles/highcharts', locals: { chart_kind: @view_style }
       - else
         / Default to hierarchical-collapsible view
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
