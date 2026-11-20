@@ -34,7 +34,11 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
     )
 
     teammates_by_id = CompanyTeammate.where(id: items.flat_map { |item|
-      [item["responder_company_teammate_id"], item["subject_company_teammate_id"]]
+      [
+        item["responder_company_teammate_id"],
+        item["subject_company_teammate_id"],
+        *PossibleObservationConsults::ObserveeSelection.normalize_ids(item["subject_company_teammate_ids"])
+      ]
     }.compact).includes(:person).index_by(&:id)
 
     rated_items = []
@@ -42,10 +46,15 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
 
     items.each do |item|
       consult.heartbeat_processing!
-      subject = teammates_by_id[item["subject_company_teammate_id"].to_i]
+      subject_ids = PossibleObservationConsults::ObserveeSelection.normalize_ids(item["subject_company_teammate_ids"])
+      if subject_ids.empty? && item["subject_company_teammate_id"].present?
+        subject_ids = [item["subject_company_teammate_id"].to_i]
+      end
+      subjects = subject_ids.filter_map { |id| teammates_by_id[id] }
       observer = teammates_by_id[item["responder_company_teammate_id"].to_i]
 
-      if subject.nil?
+      # Team/blank cues still rate company values; missing ids that were expected are skipped.
+      if subject_ids.any? && subjects.size != subject_ids.size
         rated_items << item
         rating_errors << "Cue #{item['id']}: missing observee"
         consultation.increment_units_completed!
@@ -56,13 +65,13 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
         next
       end
 
-      pack = PossibleObservationSlackSearches::SubjectContextPack.call(
-        teammate: subject,
+      pack = PossibleObservationConsults::ObserveeContextPack.call(
+        teammates: subjects,
         organization: consult.organization
       )
       result = Llm::TranscriptCueRatingsExtractor.call(
         quote: item["quote"],
-        observee_name: subject.person.casual_name.presence || subject.person.display_name,
+        observee_name: pack.observee_name,
         observer_name: observer&.person&.casual_name.presence || observer&.person&.display_name,
         context_text: pack.prompt_text,
         context_catalog: pack.catalog,
@@ -72,7 +81,10 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
         model_id: model_id
       )
       rating_errors << result["error"] if result["error"].present?
-      rated_items << apply_ratings(item, result)
+      rated_items << apply_ratings(item, result).merge(
+        "subject_company_teammate_ids" => subject_ids,
+        "subject_company_teammate_id" => subject_ids.first
+      )
       consultation.increment_units_completed!
       consult.persist_partial_extractions!(
         items: rated_items,
@@ -121,7 +133,11 @@ class PossibleObservationConsultExtractionJob < ApplicationJob
   end
 
   def rated_subject_ids(items)
-    items.filter_map { |item| item["subject_company_teammate_id"].presence&.to_i }.uniq
+    items.flat_map { |item|
+      ids = PossibleObservationConsults::ObserveeSelection.normalize_ids(item["subject_company_teammate_ids"])
+      ids = [item["subject_company_teammate_id"].to_i] if ids.empty? && item["subject_company_teammate_id"].present?
+      ids
+    }.uniq
   end
 
   def complete_consultation!(consultation, items_count:)

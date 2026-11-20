@@ -2,10 +2,14 @@
 - item = item.with_indifferent_access
 - idx = local_assigns.fetch(:idx)
 - observer_tm = @selectable_teammates.find { |tm| tm.id == item[:responder_company_teammate_id].to_i }
-- subject_tm = @selectable_teammates.find { |tm| tm.id == item[:subject_company_teammate_id].to_i }
+- subject_ids = PossibleObservationConsults::ObserveeSelection.normalize_ids(item[:subject_company_teammate_ids])
+- if subject_ids.empty? && item[:subject_company_teammate_id].present?
+  - subject_ids = [item[:subject_company_teammate_id].to_i]
+- subject_tm = @selectable_teammates.find { |tm| tm.id == subject_ids.first }
 - saver = consult_item_outcome_saver_name(item)
 - observer_name = observer_tm&.person&.casual_name.presence || observer_tm&.person&.display_name.presence || "the observer"
-- subject_name = subject_tm&.person&.casual_name.presence || subject_tm&.person&.display_name.presence || "the observee"
+- teammate_by_id = @selectable_teammates.index_by(&:id)
+- subject_name = subject_ids.size > 1 ? PossibleObservationConsults::ObserveeSelection.multi_option_label(subject_ids, teammate_by_id) : (subject_ids.empty? ? "the team" : (subject_tm&.person&.casual_name.presence || subject_tm&.person&.display_name.presence || "the observee"))
 - quote_preview = item[:quote].to_s.truncate(180)
 - locked = item[:observation_id].present?
 - dismissed = item[:dismissed_at].present?
@@ -20,7 +24,9 @@
     = hidden_field_tag "items[#{idx}][confidence]", item[:confidence]
     = hidden_field_tag "items[#{idx}][observation_id]", item[:observation_id]
     = hidden_field_tag "items[#{idx}][responder_company_teammate_id]", item[:responder_company_teammate_id]
-    = hidden_field_tag "items[#{idx}][subject_company_teammate_id]", item[:subject_company_teammate_id]
+    = hidden_field_tag "items[#{idx}][subject_company_teammate_id]", subject_ids.first
+    - subject_ids.each do |sid|
+      = hidden_field_tag "items[#{idx}][subject_company_teammate_ids][]", sid
     = hidden_field_tag "items[#{idx}][dismissed_at]", item[:dismissed_at]
     = hidden_field_tag "items[#{idx}][dismissed_by_company_teammate_id]", item[:dismissed_by_company_teammate_id]
     = hidden_field_tag "items[#{idx}][outcome_by_company_teammate_id]", item[:outcome_by_company_teammate_id]

@@ -204,8 +204,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       )
     end
     
-    # For hierarchical-indented view, load most recent check-ins for display
-    if @view_style == 'hierarchical-indented'
+    # Soft-status / on-track chips for Prize viz styles that are not HierarchyWithCheckInsQuery-backed.
+    if @view_style.in?(%w[hierarchical-indented tree network nested])
       goal_ids = @goals.unscope(:includes).pluck(:id)
       @most_recent_check_ins_by_goal = GoalCheckIn
         .where(goal_id: goal_ids)

@@ -32,7 +32,13 @@ module Observations
       @observation.draft? && @observation.ogo_consult_sourced?
     end
 
+    def observees_required_message
+      "Add at least one observee before publishing. Team shout-outs stay draft-only until people are selected."
+    end
+
     def publish_quietly
+      return Result.err(observees_required_message) if @observation.observees.empty?
+
       @observation.update!(privacy_level: :observed_and_managers)
       Observations::PublishService.call(@observation)
       Result.ok("Published. Nobody was notified.")
@@ -41,6 +47,8 @@ module Observations
     end
 
     def publish_to_channel
+      return Result.err(observees_required_message) if @observation.observees.empty?
+
       if @observation.has_negative_ratings?
         return Result.err("A concerning rating stays with the people who should see it, so this cannot go in the company channel.")
       end

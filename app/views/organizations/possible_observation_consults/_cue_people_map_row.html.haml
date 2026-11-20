@@ -1,0 +1,90 @@
+-# Locals: cue, annotation, labels, selectable_teammates, teammate_by_id, teammate_options, worthy
+- cue = cue.with_indifferent_access
+- annotation = annotation.with_indifferent_access
+- speaker = cue[:speaker_label].to_s
+- speaker_observer = (labels[speaker] || {}).with_indifferent_access
+- observer_id = annotation[:observer_company_teammate_id].presence || speaker_observer[:company_teammate_id]
+- observer_certainty = annotation[:observer_certainty].presence || (observer_id.present? ? "certain" : "uncertain")
+- observee_certainty = annotation[:observee_certainty].presence || "uncertain"
+- observee_ids = PossibleObservationConsults::ObserveeSelection.normalize_ids(annotation[:observee_company_teammate_ids])
+- if observee_ids.empty? && annotation[:observee_company_teammate_id].present?
+  - observee_ids = [annotation[:observee_company_teammate_id].to_i]
+- observee_id = observee_ids.first
+- observee_select_value = PossibleObservationConsults::ObserveeSelection.select_value(observee_ids)
+- observee_options = [["Group of teammates (select later)", ""]]
+- if observee_ids.size > 1
+  - observee_options << [PossibleObservationConsults::ObserveeSelection.multi_option_label(observee_ids, teammate_by_id), PossibleObservationConsults::ObserveeSelection::MULTI]
+- observee_options += selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }
+- observer_name = teammate_by_id[observer_id.to_i]&.person&.display_name
+- observee_name = observee_ids.size > 1 ? PossibleObservationConsults::ObserveeSelection.multi_option_label(observee_ids, teammate_by_id) : teammate_by_id[observee_id.to_i]&.person&.display_name
+%tr{ class: (worthy ? nil : "text-muted") }
+  %td.text-center
+    = hidden_field_tag "cue_annotations[#{cue[:id]}][ogo_worthy]", "0"
+    = check_box_tag "cue_annotations[#{cue[:id]}][ogo_worthy]", "1", worthy,
+                    class: "form-check-input",
+                    style: "width: 1.25rem; height: 1.25rem;"
+  %td.small
+    - if cue[:start].present? && cue[:end].present? && cue[:merged]
+      = "#{cue[:start]} – #{cue[:end]}"
+    - else
+      = cue[:start].presence || "—"
+  %td.small
+    = cue[:text]
+    - debug_pill = consult_cue_debug_pill(cue, annotation)
+    - if debug_pill
+      %span.badge.text-bg-light.border.ms-1{
+        "data-bs-toggle" => "tooltip",
+        "data-bs-title" => debug_pill[:title],
+        title: debug_pill[:title]
+      }= debug_pill[:label]
+    - if cue[:kind] == "audio_share"
+      %span.badge.text-bg-secondary.ms-1 Audio
+  %td
+    .small.mb-1
+      %code= speaker.presence || "—"
+      - if annotation[:observer_label].present? && annotation[:observer_label].to_s != speaker
+        %span.text-muted · from #{annotation[:observer_label]}
+    %div.mb-1
+      %span.badge{
+          class: (observer_certainty == "certain" ? "text-bg-info" : "text-bg-warning"),
+          data: { cue_people_map_target: "observerPill", cue_id: cue[:id] }
+        }= observer_certainty == "certain" ? "Certain" : "Uncertain"
+      %span.ms-1.small{
+          class: (observer_name.present? ? nil : "d-none"),
+          data: { cue_people_map_target: "observerName", cue_id: cue[:id] }
+        }= observer_name
+    = hidden_field_tag "cue_annotations[#{cue[:id]}][observer_certainty]",
+                       observer_certainty,
+                       data: { cue_people_map_target: "observerCertainty", cue_id: cue[:id] }
+    = select_tag "cue_annotations[#{cue[:id]}][observer_company_teammate_id]",
+                 options_for_select(teammate_options, observer_id),
+                 class: "form-select form-select-sm",
+                 data: { cue_people_map_target: "observerTeammate", cue_id: cue[:id], action: "change->cue-people-map#observerChanged" }
+  %td
+    %div.mb-1
+      %span.badge{
+          class: (observee_certainty == "certain" ? "text-bg-info" : "text-bg-warning"),
+          data: { cue_people_map_target: "observeePill", cue_id: cue[:id] }
+        }= observee_certainty == "certain" ? "Certain" : "Uncertain"
+      %span.ms-1.small{
+          class: (observee_name.present? ? nil : "d-none"),
+          data: { cue_people_map_target: "observeeName", cue_id: cue[:id] }
+        }= observee_name.presence || Array(annotation[:observee_labels]).join(", ")
+    = hidden_field_tag "cue_annotations[#{cue[:id]}][observee_certainty]",
+                       observee_certainty,
+                       data: { cue_people_map_target: "observeeCertainty", cue_id: cue[:id] }
+    - observee_ids.each do |multi_id|
+      = hidden_field_tag "cue_annotations[#{cue[:id]}][observee_company_teammate_ids][]", multi_id
+    = select_tag "cue_annotations[#{cue[:id]}][observee_company_teammate_id]",
+                 options_for_select(observee_options, observee_select_value),
+                 class: "form-select form-select-sm",
+                 data: { cue_people_map_target: "observeeTeammate", cue_id: cue[:id], action: "change->cue-people-map#observeeChanged" }
+    - if observee_ids.size > 1
+      .small.text-muted.mt-1
+        Multi-person shout-out — keep the group, pick one person, or choose team/group.
+    - else
+      .small.text-muted.mt-1{
+          class: (observee_select_value.blank? ? nil : "d-none"),
+          data: { cue_people_map_target: "groupHint", cue_id: cue[:id] }
+        }
+        Group of teammates = select people later when Draft OGO is created.

@@ -57,19 +57,14 @@
   = render "prompt_debug_banner"
 
 - if first_pass_waiting
-  .alert.alert-secondary.mb-3{
-      data: {
-        controller: "first-pass-status-poll",
-        first_pass_status_poll_url_value: first_pass_status_url
-      }
-    }
-    .d-flex.align-items-center.gap-2
-      .spinner-border.spinner-border-sm{ role: "status" }
-        %span.visually-hidden Loading
-      %div
-        %strong Doing the first pass to see who is observing whom…
-        %div.small.text-muted
-          Organizing into OGO-worthiness and getting clear on who is the observer and who is the observee. This page will refresh when ready.
+  = render "shared/og_consultations/status_banner",
+           status_url: first_pass_status_url,
+           label: "First pass",
+           initial_status: @consult.first_pass_status,
+           wrapper_class: "alert alert-secondary mb-3",
+           time_zone: current_person_iana_timezone
+  %p.small.text-muted.mb-3
+    Organizing into OGO-worthiness and getting clear on who is the observer and who is the observee. This page will refresh when ready.
 
 - if @consult.first_pass_status == "failed" && !@consult.people_confirmed?
   .alert.alert-danger

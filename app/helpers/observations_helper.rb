@@ -439,12 +439,18 @@ module ObservationsHelper
 
   def transcript_draft_quiet_blocked_reason(observation)
     return "Only the observer can publish this observation." unless policy(observation).publish?
+    if observation.observees.empty?
+      return "Add at least one observee before publishing. Team shout-outs stay draft-only until people are selected."
+    end
 
     nil
   end
 
   def transcript_draft_channel_blocked_reason(observation)
     return "Only the observer can publish this observation." unless policy(observation).publish?
+    if observation.observees.empty?
+      return "Add at least one observee before publishing. Team shout-outs stay draft-only until people are selected."
+    end
     if observation.has_negative_ratings?
       return "A concerning rating stays with the people who should see it, so this cannot go in the company channel."
     end

@@ -481,6 +481,44 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include(other.person.display_name)
     end
 
+    it "shows a multi-person subject option and Ready without forcing one observee" do
+      third_person = create(:person, full_name: "Nicole Two", preferred_name: "Nicole")
+      third = create(:company_teammate, person: third_person, organization: organization)
+      create(:employment_tenure, teammate: third, company: organization, started_at: 1.year.ago, ended_at: nil)
+      third.update!(first_employed_at: 1.year.ago)
+
+      item = consult.extraction_items.first.to_h.merge(
+        "responder_company_teammate_id" => teammate.id,
+        "subject_company_teammate_id" => other.id,
+        "subject_company_teammate_ids" => [other.id, third.id]
+      )
+      consult.update!(extractions: consult.extractions.merge("items" => [item]))
+
+      get organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Group of teammates (select later)")
+      expect(response.body).to include("value=\"multi\"")
+      expect(response.body).to include("Ready")
+      expect(response.body).not_to include("Needs IDs")
+    end
+
+    it "treats intentional team blank as Ready when an observer is set" do
+      item = consult.extraction_items.first.to_h.merge(
+        "responder_company_teammate_id" => teammate.id,
+        "subject_company_teammate_id" => nil,
+        "subject_company_teammate_ids" => []
+      )
+      consult.update!(extractions: consult.extractions.merge("items" => [item]))
+
+      get organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Ready")
+      expect(response.body).not_to include("Needs IDs")
+    end
+
+
     it "replaces dismissed rows with an outcome summary after Save all" do
       item = consult.extraction_items.first
       patch organization_possible_observation_consult_path(organization, consult),
@@ -693,6 +731,43 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Confirm people and continue to Step 3")
     end
 
+    it "collapses non-worthy cue stretches and repeats a subtle header every third row" do
+      consult.update!(
+        people_status: "suggested",
+        confirmed_teammate_ids: [],
+        extraction_status: "ready",
+        first_pass_status: "completed",
+        cue_annotations: {
+          "version" => 1,
+          "moments" => [
+            { "id" => "c1", "start" => "00:01:00.000", "end" => "00:01:05.000", "speaker_label" => "Alex", "text" => "Logistics only one." },
+            { "id" => "c2", "start" => "00:01:10.000", "end" => "00:01:15.000", "speaker_label" => "Pat", "text" => "Logistics only two." },
+            { "id" => "c3", "start" => "00:02:00.000", "end" => "00:02:05.000", "speaker_label" => "Alex", "text" => "Shout out to Pat for the launch." },
+            { "id" => "c4", "start" => "00:02:10.000", "end" => "00:02:15.000", "speaker_label" => "Alex", "text" => "Another shout out for shipping." },
+            { "id" => "c5", "start" => "00:02:20.000", "end" => "00:02:25.000", "speaker_label" => "Alex", "text" => "And one more shout out for the team." },
+            { "id" => "c6", "start" => "00:02:30.000", "end" => "00:02:35.000", "speaker_label" => "Alex", "text" => "Final shout out for clarity." }
+          ],
+          "cues" => {
+            "c1" => { "ogo_worthy" => false, "cue_status" => "ignore" },
+            "c2" => { "ogo_worthy" => false, "cue_status" => "ignore" },
+            "c3" => { "ogo_worthy" => true, "cue_status" => "ogo_worthy", "observer_company_teammate_id" => teammate.id, "observee_company_teammate_id" => other.id },
+            "c4" => { "ogo_worthy" => true, "cue_status" => "ogo_worthy", "observer_company_teammate_id" => teammate.id, "observee_company_teammate_id" => other.id },
+            "c5" => { "ogo_worthy" => true, "cue_status" => "ogo_worthy", "observer_company_teammate_id" => teammate.id, "observee_company_teammate_id" => other.id },
+            "c6" => { "ogo_worthy" => true, "cue_status" => "ogo_worthy", "observer_company_teammate_id" => teammate.id, "observee_company_teammate_id" => other.id }
+          }
+        }
+      )
+
+      get organization_possible_observation_consult_path(organization, consult)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("non-OGO-worthy cues")
+      expect(response.body).to include("Expand to review")
+      expect(response.body).to include("Alex and Pat")
+      expect(response.body).to include("aria-hidden=\"true\"")
+      expect(response.body).to include("table-layout: fixed")
+    end
+
     it "shows the first-pass waiting banner while the cheap pass runs" do
       consult.update!(
         people_status: "suggested",
@@ -705,7 +780,9 @@ RSpec.describe "Possible observation consults", type: :request do
       expect(response.body).to include("Step 2 • Who is observing whom")
       expect(response.body).to include("First pass in progress")
       expect(response.body).to include("Step 3 • Review the content and create the OGOs")
-      expect(response.body).to include("Doing the first pass to see who is observing whom")
+      expect(response.body).to include("og-consultation-status-poll")
+      expect(response.body).to include("First pass is processing")
+      expect(response.body).to include("Estimating")
     end
 
     it "saves speaker map resolutions" do
@@ -970,26 +1047,24 @@ RSpec.describe "Possible observation consults", type: :request do
       )
     end
 
-    it "signals the poller to keep waiting while in flight" do
+    it "returns the shared consultation status payload while in flight" do
       get first_pass_status_organization_possible_observation_consult_path(organization, consult),
           headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:ok)
       json = response.parsed_body
       expect(json["status"]).to eq("processing")
-      expect(json["polling"]).to eq(true)
-      expect(json["reload"]).to eq(false)
+      expect(json).to include("elapsed_seconds", "estimated_duration_seconds", "slow", "stale")
+      expect(json["elapsed_seconds"]).to be >= 0
     end
 
-    it "signals reload when the first pass completes" do
+    it "returns completed status so the shared poller reloads" do
       consult.update!(first_pass_status: "completed")
       get first_pass_status_organization_possible_observation_consult_path(organization, consult),
           headers: { "Accept" => "application/json" }
 
       json = response.parsed_body
       expect(json["status"]).to eq("completed")
-      expect(json["polling"]).to eq(false)
-      expect(json["reload"]).to eq(true)
     end
   end
 

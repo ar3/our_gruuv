@@ -69,10 +69,24 @@ module PossibleObservationConsults
         observer_certainty = observer_id.present? ? "certain" : "uncertain" unless CERTAINTIES.include?(observer_certainty)
         observer_certainty = "uncertain" if observer_id.blank?
 
-        observee_id = sanitize_id(attrs["observee_company_teammate_id"])
+        existing_multi = ObserveeSelection.normalize_ids(
+          attrs["observee_company_teammate_ids"].presence || entry["observee_company_teammate_ids"]
+        )
+        resolved = ObserveeSelection.resolve(
+          select_value: attrs["observee_company_teammate_id"],
+          multi_ids: existing_multi
+        )
+        observee_id = resolved[:primary]
+        observee_ids = resolved[:ids]
         observee_certainty = attrs["observee_certainty"].to_s
-        observee_certainty = observee_id.present? ? "certain" : "uncertain" unless CERTAINTIES.include?(observee_certainty)
-        observee_certainty = "uncertain" if observee_id.blank?
+        observee_certainty =
+          if observee_ids.size > 1
+            "certain"
+          elsif observee_id.present?
+            CERTAINTIES.include?(observee_certainty) ? observee_certainty : "certain"
+          else
+            "uncertain"
+          end
 
         entry.merge!(
           "ogo_worthy" => worthy,
@@ -80,7 +94,8 @@ module PossibleObservationConsults
           "observer_certainty" => observer_certainty,
           "observer_company_teammate_id" => observer_id,
           "observee_certainty" => observee_certainty,
-          "observee_company_teammate_id" => observee_id
+          "observee_company_teammate_id" => observee_id,
+          "observee_company_teammate_ids" => observee_ids
         )
         entry.delete("observee_status")
         cues[cue_id.to_s] = entry
@@ -136,7 +151,8 @@ module PossibleObservationConsults
           :certainty, :company_teammate_id,
           :cue_status, :ogo_worthy,
           :observer_certainty, :observer_company_teammate_id,
-          :observee_certainty, :observee_company_teammate_id
+          :observee_certainty, :observee_company_teammate_id,
+          observee_company_teammate_ids: []
         ).to_h.stringify_keys
       else
         attrs.to_h.stringify_keys

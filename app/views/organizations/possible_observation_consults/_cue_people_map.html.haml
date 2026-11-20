@@ -4,6 +4,7 @@
 - annotations = local_assigns.fetch(:cue_annotation_rows, {})
 - teammate_by_id = selectable_teammates.index_by(&:id)
 - teammate_options = [["—", ""]] + selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }
+- cue_groups = consult_cue_worthiness_groups(cues, annotations)
 
 .card.mb-4
   .card-body
@@ -15,6 +16,7 @@
           %strong OGO-worthy
           moments. Nearby caption blocks from the same speaker are merged into one cue.
           Observer and observee come from the first pass — adjust only if wrong.
+          Non-worthy stretches are collapsed; expand any stretch to review.
       = button_to "Re-run first pass",
                   rebuild_speaker_map_organization_possible_observation_consult_path(organization, consult),
                   method: :post,
@@ -40,89 +42,61 @@
                   method: :patch,
                   local: true,
                   html: { data: { turbo: false, controller: "cue-people-map" } } do
-        .table-responsive{ style: "max-height: 70vh;" }
-          %table.table.table-sm.table-bordered.align-middle.mb-3
-            %thead.table-light.sticky-top
-              %tr
-                %th.text-center OGO-worthy
-                %th Time
-                %th Cue
-                %th Observer
-                %th Observee
-            %tbody
-              - cues.each do |cue|
-                - cue = cue.with_indifferent_access
-                - speaker = cue[:speaker_label].to_s
-                - speaker_observer = (labels[speaker] || {}).with_indifferent_access
-                - annotation = (annotations[cue[:id].to_s] || {}).with_indifferent_access
-                - worthy = annotation.key?(:ogo_worthy) ? ActiveModel::Type::Boolean.new.cast(annotation[:ogo_worthy]) : annotation[:cue_status].to_s == "ogo_worthy"
-                - observer_id = annotation[:observer_company_teammate_id].presence || speaker_observer[:company_teammate_id]
-                - observer_certainty = annotation[:observer_certainty].presence || (observer_id.present? ? "certain" : "uncertain")
-                - observee_certainty = annotation[:observee_certainty].presence || "uncertain"
-                - observee_id = annotation[:observee_company_teammate_id]
-                - observer_name = teammate_by_id[observer_id.to_i]&.person&.display_name
-                - observee_name = teammate_by_id[observee_id.to_i]&.person&.display_name
-                %tr{ class: (worthy ? nil : "text-muted") }
-                  %td.text-center
-                    = hidden_field_tag "cue_annotations[#{cue[:id]}][ogo_worthy]", "0"
-                    = check_box_tag "cue_annotations[#{cue[:id]}][ogo_worthy]", "1", worthy,
-                                    class: "form-check-input",
-                                    style: "width: 1.25rem; height: 1.25rem;"
-                  %td.small.text-nowrap
-                    - if cue[:start].present? && cue[:end].present? && cue[:merged]
-                      = "#{cue[:start]} – #{cue[:end]}"
-                    - else
-                      = cue[:start].presence || "—"
-                  %td.small{ style: "min-width: 180px; max-width: 300px;" }
-                    = cue[:text]
-                    - debug_pill = consult_cue_debug_pill(cue, annotation)
-                    - if debug_pill
-                      %span.badge.text-bg-light.border.ms-1{
-                        "data-bs-toggle" => "tooltip",
-                        "data-bs-title" => debug_pill[:title],
-                        title: debug_pill[:title]
-                      }= debug_pill[:label]
-                    - if cue[:kind] == "audio_share"
-                      %span.badge.text-bg-secondary.ms-1 Audio
-                  %td{ style: "min-width: 180px;" }
-                    .small.mb-1
-                      %code= speaker.presence || "—"
-                      - if annotation[:observer_label].present? && annotation[:observer_label].to_s != speaker
-                        %span.text-muted · from #{annotation[:observer_label]}
-                    %div.mb-1
-                      %span.badge{
-                          class: (observer_certainty == "certain" ? "text-bg-info" : "text-bg-warning"),
-                          data: { cue_people_map_target: "observerPill", cue_id: cue[:id] }
-                        }= observer_certainty == "certain" ? "Certain" : "Uncertain"
-                      %span.ms-1.small{
-                          class: (observer_name.present? ? nil : "d-none"),
-                          data: { cue_people_map_target: "observerName", cue_id: cue[:id] }
-                        }= observer_name
-                    = hidden_field_tag "cue_annotations[#{cue[:id]}][observer_certainty]",
-                                       observer_certainty,
-                                       data: { cue_people_map_target: "observerCertainty", cue_id: cue[:id] }
-                    = select_tag "cue_annotations[#{cue[:id]}][observer_company_teammate_id]",
-                                 options_for_select(teammate_options, observer_id),
-                                 class: "form-select form-select-sm",
-                                 data: { cue_people_map_target: "observerTeammate", cue_id: cue[:id], action: "change->cue-people-map#observerChanged" }
-                  %td{ style: "min-width: 180px;" }
-                    %div.mb-1
-                      %span.badge{
-                          class: (observee_certainty == "certain" ? "text-bg-info" : "text-bg-warning"),
-                          data: { cue_people_map_target: "observeePill", cue_id: cue[:id] }
-                        }= observee_certainty == "certain" ? "Certain" : "Uncertain"
-                      %span.ms-1.small{
-                          class: (observee_name.present? ? nil : "d-none"),
-                          data: { cue_people_map_target: "observeeName", cue_id: cue[:id] }
-                        }= observee_name.presence || Array(annotation[:observee_labels]).join(", ")
-                    = hidden_field_tag "cue_annotations[#{cue[:id]}][observee_certainty]",
-                                       observee_certainty,
-                                       data: { cue_people_map_target: "observeeCertainty", cue_id: cue[:id] }
-                    = select_tag "cue_annotations[#{cue[:id]}][observee_company_teammate_id]",
-                                 options_for_select(teammate_options, observee_id),
-                                 class: "form-select form-select-sm",
-                                 data: { cue_people_map_target: "observeeTeammate", cue_id: cue[:id], action: "change->cue-people-map#observeeChanged" }
-                    .small.text-muted.mt-1 Leave blank for team / no single observee
+        - cue_groups.each_with_index do |group, group_idx|
+          - group_cues = group[:cues]
+          - worthy = group[:worthy]
+          - if worthy
+            .table-responsive.mb-3
+              %table.table.table-sm.table-bordered.align-middle.mb-0{ style: "table-layout: fixed; width: 100%;" }
+                = render "cue_people_map_colgroup"
+                %thead.table-light
+                  = render "cue_people_map_header_row"
+                %tbody
+                  - group_cues.each_with_index do |cue, row_idx|
+                    - if row_idx.positive? && (row_idx % 3).zero?
+                      = render "cue_people_map_header_row", subtle: true
+                    - annotation = (annotations[cue[:id].to_s] || {})
+                    = render "cue_people_map_row",
+                             cue: cue,
+                             annotation: annotation,
+                             labels: labels,
+                             selectable_teammates: selectable_teammates,
+                             teammate_by_id: teammate_by_id,
+                             teammate_options: teammate_options,
+                             worthy: true
+          - else
+            - collapse_id = "cue-unworthy-group-#{consult.id}-#{group_idx}"
+            .border.rounded.mb-3.bg-light
+              .p-3
+                %button.btn.btn-link.btn-sm.text-start.text-decoration-none.text-body.p-0{
+                    type: "button",
+                    "data-bs-toggle" => "collapse",
+                    "data-bs-target" => "##{collapse_id}",
+                    "aria-expanded" => "false",
+                    "aria-controls" => collapse_id
+                  }
+                  %span.me-1
+                    %i.bi.bi-chevron-right
+                  = consult_unworthy_cue_group_summary(group_cues)
+              .collapse{ id: collapse_id }
+                .table-responsive.border-top
+                  %table.table.table-sm.table-bordered.align-middle.mb-0{ style: "table-layout: fixed; width: 100%;" }
+                    = render "cue_people_map_colgroup"
+                    %thead.table-light
+                      = render "cue_people_map_header_row"
+                    %tbody
+                      - group_cues.each_with_index do |cue, row_idx|
+                        - if row_idx.positive? && (row_idx % 3).zero?
+                          = render "cue_people_map_header_row", subtle: true
+                        - annotation = (annotations[cue[:id].to_s] || {})
+                        = render "cue_people_map_row",
+                                 cue: cue,
+                                 annotation: annotation,
+                                 labels: labels,
+                                 selectable_teammates: selectable_teammates,
+                                 teammate_by_id: teammate_by_id,
+                                 teammate_options: teammate_options,
+                                 worthy: false
         %p.small.text-muted
           Step 3 will draft OGOs for checked cues only. You can still adjust observer/observee on the review page if needed.
         = button_tag "Confirm people and continue to Step 3", type: "submit", class: "btn btn-primary"

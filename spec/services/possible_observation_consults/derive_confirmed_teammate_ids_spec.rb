@@ -66,4 +66,21 @@ RSpec.describe PossibleObservationConsults::DeriveConfirmedTeammateIds do
 
     expect(described_class.call(consult: consult)).to contain_exactly(author.id, observee.id)
   end
+
+  it "includes every multi observee id" do
+    other = create(:company_teammate, organization: organization, first_employed_at: 1.year.ago)
+    consult.update!(
+      cue_annotations: consult.cue_annotations.deep_merge(
+        "cues" => {
+          "cue-1" => {
+            "cue_status" => "ogo_worthy",
+            "observee_company_teammate_id" => observee.id,
+            "observee_company_teammate_ids" => [observee.id, other.id]
+          }
+        }
+      )
+    )
+
+    expect(described_class.call(consult: consult)).to contain_exactly(observer.id, observee.id, other.id)
+  end
 end

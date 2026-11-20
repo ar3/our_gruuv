@@ -28,9 +28,11 @@ module PossibleObservationConsults
           observer_id = observer[:company_teammate_id]
         end
         ids << observer_id.to_i if observer_id.present?
-        if annotation[:observee_company_teammate_id].present?
-          ids << annotation[:observee_company_teammate_id].to_i
+        observee_ids = ObserveeSelection.normalize_ids(annotation[:observee_company_teammate_ids])
+        if observee_ids.empty? && annotation[:observee_company_teammate_id].present?
+          observee_ids = [annotation[:observee_company_teammate_id].to_i]
         end
+        ids.concat(observee_ids)
       end
 
       ids.reject(&:zero?).uniq

@@ -1165,6 +1165,66 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include(check_in_organization_goal_path(organization, check_in_eligible_goal))
     end
   end
+
+  describe 'GET /organizations/:organization_id/goals Prize soft-status chips' do
+    let!(:active_goal) do
+      create(
+        :goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Soft Status Active Goal',
+        goal_type: 'quantitative_key_result',
+        most_likely_target_date: Date.today + 1.month,
+        earliest_target_date: Date.today,
+        latest_target_date: Date.today + 2.months,
+        started_at: 1.week.ago,
+        privacy_level: 'everyone_in_company'
+      )
+    end
+    let!(:check_in) do
+      create(
+        :goal_check_in,
+        goal: active_goal,
+        confidence_percentage: 70,
+        check_in_week_start: Date.current.beginning_of_week(:monday),
+        confidence_reporter: person
+      )
+    end
+
+    it 'shows linked soft-status chips on hierarchical-collapsible-hidden-checks' do
+      get organization_goals_path(organization), params: {
+        owner_id: "CompanyTeammate_#{teammate.id}",
+        view: 'hierarchical-collapsible-hidden-checks'
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Open goal (')
+      expect(response.body).to include(organization_goal_path(organization, active_goal, anchor: 'check-in'))
+    end
+
+    it 'shows linked soft-status chips on tree view' do
+      get organization_goals_path(organization), params: {
+        owner_id: "CompanyTeammate_#{teammate.id}",
+        view: 'tree'
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Soft Status Active Goal')
+      expect(response.body).to include(organization_goal_path(organization, active_goal, anchor: 'check-in'))
+    end
+
+    it 'shows clickable network nodes and soft-status list' do
+      get organization_goals_path(organization), params: {
+        owner_id: "CompanyTeammate_#{teammate.id}",
+        view: 'network'
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('network-visualization')
+      expect(response.body).to include('Soft status (click through)')
+      expect(response.body).to include(organization_goal_path(organization, active_goal, anchor: 'check-in'))
+    end
+  end
   
   describe 'GET /organizations/:organization_id/goals with list view' do
     let(:draft_goal) do

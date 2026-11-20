@@ -254,12 +254,11 @@ module Organizations
 
     def first_pass_status
       authorize @consult
-      render json: {
+      render json: OgConsultations::StatusPayload.for_heartbeat(
+        record: @consult,
         status: @consult.first_pass_status,
-        error: @consult.first_pass_error,
-        polling: @consult.first_pass_in_flight?,
-        reload: @consult.first_pass_completed? || @consult.first_pass_status == "failed"
-      }
+        error: @consult.first_pass_error
+      )
     end
 
     private
@@ -349,8 +348,10 @@ module Organizations
         redirect_to consult_path, notice: "This candidate already has an OGO."
         return
       end
-      if target["responder_company_teammate_id"].blank? || target["subject_company_teammate_id"].blank?
-        redirect_to consult_path, alert: "Choose both observer and subject before creating an OGO."
+      unless PossibleObservationConsults::ObserveeSelection.ready_for_promote?(
+        observer_id: target["responder_company_teammate_id"]
+      )
+        redirect_to consult_path, alert: "Choose an observer before creating an OGO."
         return
       end
 
@@ -438,10 +439,12 @@ module Organizations
 
       invalid_rows = items.select do |item|
         included_item?(item) && item["observation_id"].blank? &&
-          (item["responder_company_teammate_id"].blank? || item["subject_company_teammate_id"].blank?)
+          !PossibleObservationConsults::ObserveeSelection.ready_for_promote?(
+            observer_id: item["responder_company_teammate_id"]
+          )
       end
       if invalid_rows.any?
-        redirect_to consult_path, alert: "Rows set to Include must have both observer and subject selected."
+        redirect_to consult_path, alert: "Rows set to Create Draft OGO must have an observer selected."
         return
       end
 
@@ -585,7 +588,8 @@ module Organizations
             :suggested_rateable_type, :suggested_rateable_id, :suggested_rating, :suggested_goal_id,
             :suggested_rateable_name, :association_reason, :rating_reason,
             :confidence, :observation_id,
-            :dismissed_at, :dismissed_by_company_teammate_id, :outcome_by_company_teammate_id
+            :dismissed_at, :dismissed_by_company_teammate_id, :outcome_by_company_teammate_id,
+            subject_company_teammate_ids: []
           ).to_h.stringify_keys
         else
           h.stringify_keys.except("suggested_rateables")
@@ -599,8 +603,23 @@ module Organizations
         stored = stored_by_id[submitted["id"].to_s]
         out = stored ? stored.to_h.stringify_keys.merge(submitted) : submitted
 
+        stored_ids = PossibleObservationConsults::ObserveeSelection.normalize_ids(
+          submitted["subject_company_teammate_ids"].presence ||
+            stored&.dig(:subject_company_teammate_ids) ||
+            stored&.dig("subject_company_teammate_ids")
+        )
+        resolved = PossibleObservationConsults::ObserveeSelection.resolve(
+          select_value: if submitted.key?("subject_company_teammate_id")
+                          submitted["subject_company_teammate_id"]
+                        else
+                          PossibleObservationConsults::ObserveeSelection.select_value(stored_ids)
+                        end,
+          multi_ids: stored_ids
+        )
+        out["subject_company_teammate_ids"] = resolved[:ids]
+        out["subject_company_teammate_id"] = resolved[:primary]
         out["observer_unknown"] = out["responder_company_teammate_id"].blank?
-        out["observee_unknown"] = out["subject_company_teammate_id"].blank?
+        out["observee_unknown"] = resolved[:ids].empty? ? false : out["subject_company_teammate_id"].blank?
         # Always persist as a real Array of hashes (never an indexed {"0"=>...} Hash).
         out["suggested_rateables"] = normalize_suggested_rateables_param(
           out["suggested_rateables"]

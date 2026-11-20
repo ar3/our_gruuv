@@ -2,6 +2,7 @@
 - root_goals = hierarchy[:root_goals]
 - parent_child_map = hierarchy[:parent_child_map]
 - categories = @goals.map { |g| [g.id, g.goal_category] }.to_h
+- check_ins_by_goal = @most_recent_check_ins_by_goal || {}
 
 - if @goals.empty?
   .alert.alert-info
@@ -24,12 +25,18 @@
         - category = categories[goal.id]
         - badge_class_map = { vision: 'bg-info', objective: 'bg-primary', key_result: 'bg-success', bad_key_result: 'bg-danger' }
         - badge_class = badge_class_map[category] || 'bg-secondary'
+        - check_in = check_ins_by_goal[goal.id]
         .tree-node{style: "margin-left: 0px; margin-bottom: 10px;"}
           .card{style: "min-width: 300px; max-width: 500px;"}
             .card-body.p-2
               .d-flex.align-items-center.justify-content-between
                 .flex-grow-1
                   = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold"
+                  = render 'organizations/goals/customize_view/styles/soft_status_chip',
+                    goal: goal,
+                    organization: @organization,
+                    check_in: check_in,
+                    include_empty: false
                   %br
                   %span.badge{class: badge_class, style: "font-size: 0.7em;"}
                     = goal_category_label(goal).html_safe
@@ -38,4 +45,4 @@
                     = pluralize(children.count, 'child').html_safe
     - else
       - root_goals.each do |root_goal|
-        != render_tree_node(root_goal, 0, parent_child_map, categories, @organization)
+        != render_tree_node(root_goal, 0, parent_child_map, categories, @organization, check_ins_by_goal: check_ins_by_goal)

@@ -45,9 +45,13 @@
                 .small.text-muted.text-truncate.min-w-0
                   - if most_recent_check_in.present?
                     = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
-                    = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
                   - else
                     %span= goal_index_info_sentence(goal)
+                  = render 'organizations/goals/customize_view/styles/soft_status_chip',
+                    goal: goal,
+                    organization: @organization,
+                    check_in: most_recent_check_in,
+                    include_empty: false
                 - if goal.most_likely_target_date.present? && goal.completed_at.nil?
                   - checkin_collapse_id = "goal-checkin-#{goal.id}"
                   %button.btn.btn-sm.btn-link.p-0.toggle-checkin.flex-shrink-0.text-nowrap{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{checkin_collapse_id}", "aria-expanded": "false", "aria-controls": checkin_collapse_id, style: "text-decoration: none; color: #666; line-height: 1;"}
@@ -94,10 +98,15 @@
                   | Owned by: #{goal_owner_display_name(goal)}
                 = goal_external_association_links(@organization, goal)
 
-              - if most_recent_check_in.present?
-                .small.text-muted.mb-2
-                  = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
-                  = render 'shared/on_track_pill', status: goal.on_track_status_for_check_in(most_recent_check_in)
+              - if most_recent_check_in.present? || goal.completed_at.present? || goal.started_at.nil?
+                .small.text-muted.mb-2.d-flex.align-items-center.flex-wrap.gap-1
+                  - if most_recent_check_in.present?
+                    = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
+                  = render 'organizations/goals/customize_view/styles/soft_status_chip',
+                    goal: goal,
+                    organization: @organization,
+                    check_in: most_recent_check_in,
+                    include_empty: false
 
               - if goal.most_likely_target_date.present? && goal.completed_at.nil?
                 = render 'organizations/goals/customize_view/styles/goal_check_in_body', goal: goal, show_note_win_cta_for_viewer: show_note_win_cta_for_viewer, can_check_in: can_check_in, current_week_check_in: current_week_check_in

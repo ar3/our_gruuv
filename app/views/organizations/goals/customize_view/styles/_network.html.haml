@@ -3,6 +3,7 @@
 - links = viz_data[:links]
 - categories = viz_data[:categories]
 - goal_ids = goals.map(&:id).to_set
+- check_ins_by_goal = @most_recent_check_ins_by_goal || {}
 
 - if goals.empty?
   .alert.alert-info
@@ -13,7 +14,9 @@
       Create goals and link them together to see a network visualization.
 - else
   .network-visualization
-    %svg{width: "100%", height: "600", style: "border: 1px solid #e0e0e0; background: #fafafa;"}
+    %p.small.text-muted.mb-2
+      Soft-colored rings show Hit / On Track / Off Track / Draft. Click a node to open that goal (check-in when relevant).
+    %svg{width: "100%", height: "600", style: "border: 1px solid #e0e0e0; background: #fafafa;", role: "img", "aria-label": "Goals network"}
       %defs
         %marker{id: "arrowhead", markerWidth: "10", markerHeight: "10", refX: "9", refY: "3", orient: "auto"}
           %polygon{points: "0 0, 10 3, 0 6", fill: "#666"}
@@ -51,7 +54,7 @@
           "marker-end": "url(#arrowhead)"
         }
       
-      / Draw goals (nodes)
+      / Draw goals (nodes) — clickable via SVG <a>
       - goals.each_with_index do |goal, index|
         - total_goals = goals.count
         - angle = (index * 2 * Math::PI / total_goals) - Math::PI / 2
@@ -64,27 +67,40 @@
         - category = categories[goal.id]
         - color_map = { vision: "#17a2b8", objective: "#007bff", key_result: "#28a745", bad_key_result: "#dc3545" }
         - color = color_map[category] || "#6c757d"
+        - check_in = check_ins_by_goal[goal.id]
+        - soft = goal_soft_status(goal, organization: @organization, check_in: check_in, include_empty: false)
+        - href = soft&.dig(:path) || organization_goal_path(@organization, goal)
+        - stroke = soft&.dig(:stroke) || "#fff"
+        - stroke_width = soft.present? ? "4" : "2"
         
-        / Goal node circle
-        %circle{
-          cx: x,
-          cy: y,
-          r: 25,
-          fill: color,
-          stroke: "#fff",
-          "stroke-width": "2"
-        }
-        
-        / Goal title text (truncated)
-        - title = goal.title.length > 15 ? goal.title[0..14] + "..." : goal.title
-        %text{
-          x: x,
-          y: y + 40,
-          "text-anchor": "middle",
-          "font-size": "10",
-          fill: "#333"
-        }
-          = title
+        %a{"xlink:href" => href, href: href, "aria-label" => "#{goal.title}#{soft ? " (#{soft[:label]})" : ''}"}
+          %circle{
+            cx: x,
+            cy: y,
+            r: 25,
+            fill: color,
+            stroke: stroke,
+            "stroke-width": stroke_width
+          }
+          
+          - title = goal.title.length > 15 ? goal.title[0..14] + "..." : goal.title
+          %text{
+            x: x,
+            y: y + 40,
+            "text-anchor": "middle",
+            "font-size": "10",
+            fill: "#333"
+          }
+            = title
+          - if soft.present?
+            %text{
+              x: x,
+              y: y + 52,
+              "text-anchor": "middle",
+              "font-size": "9",
+              fill: soft[:stroke]
+            }
+              = soft[:label]
       
       / Legend
       %g{transform: "translate(20, 20)"}
@@ -98,3 +114,17 @@
         %circle{cx: "10", cy: "85", r: "8", fill: "#dc3545"}
         %text{x: "25", y: "90", "font-size": "10", fill: "#333"} Bad Key Result
 
+    .mt-3
+      %h6.small.text-muted.mb-2 Soft status (click through)
+      .d-flex.flex-wrap.gap-2
+        - goals.each do |goal|
+          - check_in = check_ins_by_goal[goal.id]
+          - soft = goal_soft_status(goal, organization: @organization, check_in: check_in, include_empty: false)
+          .border.rounded.px-2.py-1.small
+            = link_to goal.title.truncate(40), organization_goal_path(@organization, goal), class: "text-decoration-none me-1"
+            - if soft.present?
+              = render 'organizations/goals/customize_view/styles/soft_status_chip',
+                goal: goal,
+                organization: @organization,
+                check_in: check_in,
+                include_empty: false

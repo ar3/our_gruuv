@@ -38,8 +38,13 @@ module PossibleObservationConsults
       speaker = cue[:speaker_label].to_s
       speaker_map = (labels[speaker] || {}).with_indifferent_access
       observer_id = annotation[:observer_company_teammate_id].presence || speaker_map[:company_teammate_id]
-      observee_id = annotation[:observee_company_teammate_id]
+      observee_ids = ObserveeSelection.normalize_ids(annotation[:observee_company_teammate_ids])
+      if observee_ids.empty? && annotation[:observee_company_teammate_id].present?
+        observee_ids = [annotation[:observee_company_teammate_id].to_i]
+      end
+      observee_id = observee_ids.first
       quote = cue[:text].to_s
+      team_blank = observee_ids.empty?
 
       {
         "id" => cue[:id].to_s,
@@ -53,9 +58,15 @@ module PossibleObservationConsults
         "speaker_label" => speaker,
         "recipient_label" => Array(annotation[:observee_labels]).join(", "),
         "responder_company_teammate_id" => observer_id.presence&.to_i,
-        "subject_company_teammate_id" => observee_id.presence&.to_i,
+        "subject_company_teammate_id" => observee_id,
+        "subject_company_teammate_ids" => observee_ids,
         "observer_unknown" => observer_id.blank? || annotation[:observer_certainty].to_s == "uncertain",
-        "observee_unknown" => observee_id.blank? || annotation[:observee_certainty].to_s == "uncertain",
+        "observee_unknown" =>
+          if team_blank
+            false
+          else
+            annotation[:observee_certainty].to_s == "uncertain"
+          end,
         "observer_alternates" => Array(speaker_map[:alternates]),
         "observee_alternates" => [],
         "suggested_rateable_type" => nil,

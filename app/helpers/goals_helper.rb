@@ -356,7 +356,7 @@ module GoalsHelper
     }
   end
   
-  def render_tree_node(goal, depth, parent_child_map, categories, organization)
+  def render_tree_node(goal, depth, parent_child_map, categories, organization, check_ins_by_goal: {})
     children = parent_child_map[goal.id] || []
     category = categories[goal.id]
     badge_class = case category
@@ -371,6 +371,8 @@ module GoalsHelper
     else
       'bg-secondary'
     end
+    check_in = check_ins_by_goal[goal.id]
+    soft = goal_soft_status(goal, organization: organization, check_in: check_in, include_empty: false)
     
     html = content_tag(:div, class: 'tree-node', style: "margin-left: #{depth * 40}px; margin-bottom: 10px;") do
       content_tag(:div, class: 'd-flex align-items-center') do
@@ -379,8 +381,12 @@ module GoalsHelper
           content_tag(:div, class: 'card-body p-2') do
             content_tag(:div, class: 'd-flex align-items-center justify-content-between') do
               left = content_tag(:div, class: 'flex-grow-1') do
-                safe_join([
+                title_row = safe_join([
                   link_to(goal.title, organization_goal_path(organization, goal), class: 'text-decoration-none fw-bold'),
+                  soft_status_chip_html(soft)
+                ])
+                safe_join([
+                  title_row,
                   tag(:br),
                   content_tag(:span, goal_category_label(goal), class: "badge #{badge_class}", style: 'font-size: 0.7em;')
                 ])
@@ -394,9 +400,19 @@ module GoalsHelper
       end
     end
     
-    children_html = children.map { |child| render_tree_node(child, depth + 1, parent_child_map, categories, organization) }
+    children_html = children.map do |child|
+      render_tree_node(child, depth + 1, parent_child_map, categories, organization, check_ins_by_goal: check_ins_by_goal)
+    end
     
     safe_join([html] + children_html)
+  end
+
+  def soft_status_chip_html(soft)
+    return "".html_safe if soft.blank?
+
+    link_to soft[:path], class: "text-decoration-none", title: "Open goal (#{soft[:label]})" do
+      content_tag(:span, soft[:label], class: "badge rounded-pill #{soft[:class]}", style: soft[:style])
+    end
   end
   
   def render_nested_goal(goal, depth, parent_child_map, categories, organization)
@@ -1268,6 +1284,102 @@ module GoalsHelper
       { label: label, style: nil, class: 'bg-danger ms-1' }
     else
       nil
+    end
+  end
+
+  # Soft status for Prize viz chips (show + click). Prefer passing +check_in+ to avoid N+1.
+  # Returns nil when there is nothing useful to show (unless include_empty: true).
+  def goal_soft_status(goal, organization:, check_in: nil, include_empty: false)
+    show_path = organization_goal_path(organization, goal)
+    check_in_path = organization_goal_path(organization, goal, anchor: "check-in")
+
+    if goal_is_completed?(goal)
+      outcome = soft_status_completion_outcome(goal, check_in)
+      label =
+        case outcome
+        when :hit then "Hit"
+        when :hit_late then "Hit (Late)"
+        when :miss then "Missed"
+        else "Done"
+        end
+      badge_class =
+        case outcome
+        when :miss then "bg-danger ms-1"
+        when :hit_late then "bg-warning text-dark ms-1"
+        else "bg-success ms-1"
+        end
+      return {
+        kind: :completed,
+        label: label,
+        class: badge_class,
+        style: nil,
+        path: check_in.present? ? check_in_path : show_path,
+        stroke: outcome == :miss ? "#dc3545" : "#198754"
+      }
+    end
+
+    if goal.started_at.nil?
+      return {
+        kind: :draft,
+        label: "Draft",
+        class: "bg-secondary ms-1",
+        style: nil,
+        path: show_path,
+        stroke: "#6c757d"
+      }
+    end
+
+    if check_in.present?
+      status = goal.on_track_status_for_check_in(check_in)
+      opts = on_track_pill_options(status)
+      if opts.present?
+        return {
+          kind: :on_track,
+          label: opts[:label],
+          class: opts[:class],
+          style: opts[:style],
+          path: check_in_path,
+          status: status,
+          stroke: soft_status_stroke_for_on_track(status)
+        }
+      end
+    end
+
+    return nil unless include_empty
+
+    {
+      kind: :empty,
+      label: "No check-in",
+      class: "bg-light text-muted border ms-1",
+      style: nil,
+      path: check_in_path,
+      stroke: "#adb5bd"
+    }
+  end
+
+  def soft_status_completion_outcome(goal, check_in)
+    ci = check_in || goal.goal_check_ins.recent.first
+    return nil unless ci
+
+    if ci.confidence_percentage == 100
+      if goal.most_likely_target_date.present? && goal.completed_at.present? &&
+          goal.completed_at.to_date > goal.most_likely_target_date
+        :hit_late
+      else
+        :hit
+      end
+    elsif ci.confidence_percentage == 0
+      :miss
+    end
+  end
+
+  def soft_status_stroke_for_on_track(status)
+    case status
+    when :good_green then "#198754"
+    when :green then "#a3cfbb"
+    when :yellow then "#ffc107"
+    when :red then "#dc3545"
+    else "#adb5bd"
     end
   end
 

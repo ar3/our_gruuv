@@ -303,6 +303,62 @@ module ApplicationHelper
     bits.join(" ")
   end
 
+  # Consecutive runs of OGO-worthy vs not, for Step 2 tables.
+  def consult_cue_worthiness_groups(cues, annotations)
+    annotations = annotations || {}
+    groups = []
+    Array(cues).each do |raw|
+      cue = raw.with_indifferent_access
+      annotation = (annotations[cue[:id].to_s] || {}).with_indifferent_access
+      worthy =
+        if annotation.key?(:ogo_worthy)
+          ActiveModel::Type::Boolean.new.cast(annotation[:ogo_worthy])
+        else
+          annotation[:cue_status].to_s == "ogo_worthy"
+        end
+      if groups.empty? || groups.last[:worthy] != worthy
+        groups << { worthy: worthy, cues: [cue] }
+      else
+        groups.last[:cues] << cue
+      end
+    end
+    groups
+  end
+
+  def consult_cue_group_time_range(cues)
+    starts = Array(cues).filter_map { |c| c.with_indifferent_access[:start].presence }
+    ends = Array(cues).filter_map { |c|
+      cue = c.with_indifferent_access
+      cue[:end].presence || cue[:start].presence
+    }
+    [starts.first, ends.last]
+  end
+
+  def consult_cue_group_time_range_label(cues)
+    time_start, time_end = consult_cue_group_time_range(cues)
+    if time_start.present? && time_end.present? && time_start != time_end
+      "From #{time_start} to #{time_end}"
+    elsif time_start.present?
+      "Around #{time_start}"
+    else
+      "In this stretch"
+    end
+  end
+
+  def consult_cue_group_speaker_summary(cues)
+    speakers = Array(cues).filter_map { |c| c.with_indifferent_access[:speaker_label].to_s.presence }.uniq
+    return "no speakers labeled" if speakers.empty?
+    return speakers.first if speakers.one?
+    return "#{speakers.first} and #{speakers.second}" if speakers.size == 2
+
+    "#{speakers.first}, #{speakers.second}, and #{speakers.size - 2} more"
+  end
+
+  def consult_unworthy_cue_group_summary(cues)
+    count = Array(cues).size
+    "#{consult_cue_group_time_range_label(cues)}, #{pluralize(count, 'non-OGO-worthy cue')} (#{consult_cue_group_speaker_summary(cues)}). Expand to review."
+  end
+
   def consult_rateable_confidence_tooltip(rateable)
     rateable = rateable.with_indifferent_access
     pct = (rateable[:confidence].to_f * 100).round

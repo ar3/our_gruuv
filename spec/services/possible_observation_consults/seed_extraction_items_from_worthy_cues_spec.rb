@@ -62,6 +62,32 @@ RSpec.describe PossibleObservationConsults::SeedExtractionItemsFromWorthyCues do
     expect(item["quote"]).to eq("Shout out to Pat for the launch.")
     expect(item["responder_company_teammate_id"]).to eq(observer.id)
     expect(item["subject_company_teammate_id"]).to eq(observee.id)
+    expect(item["subject_company_teammate_ids"]).to eq([observee.id])
     expect(item["suggested_rateables"]).to eq([])
   end
+
+  it "carries every multi observee id into Step 3" do
+    other = create(:company_teammate, organization: organization, first_employed_at: 1.year.ago)
+    cues = consult.cue_annotations.deep_dup
+    cues["cues"]["cue-1"]["observee_company_teammate_ids"] = [observee.id, other.id]
+    consult.update!(cue_annotations: cues)
+
+    item = described_class.call(consult: consult.reload).first
+    expect(item["subject_company_teammate_ids"]).to contain_exactly(observee.id, other.id)
+    expect(item["subject_company_teammate_id"]).to eq(observee.id)
+    expect(item["observee_unknown"]).to be(false)
+  end
+
+  it "marks intentional team blank as known (not missing IDs)" do
+    cues = consult.cue_annotations.deep_dup
+    cues["cues"]["cue-1"]["observee_company_teammate_id"] = nil
+    cues["cues"]["cue-1"]["observee_company_teammate_ids"] = []
+    consult.update!(cue_annotations: cues)
+
+    item = described_class.call(consult: consult.reload).first
+    expect(item["subject_company_teammate_ids"]).to eq([])
+    expect(item["subject_company_teammate_id"]).to be_nil
+    expect(item["observee_unknown"]).to be(false)
+  end
 end
+

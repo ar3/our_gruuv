@@ -168,6 +168,66 @@ RSpec.describe GoalsHelper, type: :helper do
     end
   end
 
+  describe '#goal_soft_status' do
+    let(:organization) { company }
+
+    it 'returns a Draft chip for unstarted goals' do
+      goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
+      soft = helper.goal_soft_status(goal, organization: organization)
+
+      expect(soft[:kind]).to eq(:draft)
+      expect(soft[:label]).to eq('Draft')
+      expect(soft[:path]).to eq(helper.organization_goal_path(organization, goal))
+    end
+
+    it 'returns an on-track chip linked to check-in when a check-in is present' do
+      goal = create(
+        :goal,
+        creator: creator_teammate,
+        owner: creator_teammate,
+        started_at: 1.week.ago,
+        most_likely_target_date: Date.current + 2.weeks,
+        earliest_target_date: Date.current,
+        latest_target_date: Date.current + 4.weeks
+      )
+      check_in = create(
+        :goal_check_in,
+        goal: goal,
+        confidence_percentage: 80,
+        check_in_week_start: Date.current.beginning_of_week(:monday),
+        confidence_reporter: person
+      )
+
+      soft = helper.goal_soft_status(goal, organization: organization, check_in: check_in)
+      expect(soft).to be_present
+      expect(soft[:kind]).to eq(:on_track)
+      expect(soft[:path]).to include('#check-in')
+      expect(soft[:label]).to be_present
+    end
+
+    it 'returns a completion chip for completed goals' do
+      goal = create(
+        :goal,
+        creator: creator_teammate,
+        owner: creator_teammate,
+        started_at: 2.weeks.ago,
+        completed_at: Time.current,
+        most_likely_target_date: Date.current + 1.week
+      )
+      check_in = create(
+        :goal_check_in,
+        goal: goal,
+        confidence_percentage: 100,
+        check_in_week_start: Date.current.beginning_of_week(:monday),
+        confidence_reporter: person
+      )
+
+      soft = helper.goal_soft_status(goal, organization: organization, check_in: check_in)
+      expect(soft[:kind]).to eq(:completed)
+      expect(soft[:label]).to eq('Hit')
+    end
+  end
+
   describe '#confidence_percentage_options' do
     it 'returns 0% done first, then active 5–95%, then 100% done options' do
       options = helper.confidence_percentage_options

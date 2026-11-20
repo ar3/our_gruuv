@@ -60,4 +60,19 @@ RSpec.describe Observations::ConfirmTranscriptDraft do
     expect(result.ok?).to be(false)
     expect(handwritten.reload).to be_draft
   end
+
+  it "keeps team/blank drafts unpublished until an observee is added" do
+    observation.observees.destroy_all
+
+    quiet = described_class.call(observation: observation, intent: "quiet")
+    expect(quiet.ok?).to be(false)
+    expect(quiet.error).to include("observee")
+    expect(observation.reload).to be_draft
+
+    channel = described_class.call(observation: observation, intent: "channel")
+    expect(channel.ok?).to be(false)
+    expect(channel.error).to include("observee")
+    expect(observation.reload).to be_draft
+  end
 end
+

@@ -12,6 +12,7 @@ export default class extends Controller {
     "observeeCertainty",
     "observeePill",
     "observeeName",
+    "groupHint",
     "cueStatus"
   ]
 
@@ -31,6 +32,18 @@ export default class extends Controller {
       nameTargets: this.observeeNameTargets,
       idKey: "cueId"
     })
+    this.syncGroupHint(event.currentTarget)
+  }
+
+  syncGroupHint(selectEl) {
+    const cueId = selectEl.dataset.cueId
+    if (!cueId) return
+
+    const hintEl = this.groupHintTargets.find((el) => el.dataset.cueId === cueId)
+    if (!hintEl) return
+
+    // Blank select = "Group of teammates (select later)"
+    hintEl.classList.toggle("d-none", selectEl.value !== "")
   }
 
   syncPersonFields(source, { certaintyTargets, pillTargets, nameTargets, idKey }) {
@@ -42,7 +55,8 @@ export default class extends Controller {
     const nameEl = nameTargets.find((el) => el.dataset.cueId === cueId)
     if (!certaintyEl) return
 
-    const certaintyValue = source.value ? "certain" : "uncertain"
+    const value = source.value
+    const certaintyValue = value && value !== "" ? "certain" : "uncertain"
     certaintyEl.value = certaintyValue
     if (pillEl) this.applyPill(pillEl, certaintyValue)
     if (nameEl) {
@@ -62,6 +76,7 @@ export default class extends Controller {
   selectedOptionLabel(selectEl) {
     if (!selectEl?.options || selectEl.selectedIndex < 0) return ""
     const text = selectEl.options[selectEl.selectedIndex]?.text?.trim() || ""
-    return text === "—" ? "" : text
+    if (!text || text === "—" || text.startsWith("Group of teammates")) return ""
+    return text
   }
 }

@@ -1,0 +1,16 @@
+-# Locals: subtle (optional)
+- subtle = local_assigns.fetch(:subtle, false)
+- if subtle
+  %tr.table-light.small.text-muted{ "aria-hidden" => "true" }
+    %th.text-center.fw-normal.py-1 OGO-worthy
+    %th.fw-normal.py-1 Time
+    %th.fw-normal.py-1 Cue
+    %th.fw-normal.py-1 Observer
+    %th.fw-normal.py-1 Observee
+- else
+  %tr
+    %th.text-center OGO-worthy
+    %th Time
+    %th Cue
+    %th Observer
+    %th Observee

@@ -59,17 +59,23 @@ module PossibleObservationConsults
 
     def create_draft_for(item)
       item = OgCandidateReview::DefaultObserverToViewer.apply_one(item, viewer: @creator)
-      sid = item["subject_company_teammate_id"].presence&.to_i
       rid = item["responder_company_teammate_id"].presence&.to_i
-      return Result.err("choose both observer and subject.") if sid.blank? || rid.blank?
+      return Result.err("choose an observer.") if rid.blank?
 
-      subject = CompanyTeammate.find_by(id: sid)
-      responder = CompanyTeammate.find_by(id: rid)
-      unless teammate_in_company_tree?(subject) && teammate_in_company_tree?(responder)
-        return Result.err("invalid teammate selection.")
+      subject_ids = ObserveeSelection.normalize_ids(item["subject_company_teammate_ids"])
+      if subject_ids.empty? && item["subject_company_teammate_id"].present?
+        subject_ids = [item["subject_company_teammate_id"].to_i]
       end
 
+      responder = CompanyTeammate.find_by(id: rid)
+      return Result.err("invalid teammate selection.") unless teammate_in_company_tree?(responder)
+
+      subjects = subject_ids.filter_map { |id| CompanyTeammate.find_by(id: id) }
+      return Result.err("invalid teammate selection.") if subjects.size != subject_ids.size
+      return Result.err("invalid teammate selection.") unless subjects.all? { |tm| teammate_in_company_tree?(tm) }
+
       kind = ALLOWED_KINDS.include?(item["kind"].to_s) ? item["kind"].to_s : "feedback"
+      primary_subject = subjects.first
 
       observation = nil
       ActiveRecord::Base.transaction do
@@ -100,12 +106,13 @@ module PossibleObservationConsults
           observation_type: kind,
           created_as_type: Observation::CREATED_AS_OGO_CONSULT,
           observation_trigger: trigger,
-          goal_id: valid_goal_id(item["suggested_goal_id"], subject)
+          goal_id: valid_goal_id(item["suggested_goal_id"], primary_subject)
         )
         raise ActiveRecord::RecordInvalid, observation unless observation.save
 
-        observation.observees.create!(teammate_id: subject.id)
+        subjects.each { |subject| observation.observees.create!(teammate_id: subject.id) }
         seed_suggested_ratings!(observation, item)
+        Observations::EnsureCompanyAspirationsService.new(observation: observation).call
       end
 
       Result.ok(observation)
@@ -176,7 +183,7 @@ module PossibleObservationConsults
 
     def valid_goal_id(raw_id, subject)
       goal_id = raw_id.presence&.to_i
-      return nil if goal_id.blank?
+      return nil if goal_id.blank? || subject.nil?
 
       goal = Goal.find_by(id: goal_id)
       return nil unless goal

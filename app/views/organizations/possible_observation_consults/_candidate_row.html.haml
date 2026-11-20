@@ -6,7 +6,17 @@
 - included = ActiveModel::Type::Boolean.new.cast(item[:include])
 - locked = item[:observation_id].present?
 - observer_tm = @selectable_teammates.find { |tm| tm.id == item[:responder_company_teammate_id].to_i }
-- subject_tm = @selectable_teammates.find { |tm| tm.id == item[:subject_company_teammate_id].to_i }
+- subject_ids = PossibleObservationConsults::ObserveeSelection.normalize_ids(item[:subject_company_teammate_ids])
+- if subject_ids.empty? && item[:subject_company_teammate_id].present?
+  - subject_ids = [item[:subject_company_teammate_id].to_i]
+- subject_tm = @selectable_teammates.find { |tm| tm.id == subject_ids.first }
+- subject_select_value = PossibleObservationConsults::ObserveeSelection.select_value(subject_ids)
+- teammate_by_id = @selectable_teammates.index_by(&:id)
+- subject_options = [["Group of teammates (select later)", ""]]
+- if subject_ids.size > 1
+  - subject_options << [PossibleObservationConsults::ObserveeSelection.multi_option_label(subject_ids, teammate_by_id), PossibleObservationConsults::ObserveeSelection::MULTI]
+- subject_options += @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }
+- subject_display = subject_ids.size > 1 ? PossibleObservationConsults::ObserveeSelection.multi_option_label(subject_ids, teammate_by_id) : (subject_tm&.person&.display_name.presence || "—")
 - dismissed = item[:dismissed_at].present?
 - current_state = locked ? "included" : (dismissed ? "dismissed" : (included ? "included" : "needs_processed"))
 -# Prompt-debug hone loop: edit while Keep Reviewing; product path still unlocks only on Create Draft OGO.
@@ -137,8 +147,10 @@
         .small= observer_tm&.person&.display_name.presence || "—"
       .mb-1
         = label_tag nil, "Subject", class: "form-label small mb-0 mt-2"
-        = hidden_field_tag "items[#{idx}][subject_company_teammate_id]", item[:subject_company_teammate_id]
-        .small= subject_tm&.person&.display_name.presence || "—"
+        - subject_ids.each do |sid|
+          = hidden_field_tag "items[#{idx}][subject_company_teammate_ids][]", sid
+        = hidden_field_tag "items[#{idx}][subject_company_teammate_id]", subject_ids.first
+        .small= subject_display
     - else
       .mb-1{ data: { controller: "ogo-identity-alternates" } }
         = label_tag nil, "Observer", class: "form-label small mb-0 mt-2"
@@ -147,7 +159,9 @@
           = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observer_alternates)
       .mb-1{ data: { controller: "ogo-identity-alternates" } }
         = label_tag nil, "Subject", class: "form-label small mb-0 mt-2"
-        = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select([["—", ""]] + @selectable_teammates.map { |tm| [tm.person.display_name, tm.id] }, item[:subject_company_teammate_id]), class: "form-select form-select-sm", disabled: locked, data: { ogo_identity_alternates_target: "select" }
+        - subject_ids.each do |sid|
+          = hidden_field_tag "items[#{idx}][subject_company_teammate_ids][]", sid
+        = select_tag "items[#{idx}][subject_company_teammate_id]", options_for_select(subject_options, subject_select_value), class: "form-select form-select-sm", disabled: locked, data: { ogo_identity_alternates_target: "select" }
         - unless locked
           = render "shared/og_identity_alternates", alternates: og_identity_alternates(item, :observee_alternates)
     - if rateables.any?
@@ -172,7 +186,7 @@
   %td
     - if locked
       = link_to "Open draft OGO", organization_observation_path(organization, item[:observation_id]), class: "btn btn-sm btn-outline-primary"
-    - elsif item[:responder_company_teammate_id].blank? || item[:subject_company_teammate_id].blank?
+    - elsif !PossibleObservationConsults::ObserveeSelection.ready_for_promote?(observer_id: item[:responder_company_teammate_id])
       %span.text-warning Needs IDs
     - else
       %span.text-muted Ready

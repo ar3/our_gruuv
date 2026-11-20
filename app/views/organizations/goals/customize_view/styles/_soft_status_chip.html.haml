@@ -1,0 +1,6 @@
+-# Linked soft-status chip for Prize viz (show + click).
+-# locals: goal (required), organization (required), check_in (optional), include_empty (optional)
+- soft = goal_soft_status(goal, organization: organization, check_in: local_assigns[:check_in], include_empty: local_assigns.fetch(:include_empty, false))
+- if soft.present?
+  = link_to soft[:path], class: "text-decoration-none", title: "Open goal (#{soft[:label]})" do
+    %span.badge.rounded-pill{style: soft[:style], class: soft[:class]}= soft[:label]
