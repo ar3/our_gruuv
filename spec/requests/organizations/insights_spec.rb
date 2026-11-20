@@ -108,7 +108,7 @@ RSpec.describe 'Organizations::Insights', type: :request do
       get organization_insights_who_is_doing_what_path(organization)
       expect(response.body).to include('Insights: Who is doing what')
       expect(response.body).to include('Active teammates (has page visit vs has not)')
-      expect(response.body).to include('Top 10 pages by visit count')
+      expect(response.body).to include('Top 30 pages by visit count')
       expect(response.body).to include('Grouped by page pattern')
       expect(response.body).to include('Page visits by teammate')
       expect(response.body).to include('Unique page visits and users by period')

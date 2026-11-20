@@ -412,7 +412,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
     @active_teammates_with_visit = with_visit_count
     @active_teammates_without_visit = without_visit_count
 
-    # Top 10 pages by visit count, grouped by route pattern (not raw teammate-scoped URLs)
+    # Top 30 pages by visit count, grouped by route pattern (not raw teammate-scoped URLs)
     @top_pages = top_pages_grouped_by_pattern(teammate_person_ids)
 
     # Histogram: each active teammate labeled by department + id, value = total page visits (top 30)
@@ -617,7 +617,7 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
 
     totals
       .sort_by { |_pattern, count| -count }
-      .first(10)
+      .first(30)
       .map do |pattern, count|
         {
           url: pattern,

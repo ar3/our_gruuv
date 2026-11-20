@@ -101,7 +101,9 @@ This document defines the standard style guide for all index pages in the OurGru
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-table.me-1
-              View: [Current view style]
+              View:
+              / Link-style dropdown — see "Spotlight footer View switcher" below
+              [Current view style as dropdown toggle]
               %br
               %i.bi.bi-eye.me-1
               Spotlight: [Spotlight name]
@@ -115,6 +117,19 @@ This document defines the standard style guide for all index pages in the OurGru
 - **Responsive**: Use Bootstrap grid system for mobile compatibility
 - **Data**: Controller should provide `@spotlight_stats` hash with relevant metrics
 - **Clean Design**: Minimal visual elements to avoid competing with page header
+
+#### Spotlight footer View switcher (required when View is shown)
+
+**Canonical example:** Goals index (`app/views/organizations/goals/index.html.haml` spotlight `.card-footer`). Full write-up: `docs/UX/spotlight-footer-view-switcher.md`.
+
+When the footer shows **View:**, it must be a **link-style Bootstrap dropdown** (underlined `btn-link` toggle + `dropdown-menu` of links)—not static text and not a native `<select>`.
+
+- Toggle shows the current human label; options are `link_to`s that preserve other query params and only change `view` (or the page’s equivalent).
+- Optional `dropdown-header` groups for style families; mark the active item with `dropdown-item active`.
+- **Do not** treat Customize View radios as a substitute for footer switching when the index already exposes View in the spotlight footer.
+- **Upgrade reminder:** When you next focus on an index that still shows static `View: Table` / `View: Cards` (Observations, Assignments, Abilities, etc.), migrate that footer to this pattern in that same change.
+
+**Out of scope unless asked:** turning Sort / Filters / Spotlight into the same dropdown pattern; Customize View page controls.
 
 ### 5. Bulk Action Row (Optional)
 - **Purpose**: Row of secondary actions (Filter/Sort, View Flows, Download, View Analytics, etc.) between spotlight and main content
