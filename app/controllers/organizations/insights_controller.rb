@@ -604,25 +604,45 @@ class Organizations::InsightsController < Organizations::OrganizationNamespaceBa
   private
 
   # Sum visit_counts by normalized route pattern so teammate-/resource-scoped URLs roll up.
+  # Also counts unique teammates all-time and whose latest visit falls in 30/60/90-day windows.
   def top_pages_grouped_by_pattern(teammate_person_ids)
     totals = Hash.new(0)
+    latest_visit_by_pattern_person = Hash.new { |h, pattern| h[pattern] = {} }
 
     PageVisit
       .where(person_id: teammate_person_ids)
-      .pluck(:url, :visit_count)
-      .each do |url, visit_count|
+      .pluck(:url, :visit_count, :person_id, :visited_at)
+      .each do |url, visit_count, person_id, visited_at|
         pattern = Insights::PageVisitPathNormalizer.call(url)
         totals[pattern] += visit_count.to_i
+
+        current = latest_visit_by_pattern_person[pattern][person_id]
+        if visited_at.present? && (current.nil? || visited_at > current)
+          latest_visit_by_pattern_person[pattern][person_id] = visited_at
+        elsif !latest_visit_by_pattern_person[pattern].key?(person_id)
+          latest_visit_by_pattern_person[pattern][person_id] = nil
+        end
       end
+
+    window_ends = {
+      teammates_visited_30d: 30.days.ago,
+      teammates_visited_60d: 60.days.ago,
+      teammates_visited_90d: 90.days.ago
+    }
 
     totals
       .sort_by { |_pattern, count| -count }
       .first(30)
       .map do |pattern, count|
+        latest_by_person = latest_visit_by_pattern_person[pattern]
         {
           url: pattern,
           visit_count: count,
-          page_title: Insights::PageVisitPathNormalizer.label_for(pattern)
+          page_title: Insights::PageVisitPathNormalizer.label_for(pattern),
+          teammates_visited_30d: latest_by_person.count { |_person_id, visited_at| visited_at.present? && visited_at >= window_ends[:teammates_visited_30d] },
+          teammates_visited_60d: latest_by_person.count { |_person_id, visited_at| visited_at.present? && visited_at >= window_ends[:teammates_visited_60d] },
+          teammates_visited_90d: latest_by_person.count { |_person_id, visited_at| visited_at.present? && visited_at >= window_ends[:teammates_visited_90d] },
+          teammates_visited_all_time: latest_by_person.size
         }
       end
   end

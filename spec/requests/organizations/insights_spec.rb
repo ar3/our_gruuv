@@ -110,6 +110,8 @@ RSpec.describe 'Organizations::Insights', type: :request do
       expect(response.body).to include('Active teammates (has page visit vs has not)')
       expect(response.body).to include('Top 30 pages by visit count')
       expect(response.body).to include('Grouped by page pattern')
+      expect(response.body).to include('Visit count is all-time')
+      expect(response.body).to include('last 30, 60, or 90 days')
       expect(response.body).to include('Page visits by teammate')
       expect(response.body).to include('Unique page visits and users by period')
       expect(response.body).to include('who-is-doing-what-pie-chart')

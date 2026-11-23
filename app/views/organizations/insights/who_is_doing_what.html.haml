@@ -154,12 +154,17 @@
         .card-body
           %p.text-muted.small.mb-3
             Grouped by page pattern (teammate and other resource ids collapsed), so the same screen across people counts as one page.
+            Visit count is all-time. Teammate columns count unique people for that page pattern all-time, or whose latest visit was within the last 30, 60, or 90 days.
           - if @top_pages.present?
             %table.table.table-sm
               %thead
                 %tr
                   %th Page
-                  %th.text-end Visit count
+                  %th.text-end Visit count (all-time)
+                  %th.text-end Teammates (30d)
+                  %th.text-end Teammates (60d)
+                  %th.text-end Teammates (90d)
+                  %th.text-end Teammates (all-time)
               %tbody
                 - @top_pages.each do |page|
                   %tr
@@ -168,6 +173,10 @@
                       - if page[:page_title].present? && page[:url].present? && page[:page_title] != page[:url]
                         %code.small.text-muted= page[:url]
                     %td.text-end= number_with_delimiter(page[:visit_count])
+                    %td.text-end= number_with_delimiter(page[:teammates_visited_30d])
+                    %td.text-end= number_with_delimiter(page[:teammates_visited_60d])
+                    %td.text-end= number_with_delimiter(page[:teammates_visited_90d])
+                    %td.text-end= number_with_delimiter(page[:teammates_visited_all_time])
           - else
             %p.text-muted.mb-0 No page visits in this organization yet.
 

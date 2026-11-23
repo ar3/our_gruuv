@@ -569,13 +569,17 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       expect(assigns(:active_teammates_without_visit)).to be_a(Integer)
     end
 
-    it 'assigns top_pages as array of hashes with url, visit_count, page_title' do
+    it 'assigns top_pages as array of hashes with url, visit_count, page_title, and teammate windows' do
       get :who_is_doing_what, params: { organization_id: company.id }
       expect(assigns(:top_pages)).to be_an(Array)
       assigns(:top_pages).each do |page|
         expect(page).to have_key(:url)
         expect(page).to have_key(:visit_count)
         expect(page).to have_key(:page_title)
+        expect(page).to have_key(:teammates_visited_30d)
+        expect(page).to have_key(:teammates_visited_60d)
+        expect(page).to have_key(:teammates_visited_90d)
+        expect(page).to have_key(:teammates_visited_all_time)
       end
     end
 
@@ -617,6 +621,53 @@ RSpec.describe Organizations::InsightsController, type: :controller do
       )
       expect(check_ins[:page_title]).to eq('Company teammates / Check ins')
       expect(top_pages.count { |page| page[:url].include?('check_ins') }).to eq(1)
+    end
+
+    it 'counts unique teammates visited per page pattern in 30/60/90 day and all-time windows' do
+      org_param = company.to_param
+      other_person = create(:person)
+      create(:teammate, person: other_person, organization: company, first_employed_at: 1.year.ago)
+      older_person = create(:person)
+      create(:teammate, person: older_person, organization: company, first_employed_at: 1.year.ago)
+      ancient_person = create(:person)
+      create(:teammate, person: ancient_person, organization: company, first_employed_at: 1.year.ago)
+
+      create(
+        :page_visit,
+        person: person,
+        url: "/organizations/#{org_param}/company_teammates/12/check_ins",
+        visit_count: 3,
+        visited_at: 10.days.ago
+      )
+      create(
+        :page_visit,
+        person: other_person,
+        url: "/organizations/#{org_param}/company_teammates/99/check_ins",
+        visit_count: 2,
+        visited_at: 45.days.ago
+      )
+      create(
+        :page_visit,
+        person: older_person,
+        url: "/organizations/#{org_param}/company_teammates/7/check_ins",
+        visit_count: 1,
+        visited_at: 75.days.ago
+      )
+      create(
+        :page_visit,
+        person: ancient_person,
+        url: "/organizations/#{org_param}/company_teammates/3/check_ins",
+        visit_count: 1,
+        visited_at: 200.days.ago
+      )
+
+      get :who_is_doing_what, params: { organization_id: company.id }
+
+      check_ins = assigns(:top_pages).find { |page| page[:url].include?('check_ins') }
+      expect(check_ins[:teammates_visited_30d]).to eq(1)
+      expect(check_ins[:teammates_visited_60d]).to eq(2)
+      expect(check_ins[:teammates_visited_90d]).to eq(3)
+      expect(check_ins[:teammates_visited_all_time]).to eq(4)
     end
 
     it 'assigns teammate_visit_counts with label and count' do
