@@ -309,7 +309,7 @@ RSpec.describe NavigationHelper, type: :helper do
       end
     end
 
-    it 'has Teammate Directory section with View Teammates (employee tenure), My Employees, and Employee Hierarchy' do
+    it 'has Teammate Directory section with View Teammates, My Employees, Employee Hierarchy, Departments, and Teams' do
       structure = helper.navigation_structure
       directory_section = structure.find { |item| item[:label] == 'Teammate Directory' }
       expect(directory_section).to be_present
@@ -327,6 +327,14 @@ RSpec.describe NavigationHelper, type: :helper do
       expect(hierarchy_item[:path]).to include('status')
       expect(hierarchy_item[:path]).to include('unassigned_employee')
       expect(hierarchy_item[:path]).to include('assigned_employee')
+
+      departments_item = directory_section[:items].find { |item| item[:label] == 'Departments' }
+      expect(departments_item).to be_present
+      expect(departments_item[:path]).to eq(helper.organization_departments_path(company))
+
+      teams_item = directory_section[:items].find { |item| item[:label] == 'Teams' }
+      expect(teams_item).to be_present
+      expect(teams_item[:path]).to eq(helper.organization_teams_path(company))
     end
 
     context 'when teammate has direct reports' do
@@ -503,14 +511,14 @@ RSpec.describe NavigationHelper, type: :helper do
         expect(section[:section]).to eq('admin')
       end
 
-      it 'includes Admin section with org essentials: Aspirational Values, Departments, Teams, Preferences' do
+      it 'includes Admin section with org essentials: Aspirational Values, Position Comparison, Preferences' do
         structure = helper.navigation_structure
         section = structure.find { |item| item[:label] == 'Admin' && item[:section] == 'admin' }
         expect(section).to be_present
         labels = section[:items].map { |item| item[:label] }
         expect(labels).to include('Aspirational Values')
-        expect(labels).to include('Departments')
-        expect(labels).to include('Teams')
+        expect(labels).not_to include('Departments')
+        expect(labels).not_to include('Teams')
         expect(labels).to include('Position Comparison')
         expect(labels.any? { |l| l&.end_with?(' Preferences') }).to be true
       end

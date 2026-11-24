@@ -247,6 +247,28 @@ RSpec.describe 'Vertical Navigation', type: :request do
         expect(directory_div).to be_present
         expect(directory_div).to include('class="collapse show"')
       end
+
+      it 'expands the Teammate Directory section when on departments index' do
+        get organization_departments_path(organization)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('id="navSectionDirectory"')
+        directory_div = response.body[/<div[^>]*id="navSectionDirectory"[^>]*>/]
+        expect(directory_div).to be_present
+        expect(directory_div).to include('class="collapse show"')
+        expect(response.body).to include('>Departments</')
+      end
+
+      it 'expands the Teammate Directory section when on teams index' do
+        get organization_teams_path(organization)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('id="navSectionDirectory"')
+        directory_div = response.body[/<div[^>]*id="navSectionDirectory"[^>]*>/]
+        expect(directory_div).to be_present
+        expect(directory_div).to include('class="collapse show"')
+        expect(response.body).to include('>Teams</')
+      end
     end
 
     context 'when on a page within Collab section' do

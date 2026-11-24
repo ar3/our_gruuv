@@ -291,6 +291,20 @@ module NavigationHelper
             ),
             policy_check: -> { policy(Organization).show? },
             coming_soon: false
+          },
+          {
+            label: 'Departments',
+            icon: 'bi-building',
+            path: organization_departments_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'Teams',
+            icon: 'bi-people',
+            path: organization_teams_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
           }
         ]
       },
@@ -646,20 +660,6 @@ module NavigationHelper
             icon: 'bi-star',
             path: organization_aspirations_path(current_organization),
             policy_check: -> { policy(current_company).view_aspirations? },
-            coming_soon: false
-          },
-          {
-            label: 'Departments',
-            icon: 'bi-diagram-3',
-            path: organization_departments_path(current_organization),
-            policy_check: -> { policy(current_organization).show? },
-            coming_soon: false
-          },
-          {
-            label: 'Teams',
-            icon: 'bi-people',
-            path: organization_teams_path(current_organization),
-            policy_check: -> { policy(current_organization).show? },
             coming_soon: false
           },
           {
