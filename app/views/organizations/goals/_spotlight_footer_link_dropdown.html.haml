@@ -1,0 +1,26 @@
+-# locals: label:, icon:, current_label:, menu_end: true, options: [[text, value], ...], groups: optional [[header, [[text,value],...]], ...], current_value:, path_for: ->(value) { url }
+- menu_end = local_assigns.fetch(:menu_end, true)
+- options = local_assigns[:options]
+- groups = local_assigns[:groups]
+%small.text-muted.d-block
+  - if local_assigns[:icon].present?
+    %i.bi{class: "bi-#{icon} me-1"}
+  = "#{label}:"
+  .dropdown.d-inline
+    %button.btn.btn-link.btn-sm.p-0.text-decoration-underline.dropdown-toggle.text-muted{type: "button", "data-bs-toggle" => "dropdown", "aria-expanded" => "false", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
+      = current_label
+    %ul.dropdown-menu{class: ("dropdown-menu-end" if menu_end), style: "max-height: 320px; overflow-y: auto;"}
+      - if groups.present?
+        - groups.each_with_index do |(group_label, group_options), index|
+          - if index > 0
+            %li
+              %hr.dropdown-divider
+          %li
+            %h6.dropdown-header= group_label
+          - group_options.each do |text, value|
+            %li
+              = link_to text, path_for.call(value), class: ["dropdown-item", ("active" if value.to_s == current_value.to_s)]
+      - else
+        - Array(options).each do |text, value|
+          %li
+            = link_to text, path_for.call(value), class: ["dropdown-item", ("active" if value.to_s == current_value.to_s)]

@@ -90,46 +90,42 @@ This document defines the standard style guide for all index pages in the OurGru
                 %i.bi.bi-icon.me-2
                 %strong Action message
       .card-footer.bg-light
-        .row.align-items-center
+        .row.align-items-start
           .col-md-6
-            %small.text-muted
-              %i.bi.bi-funnel.me-1
-              Filters: [Current filter state]
-              %br
-              %i.bi.bi-sort-down.me-1
-              Sort: [Current sort]
+            / Filters: grey display-only pills (from FilterDisplay helper)
+            / then on-page quick filters + Customize hint
           .col-md-6.text-end
-            %small.text-muted
-              %i.bi.bi-table.me-1
-              View:
-              / Link-style dropdown — see "Spotlight footer View switcher" below
-              [Current view style as dropdown toggle]
-              %br
-              %i.bi.bi-eye.me-1
-              Spotlight: [Spotlight name]
+            / View → Sort → Direction → Spotlight (link-style dropdowns)
 ```
 
 **Spotlight Guidelines:**
 - **No Header**: Spotlight name is shown in footer only - cleaner visual design
 - **Main Area**: Focus on key metrics that answer "what is the user trying to accomplish?"
 - **Alerts**: Use contextual alerts (warning/success/info) to guide user actions
-- **Footer**: Show current filter/sort/view state and spotlight name
+- **Footer**: Left = filter pills + on-page quick filters; right = View / Sort / Direction / Spotlight link-dropdowns — see below
 - **Responsive**: Use Bootstrap grid system for mobile compatibility
 - **Data**: Controller should provide `@spotlight_stats` hash with relevant metrics
 - **Clean Design**: Minimal visual elements to avoid competing with page header
 
-#### Spotlight footer View switcher (required when View is shown)
+#### Spotlight footer (required on index spotlights)
 
-**Canonical example:** Goals index (`app/views/organizations/goals/index.html.haml` spotlight `.card-footer`). Full write-up: `docs/UX/spotlight-footer-view-switcher.md`.
+**Canonical example:** Goals index (`app/views/organizations/goals/index.html.haml`). Full write-up: `docs/UX/spotlight-footer.md`.
 
-When the footer shows **View:**, it must be a **link-style Bootstrap dropdown** (underlined `btn-link` toggle + `dropdown-menu` of links)—not static text and not a native `<select>`.
+**Left**
 
-- Toggle shows the current human label; options are `link_to`s that preserve other query params and only change `view` (or the page’s equivalent).
-- Optional `dropdown-header` groups for style families; mark the active item with `dropdown-item active`.
-- **Do not** treat Customize View radios as a substitute for footer switching when the index already exposes View in the spotlight footer.
-- **Upgrade reminder:** When you next focus on an index that still shows static `View: Table` / `View: Cards` (Observations, Assignments, Abilities, etc.), migrate that footer to this pattern in that same change.
+- `Filters:` + **grey display-only** pills built from query params via a resource FilterDisplay helper/class (human labels only—no ids / `Type_123`).
+- Multi-value params → one pill per value. Do **not** show a “Customized view” pill (that label belongs only on the header owner dropdown).
+- Below pills: page-specific quick filters (e.g. Goals Draft/Active), then the Customize View caption when relevant.
 
-**Out of scope unless asked:** turning Sort / Filters / Spotlight into the same dropdown pattern; Customize View page controls.
+**Right** (stacked, end-aligned)
+
+- **View** → **Sort** → **Direction** → **Spotlight**, each a muted underlined link-style Bootstrap dropdown (same interaction as Goals View).
+- Options are `link_to`s that preserve other query params and change only that key.
+- Optional `dropdown-header` groups for long lists; mark the active item with `dropdown-item active`.
+
+**Upgrade reminder:** When you next focus an index with a legacy footer (static View/Sort text, slash-separated Filters), migrate to this full pattern in that same change—not View-only.
+
+**Out of scope unless asked:** interactive filter pills; batch-migrating every index; replacing Customize View.
 
 ### 5. Bulk Action Row (Optional)
 - **Purpose**: Row of secondary actions (Filter/Sort, View Flows, Download, View Analytics, etc.) between spotlight and main content

@@ -1710,21 +1710,43 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
-  describe 'GET /organizations/:organization_id/goals index spotlight footer view switcher' do
-    it 'renders a link-style dropdown of view styles including Highcharts options' do
+  describe 'GET /organizations/:organization_id/goals index spotlight footer' do
+    it 'renders filter pills and View/Sort/Direction/Spotlight link-dropdowns' do
       create(:goal, creator: teammate, owner: teammate, title: 'Footer View Goal', started_at: 1.week.ago)
+      department = create(:department, company: organization, name: 'Footer Dept')
 
       get organization_goals_path(organization), params: {
-        owner_id: "CompanyTeammate_#{teammate.id}",
-        view: 'hierarchical-collapsible-hidden-checks'
+        owner_keys: ["Company_#{organization.id}", "Department_#{department.id}"],
+        status: %w[active],
+        timeframe: 'now',
+        view: 'hierarchical-collapsible-hidden-checks',
+        sort: 'title',
+        direction: 'desc',
+        spotlight: 'top_priority'
       }
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('Filters:')
+      expect(response.body).to include('Department: Footer Dept')
+      expect(response.body).to include('Status: Active')
+      expect(response.body).to include('Timeframe: Now')
+      expect(response.body).to include('for Customized view')
+      expect(response.body).not_to match(/text-bg-secondary[^>]*>\s*Customized view\s*</)
+      expect(response.body).not_to match(/text-bg-secondary[^>]*>\s*Department_#{department.id}\s*</)
       expect(response.body).to include('Hierarchical collapsible (hidden checks)')
       expect(response.body).to include('HC Network graph')
-      expect(response.body).to include('HC Org chart (vertical)')
       expect(response.body).to include('view=hc-networkgraph')
-      expect(response.body).to include('dropdown-toggle')
+      expect(response.body).to include('Sort:')
+      expect(response.body).to include('Title (A-Z)')
+      expect(response.body).to include('Direction:')
+      expect(response.body).to include('Descending')
+      expect(response.body).to include('Spotlight:')
+      expect(response.body).to include('Top priority')
+      expect(response.body).to include('sort=created_at')
+      expect(response.body).to include('direction=asc')
+      expect(response.body).to include('spotlight=overdue')
+      expect(response.body).to include('Only Draft')
+      expect(response.body).to include('Same status filter can be set in')
     end
   end
 
@@ -2038,6 +2060,77 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Archived')
       expect(response.body).not_to include('Show deleted goals')
+    end
+  end
+
+  describe 'Phase 3b customize view structural owners + customized index filter' do
+    let!(:department) { create(:department, company: organization, name: 'Engineering') }
+    let!(:team) { create(:team, company: organization, name: 'Platform', department: department) }
+    let!(:company_goal) do
+      create(:goal, creator: teammate, owner: organization, title: 'Phase3b Company Goal',
+                    privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+    end
+    let!(:team_goal) do
+      create(:goal, creator: teammate, owner: team, title: 'Phase3b Team Goal',
+                    privacy_level: 'everyone_in_company', started_at: 1.week.ago)
+    end
+    let!(:personal_goal) do
+      create(:goal, creator: teammate, owner: teammate, title: 'Phase3b Personal Goal', started_at: 1.week.ago)
+    end
+
+    it 'lists company, department, and team checkboxes and teammate guidance on customize view' do
+      get customize_view_organization_goals_path(organization), params: {
+        owner_id: "CompanyTeammate_#{teammate.id}"
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Company, department, and team')
+      expect(response.body).to include("owner_keys[]")
+      expect(response.body).to include("Company_#{organization.id}")
+      expect(response.body).to include("Department_#{department.id}")
+      expect(response.body).to include("Team_#{team.id}")
+      expect(response.body).to include('Grow by Goals')
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, teammate))
+    end
+
+    it 'shows Customized view on the index when multiple structural owners are selected' do
+      get organization_goals_path(organization), params: {
+        owner_keys: ["Company_#{organization.id}", "Team_#{team.id}"]
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('for Customized view')
+      expect(response.body).to include('Phase3b Company Goal')
+      expect(response.body).to include('Phase3b Team Goal')
+      expect(response.body).not_to include('Phase3b Personal Goal')
+      expect(response.body).to include('aria-disabled="true"')
+    end
+
+    it 'normalizes a single structural owner_key to a normal owner filter via update_view' do
+      patch update_view_organization_goals_path(organization), params: {
+        owner_keys: ["Team_#{team.id}"],
+        view: 'hierarchical-collapsible',
+        status: %w[draft active]
+      }
+
+      expect(response).to redirect_to(organization_goals_path(organization, owner_id: "Team_#{team.id}", view: 'hierarchical-collapsible', status: %w[draft active]))
+    end
+
+    it 'keeps multiple owner_keys on update_view redirect' do
+      patch update_view_organization_goals_path(organization), params: {
+        owner_keys: ["Company_#{organization.id}", "Department_#{department.id}"],
+        view: 'hierarchical-collapsible',
+        status: %w[draft active]
+      }
+
+      expect(response).to redirect_to(
+        organization_goals_path(
+          organization,
+          owner_keys: ["Company_#{organization.id}", "Department_#{department.id}"],
+          view: 'hierarchical-collapsible',
+          status: %w[draft active]
+        )
+      )
     end
   end
 

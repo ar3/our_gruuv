@@ -12,9 +12,17 @@
 
 - content_for :header do
   - special_owner_ids = %w[everyone_in_company created_by_me my_relevant_goals all_my_teams my_department my_employees my_employees_hierarchy]
-  - selected_value = @current_filters[:owner_id].to_s.in?(special_owner_ids) ? @current_filters[:owner_id] : primary_filter_select_value
   - grouped_owner_options = available_goal_owners_grouped
-  - current_filter_label = grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }&.first || 'Select owner'
+  - selected_value = if @customized_owner_view
+    - 'customized_view'
+  - elsif @current_filters[:owner_id].to_s.in?(special_owner_ids)
+    - @current_filters[:owner_id]
+  - else
+    - primary_filter_select_value
+  - current_filter_label = if selected_value == 'customized_view'
+    - 'Customized view'
+  - else
+    - grouped_owner_options.flat_map { |_group, options| options }.find { |_label, value| value == selected_value }&.first || 'Select owner'
   .d-flex.flex-column.gap-2
     .d-flex.flex-column.flex-md-row.align-items-start.align-items-md-center.justify-content-between.gap-2
       - object_lens_trailing = capture do
@@ -42,6 +50,13 @@
             %span
               for #{current_filter_label}
           %ul.dropdown-menu.py-1{style: "max-height: 70vh; overflow-y: auto;"}
+            - if @customized_owner_view
+              %li
+                %h6.dropdown-header.mb-0.mt-1 Current
+              %li
+                %span.dropdown-item.text-muted.d-flex.align-items-center.gap-2{"aria-disabled" => "true"}
+                  %span.flex-grow-1.text-truncate{title: "Customized view"} Customized view
+                  %i.bi.bi-check-circle.text-success.flex-shrink-0
             - grouped_owner_options.each do |group_label, group_options|
               %li
                 %h6.dropdown-header.mb-0.mt-1= group_label
@@ -52,18 +67,21 @@
                       %span.flex-grow-1.text-truncate{title: label}= label
                       %i.bi.bi-check-circle.text-success.flex-shrink-0
                   - else
-                    = link_to organization_goals_path(@organization, request.query_parameters.merge(owner_id: value, owner_type: nil)), class: "dropdown-item d-flex align-items-center gap-2" do
+                    = link_to goals_index_path_for_owner_filter(value), class: "dropdown-item d-flex align-items-center gap-2" do
                       %span.text-truncate{title: label}= label
         / Fallback control for non-JS clients and accessibility tooling.
         = render 'goal_owner_select',
           grouped_options: grouped_owner_options,
-          selected_value: selected_value,
+          selected_value: (selected_value == 'customized_view' ? nil : selected_value),
           name: 'owner_id',
           id: 'goals-header-owner-select',
           select_class: 'visually-hidden',
           required: true,
           html_options: { onchange: 'this.form.submit();' }
         / Preserve other filter parameters
+        - if @customized_owner_view && @owner_keys.present?
+          - @owner_keys.each do |owner_key|
+            = hidden_field_tag 'owner_keys[]', owner_key
         - if @current_filters[:timeframe].present?
           = hidden_field_tag :timeframe, @current_filters[:timeframe]
         - if @current_filters[:goal_type].present?
@@ -139,48 +157,49 @@
           - else
             = render partial: 'organizations/goals/customize_view/spotlights/default'
       .card-footer.bg-light
-        .row.align-items-center
+        - footer_query = request.query_parameters
+        - filter_pills = goal_index_filter_pills(@organization, footer_query)
+        .row.align-items-start
           .col-md-6
-            - if @current_filters[:prompt_id].present? && @filter_prompt.present?
-              %span.badge.rounded-pill.bg-info.me-2.mb-1
-                Goals for: #{@filter_prompt.prompt_template.title}
-            %small.text-muted
-              %i.bi.bi-sort-down.me-1
-              - sort_display = case @current_filters[:sort]
-              - when 'smart_sort' then 'Smart Sort'
-              - when 'most_likely_target_date' then 'Most Likely Date'
-              - when 'earliest_target_date' then 'Earliest Date'
-              - when 'latest_target_date' then 'Latest Date'
-              - when 'created_at' then 'Created Date'
-              - when 'title' then 'Title (A-Z)'
-              - else 'Smart Sort'
-              Sort: #{sort_display} (#{@current_filters[:direction] || 'asc'})
-              %br
-              %i.bi.bi-funnel.me-1
-              Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+            %div.mb-2
+              %small.text-muted
+                %i.bi.bi-funnel.me-1
+                Filters:
+              - if filter_pills.any?
+                - filter_pills.each do |pill|
+                  %span.badge.rounded-pill.text-bg-secondary.me-1.mb-1= pill.label
+              - else
+                %span.badge.rounded-pill.text-bg-light.border.text-muted.me-1.mb-1 All
             = render "organizations/goals/status_quick_filter", filters: @current_filters, base: :index
           .col-md-6.text-end
-            %small.text-muted
-              %i.bi.bi-table.me-1
-              View:
-              .dropdown.d-inline
-                %button.btn.btn-link.btn-sm.p-0.text-decoration-underline.dropdown-toggle.text-muted{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
-                  = goal_index_view_style_label(@view_style)
-                %ul.dropdown-menu.dropdown-menu-end{style: "max-height: 320px; overflow-y: auto;"}
-                  - goal_index_view_style_groups.each_with_index do |(group_label, styles), index|
-                    - if index > 0
-                      %li
-                        %hr.dropdown-divider
-                    %li
-                      %h6.dropdown-header= group_label
-                    - styles.each do |style|
-                      %li
-                        = link_to goal_index_view_style_label(style),
-                          goal_index_path_with_view(@organization, style, filters: request.query_parameters),
-                          class: ["dropdown-item", ("active" if style == @view_style)]
-              %br
-              %i.bi.bi-eye.me-1
-              Spotlight: #{@current_spotlight&.humanize || 'None'}
+            = render "organizations/goals/spotlight_footer_link_dropdown",
+              label: "View",
+              icon: "table",
+              current_label: goal_index_view_style_label(@view_style),
+              current_value: @view_style,
+              groups: goal_index_view_style_groups.map { |header, styles| [header, styles.map { |s| [goal_index_view_style_label(s), s] }] },
+              path_for: ->(value) { goal_index_path_with_footer_params(@organization, filters: footer_query, view: value) }
+            = render "organizations/goals/spotlight_footer_link_dropdown",
+              label: "Sort",
+              icon: "sort-down",
+              current_label: goal_index_sort_label(@current_filters[:sort] || "most_likely_target_date"),
+              current_value: @current_filters[:sort] || "most_likely_target_date",
+              options: GoalsHelper::GOAL_INDEX_SORT_OPTIONS,
+              path_for: ->(value) { goal_index_path_with_footer_params(@organization, filters: footer_query, sort: value) }
+            = render "organizations/goals/spotlight_footer_link_dropdown",
+              label: "Direction",
+              icon: "arrow-down-up",
+              current_label: goal_index_direction_label(@current_filters[:direction] || "asc"),
+              current_value: @current_filters[:direction] || "asc",
+              options: GoalsHelper::GOAL_INDEX_DIRECTION_OPTIONS,
+              path_for: ->(value) { goal_index_path_with_footer_params(@organization, filters: footer_query, direction: value) }
+            = render "organizations/goals/spotlight_footer_link_dropdown",
+              label: "Spotlight",
+              icon: "eye",
+              current_label: goal_index_spotlight_label(@current_spotlight),
+              current_value: @current_spotlight.presence || "goals_overview",
+              options: GoalsHelper::GOAL_INDEX_SPOTLIGHT_OPTIONS,
+              path_for: ->(value) { goal_index_path_with_footer_params(@organization, filters: footer_query, spotlight: value) }
 
 / Performance warning for visualizations
 - if @show_performance_warning

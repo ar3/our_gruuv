@@ -1428,8 +1428,54 @@ module GoalsHelper
   end
 
   def goal_index_path_with_view(organization, view, filters: {})
-    params_hash = filters.to_h.symbolize_keys.except(:controller, :action, :page)
-    params_hash[:view] = view
+    goal_index_path_with_footer_params(organization, filters: filters, view: view)
+  end
+
+  GOAL_INDEX_SORT_OPTIONS = [
+    ["Smart Sort", "smart_sort"],
+    ["Most Likely Date", "most_likely_target_date"],
+    ["Earliest Date", "earliest_target_date"],
+    ["Latest Date", "latest_target_date"],
+    ["Created Date", "created_at"],
+    ["Title (A-Z)", "title"]
+  ].freeze
+
+  GOAL_INDEX_DIRECTION_OPTIONS = [
+    ["Ascending", "asc"],
+    ["Descending", "desc"]
+  ].freeze
+
+  GOAL_INDEX_SPOTLIGHT_OPTIONS = [
+    ["Goals overview", "goals_overview"],
+    ["Top priority", "top_priority"],
+    ["Recently added", "recently_added"],
+    ["Overdue", "overdue"],
+    ["None", "none"]
+  ].freeze
+
+  def goal_index_sort_label(sort)
+    GOAL_INDEX_SORT_OPTIONS.find { |_label, value| value == sort.to_s }&.first || sort.to_s.humanize
+  end
+
+  def goal_index_direction_label(direction)
+    GOAL_INDEX_DIRECTION_OPTIONS.find { |_label, value| value == direction.to_s }&.first ||
+      (direction.presence || "asc").to_s.humanize
+  end
+
+  def goal_index_spotlight_label(spotlight)
+    key = spotlight.presence || "goals_overview"
+    GOAL_INDEX_SPOTLIGHT_OPTIONS.find { |_label, value| value == key.to_s }&.first || key.to_s.humanize
+  end
+
+  def goal_index_filter_pills(organization, params_source = request.query_parameters)
+    Goals::IndexFilterDisplay.pills(params: params_source, organization: organization)
+  end
+
+  def goal_index_path_with_footer_params(organization, filters: {}, **overrides)
+    params_hash = filters.to_h.deep_dup
+    params_hash = params_hash.with_indifferent_access if params_hash.respond_to?(:with_indifferent_access)
+    params_hash = params_hash.except("controller", "action", "page", :controller, :action, :page)
+    overrides.each { |key, value| params_hash[key] = value }
     organization_goals_path(organization, params_hash)
   end
 

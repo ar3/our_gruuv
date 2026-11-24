@@ -8,9 +8,12 @@
   = @return_text || 'Back to Goals'
 
 = form_with url: update_view_organization_goals_path(@organization), method: :patch, local: true do |form|
-  / Preserve owner selection
-  - if @current_filters[:owner_type].present? && @current_filters[:owner_id].present?
-    = hidden_field_tag :owner_id, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
+  / Preserve non-structural owner (teammate / special filters) when no company/dept/team boxes are checked
+  - if @selected_structural_owner_keys.blank? && @current_filters[:owner_type].present? && @current_filters[:owner_id].present?
+    - preserved_owner = @current_filters[:owner_type] == 'Organization' ? "Company_#{@current_filters[:owner_id]}" : "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
+    = hidden_field_tag :owner_id, preserved_owner
+  - elsif @selected_structural_owner_keys.blank? && params[:owner_id].present? && !params[:owner_id].to_s.include?('_') && params[:owner_type].blank?
+    = hidden_field_tag :owner_id, params[:owner_id]
   
   .row
     .col-md-4
@@ -22,6 +25,27 @@
       .card.mb-4
         .card-body
           %label.form-label.fw-bold Select What Goals You See
+
+          .mb-3
+            %label.form-label Company, department, and team
+            %p.form-text.mb-2
+              Choose one or more. Selecting multiple shows as "Customized view" on the Goals index.
+            - (@structural_owner_option_groups || []).each do |group_label, options|
+              %div.mb-2
+                %div.fw-semibold.small.text-muted.mb-1= group_label
+                - options.each do |label, value|
+                  .form-check
+                    = check_box_tag 'owner_keys[]', value, @selected_structural_owner_keys.include?(value), class: 'form-check-input', id: "owner_key_#{value}"
+                    = label_tag "owner_key_#{value}", label, class: 'form-check-label'
+            %p.form-text.mb-0
+              To filter by a teammate, open their
+              - if current_company_teammate
+                = link_to 'internal page', internal_organization_company_teammate_path(@organization, current_company_teammate)
+                and go to
+                = link_to 'Grow by Goals', my_growth_goals_organization_company_teammate_path(@organization, current_company_teammate)
+                \. (Pick a different teammate from People / Employees first if needed.)
+              - else
+                internal page → Grow by Goals.
           
           .mb-3
             %label.form-label Timeframe

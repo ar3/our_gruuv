@@ -7,6 +7,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def index
     authorize company, :view_goals?
+
+    @owner_keys = Goals::StructuralOwnerKeysFilter.normalize_keys(params[:owner_keys])
+    @customized_owner_view = Goals::StructuralOwnerKeysFilter.customized?(@owner_keys)
     
     # Check for special filters
     @everyone_in_company_filter = params[:owner_id] == 'everyone_in_company'
@@ -19,7 +22,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     special_owner_filter = special_goals_owner_filter?
 
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
-    if !special_owner_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+    if !@customized_owner_view && !special_owner_filter && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
@@ -30,8 +33,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Current teammate already ensured by ensure_teammate_matches_organization
     current_teammate = current_company_teammate
 
-    # Default to logged in user if no owner is selected (unless using special filters)
-    unless special_owner_filter || (params[:owner_type].present? && params[:owner_id].present?)
+    # Default to logged in user if no owner is selected (unless using special filters or customized multi-owner)
+    unless @customized_owner_view || special_owner_filter || (params[:owner_type].present? && params[:owner_id].present?)
       if current_teammate
         params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
@@ -52,6 +55,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
           spotlight: params[:spotlight],
           owner_type: params[:owner_type],
           owner_id: params[:owner_id],
+          owner_keys: @owner_keys.presence,
           show_deleted: selected_statuses.include?('archived') ? '1' : nil,
           show_completed: selected_statuses.include?('completed') ? '1' : nil,
           prompt_id: params[:prompt_id].presence
@@ -72,7 +76,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     )
 
     # Apply owner or special filter
-    if @everyone_in_company_filter
+    if @customized_owner_view
+      @goals = Goals::StructuralOwnerKeysFilter.call(relation: @goals, keys: @owner_keys)
+    elsif @everyone_in_company_filter
       # Filter for goals with "everyone_in_company" privacy level (ignore owner).
       # Do not apply .active here — FilterQuery already applied show_deleted/show_completed;
       # we want to show all public goals (draft, active, completed) per user prefs.
@@ -132,7 +138,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
-      if @everyone_in_company_filter || (@my_department_filter && @my_department_missing)
+      if @customized_owner_view
+        all_goals_for_filter = Goals::StructuralOwnerKeysFilter.call(
+          relation: policy_scope(Goal),
+          keys: @owner_keys
+        )
+      elsif @everyone_in_company_filter || (@my_department_filter && @my_department_missing)
         all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company')
       elsif @created_by_me_filter
         all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
@@ -250,8 +261,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       direction: params[:direction],
       view: @view_style,
       spotlight: spotlight_param,
-      owner_type: special_goals_owner_filter? ? nil : params[:owner_type],
-      owner_id: special_goals_owner_filter_param || params[:owner_id],
+      owner_type: (@customized_owner_view || special_goals_owner_filter?) ? nil : params[:owner_type],
+      owner_id: @customized_owner_view ? 'customized_view' : (special_goals_owner_filter_param || params[:owner_id]),
+      owner_keys: @customized_owner_view ? @owner_keys : nil,
       show_deleted: show_deleted ? '1' : nil,
       show_completed: show_completed ? '1' : nil,
       prompt_id: params[:prompt_id].presence,
@@ -854,9 +866,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def customize_view
     authorize @organization, :show?
+
+    @owner_keys = Goals::StructuralOwnerKeysFilter.normalize_keys(params[:owner_keys])
+    @customized_owner_view = Goals::StructuralOwnerKeysFilter.customized?(@owner_keys)
     
     # Parse owner_id if it's in format "Type_ID" (e.g., "CompanyTeammate_123", "Company_456")
-    if params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+    if !@customized_owner_view && params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)
       params[:owner_type] = owner_type
       params[:owner_id] = owner_id
@@ -864,13 +879,16 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Dropdown uses "Company" label but Goal stores owner_type as Organization
     params[:owner_type] = 'Organization' if params[:owner_type] == 'Company'
     
-    # Default to logged in user if no owner is selected
-    unless params[:owner_type].present? && params[:owner_id].present?
+    # Default to logged in user if no owner is selected (and not a customized multi-owner set)
+    unless @customized_owner_view || (params[:owner_type].present? && params[:owner_id].present?)
       if current_company_teammate
         params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_company_teammate.id.to_s
       end
     end
+
+    @selected_structural_owner_keys = selected_structural_owner_keys_for_customize
+    @structural_owner_option_groups = structural_owner_option_groups_for_customize
     
     # Load current state from params
     selected_statuses = normalized_status_filters(params)
@@ -882,8 +900,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       direction: params[:direction] || 'asc',
       view: params[:view] || 'hierarchical-collapsible',
       spotlight: params[:spotlight] || 'goals_overview',
-      owner_type: params[:owner_type],
-      owner_id: params[:owner_id],
+      owner_type: @customized_owner_view ? nil : params[:owner_type],
+      owner_id: @customized_owner_view ? nil : params[:owner_id],
+      owner_keys: @customized_owner_view ? @owner_keys : nil,
       show_deleted: selected_statuses.include?('archived') ? '1' : nil,
       show_completed: selected_statuses.include?('completed') ? '1' : nil
     }
@@ -907,7 +926,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     authorize @organization, :show?
     
     # Build redirect URL with all view customization params
-    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h.compact
+    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit, :organization_id).permit!.to_h.compact
+    apply_structural_owner_keys_to_redirect_params!(redirect_params)
     
     redirect_to organization_goals_path(@organization, redirect_params), notice: 'View updated successfully.'
   end
@@ -1422,12 +1442,79 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
 
   # Value for the primary filter dropdown that matches option values (dropdown uses "Company_" but store uses Organization)
   def primary_filter_select_value
+    return 'customized_view' if @customized_owner_view
     return nil if @current_filters[:owner_type].blank? || @current_filters[:owner_id].blank?
+    return @current_filters[:owner_id] if @current_filters[:owner_id].to_s == 'customized_view'
+
     type = @current_filters[:owner_type]
     type = 'Company' if type == 'Organization'
     "#{type}_#{@current_filters[:owner_id]}"
   end
   helper_method :primary_filter_select_value
+
+  def goals_index_path_for_owner_filter(owner_value)
+    query = request.query_parameters.except(:controller, :action, :page, :owner_type, "owner_type", :owner_keys, "owner_keys")
+    query = query.reject { |key, _value| key.to_s.start_with?("owner_keys") }
+    organization_goals_path(@organization, query.merge(owner_id: owner_value))
+  end
+  helper_method :goals_index_path_for_owner_filter
+
+  def structural_owner_option_groups_for_customize
+    company = @organization.root_company || @organization
+    groups = []
+
+    if company.display_name.present? && company.id.present?
+      groups << ["Company", [["Company: #{company.display_name}", "Company_#{company.id}"]]]
+    end
+
+    dept_opts = department_goal_owner_options(company)
+    groups << ["Departments", dept_opts] if dept_opts.any?
+
+    team_opts = Team.where(company: company).ordered.filter_map do |team|
+      next unless team.display_name.present? && team.id.present?
+
+      ["Team: #{team.display_name}", "Team_#{team.id}"]
+    end
+    groups << ["Teams", team_opts] if team_opts.any?
+
+    groups
+  end
+  helper_method :structural_owner_option_groups_for_customize
+
+  def selected_structural_owner_keys_for_customize
+    return @owner_keys if @owner_keys.present?
+
+    type = params[:owner_type].presence || @current_filters&.dig(:owner_type)
+    id = params[:owner_id].presence || @current_filters&.dig(:owner_id)
+    return [] if type.blank? || id.blank?
+    return [] if type == "CompanyTeammate"
+    return [] if id.to_s.in?(%w[everyone_in_company created_by_me my_relevant_goals all_my_teams my_department my_employees my_employees_hierarchy customized_view])
+
+    prefix = type == "Organization" ? "Company" : type
+    return [] unless Goals::StructuralOwnerKeysFilter::ALLOWED_PREFIXES.include?(prefix)
+
+    ["#{prefix}_#{id}"]
+  end
+  helper_method :selected_structural_owner_keys_for_customize
+
+  def apply_structural_owner_keys_to_redirect_params!(redirect_params)
+    keys = Goals::StructuralOwnerKeysFilter.normalize_keys(redirect_params["owner_keys"] || redirect_params[:owner_keys])
+    redirect_params.delete("owner_keys")
+    redirect_params.delete(:owner_keys)
+    redirect_params.reject! { |key, _value| key.to_s.start_with?("owner_keys") }
+
+    if keys.size > 1
+      redirect_params["owner_keys"] = keys
+      redirect_params.delete("owner_id")
+      redirect_params.delete(:owner_id)
+      redirect_params.delete("owner_type")
+      redirect_params.delete(:owner_type)
+    elsif keys.size == 1
+      redirect_params["owner_id"] = keys.first
+      redirect_params.delete("owner_type")
+      redirect_params.delete(:owner_type)
+    end
+  end
 
   def goals_filter_breadcrumb_crumb
     owner_type = @current_filters[:owner_type]
