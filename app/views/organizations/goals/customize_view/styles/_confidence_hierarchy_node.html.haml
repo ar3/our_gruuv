@@ -33,10 +33,18 @@
         - else
           = render "shared/on_track_pill", status: track_status, title: track_title
       .text-end
-        = link_to confidence_pct(row.own_percentage), organization_goal_path(@organization, goal, anchor: "check-in"), class: "fw-semibold text-decoration-none text-body", title: "This goal's own confidence (not a rollup)"
-        %span{class: confidence_arrow_class(row.arrow), title: confidence_check_travel_title(row)}= confidence_arrow_glyph(row.arrow)
+        = link_to confidence_pct(row.own_percentage),
+                  organization_goal_path(@organization, goal, anchor: "check-in"),
+                  class: "fw-semibold text-decoration-none text-body",
+                  data: { bs_toggle: "tooltip", bs_title: "This goal's own confidence (not a rollup)" }
+        - if confidence_check_travel_multiline?(row)
+          %span{class: confidence_arrow_class(row.arrow), tabindex: 0, role: "button", "aria-label": "Confidence history", data: { bs_toggle: "popover", bs_trigger: "hover focus", bs_content: confidence_check_travel_title(row), bs_custom_class: "confidence-travel-popover", bs_placement: "left" }}
+            = confidence_arrow_glyph(row.arrow)
+        - else
+          %span{class: confidence_arrow_class(row.arrow), tabindex: 0, data: { bs_toggle: "tooltip", bs_title: confidence_check_travel_title(row) }}
+            = confidence_arrow_glyph(row.arrow)
       .text-center
-        %span.confidence-hierarchy-tree{class: confidence_agreement_class(row.agreement.state), title: confidence_agreement_title(row.agreement)}
+        %span.confidence-hierarchy-tree{class: confidence_agreement_class(row.agreement.state), tabindex: 0, data: { bs_toggle: "tooltip", bs_title: confidence_agreement_title(row.agreement), bs_placement: "left" }}
           = confidence_agreement_glyph(row.agreement.state)
     .px-2.pb-2
       = render "organizations/goals/customize_view/styles/confidence_hierarchy_expand",

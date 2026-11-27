@@ -1632,6 +1632,12 @@ module GoalsHelper
     ].compact.join("\n")
   end
 
+  def confidence_check_travel_multiline?(row)
+    first = row.first_check_in
+    latest = row.latest_check_in
+    first.present? && latest.present?
+  end
+
   def confidence_track_status(goal, check_in)
     return :draft if goal.started_at.nil?
     return :empty if check_in.blank?
