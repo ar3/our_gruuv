@@ -1,0 +1,5 @@
+- descendants_count = local_assigns.fetch(:descendants_count, 0).to_i
+- direct_children_count = local_assigns.fetch(:direct_children_count, 0).to_i
+- active_descendants_count = local_assigns.fetch(:active_descendants_count, 0).to_i
+- active_direct_children_count = local_assigns.fetch(:active_direct_children_count, 0).to_i
+#{descendants_count} #{'descendant'.pluralize(descendants_count)}, #{direct_children_count} direct (#{active_descendants_count} active, #{active_direct_children_count} direct active)

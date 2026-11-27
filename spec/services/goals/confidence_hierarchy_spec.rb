@@ -109,6 +109,15 @@ RSpec.describe Goals::ConfidenceHierarchy do
       expect(shared_rows.first.depth).to eq(1)
       expect(rows.count { |r| r.goal.id == under_shared.id }).to eq(1)
     end
+
+    it "exposes descendant and active counts on rows" do
+      primary = [root_a, root_b].min_by(&:id)
+      row = service.row_for(primary, depth: 0, section_root: true)
+      expect(row.descendants_count).to eq(2)
+      expect(row.direct_children_count).to eq(1)
+      expect(row.active_descendants_count).to eq(2)
+      expect(row.active_direct_children_count).to eq(1)
+    end
   end
 
   describe "first/latest and arrows" do

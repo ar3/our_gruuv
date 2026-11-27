@@ -96,6 +96,14 @@
                   = goal_visibility_display(goal)
                 %span.text-muted.small
                   | Owned by: #{goal_owner_display_name(goal)}
+                - if has_children || total_descendants_count.positive? || direct_children_count.positive?
+                  %span.text-muted.small.ms-1
+                    |
+                    = render "organizations/goals/customize_view/styles/goal_descendant_counts",
+                      descendants_count: total_descendants_count,
+                      direct_children_count: direct_children_count,
+                      active_descendants_count: node[:active_descendants_count].to_i,
+                      active_direct_children_count: node[:active_direct_children_count].to_i
                 = goal_external_association_links(@organization, goal)
 
               - if most_recent_check_in.present? || goal.completed_at.present? || goal.started_at.nil?

@@ -2,6 +2,10 @@
 - most_recent_check_in = local_assigns[:most_recent_check_in]
 - current_week_check_in = local_assigns[:current_week_check_in]
 - can_check_in = local_assigns[:can_check_in]
+- descendants_count = local_assigns[:descendants_count]
+- direct_children_count = local_assigns[:direct_children_count]
+- active_descendants_count = local_assigns[:active_descendants_count]
+- active_direct_children_count = local_assigns[:active_direct_children_count]
 - teammate_owned_goal = goal.owner_type == "CompanyTeammate" && goal.owner_id.present?
 - viewer_is_goal_owner = current_company_teammate.present? && goal.owner_id == current_company_teammate.id
 - show_note_win_cta_for_viewer = teammate_owned_goal && !viewer_is_goal_owner
@@ -24,6 +28,14 @@
             = goal_visibility_display(goal)
           %span.text-muted.small
             | Owned by: #{goal_owner_display_name(goal)}
+          - if descendants_count.present? || direct_children_count.present?
+            %span.text-muted.small.ms-1
+              |
+              = render "organizations/goals/customize_view/styles/goal_descendant_counts",
+                descendants_count: descendants_count.to_i,
+                direct_children_count: direct_children_count.to_i,
+                active_descendants_count: active_descendants_count.to_i,
+                active_direct_children_count: active_direct_children_count.to_i
           = goal_external_association_links(@organization, goal)
 
         - if most_recent_check_in.present? || goal.completed_at.present? || goal.started_at.nil?

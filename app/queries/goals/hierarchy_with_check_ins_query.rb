@@ -84,16 +84,26 @@ module Goals
       # Calculate counts
       direct_children_count = enriched_children.length
       total_descendants_count = direct_children_count + enriched_children.sum { |c| c[:total_descendants_count] }
-      
+      active_direct_children_count = enriched_children.count { |c| active_goal?(c[:goal]) }
+      active_descendants_count = enriched_children.sum do |c|
+        (active_goal?(c[:goal]) ? 1 : 0) + c[:active_descendants_count]
+      end
+
       {
         goal: goal,
         children: enriched_children,
         direct_children_count: direct_children_count,
         total_descendants_count: total_descendants_count,
+        active_direct_children_count: active_direct_children_count,
+        active_descendants_count: active_descendants_count,
         most_recent_check_in: @most_recent_check_ins_by_goal[goal.id],
         current_week_check_in: @current_week_check_ins_by_goal[goal.id],
         can_check_in: @can_check_in_goals.include?(goal.id)
       }
+    end
+
+    def active_goal?(goal)
+      goal.started_at.present? && goal.completed_at.blank? && goal.deleted_at.blank?
     end
   end
 end

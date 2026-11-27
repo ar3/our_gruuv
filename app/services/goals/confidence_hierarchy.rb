@@ -32,7 +32,11 @@ module Goals
       :agreement,
       :first_check_in,
       :latest_check_in,
-      :section_root
+      :section_root,
+      :descendants_count,
+      :direct_children_count,
+      :active_descendants_count,
+      :active_direct_children_count
     )
 
     def initialize(goals:, as_of: Date.current, root_goal_ids: nil)
@@ -197,7 +201,15 @@ module Goals
         .sort_by(&:id)
     end
 
+    def row_for(goal, depth:, section_root: false)
+      build_row(goal, depth: depth, section_root: section_root)
+    end
+
     private
+
+    def active_goal?(goal)
+      goal.started_at.present? && goal.completed_at.blank? && goal.deleted_at.blank?
+    end
 
     def preload_links_and_check_ins!
       links = GoalLink.where(parent_id: @goal_ids).where(child_id: @goal_ids)
@@ -261,6 +273,13 @@ module Goals
 
     def build_row(goal, depth:, section_root:)
       kids = children_of(goal)
+      descendants_count = 0
+      active_descendants = 0
+      walk_descendants(goal, Set.new) do |descendant|
+        descendants_count += 1
+        active_descendants += 1 if active_goal?(descendant)
+      end
+
       TreeRow.new(
         goal: goal,
         depth: depth,
@@ -273,7 +292,11 @@ module Goals
         agreement: agreement(goal),
         first_check_in: first_check_in(goal),
         latest_check_in: latest_check_in(goal),
-        section_root: section_root
+        section_root: section_root,
+        descendants_count: descendants_count,
+        direct_children_count: kids.size,
+        active_descendants_count: active_descendants,
+        active_direct_children_count: kids.count { |child| active_goal?(child) }
       )
     end
   end

@@ -1,0 +1,61 @@
+- hierarchy = local_assigns[:hierarchy]
+- goal = local_assigns[:goal]
+- depth = local_assigns[:depth].to_i
+- section_root = local_assigns.fetch(:section_root, false)
+- can_check_in_goals = local_assigns[:can_check_in_goals] || []
+- current_week_check_ins = local_assigns[:current_week_check_ins] || {}
+- row = hierarchy.row_for(goal, depth: depth, section_root: section_root)
+- children = hierarchy.children_of(goal)
+- children_id = "confidence-children-#{goal.id}"
+- indent = depth * 1.25
+- track_status = confidence_track_status(goal, row.latest_check_in)
+- track_title = confidence_track_title(goal, row.latest_check_in, track_status)
+
+.confidence-hierarchy-node
+  %details.confidence-hierarchy-details
+    %summary.confidence-hierarchy-row{id: "confidence-goal-#{goal.id}"}
+      .confidence-hierarchy-row__goal{style: "padding-left: #{indent}rem;"}
+        - if children.any?
+          %button.confidence-hierarchy-row__twisty.is-branch{type: "button", "aria-expanded": "true", "aria-controls": children_id, "data-bs-target": "##{children_id}", "data-action": "click->confidence-hierarchy#toggleChildren", title: "Show or hide child goals"}
+            %i.bi.bi-chevron-up.toggle-icon
+        - else
+          %span.confidence-hierarchy-row__twisty
+        %span.confidence-hierarchy-row__owner
+          = goal_owner_image(goal, size: 20)
+        %span.confidence-hierarchy-row__title{title: goal.title}= goal.title
+        - if row.parent_count > 1
+          %span.badge.text-bg-light.border.ms-1 shared ×#{row.parent_count}
+      .text-end.confidence-hierarchy-track
+        - if track_status == :draft
+          %span.badge.rounded-pill.bg-secondary{title: track_title, "data-bs-toggle" => "tooltip"} Draft
+        - elsif track_status == :empty || track_status == :na
+          %span.badge.rounded-pill.bg-light.text-muted.border{title: track_title, "data-bs-toggle" => "tooltip"} No check
+        - else
+          = render "shared/on_track_pill", status: track_status, title: track_title
+      .text-end
+        = link_to confidence_pct(row.own_percentage), organization_goal_path(@organization, goal, anchor: "check-in"), class: "fw-semibold text-decoration-none text-body", title: "This goal's own confidence (not a rollup)"
+        %span{class: confidence_arrow_class(row.arrow), title: confidence_check_travel_title(row)}= confidence_arrow_glyph(row.arrow)
+      .text-center
+        %span.confidence-hierarchy-tree{class: confidence_agreement_class(row.agreement.state), title: confidence_agreement_title(row.agreement)}
+          = confidence_agreement_glyph(row.agreement.state)
+    .px-2.pb-2
+      = render "organizations/goals/customize_view/styles/confidence_hierarchy_expand",
+        goal: goal,
+        most_recent_check_in: row.latest_check_in,
+        current_week_check_in: current_week_check_ins[goal.id],
+        can_check_in: can_check_in_goals.include?(goal.id),
+        descendants_count: row.descendants_count,
+        direct_children_count: row.direct_children_count,
+        active_descendants_count: row.active_descendants_count,
+        active_direct_children_count: row.active_direct_children_count
+
+  - if children.any?
+    .collapse.show{id: children_id}
+      - children.each do |child|
+        = render "organizations/goals/customize_view/styles/confidence_hierarchy_node",
+          hierarchy: hierarchy,
+          goal: child,
+          depth: depth + 1,
+          section_root: false,
+          can_check_in_goals: can_check_in_goals,
+          current_week_check_ins: current_week_check_ins

@@ -2310,6 +2310,10 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('Tree')
       expect(response.body).to include('confidence-overview-chart')
       expect(response.body).to include('Stale')
+      expect(response.body).to include('descendant')
+      expect(response.body).to include('direct active')
+      expect(response.body).to include('Owned by:')
+      expect(response.body).to include('confidence-hierarchy#toggleChildren')
     end
 
     it 'renders the Showcase special show route' do
