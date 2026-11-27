@@ -171,6 +171,11 @@
             = label_tag 'view_hierarchical_collapsible_hidden_checks', class: 'form-check-label' do
               %i.bi.bi-chevron-bar-contract.me-2
               = hierarchical_collapsible_hidden_checks_label
+          .form-check
+            = radio_button_tag 'view', 'confidence_hierarchy', @current_view == 'confidence_hierarchy', class: 'form-check-input', id: 'view_confidence_hierarchy'
+            = label_tag 'view_confidence_hierarchy', class: 'form-check-label' do
+              %i.bi.bi-bar-chart-steps.me-2
+              Confidence hierarchy
 
           %hr.my-3
           %p.small.text-muted.mb-2
@@ -225,6 +230,9 @@
           .form-check
             = radio_button_tag 'spotlight', 'goals_overview', (@current_spotlight.blank? || @current_spotlight == 'goals_overview'), class: 'form-check-input', id: 'spotlight_goals_overview'
             = label_tag 'spotlight_goals_overview', 'Goals Overview', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'confidence_overview', @current_spotlight == 'confidence_overview', class: 'form-check-input', id: 'spotlight_confidence_overview'
+            = label_tag 'spotlight_confidence_overview', 'Confidence overview', class: 'form-check-label'
           .form-check
             = radio_button_tag 'spotlight', 'none', @current_spotlight == 'none', class: 'form-check-input', id: 'spotlight_none'
             = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'

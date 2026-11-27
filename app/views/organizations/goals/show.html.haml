@@ -111,6 +111,10 @@
               Actions
           .card-body
             .actions-content
+              .d-grid.gap-2.mb-3
+                = link_to showcase_organization_goal_path(@organization, @goal), class: "btn btn-outline-primary w-100" do
+                  %i.bi.bi-easel2.me-2
+                  Showcase this goal
               - if @goal.deleted_at.present?
                 .alert.alert-warning.mb-3
                   %strong This goal has been archived.

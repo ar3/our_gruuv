@@ -1,0 +1,4 @@
+- aggregates = local_assigns[:aggregates]
+- payload = confidence_overview_chart_payload(aggregates)
+
+%div{data: { controller: "confidence-overview-chart", confidence_overview_chart_data_json_value: payload.to_json }, style: "min-height: 120px; width: 100%;", role: "img", "aria-label": "Confidence checks from #{confidence_pct(aggregates.least_confident)} to 100%"}

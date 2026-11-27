@@ -25,6 +25,10 @@ module GoalsBulkEditHelper
       title: "Off Track",
       body: "Red means this goal is Off Track (confidence is below the expected band for the remaining time to the most-likely date)."
     },
+    stale: {
+      title: "Stale",
+      body: "Stale means the latest confidence check is more than 21 days old, so On Track / Off Track is not shown until a fresher check is recorded."
+    },
     na: {
       title: "Started — track color not available",
       body: "Blue means the goal is started, but On Track / Off Track color is not available yet (needs a due date and a confidence check)."

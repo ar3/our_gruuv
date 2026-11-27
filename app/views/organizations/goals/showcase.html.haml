@@ -1,0 +1,18 @@
+- content_for :title, "Showcase · #{@showcase_goal.title}"
+
+- content_for :header do
+  Showcase this goal
+
+- showcase_crumbs = [{ label: "Goals", url: organization_goals_path(@organization) }, { label: @showcase_goal.title, url: organization_goal_path(@organization, @showcase_goal) }, { label: "Showcase", url: nil }]
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: showcase_crumbs)
+
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = render partial: "organizations/goals/customize_view/spotlights/confidence_overview"
+
+.row.justify-content-center
+  .col-lg-12
+    = render partial: "organizations/goals/customize_view/styles/confidence_hierarchy"

@@ -1085,6 +1085,14 @@ RSpec.describe Goal, type: :model do
         expect(%i[red yellow green good_green]).to include(goal.on_track_status_for_check_in(check_in))
       end
 
+      it 'returns :stale when the check-in is older than 21 days' do
+        goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: started_at, most_likely_target_date: most_likely)
+        check_in = create(:goal_check_in, goal: goal,
+                                          check_in_week_start: (Date.current - 22.days).beginning_of_week(:monday),
+                                          confidence_percentage: 90, confidence_reporter: person)
+        expect(goal.on_track_status_for_check_in(check_in)).to eq(:stale)
+      end
+
       it 'returns :na when check_in is nil' do
         goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: started_at, most_likely_target_date: most_likely)
         expect(goal.on_track_status_for_check_in(nil)).to eq(:na)

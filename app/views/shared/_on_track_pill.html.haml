@@ -1,6 +1,6 @@
--# Reusable on-track / off-track pill. Pass status: :good_green | :green | :yellow | :red | :na
+-# Reusable on-track / off-track pill. Pass status: :good_green | :green | :yellow | :red | :stale | :na
 -# good_green: dark green "On Track" | green: light green "On Track" | yellow: "Barely On-Track"
--# red: red "Off Track" | na: no pill rendered
+-# red: red "Off Track" | stale: red "Stale" (>21 days) | na: no pill rendered
 - opts = on_track_pill_options(local_assigns[:status])
 - if opts.present?
-  %span.badge.rounded-pill{style: opts[:style], class: opts[:class]}= opts[:label]
+  %span.badge.rounded-pill{style: opts[:style], class: opts[:class], title: local_assigns[:title], "data-bs-toggle" => (local_assigns[:title].present? ? "tooltip" : nil)}= opts[:label]

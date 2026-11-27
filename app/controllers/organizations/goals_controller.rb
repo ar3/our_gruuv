@@ -1,6 +1,6 @@
 class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :undelete, :weekly_update]
+  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :undelete, :weekly_update, :showcase]
   
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -138,48 +138,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
-      if @customized_owner_view
-        all_goals_for_filter = Goals::StructuralOwnerKeysFilter.call(
-          relation: policy_scope(Goal),
-          keys: @owner_keys
-        )
-      elsif @everyone_in_company_filter || (@my_department_filter && @my_department_missing)
-        all_goals_for_filter = policy_scope(Goal).where(privacy_level: 'everyone_in_company')
-      elsif @created_by_me_filter
-        all_goals_for_filter = policy_scope(Goal).where(creator: current_teammate)
-      elsif @my_relevant_goals_filter
-        all_goals_for_filter = policy_scope(Goal).active.merge(my_relevant_goals_condition(current_teammate))
-      elsif @all_my_teams_filter
-        team_ids = Array(@viewer_teams_for_filter).map(&:id)
-        all_goals_for_filter = if team_ids.any?
-                                 policy_scope(Goal).where(owner_type: 'Team', owner_id: team_ids)
-                               else
-                                 policy_scope(Goal.none)
-                               end
-      elsif @my_department_filter && @department_for_filter.present?
-        all_goals_for_filter = Goals::RelatedToDepartmentQuery.call(
-          relation: policy_scope(Goal),
-          department: @department_for_filter
-        )
-      elsif @my_employees_filter || @my_employees_hierarchy_filter
-        all_goals_for_filter = Goals::EmployeeOwnedGoalsQuery.call(
-          relation: policy_scope(Goal),
-          owner_ids: @employee_goal_owner_ids,
-          viewer_person: current_person
-        )
-      elsif params[:owner_type] == 'Department' && params[:owner_id].present?
-        department = Department.find_by(id: params[:owner_id])
-        all_goals_for_filter = Goals::RelatedToDepartmentQuery.call(
-          relation: policy_scope(Goal),
-          department: department
-        )
-      else
-        all_goals_for_filter = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
-      end
-      all_goals_for_filter = Goals::FilterQuery.new(all_goals_for_filter).call(
-        show_deleted: show_deleted,
-        show_completed: show_completed
-      )
+      all_goals_for_filter = goals_for_spotlight_stats(show_deleted: show_deleted, show_completed: show_completed)
       @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_filter)
     end
 
@@ -245,6 +204,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @current_week_check_ins_by_goal = @goal_hierarchy[:current_week_check_ins_by_goal]
       @can_check_in_goals = @goal_hierarchy[:can_check_in_goals]
     end
+
+    if spotlight_param == 'confidence_overview' || @view_style == 'confidence_hierarchy'
+      @confidence_hierarchy = Goals::ConfidenceHierarchy.new(goals: @goals.to_a)
+      @confidence_overview_aggregates = @confidence_hierarchy.aggregates if spotlight_param == 'confidence_overview'
+      if @view_style == 'confidence_hierarchy'
+        @confidence_hierarchy_rows = @confidence_hierarchy.tree_rows
+        assign_confidence_hierarchy_check_in_maps!(@goals)
+      end
+    end
     
     # Performance check for visualizations
     @goal_count = @goals.count
@@ -300,6 +268,24 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
 
   
+  def showcase
+    authorize @goal, :show?
+
+    descendant_ids = descendant_hierarchy_ids_for(@goal)
+    subtree_ids = ([@goal.id] + descendant_ids).uniq
+    goals = policy_scope(Goal).where(id: subtree_ids, deleted_at: nil).to_a
+    goals = [@goal] + goals.reject { |g| g.id == @goal.id } unless goals.any? { |g| g.id == @goal.id }
+
+    @confidence_hierarchy = Goals::ConfidenceHierarchy.new(
+      goals: goals,
+      root_goal_ids: [@goal.id]
+    )
+    @confidence_overview_aggregates = @confidence_hierarchy.aggregates
+    @confidence_hierarchy_rows = @confidence_hierarchy.tree_rows
+    assign_confidence_hierarchy_check_in_maps!(goals)
+    @showcase_goal = @goal
+  end
+
   def show
     authorize @goal
     
@@ -1327,6 +1313,68 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     %w[draft active]
   end
   
+  def assign_confidence_hierarchy_check_in_maps!(goals)
+    relation = goals.is_a?(ActiveRecord::Relation) ? goals : Goal.where(id: Array(goals).map(&:id))
+    hierarchy = Goals::HierarchyWithCheckInsQuery.new(
+      goals: relation,
+      current_person: current_person,
+      organization: @organization,
+      sort: @goal_child_sort || 'most_likely_target_date',
+      direction: @goal_child_sort_direction
+    ).call
+
+    @most_recent_check_ins_by_goal = hierarchy[:most_recent_check_ins_by_goal]
+    @current_week_check_ins_by_goal = hierarchy[:current_week_check_ins_by_goal]
+    @can_check_in_goals = hierarchy[:can_check_in_goals]
+  end
+
+  def goals_for_spotlight_stats(show_deleted:, show_completed:)
+    relation =
+      if @customized_owner_view
+        Goals::StructuralOwnerKeysFilter.call(
+          relation: policy_scope(Goal),
+          keys: @owner_keys
+        )
+      elsif @everyone_in_company_filter || (@my_department_filter && @my_department_missing)
+        policy_scope(Goal).where(privacy_level: 'everyone_in_company')
+      elsif @created_by_me_filter
+        policy_scope(Goal).where(creator: current_teammate)
+      elsif @my_relevant_goals_filter
+        policy_scope(Goal).active.merge(my_relevant_goals_condition(current_teammate))
+      elsif @all_my_teams_filter
+        team_ids = Array(@viewer_teams_for_filter).map(&:id)
+        if team_ids.any?
+          policy_scope(Goal).where(owner_type: 'Team', owner_id: team_ids)
+        else
+          policy_scope(Goal.none)
+        end
+      elsif @my_department_filter && @department_for_filter.present?
+        Goals::RelatedToDepartmentQuery.call(
+          relation: policy_scope(Goal),
+          department: @department_for_filter
+        )
+      elsif @my_employees_filter || @my_employees_hierarchy_filter
+        Goals::EmployeeOwnedGoalsQuery.call(
+          relation: policy_scope(Goal),
+          owner_ids: @employee_goal_owner_ids,
+          viewer_person: current_person
+        )
+      elsif params[:owner_type] == 'Department' && params[:owner_id].present?
+        department = Department.find_by(id: params[:owner_id])
+        Goals::RelatedToDepartmentQuery.call(
+          relation: policy_scope(Goal),
+          department: department
+        )
+      else
+        policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+      end
+
+    Goals::FilterQuery.new(relation).call(
+      show_deleted: show_deleted,
+      show_completed: show_completed
+    )
+  end
+
   def apply_spotlight_filter(goals, spotlight)
     return goals unless spotlight.present?
     return goals if spotlight == 'none'

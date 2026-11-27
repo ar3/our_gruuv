@@ -1,0 +1,58 @@
+- rows = @confidence_hierarchy_rows || []
+- can_check_in_goals = @can_check_in_goals || []
+- current_week_check_ins = @current_week_check_ins_by_goal || {}
+
+:css
+  .confidence-hierarchy-row { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem 5.5rem 2.5rem; gap: 0.5rem; align-items: center; padding: 0.35rem 0.25rem; border-bottom: 1px solid #f1f3f5; }
+  .confidence-hierarchy-row__goal { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+  .confidence-hierarchy-row__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .confidence-hierarchy-row__pin { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+  .confidence-hierarchy-row__twisty { width: 1rem; flex: 0 0 auto; color: #6c757d; visibility: hidden; }
+  .confidence-hierarchy-row__twisty.is-branch { visibility: visible; }
+  .confidence-hierarchy-tree { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border: 1px solid; border-radius: 0.25rem; font-size: 0.75rem; line-height: 1; }
+  .confidence-hierarchy-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6c757d; }
+  .confidence-hierarchy-details > summary { list-style: none; cursor: pointer; }
+  .confidence-hierarchy-details > summary::-webkit-details-marker { display: none; }
+  .confidence-hierarchy-track .badge { margin-left: 0 !important; }
+
+- if rows.empty?
+  %p.text-muted.mb-0 No goals to show in this hierarchy.
+- else
+  .confidence-hierarchy{data: { controller: "confirm-leave", confirm_leave_single_active_form_value: true, action: "input->confirm-leave#markDirty change->confirm-leave#markDirty" }}
+    .confidence-hierarchy-row.confidence-hierarchy-header
+      %div Goal
+      %div.text-end{title: "On Track / Off Track / Stale"} Track
+      %div.text-end{title: "This goal's own confidence (not a rollup)"} Conf
+      %div.text-center{title: "How this confidence compares with the tree beneath it"} Tree
+    - rows.each do |row|
+      - goal = row.goal
+      - indent = row.depth * 1.25
+      - track_status = confidence_track_status(goal, row.latest_check_in)
+      - track_title = confidence_track_title(goal, row.latest_check_in, track_status)
+      %details.confidence-hierarchy-details
+        %summary.confidence-hierarchy-row{id: "confidence-goal-#{goal.id}"}
+          .confidence-hierarchy-row__goal{style: "padding-left: #{indent}rem;"}
+            %span.confidence-hierarchy-row__twisty{class: ("is-branch" unless row.leaf)} ▾
+            %span.confidence-hierarchy-row__pin{style: "background: #{confidence_age_color(row.age_bucket)};", title: "Check age: #{row.age_label}"}
+            %span.confidence-hierarchy-row__title{title: goal.title}= goal.title
+            - if row.parent_count > 1
+              %span.badge.text-bg-light.border.ms-1 shared ×#{row.parent_count}
+          .text-end.confidence-hierarchy-track
+            - if track_status == :draft
+              %span.badge.rounded-pill.bg-secondary{title: track_title, "data-bs-toggle" => "tooltip"} Draft
+            - elsif track_status == :empty || track_status == :na
+              %span.badge.rounded-pill.bg-light.text-muted.border{title: track_title, "data-bs-toggle" => "tooltip"} No check
+            - else
+              = render "shared/on_track_pill", status: track_status, title: track_title
+          .text-end
+            = link_to confidence_pct(row.own_percentage), organization_goal_path(@organization, goal, anchor: "check-in"), class: "fw-semibold text-decoration-none text-body", title: "This goal's own confidence (not a rollup)"
+            %span{class: confidence_arrow_class(row.arrow), title: confidence_check_travel_title(row)}= confidence_arrow_glyph(row.arrow)
+          .text-center
+            %span.confidence-hierarchy-tree{class: confidence_agreement_class(row.agreement.state), title: confidence_agreement_title(row.agreement)}
+              = confidence_agreement_glyph(row.agreement.state)
+        .px-2.pb-2
+          = render "organizations/goals/customize_view/styles/confidence_hierarchy_expand",
+            goal: goal,
+            most_recent_check_in: row.latest_check_in,
+            current_week_check_in: current_week_check_ins[goal.id],
+            can_check_in: can_check_in_goals.include?(goal.id)

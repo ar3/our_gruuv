@@ -148,6 +148,8 @@
           - case @current_spotlight
           - when 'goals_overview'
             = render partial: 'organizations/goals/customize_view/spotlights/goals_overview'
+          - when 'confidence_overview'
+            = render partial: 'organizations/goals/customize_view/spotlights/confidence_overview'
           - when 'top_priority'
             = render partial: 'organizations/goals/customize_view/spotlights/top_priority'
           - when 'recently_added'
@@ -235,6 +237,8 @@
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
       - when 'hierarchical-collapsible-hidden-checks'
         = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible_hidden_checks'
+      - when 'confidence_hierarchy'
+        = render partial: 'organizations/goals/customize_view/styles/confidence_hierarchy'
       - when *Goals::HighchartsVizData::CHART_KINDS
         = render partial: 'organizations/goals/customize_view/styles/highcharts', locals: { chart_kind: @view_style }
       - else

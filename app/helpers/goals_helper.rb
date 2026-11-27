@@ -1271,6 +1271,7 @@ module GoalsHelper
       case status
       when :red then "Off Track"
       when :yellow then "Barely On-Track"
+      when :stale then "Stale"
       else "On Track"
       end
     case status
@@ -1281,6 +1282,8 @@ module GoalsHelper
     when :yellow
       { label: label, style: nil, class: 'bg-warning text-dark ms-1' }
     when :red
+      { label: label, style: nil, class: 'bg-danger ms-1' }
+    when :stale
       { label: label, style: nil, class: 'bg-danger ms-1' }
     else
       nil
@@ -1378,7 +1381,7 @@ module GoalsHelper
     when :good_green then "#198754"
     when :green then "#a3cfbb"
     when :yellow then "#ffc107"
-    when :red then "#dc3545"
+    when :red, :stale then "#dc3545"
     else "#adb5bd"
     end
   end
@@ -1386,6 +1389,7 @@ module GoalsHelper
   GOAL_INDEX_VIEW_STYLES = (%w[
     table cards list network tree nested timeline
     hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks
+    confidence_hierarchy
   ] + Goals::HighchartsVizData::CHART_KINDS).freeze
 
   GOAL_INDEX_VIEW_STYLE_LABELS = {
@@ -1399,6 +1403,7 @@ module GoalsHelper
     "hierarchical-indented" => "Hierarchical indented",
     "hierarchical-collapsible" => "Hierarchical collapsible (with checks)",
     "hierarchical-collapsible-hidden-checks" => "Hierarchical collapsible (hidden checks)",
+    "confidence_hierarchy" => "Confidence hierarchy",
     "hc-networkgraph" => "HC Network graph",
     "hc-treegraph" => "HC Treegraph",
     "hc-treegraph-boxes" => "HC Treegraph (boxes)",
@@ -1420,6 +1425,7 @@ module GoalsHelper
     classic = %w[
       table cards list network tree nested timeline
       hierarchical-indented hierarchical-collapsible hierarchical-collapsible-hidden-checks
+      confidence_hierarchy
     ]
     [
       ["Classic", classic],
@@ -1447,6 +1453,7 @@ module GoalsHelper
 
   GOAL_INDEX_SPOTLIGHT_OPTIONS = [
     ["Goals overview", "goals_overview"],
+    ["Confidence overview", "confidence_overview"],
     ["Top priority", "top_priority"],
     ["Recently added", "recently_added"],
     ["Overdue", "overdue"],
@@ -1532,6 +1539,152 @@ module GoalsHelper
       { id: "goals-by-week", label: "Goals by week", icon: "bi-bullseye", primary: false },
       { id: "completed-goals", label: "Completed goals", icon: "bi-flag", primary: false }
     ]
+  end
+
+  CONFIDENCE_AGE_COLORS = {
+    fresh: "#198754",
+    aging: "#fd7e14",
+    stale: "#dc3545",
+    never: "#adb5bd"
+  }.freeze
+
+  def confidence_age_color(bucket)
+    CONFIDENCE_AGE_COLORS.fetch(bucket.to_sym, CONFIDENCE_AGE_COLORS[:never])
+  end
+
+  def confidence_arrow_glyph(arrow)
+    case arrow.to_sym
+    when :up then "↑"
+    when :down then "↓"
+    when :flat then "–"
+    else "·"
+    end
+  end
+
+  def confidence_arrow_class(arrow)
+    case arrow.to_sym
+    when :up then "text-success"
+    when :down then "text-danger"
+    else "text-muted"
+    end
+  end
+
+  def confidence_agreement_glyph(state)
+    case state.to_sym
+    when :in_step then "="
+    when :should_be_higher then "▲"
+    when :should_be_lower then "▼"
+    when :no_check then "?"
+    else "·"
+    end
+  end
+
+  def confidence_agreement_class(state)
+    case state.to_sym
+    when :in_step then "text-success border-success"
+    when :should_be_higher then "text-primary border-primary"
+    when :should_be_lower then "text-danger border-danger"
+    when :no_check then "text-muted border-secondary"
+    else "text-muted border-0"
+    end
+  end
+
+  def confidence_agreement_title(agreement)
+    avg = agreement.child_avg && format("%.0f%%", agreement.child_avg)
+    own = agreement.own && "#{agreement.own}%"
+    low = agreement.child_min && "#{agreement.child_min}%"
+    high = agreement.child_max && "#{agreement.child_max}%"
+
+    case agreement.state
+    when :in_step
+      "In step with what is below it — children average #{avg}, this goal says #{own}."
+    when :should_be_higher
+      "Confidence here should probably be HIGHER. Its children average #{avg} (lowest #{low}, highest #{high}), but this goal says only #{own}."
+    when :should_be_lower
+      "Confidence here should probably be LOWER. Its children average #{avg} (lowest #{low}), yet this goal says #{own}."
+    when :no_check
+      "No check of its own. Its #{agreement.child_count} children average #{avg} (lowest #{low}), so that is the only evidence here."
+    else
+      "Nothing beneath this goal carries a check."
+    end
+  end
+
+  def confidence_pct(value)
+    return "—" if value.nil?
+
+    "#{value.round}%"
+  end
+
+  def confidence_check_travel_title(row)
+    first = row.first_check_in
+    latest = row.latest_check_in
+    return "No confidence history yet." unless first && latest
+
+    delta = row.own_percentage && first.confidence_percentage && (row.own_percentage - first.confidence_percentage)
+    delta_label = delta ? format("%+dpp", delta) : "·"
+    [
+      "FIRST CHECK · #{first.check_in_week_start.strftime('%m/%d/%y')}",
+      "#{first.confidence_percentage}%",
+      first.confidence_reason.presence,
+      "LATEST CHECK · #{latest.check_in_week_start.strftime('%m/%d/%y')}",
+      "#{latest.confidence_percentage}% (#{delta_label})",
+      latest.confidence_reason.presence
+    ].compact.join("\n")
+  end
+
+  def confidence_track_status(goal, check_in)
+    return :draft if goal.started_at.nil?
+    return :empty if check_in.blank?
+
+    goal.on_track_status_for_check_in(check_in)
+  end
+
+  def confidence_track_title(goal, check_in, status = nil)
+    status ||= confidence_track_status(goal, check_in)
+    age = Goals::ConfidenceAge.age_label(check_in)
+
+    case status
+    when :draft
+      "Draft — this goal has not been started, so On Track / Off Track does not apply yet."
+    when :empty, :na
+      "No confidence check yet — record a check to see On Track / Off Track."
+    when :stale
+      "Stale — last check was #{age} ago (more than 21 days). On Track / Off Track is hidden until a fresher check."
+    when :good_green, :green
+      "On Track — confidence fits the expected band for time remaining. Last check #{age} ago."
+    when :yellow
+      "Barely On-Track — confidence is in the lower On Track band for time remaining. Last check #{age} ago."
+    when :red
+      "Off Track — confidence is below the expected band for time remaining. Last check #{age} ago."
+    else
+      "Track status unavailable."
+    end
+  end
+
+  def confidence_overview_chart_payload(aggregates)
+    {
+      floor: aggregates.least_confident,
+      average: aggregates.average_confidence&.round(1),
+      points: aggregates.dots.map do |dot|
+        {
+          goal_id: dot[:goal_id],
+          title: dot[:title],
+          confidence: dot[:confidence],
+          lane: dot[:lane],
+          color: confidence_age_color(dot[:age_bucket])
+        }
+      end,
+      tails: aggregates.dots.filter_map do |dot|
+        next if dot[:first_confidence].nil? || dot[:delta].nil? || dot[:delta].zero?
+
+        {
+          from: dot[:first_confidence],
+          to: dot[:confidence],
+          lane: dot[:lane],
+          color: dot[:delta].negative? ? "#dc3545" : "#198754"
+        }
+      end
+    }
   end
 end
 

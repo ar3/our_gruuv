@@ -332,12 +332,14 @@ class Goal < ApplicationRecord
   end
   
   # On-track status from confidence vs expected thresholds. Returns :na when no due date, no started_at, or no check-in.
+  # Returns :stale when the latest check is older than Goals::ConfidenceAge::AGING_MAX_DAYS.
   def progress_status(progress_check_date: Date.current)
     return :na if progress_status_na?
     return :na if started_at.nil?
 
     last_check_in = goal_check_ins.recent.first
     return :na unless last_check_in
+    return :stale if Goals::ConfidenceAge.stale?(last_check_in, as_of: progress_check_date)
 
     confidence = last_check_in.confidence_percentage.to_i
     ranges = Goals::GoalProgressStatusConfidenceRangeCalculator.call(
@@ -362,10 +364,12 @@ class Goal < ApplicationRecord
   end
 
   # On-track status for a specific check-in (uses that check-in's week and confidence, not the latest).
-  # Returns :good_green, :green, :yellow, :red, or :na. Use with shared/on_track_pill partial.
-  def on_track_status_for_check_in(check_in)
+  # Returns :good_green, :green, :yellow, :red, :stale, or :na. Use with shared/on_track_pill partial.
+  # Checks older than Goals::ConfidenceAge::AGING_MAX_DAYS are :stale (never "On Track").
+  def on_track_status_for_check_in(check_in, as_of: Date.current)
     return :na if progress_status_na? || started_at.nil?
     return :na unless check_in&.check_in_week_start && check_in.confidence_percentage.present?
+    return :stale if Goals::ConfidenceAge.stale?(check_in, as_of: as_of)
 
     confidence = check_in.confidence_percentage.to_i
     ranges = Goals::GoalProgressStatusConfidenceRangeCalculator.call(

@@ -558,6 +558,12 @@ RSpec.describe GoalsHelper, type: :helper do
       expect(opts[:style]).to include('#a3cfbb')
     end
 
+    it 'returns Stale for :stale' do
+      opts = helper.on_track_pill_options(:stale)
+      expect(opts[:label]).to eq('Stale')
+      expect(opts[:class]).to include('bg-danger')
+    end
+
     it 'returns yellow "Barely On-Track" for :yellow' do
       opts = helper.on_track_pill_options(:yellow)
       expect(opts[:label]).to eq('Barely On-Track')

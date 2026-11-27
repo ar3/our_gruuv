@@ -2250,5 +2250,68 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(created_goal.privacy_level).to eq('everyone_in_company')
     end
   end
+
+  describe 'confidence overview spotlight and confidence hierarchy view' do
+    let!(:root) do
+      create(:goal, creator: teammate, owner: teammate, title: 'Root Intent',
+                    started_at: 8.weeks.ago, privacy_level: 'everyone_in_company')
+    end
+    let!(:child) do
+      create(:goal, creator: teammate, owner: teammate, title: 'Child Goal',
+                    started_at: 8.weeks.ago, privacy_level: 'everyone_in_company')
+    end
+
+    before do
+      create(:goal_link, parent: root, child: child)
+      create(:goal_check_in, goal: child,
+                             check_in_week_start: Date.current.beginning_of_week(:monday) - 18.weeks,
+                             confidence_percentage: 50, confidence_reporter: person)
+    end
+
+    it 'renders Confidence overview on customize view and index spotlight' do
+      get customize_view_organization_goals_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Confidence overview')
+      expect(response.body).to include('Confidence hierarchy')
+
+      get organization_goals_path(organization,
+                                  owner_id: 'everyone_in_company',
+                                  spotlight: 'confidence_overview',
+                                  view: 'confidence_hierarchy')
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Least confident')
+      expect(response.body).to include('Average confidence')
+      expect(response.body).to include('Biggest drop')
+      expect(response.body).to include('Child Goal')
+      expect(response.body).to include('confidence-goal-')
+      expect(response.body).to include('Track')
+      expect(response.body).to include('Conf')
+      expect(response.body).to include('Tree')
+      expect(response.body).to include('confidence-overview-chart')
+      expect(response.body).to include('Stale')
+    end
+
+    it 'renders the Showcase special show route' do
+      get showcase_organization_goal_path(organization, root)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Showcase this goal').or include('Showcase')
+      expect(response.body).to include('Root Intent')
+      expect(response.body).to include('Child Goal')
+    end
+
+    it 'links Showcase this goal from the goal show page' do
+      get organization_goal_path(organization, root)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Showcase this goal')
+      expect(response.body).to include(showcase_organization_goal_path(organization, root))
+    end
+
+    it 'shows Stale instead of On Track for checks older than 21 days' do
+      get organization_goal_path(organization, child)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Stale')
+      expect(response.body).not_to match(/badge[^>]*>On Track</)
+    end
+  end
 end
 

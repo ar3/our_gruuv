@@ -931,6 +931,7 @@ Rails.application.routes.draw do
         patch :set_timeframe
         patch :undelete
         get :weekly_update
+        get :showcase
       end
       resources :goal_links, only: [:create, :destroy] do
         collection do

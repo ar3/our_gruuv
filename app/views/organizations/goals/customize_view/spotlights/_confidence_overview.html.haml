@@ -1,0 +1,51 @@
+- aggregates = @confidence_overview_aggregates
+- hierarchy = @confidence_hierarchy
+- roots = hierarchy&.root_goals || []
+
+- if aggregates.nil?
+  %p.text-muted.mb-0 Confidence overview needs goals in the current filter.
+- elsif aggregates.empty
+  .confidence-overview-empty
+    .fw-semibold No evidence yet · 0 / #{aggregates.goal_count_below_roots}
+    %p.text-muted.mb-0.mt-1
+      Not one goal in this spotlight carries a confidence check, so there is nothing to average and nothing to compare. The work is a first check on each.
+- else
+  .confidence-overview
+    .small.text-uppercase.text-muted.mb-2
+      - if roots.size == 1
+        The goal in the spotlight
+        %span.fw-semibold.text-body= roots.first.title
+      - else
+        #{roots.size} top-level goals
+        - if roots.any?
+          %span.text-body
+            —
+            = roots.first(2).map(&:title).join(" + ")
+            - if roots.size > 2
+              = " + #{roots.size - 2} more"
+
+    .row.g-0.border-top.border-bottom.py-3.mb-3.confidence-overview-stats.text-center
+      .col-4.px-2.border-end
+        .small.text-muted Least confident
+        .fs-4.fw-semibold
+          = confidence_pct(aggregates.least_confident)
+        .small.text-muted
+          - if aggregates.least_confident_tie_count > 1
+            #{aggregates.least_confident_tie_count} tied
+          - else
+            &nbsp;
+      .col-4.px-2.border-end
+        .small.text-muted Average confidence
+        .fs-4.fw-semibold= confidence_pct(aggregates.average_confidence)
+        .small.text-muted #{aggregates.checked_count} checked
+      .col-4.px-2
+        .small.text-muted Biggest drop
+        .fs-4.fw-semibold
+          - if aggregates.biggest_drop
+            = "#{aggregates.biggest_drop.round}pp"
+          - else
+            —
+        .small.text-muted since first check
+
+    = render "organizations/goals/customize_view/spotlights/confidence_overview_dot_chart",
+             aggregates: aggregates

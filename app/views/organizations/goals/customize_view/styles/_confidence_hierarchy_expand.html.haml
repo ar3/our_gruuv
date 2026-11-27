@@ -1,0 +1,54 @@
+- goal = local_assigns[:goal]
+- most_recent_check_in = local_assigns[:most_recent_check_in]
+- current_week_check_in = local_assigns[:current_week_check_in]
+- can_check_in = local_assigns[:can_check_in]
+- teammate_owned_goal = goal.owner_type == "CompanyTeammate" && goal.owner_id.present?
+- viewer_is_goal_owner = current_company_teammate.present? && goal.owner_id == current_company_teammate.id
+- show_note_win_cta_for_viewer = teammate_owned_goal && !viewer_is_goal_owner
+
+.card.border-0.bg-light.mb-2
+  .card-body.p-2
+    .d-flex.align-items-start.gap-2
+      .flex-shrink-0
+        = goal_owner_image(goal, size: 48)
+      .flex-grow-1.min-w-0
+        .d-flex.align-items-center.flex-wrap.mb-1.gap-2
+          = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold"
+          - if goal.should_show_warning?
+            %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+
+        .d-flex.align-items-center.flex-wrap.mb-1
+          %span.small.me-2= goal_index_info_sentence(goal)
+          %span.small.me-2 |
+          %span.text-muted.small.me-2{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_privacy_tooltip_text(goal)}
+            = goal_visibility_display(goal)
+          %span.text-muted.small
+            | Owned by: #{goal_owner_display_name(goal)}
+          = goal_external_association_links(@organization, goal)
+
+        - if most_recent_check_in.present? || goal.completed_at.present? || goal.started_at.nil?
+          .small.text-muted.mb-2.d-flex.align-items-center.flex-wrap.gap-1
+            - if most_recent_check_in.present?
+              = render "organizations/goals/goal_check_in_sentence", check_in: most_recent_check_in, goal: goal, short: true, use_casual_name: true
+            = render "organizations/goals/customize_view/styles/soft_status_chip",
+              goal: goal,
+              organization: @organization,
+              check_in: most_recent_check_in,
+              include_empty: false
+
+        - if goal.most_likely_target_date.present? && goal.completed_at.nil?
+          = render "organizations/goals/customize_view/styles/goal_check_in_body",
+            goal: goal,
+            show_note_win_cta_for_viewer: show_note_win_cta_for_viewer,
+            can_check_in: can_check_in,
+            current_week_check_in: current_week_check_in
+        - elsif goal.completed_at.nil?
+          - show_start = goal.started_at.nil? && policy(goal).update?
+          - if show_start
+            .d-flex.gap-2.mt-2
+              = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm", form: { style: "display: inline-block;" } do
+                %i.bi.bi-play-circle.me-1
+                Start
+              = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
+                %i.bi.bi-eye.me-1
+                View
