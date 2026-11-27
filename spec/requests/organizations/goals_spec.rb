@@ -1139,7 +1139,27 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
 
-  describe 'GET /organizations/:organization_id/goals with default (hierarchical-collapsible) view' do
+  describe 'GET /organizations/:organization_id/goals default view and spotlight' do
+    it 'defaults to confidence hierarchy with confidence overview' do
+      create(:goal, creator: teammate, owner: teammate, title: 'Default View Goal', started_at: 1.week.ago)
+
+      get organization_goals_path(organization), params: {
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('confidence-hierarchy')
+      expect(response.body).to include('Default View Goal')
+      expect(response.body).to include('No evidence yet').or include('Least confident')
+      expect(response.body).to include('Track')
+      expect(response.body).to include('Conf')
+      expect(response.body).to include('Spotlight:')
+      expect(response.body).to include('Confidence overview')
+    end
+  end
+
+  describe 'GET /organizations/:organization_id/goals terminal confidence options on hierarchical-collapsible' do
     let(:check_in_eligible_goal) do
       create(:goal,
         creator: teammate,
@@ -1156,7 +1176,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
 
       get organization_goals_path(organization), params: {
         owner_type: 'CompanyTeammate',
-        owner_id: teammate.id
+        owner_id: teammate.id,
+        view: 'hierarchical-collapsible'
       }
 
       expect(response).to have_http_status(:success)

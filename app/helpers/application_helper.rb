@@ -984,7 +984,12 @@ module ApplicationHelper
     when 'goals'
       organization_goals_path(organization, owner_id: "CompanyTeammate_#{company_teammate.id}")
     when 'company_goals'
-      organization_goals_path(organization, owner_id: 'everyone_in_company', view: 'hierarchical-collapsible-hidden-checks')
+      organization_goals_path(
+        organization,
+        owner_id: 'everyone_in_company',
+        view: 'confidence_hierarchy',
+        spotlight: 'confidence_overview'
+      )
     when 'my_growth_experiences'
       my_growth_experiences_organization_company_teammate_path(organization, company_teammate)
     when 'my_growth_abilities'

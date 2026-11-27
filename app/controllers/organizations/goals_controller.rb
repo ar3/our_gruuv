@@ -133,7 +133,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Set default spotlight
     spotlight_param = params[:spotlight]
     if spotlight_param.blank? || spotlight_param == 'none'
-      spotlight_param = 'goals_overview'
+      spotlight_param = 'confidence_overview'
     end
     
     # Calculate spotlight stats for goals_overview (before other filters)
@@ -156,8 +156,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goals = apply_sorting(@goals, params[:sort], params[:direction])
     
     # Set view style
-    @view_style = params[:view] || 'hierarchical-collapsible'
-    @view_style = 'hierarchical-collapsible' unless helpers.goal_index_view_style_valid?(@view_style)
+    @view_style = params[:view] || 'confidence_hierarchy'
+    @view_style = 'confidence_hierarchy' unless helpers.goal_index_view_style_valid?(@view_style)
     
     # Eager load links for table/cards/list to avoid N+1.
     # Note: owner is polymorphic so we cannot use includes(owner: :person).
@@ -884,8 +884,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       status: selected_statuses,
       sort: params[:sort] || 'most_likely_target_date',
       direction: params[:direction] || 'asc',
-      view: params[:view] || 'hierarchical-collapsible',
-      spotlight: params[:spotlight] || 'goals_overview',
+      view: params[:view] || 'confidence_hierarchy',
+      spotlight: params[:spotlight] || 'confidence_overview',
       owner_type: @customized_owner_view ? nil : params[:owner_type],
       owner_id: @customized_owner_view ? nil : params[:owner_id],
       owner_keys: @customized_owner_view ? @owner_keys : nil,
@@ -894,7 +894,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     }
     
     # Validate view style
-    @current_filters[:view] = 'hierarchical-collapsible' unless helpers.goal_index_view_style_valid?(@current_filters[:view])
+    @current_filters[:view] = 'confidence_hierarchy' unless helpers.goal_index_view_style_valid?(@current_filters[:view])
     
     @current_sort = @current_filters[:sort]
     @current_view = @current_filters[:view]

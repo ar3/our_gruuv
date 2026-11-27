@@ -1470,7 +1470,7 @@ module GoalsHelper
   end
 
   def goal_index_spotlight_label(spotlight)
-    key = spotlight.presence || "goals_overview"
+    key = spotlight.presence || "confidence_overview"
     GOAL_INDEX_SPOTLIGHT_OPTIONS.find { |_label, value| value == key.to_s }&.first || key.to_s.humanize
   end
 

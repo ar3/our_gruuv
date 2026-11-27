@@ -199,7 +199,7 @@
               label: "Spotlight",
               icon: "eye",
               current_label: goal_index_spotlight_label(@current_spotlight),
-              current_value: @current_spotlight.presence || "goals_overview",
+              current_value: @current_spotlight.presence || "confidence_overview",
               options: GoalsHelper::GOAL_INDEX_SPOTLIGHT_OPTIONS,
               path_for: ->(value) { goal_index_path_with_footer_params(@organization, filters: footer_query, spotlight: value) }
 
@@ -242,8 +242,8 @@
       - when *Goals::HighchartsVizData::CHART_KINDS
         = render partial: 'organizations/goals/customize_view/styles/highcharts', locals: { chart_kind: @view_style }
       - else
-        / Default to hierarchical-collapsible view
-        = render partial: 'organizations/goals/customize_view/styles/hierarchical_collapsible'
+        / Default to confidence hierarchy view
+        = render partial: 'organizations/goals/customize_view/styles/confidence_hierarchy'
     - else
       .alert.alert-info
         - if @goals_empty_filter_fallback.present?
