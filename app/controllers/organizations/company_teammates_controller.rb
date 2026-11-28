@@ -430,6 +430,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @who_has_customize_company = organization.teammates.with_customize_company.includes(:person)
     @who_has_kudos_rewards_management = organization.teammates.with_kudos_management.includes(:person)
     @who_has_billing_management = organization.teammates.with_billing_management.includes(:person)
+    @who_has_clarity_library_management = organization.teammates.with_clarity_library_management.includes(:person)
     
     render layout: 'overlay'
   end
@@ -495,6 +496,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       params[:can_manage_billing] == 'true'
     else
       access.can_manage_billing
+    end
+
+    access.can_manage_clarity_library = if params[:can_manage_clarity_library].present?
+      params[:can_manage_clarity_library] == 'true'
+    else
+      access.can_manage_clarity_library
     end
     
     # Save the access record

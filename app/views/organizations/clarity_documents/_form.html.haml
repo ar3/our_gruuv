@@ -1,0 +1,50 @@
+= form_with model: document, url: (document.persisted? ? organization_clarity_document_path(@organization, document) : organization_clarity_documents_path(@organization)), local: true do |f|
+  - if document.errors.any?
+    .alert.alert-danger.mb-3
+      %ul.mb-0
+        - document.errors.full_messages.each do |message|
+          %li= message
+
+  - if !document.persisted? && @prefill_assignment
+    = hidden_field_tag :assignment_id, @prefill_assignment.id
+
+  .mb-3
+    = f.label :title, class: "form-label"
+    = f.text_field :title, class: "form-control", required: true
+
+  .mb-3
+    = render "organizations/clarity_documents/kind_picker", f: f, document: document
+
+  .mb-3
+    = label_tag "document_owner_key", class: "form-label" do
+      Owner
+      %i.bi.bi-info-circle.ms-1.text-muted{"aria-hidden" => "true",
+        "data-bs-toggle" => "tooltip",
+        "data-bs-placement" => "top",
+        title: "Owner can edit this document and must periodically verify it is still trustworthy. Viewing is separate... who can see it is not controlled by Owner."}
+    = select_tag "document[owner_key]",
+                 grouped_options_for_select(@owner_options, document.owner_key_value),
+                 class: "form-select",
+                 required: true,
+                 id: "document_owner_key"
+    .form-text
+      Owner
+      %strong can edit
+      and
+      %strong must periodically verify
+      this document. Viewing is separate... Owner does not mean who can see it.
+      - if @clarity_library_admin
+        Clarity Library Admins can reassign ownership (including after someone leaves).
+      - else
+        You can own this yourself or as a team you are on... not as another teammate.
+
+  .mb-3
+    = f.label :body, "Content (markdown)", class: "form-label"
+    = f.text_area :body, class: "form-control", rows: 12, placeholder: "Write the how-to / process content…"
+    .form-text Stored as a Text block so later phases can add more block types.
+
+  .d-flex.gap-2
+    = f.submit submit_label, class: "btn btn-primary"
+    = link_to "Cancel",
+              (document.persisted? ? organization_clarity_document_path(@organization, document) : organization_clarity_documents_path(@organization)),
+              class: "btn btn-outline-secondary"

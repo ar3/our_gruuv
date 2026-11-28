@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_28_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -384,8 +384,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
     t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
-    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying, 'like'::character varying, 'neutral'::character varying, 'prefer_not'::character varying, 'only_if_necessary'::character varying]::text[]))", name: "assignment_survey_responses_personal_alignment_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying::text, 'like'::character varying::text, 'neutral'::character varying::text, 'prefer_not'::character varying::text, 'only_if_necessary'::character varying::text]))", name: "assignment_survey_responses_personal_alignment_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -440,6 +440,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
     t.index ["organization_id", "due_on"], name: "index_billing_invoices_on_organization_id_and_due_on", unique: true
     t.index ["organization_id", "status"], name: "index_billing_invoices_on_organization_id_and_status"
     t.index ["organization_id"], name: "index_billing_invoices_on_organization_id"
+  end
+
+  create_table "blocks", force: :cascade do |t|
+    t.bigint "document_id", null: false
+    t.string "uuid", null: false
+    t.string "block_type", default: "text", null: false
+    t.integer "position", default: 1, null: false
+    t.text "content"
+    t.jsonb "settings", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id", "position"], name: "index_blocks_on_document_id_and_position"
+    t.index ["document_id"], name: "index_blocks_on_document_id"
+    t.index ["uuid"], name: "index_blocks_on_uuid", unique: true
   end
 
   create_table "bulk_downloads", force: :cascade do |t|
@@ -587,6 +601,32 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
     t.index ["minor_2_position_eligibility_requirement_id"], name: "idx_on_minor_2_position_eligibility_requirement_id_bb818898ae"
     t.index ["minor_3_position_eligibility_requirement_id"], name: "idx_on_minor_3_position_eligibility_requirement_id_efcbcebcad"
     t.index ["parent_department_id"], name: "index_departments_on_parent_department_id"
+  end
+
+  create_table "document_links", force: :cascade do |t|
+    t.bigint "document_id", null: false
+    t.string "linkable_type", null: false
+    t.bigint "linkable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id", "linkable_type", "linkable_id"], name: "index_document_links_on_document_and_linkable", unique: true
+    t.index ["document_id"], name: "index_document_links_on_document_id"
+    t.index ["linkable_type", "linkable_id"], name: "index_document_links_on_linkable_type_and_linkable_id"
+  end
+
+  create_table "documents", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "title", null: false
+    t.string "kind", default: "handbook", null: false
+    t.string "owner_type", null: false
+    t.bigint "owner_id", null: false
+    t.datetime "published_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kind"], name: "index_documents_on_kind"
+    t.index ["organization_id", "title"], name: "index_documents_on_organization_id_and_title"
+    t.index ["organization_id"], name: "index_documents_on_organization_id"
+    t.index ["owner_type", "owner_id"], name: "index_documents_on_owner_type_and_owner_id"
   end
 
   create_table "employment_tenures", force: :cascade do |t|
@@ -1067,7 +1107,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
     t.jsonb "decision_warnings", default: [], null: false
     t.string "create_key"
     t.index ["decided_by_id"], name: "index_maap_proposals_on_decided_by_id"
-    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying])::text[])))"
+    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('submitted'::character varying)::text])))"
     t.index ["organization_id", "kind", "status"], name: "index_maap_proposals_on_organization_kind_and_status"
     t.index ["organization_id", "status"], name: "index_maap_proposals_on_organization_and_status"
     t.index ["organization_id"], name: "index_maap_proposals_on_organization_id"
@@ -2372,8 +2412,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
     t.date "clarity_check_in_grace_until"
     t.boolean "slack_pogo_auto_refresh_hub_enabled", default: false, null: false
     t.boolean "can_manage_billing", default: false, null: false
+    t.boolean "can_manage_clarity_library", default: false, null: false
     t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_billing"], name: "index_teammates_on_can_manage_billing"
+    t.index ["can_manage_clarity_library"], name: "index_teammates_on_can_manage_clarity_library"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
     t.index ["can_manage_kudos_rewards"], name: "index_teammates_on_can_manage_kudos_rewards"
@@ -2547,6 +2589,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
   add_foreign_key "assignments", "departments"
   add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "billing_invoices", "organizations"
+  add_foreign_key "blocks", "documents"
   add_foreign_key "bulk_downloads", "organizations", column: "company_id"
   add_foreign_key "bulk_downloads", "teammates", column: "downloaded_by_id"
   add_foreign_key "bulk_sync_events", "organizations"
@@ -2567,6 +2610,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_20_123100) do
   add_foreign_key "departments", "position_eligibility_requirements", column: "minor_1_position_eligibility_requirement_id"
   add_foreign_key "departments", "position_eligibility_requirements", column: "minor_2_position_eligibility_requirement_id"
   add_foreign_key "departments", "position_eligibility_requirements", column: "minor_3_position_eligibility_requirement_id"
+  add_foreign_key "document_links", "documents"
+  add_foreign_key "documents", "organizations"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"

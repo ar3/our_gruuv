@@ -1,0 +1,13 @@
+.alert.alert-light.border
+  %h3.fw-semibold.mb-2 Goal of this page
+  %p.mb-3
+    Read a Clarity Library document as teammates will see it, including which Assignments it is linked to.
+
+  %h3.fw-semibold.mb-2 Context
+  = render "shared/maap/definition"
+
+  %h3.fw-semibold.mb-2 Specifics of this page
+  %ul.mb-0
+    %li Body content is rendered from Blocks (markdown Text blocks in this phase).
+    %li Linked Assignments list every Assignment that surfaces this document.
+    %li Use Edit to change title, owner, and body. Associating more Assignments comes later.

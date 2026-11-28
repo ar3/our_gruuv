@@ -18,6 +18,7 @@ RSpec.describe "Organizations::Sitemap", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Sitemap")
       expect(response.body).to include("Milestones &amp; Abilities")
+      expect(response.body).to include("OG Clarity Library")
       expect(response.body).to include("Also known as")
     end
   end

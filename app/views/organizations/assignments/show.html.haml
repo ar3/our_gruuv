@@ -149,6 +149,43 @@
             .markdown-content.markdown-content--bordered
               = render_markdown(@assignment.handbook)
 
+        .mb-3
+          .d-flex.align-items-center.justify-content-between.gap-2.mb-2
+            %h6.text-muted.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+              %span
+                Clarity docs for Assignment
+                = @assignment.title
+              = link_to organization_clarity_documents_path(@organization),
+                        class: "text-muted",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        title: "Open OG Clarity Library in a new tab",
+                        "aria-label" => "Open OG Clarity Library in a new tab",
+                        data: { "bs-toggle" => "tooltip" } do
+                %i.bi.bi-box-arrow-up-right
+            - if @can_create_clarity_documents
+              = link_to new_organization_clarity_document_path(@organization, assignment_id: @assignment.id),
+                        class: "btn btn-outline-primary btn-sm",
+                        title: "Add new Document",
+                        "aria-label" => "Add new Document",
+                        data: { "bs-toggle" => "tooltip" } do
+                %i.bi.bi-plus
+          - if @clarity_documents.present?
+            - @clarity_documents.each do |document|
+              - body = document.blocks.map { |block| block.content.to_s.strip }.reject(&:blank?).join("\n\n")
+              .mb-3
+                %h6.mb-2
+                  = link_to document.title, organization_clarity_document_path(@organization, document), class: "text-decoration-none"
+                  %span.small.text-muted.fw-normal
+                    · #{document.kind_label}
+                - if body.present?
+                  .markdown-content.markdown-content--bordered
+                    = render_markdown(body)
+                - else
+                  %p.small.text-muted.mb-0 No content yet.
+          - else
+            %p.small.text-muted.mb-2 No Clarity docs linked yet.
+
         - if @assignment.published_url.present? || @assignment.draft_url.present?
           .mb-3
             %h6.text-muted Source Documents

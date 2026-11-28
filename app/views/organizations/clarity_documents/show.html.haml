@@ -1,0 +1,65 @@
+- content_for :title, @document.title
+- page_help_id = "clarityLibraryShowPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      = @document.title
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Read this Clarity Library document. Click for details."
+      - if @can_edit
+        = link_to edit_organization_clarity_document_path(@organization, @document),
+                  class: "btn btn-primary",
+                  title: "Edit Document",
+                  "aria-label" => "Edit Document",
+                  data: { "bs-toggle" => "tooltip" } do
+          %i.bi.bi-pencil
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "OG Clarity Library", url: organization_clarity_documents_path(@organization) }, { label: @document.title, url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/clarity_documents/page_help_show"
+
+.row.g-4
+  .col-lg-8
+    .mb-3
+      %h6.text-muted Kind
+      %div= @document.kind_label
+      - if @document.kind_description.present?
+        .small.text-muted= @document.kind_description
+    .mb-3
+      %h6.text-muted Owner
+      %div= @document.owner_display_name
+
+    - if @blocks.any?
+      - @blocks.each do |block|
+        .mb-3{id: "block-#{block.uuid}"}
+          .markdown-content.markdown-content--bordered
+            = render_markdown(block.content.to_s)
+    - else
+      .alert.alert-light.border
+        This document has no content blocks yet.
+
+  .col-lg-4
+    .card
+      .card-body
+        %h6.card-title Linked Assignments
+        - if @linked_assignments.any?
+          %ul.list-unstyled.mb-3
+            - @linked_assignments.each do |assignment|
+              %li.d-flex.align-items-center.justify-content-between.gap-2.mb-2
+                = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
+                - if @can_manage_assignment_links
+                  = button_to "Unlink",
+                              unlink_assignment_organization_clarity_document_path(@organization, @document, assignment_id: assignment.id),
+                              method: :delete,
+                              class: "btn btn-outline-secondary btn-sm",
+                              form: { data: { turbo_confirm: "Remove link to #{assignment.title}?" } }
+        - else
+          %p.small.text-muted.mb-3 Standalone library document... not linked to an Assignment yet.
+        - if @can_edit
+          = link_to "Edit content", edit_organization_clarity_document_path(@organization, @document), class: "btn btn-outline-primary btn-sm"
+        - elsif @can_manage_assignment_links
+          %p.small.text-muted.mb-0 MAAP managers can link or unlink Assignments, but only the owner (or a Clarity Library Admin) can edit the document.

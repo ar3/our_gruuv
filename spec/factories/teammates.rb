@@ -16,6 +16,10 @@ FactoryBot.define do
       can_manage_maap { true }
     end
 
+    trait :clarity_library_admin do
+      can_manage_clarity_library { true }
+    end
+
     trait :prompts_manager do
       can_manage_prompts { true }
     end

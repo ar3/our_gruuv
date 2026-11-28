@@ -1,0 +1,38 @@
+-# locals: f, document
+- selected_kind = document.kind.presence || Document::KINDS.first
+
+.mb-1
+  = f.label :kind, "Kind", class: "form-label mb-1"
+
+.vstack.gap-3{"aria-label" => "Document kind"}
+  - Document::KIND_GROUPS.each do |group|
+    %div{data: {kind_group: group[:key]}}
+      .mb-2.d-flex.align-items-center.gap-1
+        .fw-semibold= group[:title]
+        - if group[:freshness_popover].present?
+          %button.btn.btn-link.btn-sm.p-0.text-muted.lh-1{type: "button",
+            "aria-label" => "How freshness works for #{group[:title]}",
+            "data-bs-toggle" => "popover",
+            "data-bs-trigger" => "hover focus",
+            "data-bs-placement" => "top",
+            "data-bs-content" => group[:freshness_popover]}
+            %i.bi.bi-info-circle{"aria-hidden" => "true"}
+      .row.g-2.row-cols-1.row-cols-md-3
+        - group[:kinds].each do |kind|
+          - input_id = "document_kind_#{kind}"
+          .col
+            .border.rounded.p-2.h-100
+              .form-check.mb-0
+                = f.radio_button :kind, kind,
+                                 class: "form-check-input",
+                                 id: input_id,
+                                 required: true,
+                                 checked: (selected_kind == kind)
+                = label_tag input_id, class: "form-check-label" do
+                  .fw-semibold= Document.kind_label(kind)
+                  %span.d-block.small.text-muted= Document.kind_description(kind)
+
+.form-text.mt-2
+  Pick the
+  %strong primary
+  kind this document is for. If it spans more than one kind, choose the main job for the reader and consider splitting into multiple documents that link to one another.

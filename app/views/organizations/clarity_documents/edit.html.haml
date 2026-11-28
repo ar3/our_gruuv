@@ -1,0 +1,18 @@
+- content_for :title, "Edit #{@document.title}"
+
+- content_for :header do
+  %h1.mb-0
+    Edit
+    = @document.title
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "OG Clarity Library", url: organization_clarity_documents_path(@organization) }, { label: @document.title, url: organization_clarity_document_path(@organization, @document) }, { label: "Edit", url: nil }])
+
+= render "form", document: @document, submit_label: "Save document"
+
+.mt-4
+  = button_to "Delete document",
+              organization_clarity_document_path(@organization, @document),
+              method: :delete,
+              class: "btn btn-outline-danger btn-sm",
+              form: { data: { turbo_confirm: "Delete this document from the OG Clarity Library?" } }

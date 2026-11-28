@@ -29,6 +29,8 @@ class CompanyTeammate < ApplicationRecord
   has_many :assignment_survey_responses, foreign_key: :teammate_id, dependent: :destroy
   has_many :object_maintainers, foreign_key: :company_teammate_id, dependent: :destroy, inverse_of: :company_teammate
   has_many :object_maintainers_added, class_name: "ObjectMaintainer", foreign_key: :added_by_id, dependent: :nullify, inverse_of: :added_by
+  has_many :team_members, foreign_key: :company_teammate_id, dependent: :destroy, inverse_of: :company_teammate
+  has_many :teams, through: :team_members
 
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
   has_many :og_consultations, as: :subject, dependent: :destroy
@@ -119,6 +121,7 @@ class CompanyTeammate < ApplicationRecord
   scope :with_customize_company, -> { where(can_customize_company: true) }
   scope :with_kudos_management, -> { where(can_manage_kudos_rewards: true) }
   scope :with_billing_management, -> { where(can_manage_billing: true) }
+  scope :with_clarity_library_management, -> { where(can_manage_clarity_library: true) }
 
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
@@ -159,6 +162,10 @@ class CompanyTeammate < ApplicationRecord
 
   def can_manage_billing?
     self[:can_manage_billing] == true
+  end
+
+  def can_manage_clarity_library?
+    self[:can_manage_clarity_library] == true
   end
 
   def can_be_points_banker?

@@ -222,6 +222,14 @@ class Organizations::AssignmentsController < ApplicationController
       scope: policy_scope(Assignment).where(company: @organization)
     )
 
+    @clarity_documents = @assignment.clarity_documents.ordered.includes(:owner, :blocks)
+    @can_create_clarity_documents = DocumentPolicy.new(
+      pundit_user,
+      Document.new(organization: @organization)
+    ).create?
+    @can_manage_clarity_assignment_links = current_company_teammate&.can_manage_maap? ||
+                                           current_company_teammate&.can_manage_clarity_library?
+
     render layout: determine_layout
   end
 

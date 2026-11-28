@@ -1,0 +1,20 @@
+- content_for :title, "New Clarity Library Document"
+
+- content_for :header do
+  %h1.mb-0 New Clarity Library Document
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "OG Clarity Library", url: organization_clarity_documents_path(@organization) }, { label: "New", url: nil }])
+
+- if @prefill_assignment
+  .alert.alert-info.border.mb-3{role: "status"}
+    .d-flex.align-items-start.gap-2
+      %i.bi.bi-link-45deg.fs-5
+      %div
+        %div.fw-semibold Will link to Assignment
+        %div
+          This document will be linked to
+          = link_to @prefill_assignment.title, organization_assignment_path(@organization, @prefill_assignment), class: "fw-semibold text-decoration-none"
+          when you save. You can associate additional Assignments later.
+
+= render "form", document: @document, submit_label: "Create document"

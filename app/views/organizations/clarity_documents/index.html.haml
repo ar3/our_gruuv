@@ -1,0 +1,42 @@
+- content_for :title, "OG Clarity Library"
+- page_help_id = "clarityLibraryIndexPageHelp"
+
+- content_for :header do
+  .d-flex.flex-wrap.align-items-center.gap-2
+    %h1.mb-0.d-flex.align-items-center.flex-wrap.gap-2
+      OG Clarity Library
+      = render "shared/page_help/header_info_button",
+               collapse_id: page_help_id,
+               tooltip: "Process and how-to docs next to Assignments. Click for details."
+      - if @can_create
+        = link_to new_organization_clarity_document_path(@organization),
+                  class: "btn btn-primary",
+                  title: "Add new Document",
+                  "aria-label" => "Add new Document",
+                  data: { "bs-toggle" => "tooltip" } do
+          %i.bi.bi-plus
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: "OG Clarity Library", url: nil }])
+
+.collapse.mb-4{id: page_help_id}
+  = render "organizations/clarity_documents/page_help_index"
+
+- if @documents.any?
+  .list-group
+    - @documents.each do |document|
+      = link_to organization_clarity_document_path(@organization, document), class: "list-group-item list-group-item-action" do
+        .d-flex.justify-content-between.align-items-start.gap-3
+          %div
+            .fw-semibold= document.title
+            .small.text-muted
+              = document.kind_label
+              %span.mx-1 ·
+              Owned by #{document.owner_display_name}
+          .small.text-muted.text-nowrap
+            = pluralize(document.blocks.size, "block")
+- else
+  .alert.alert-light.border
+    %p.mb-2 No documents yet.
+    - if @can_create
+      = link_to "Create the first document", new_organization_clarity_document_path(@organization), class: "btn btn-primary btn-sm"

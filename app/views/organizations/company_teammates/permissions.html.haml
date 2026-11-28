@@ -192,6 +192,28 @@
                 - @who_has_billing_management.each do |teammate|
                   %li= teammate.person.display_name
 
+    .row
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 OG Clarity Library Admin
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_manage_clarity_library == true
+                = f.check_box :can_manage_clarity_library, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can view and edit any Clarity Library document in the organization, and reassign ownership (including when an owner leaves).
+              %br
+              %small
+                Document owners still edit their own docs. MAAP managers can link/unlink Assignments without editing document content.
+            - if @who_has_clarity_library_management.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_clarity_library_management.each do |teammate|
+                  %li= teammate.person.display_name
+
     .d-flex.justify-content-end.gap-2.mt-4.mb-4
       = link_to @return_url, class: "btn btn-secondary" do
         Cancel
@@ -392,4 +414,29 @@
               %strong Who has this permission:
             %ul.mb-0
               - @who_has_billing_management.each do |teammate|
+                %li= teammate.person.display_name
+
+  .row
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 OG Clarity Library Admin
+        .card-body
+          %p.text-muted
+            Can view and edit any Clarity Library document in the organization, and reassign ownership (including when an owner leaves).
+            %br
+            %small
+              Document owners still edit their own docs. MAAP managers can link/unlink Assignments without editing document content.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_manage_clarity_library == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_clarity_library_management.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_clarity_library_management.each do |teammate|
                 %li= teammate.person.display_name

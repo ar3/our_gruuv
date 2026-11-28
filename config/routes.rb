@@ -899,6 +899,13 @@ Rails.application.routes.draw do
     resources :position_major_levels, only: [:index, :show], module: :organizations
     resources :position_level_sets, only: [:show], param: :name, module: :organizations
     
+    # OG Clarity Library (Documents / Blocks)
+    resources :clarity_documents, path: "clarity-library", module: :organizations do
+      member do
+        delete :unlink_assignment
+      end
+    end
+
     # Aspirations management
     resources :aspirations, module: :organizations do
       member do

@@ -187,6 +187,29 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('view=wall')
       end
 
+      it 'renders linked OG Clarity Library documents beside the handbook' do
+        document = create(:document, :with_text_block, :linked_to_assignment,
+                          organization: organization,
+                          owner: person_teammate,
+                          assignment: assignment,
+                          title: 'Frontline SOP',
+                          body: 'Keep the lobby calm.')
+
+        get organization_assignment_path(organization, assignment)
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Clarity docs for Assignment")
+        expect(response.body).to include(assignment.title)
+        expect(response.body).to include('Frontline SOP')
+        expect(response.body).to include(organization_clarity_document_path(organization, document))
+        expect(response.body).to include('Keep the lobby calm.')
+        expect(response.body).to include('markdown-content')
+        expect(response.body).to include(organization_clarity_documents_path(organization))
+        expect(response.body).to include('bi-box-arrow-up-right')
+        expect(response.body).to include('target="_blank"')
+        expect(response.body).not_to include('Browse OG Clarity Library')
+      end
+
       it 'renders view switcher' do
         get organization_assignment_path(organization, assignment)
         expect(response.body).to include('Organization View')
