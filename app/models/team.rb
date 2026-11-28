@@ -10,6 +10,8 @@ class Team < ApplicationRecord
   has_many :huddles, dependent: :destroy
   has_many :team_assignment_needs, dependent: :destroy
   has_many :needed_assignments, through: :team_assignment_needs, source: :assignment
+  has_many :team_primary_outcomes, dependent: :destroy
+  has_many :primary_assignment_outcomes, through: :team_primary_outcomes, source: :assignment_outcome
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
   has_one :team_asana_link, dependent: :destroy
 

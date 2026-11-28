@@ -1,0 +1,32 @@
+-# locals: primary_outcomes, team, organization
+
+.card.mb-4
+  .card-header.d-flex.justify-content-between.align-items-center
+    %h5.mb-0
+      %i.bi.bi-bullseye.me-2
+      Primary Outcomes
+    - if policy(team).update?
+      = link_to manage_primary_outcomes_organization_team_path(organization, team), class: "btn btn-sm btn-outline-primary" do
+        %i.bi.bi-list-check.me-1
+        Manage primary outcomes
+  .card-body
+    - if primary_outcomes.any?
+      %ul.list-unstyled.mb-0
+        - primary_outcomes.each_with_index do |team_primary_outcome, index|
+          - outcome = team_primary_outcome.assignment_outcome
+          - assignment = outcome.assignment
+          %li{class: index == primary_outcomes.size - 1 ? nil : "mb-3"}
+            .fw-semibold= outcome.description
+            %small.text-muted
+              From
+              = link_to assignment.title, organization_assignment_path(organization, assignment), class: "text-decoration-none"
+    - else
+      .alert.alert-light.mb-0
+        %p.mb-0
+          %i.bi.bi-info-circle.me-2
+          - if policy(team).update?
+            = link_to "Team admin: pick primary outcomes", manage_primary_outcomes_organization_team_path(organization, team), class: "alert-link"
+            so everyone knows what this team exists to produce.
+          - else
+            Team admin: pick primary outcomes
+            so everyone knows what this team exists to produce.

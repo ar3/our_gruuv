@@ -14,6 +14,7 @@ module Teams
       ActiveRecord::Base.transaction do
         remove_unlisted_needs(valid_need_types.keys)
         upsert_needs(valid_need_types)
+        prune_primary_outcomes_for_removed_needs(valid_need_types.keys)
       end
     end
 
@@ -36,6 +37,18 @@ module Teams
         need.need_type = need_type
         need.save!
       end
+    end
+
+    def prune_primary_outcomes_for_removed_needs(assignment_ids_to_keep)
+      if assignment_ids_to_keep.empty?
+        @team.team_primary_outcomes.destroy_all
+        return
+      end
+
+      @team.team_primary_outcomes
+        .joins(:assignment_outcome)
+        .where.not(assignment_outcomes: { assignment_id: assignment_ids_to_keep })
+        .destroy_all
     end
   end
 end

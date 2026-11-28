@@ -102,6 +102,11 @@
               - if policy(Goal).create?
                 = link_to "Create a team goal", new_organization_goal_path(@organization, owner_id: "Team_#{@team.id}"), class: "btn btn-sm btn-primary"
 
+    = render "organizations/teams/primary_outcomes",
+      primary_outcomes: @primary_outcomes,
+      team: @team,
+      organization: @organization
+
     = render "organizations/teams/assignment_roster", roster: @assignment_roster, team: @team, organization: @organization
 
     .card.mb-4

@@ -31,40 +31,41 @@
             %label.visually-hidden{for: "assignment_need_search"} Filter assignments
             %input.form-control.form-control-lg{type: "search", id: "assignment_need_search", placeholder: "Search assignments...", "aria-label": "Filter assignments", data: {options_filter_target: "input", action: "input->options-filter#filter"}}
 
-          .selection-page-columns{data: {options_filter_target: "list"}}
+          .selection-page-columns.selection-page-columns--two{data: {options_filter_target: "list"}}
             - @assignments.each do |assignment|
               - current_need_type = @need_types_by_assignment_id[assignment.id]
-              .card.filterable-option.text-decoration-none.mb-2
+              - none_id = "assignment_#{assignment.id}_none"
+              - required_id = "assignment_#{assignment.id}_required"
+              - nice_id = "assignment_#{assignment.id}_nice_to_have"
+              .card.filterable-option.text-decoration-none
                 .card-body.py-3
-                  .row.align-items-center.g-2
-                    .col-md-5
-                      %strong= assignment.title
-                      - if assignment.department
-                        %br
-                        %small.text-muted= assignment.department.display_name
-                    .col-md-7
-                      .d-flex.flex-wrap.gap-3
-                        .form-check
-                          = radio_button_tag "need_types[#{assignment.id}]",
-                            "",
-                            current_need_type.blank?,
-                            class: "form-check-input",
-                            id: "assignment_#{assignment.id}_none"
-                          = label_tag "assignment_#{assignment.id}_none", "Not needed", class: "form-check-label"
-                        .form-check
-                          = radio_button_tag "need_types[#{assignment.id}]",
-                            "required",
-                            current_need_type == "required",
-                            class: "form-check-input",
-                            id: "assignment_#{assignment.id}_required"
-                          = label_tag "assignment_#{assignment.id}_required", "Required", class: "form-check-label"
-                        .form-check
-                          = radio_button_tag "need_types[#{assignment.id}]",
-                            "nice_to_have",
-                            current_need_type == "nice_to_have",
-                            class: "form-check-input",
-                            id: "assignment_#{assignment.id}_nice_to_have"
-                          = label_tag "assignment_#{assignment.id}_nice_to_have", "Nice-to-have", class: "form-check-label"
+                  %strong.d-block= assignment.title
+                  - if assignment.department
+                    %small.text-muted= assignment.department.display_name
+                  .btn-group.btn-group-sm.w-100.mt-2{role: "group", "aria-label": "Need level for #{assignment.title}"}
+                    = radio_button_tag "need_types[#{assignment.id}]",
+                      "",
+                      current_need_type.blank?,
+                      class: "btn-check",
+                      id: none_id,
+                      autocomplete: "off"
+                    %label.btn.btn-outline-secondary{for: none_id, title: "Not needed"}
+                      %i.bi.bi-x-lg{"aria-hidden" => "true"}
+                      %span.visually-hidden Not needed
+                    = radio_button_tag "need_types[#{assignment.id}]",
+                      "nice_to_have",
+                      current_need_type == "nice_to_have",
+                      class: "btn-check",
+                      id: nice_id,
+                      autocomplete: "off"
+                    %label.btn.btn-outline-secondary{for: nice_id} Nice-to-have
+                    = radio_button_tag "need_types[#{assignment.id}]",
+                      "required",
+                      current_need_type == "required",
+                      class: "btn-check",
+                      id: required_id,
+                      autocomplete: "off"
+                    %label.btn.btn-outline-secondary{for: required_id} Required
       - else
         .alert.alert-info.mb-0
           %i.bi.bi-info-circle.me-2

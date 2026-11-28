@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_28_170000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_28_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -384,8 +384,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_28_170000) do
     t.index ["source_assignment_check_in_id"], name: "idx_asr_unique_source_assignment_check_in", unique: true, where: "(source_assignment_check_in_id IS NOT NULL)"
     t.index ["teammate_id", "assignment_id"], name: "idx_asr_one_in_progress_per_assignment", unique: true, where: "(submitted_at IS NULL)"
     t.index ["teammate_id"], name: "index_assignment_survey_responses_on_teammate_id"
-    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying::text, 'required'::character varying::text, 'active_and_required'::character varying::text])", name: "assignment_survey_responses_source_check"
-    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying::text, 'like'::character varying::text, 'neutral'::character varying::text, 'prefer_not'::character varying::text, 'only_if_necessary'::character varying::text]))", name: "assignment_survey_responses_personal_alignment_check"
+    t.check_constraint "assignment_source::text = ANY (ARRAY['active'::character varying, 'required'::character varying, 'active_and_required'::character varying]::text[])", name: "assignment_survey_responses_source_check"
+    t.check_constraint "personal_alignment IS NULL OR (personal_alignment::text = ANY (ARRAY['love'::character varying, 'like'::character varying, 'neutral'::character varying, 'prefer_not'::character varying, 'only_if_necessary'::character varying]::text[]))", name: "assignment_survey_responses_personal_alignment_check"
     t.check_constraint "possible_rating >= 1 AND possible_rating <= 6", name: "assignment_survey_responses_possible_rating_check"
     t.check_constraint "relevant_rating >= 1 AND relevant_rating <= 6", name: "assignment_survey_responses_relevant_rating_check"
     t.check_constraint "understandable_rating >= 1 AND understandable_rating <= 6", name: "assignment_survey_responses_understandable_rating_check"
@@ -1107,7 +1107,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_28_170000) do
     t.jsonb "decision_warnings", default: [], null: false
     t.string "create_key"
     t.index ["decided_by_id"], name: "index_maap_proposals_on_decided_by_id"
-    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('submitted'::character varying)::text])))"
+    t.index ["organization_id", "create_key"], name: "index_maap_proposals_on_organization_and_create_key", unique: true, where: "((create_key IS NOT NULL) AND ((status)::text = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying])::text[])))"
     t.index ["organization_id", "kind", "status"], name: "index_maap_proposals_on_organization_kind_and_status"
     t.index ["organization_id", "status"], name: "index_maap_proposals_on_organization_and_status"
     t.index ["organization_id"], name: "index_maap_proposals_on_organization_id"
@@ -2332,6 +2332,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_28_170000) do
     t.index ["team_id"], name: "index_team_members_on_team_id"
   end
 
+  create_table "team_primary_outcomes", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.bigint "assignment_outcome_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_outcome_id"], name: "index_team_primary_outcomes_on_assignment_outcome_id"
+    t.index ["team_id", "assignment_outcome_id"], name: "index_team_primary_outcomes_on_team_and_outcome", unique: true
+    t.index ["team_id"], name: "index_team_primary_outcomes_on_team_id"
+  end
+
   create_table "teammate_growth_results", force: :cascade do |t|
     t.bigint "og_consultation_id", null: false
     t.text "output_text"
@@ -2803,6 +2813,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_28_170000) do
   add_foreign_key "team_assignment_needs", "teams"
   add_foreign_key "team_members", "teammates", column: "company_teammate_id"
   add_foreign_key "team_members", "teams"
+  add_foreign_key "team_primary_outcomes", "assignment_outcomes"
+  add_foreign_key "team_primary_outcomes", "teams"
   add_foreign_key "teammate_growth_results", "og_consultations"
   add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammate_milestones", "abilities"

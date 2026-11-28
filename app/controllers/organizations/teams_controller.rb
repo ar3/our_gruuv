@@ -2,7 +2,12 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
   include ProfileImageParams
 
   before_action :require_authentication
-  before_action :set_team, only: [:show, :edit, :update, :archive, :manage_members, :update_members, :manage_assignment_needs, :update_assignment_needs]
+  before_action :set_team, only: [
+    :show, :edit, :update, :archive,
+    :manage_members, :update_members,
+    :manage_assignment_needs, :update_assignment_needs,
+    :manage_primary_outcomes, :update_primary_outcomes
+  ]
 
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
@@ -47,6 +52,7 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     end
 
     @assignment_roster = ::Teams::AssignmentRoster.new(@team)
+    @primary_outcomes = @team.team_primary_outcomes.ordered.includes(assignment_outcome: :assignment)
 
     @team_goals = if policy(company).view_goals?
                     policy_scope(Goal)
@@ -166,7 +172,11 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
 
     @assignments = @organization.assignments.unarchived
       .includes(:department)
-      .order(:title)
+      .to_a
+      .sort_by { |assignment|
+        dept_key = assignment.department ? [1, assignment.department.display_name.to_s.downcase] : [0, ""]
+        [dept_key, assignment.title.to_s.downcase]
+      }
     @need_types_by_assignment_id = @team.team_assignment_needs.pluck(:assignment_id, :need_type).to_h
   end
 
@@ -183,6 +193,30 @@ class Organizations::TeamsController < Organizations::OrganizationNamespaceBaseC
     ::Teams::AssignmentNeedsSync.new(team: @team, need_types_by_assignment_id: need_types_by_assignment_id).call
 
     redirect_to organization_team_path(@organization, @team), notice: "Team assignment needs were updated."
+  end
+
+  def manage_primary_outcomes
+    authorize @team, :update?
+
+    needed_assignments = @team.needed_assignments.unarchived
+      .includes(:department, :assignment_outcomes)
+      .order(:title)
+    @candidate_rows = needed_assignments.filter_map do |assignment|
+      outcomes = assignment.assignment_outcomes.ordered.to_a
+      next if outcomes.empty?
+
+      { assignment: assignment, outcomes: outcomes }
+    end
+    @selected_outcome_ids = @team.team_primary_outcomes.pluck(:assignment_outcome_id).to_set
+  end
+
+  def update_primary_outcomes
+    authorize @team, :update?
+
+    outcome_ids = Array(params[:assignment_outcome_ids]).reject(&:blank?).map(&:to_i)
+    ::Teams::PrimaryOutcomesSync.new(team: @team, assignment_outcome_ids: outcome_ids).call
+
+    redirect_to organization_team_path(@organization, @team), notice: "Team primary outcomes were updated."
   end
 
   private

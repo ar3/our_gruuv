@@ -3,6 +3,7 @@
 class AssignmentOutcome < ApplicationRecord
   # Associations
   belongs_to :assignment
+  has_many :team_primary_outcomes, dependent: :destroy
 
   # Validations
   validates :description, presence: true

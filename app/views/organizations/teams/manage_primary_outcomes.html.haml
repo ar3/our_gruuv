@@ -1,0 +1,75 @@
+- content_for :title, "Primary Outcomes - #{@team.name}"
+
+- content_for :go_back_link do
+  = nav_hierarchy_with_previous(organization: @organization, crumbs: [{ label: @team.name, url: organization_team_path(@organization, @team) }, { label: "Primary outcomes", url: nil }])
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0
+      %i.bi.bi-bullseye.me-2
+      Primary Outcomes
+      %small.text-muted.ms-2
+        = @team.name
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-list-check.me-2
+      What outcomes is this team for?
+  .card-body
+    = form_with url: update_primary_outcomes_organization_team_path(@organization, @team), method: :patch, local: true do |form|
+      %p.text-muted.mb-3
+        Select the outcomes this team exists to produce. Candidates come from outcomes on the assignments this team needs.
+
+      - if @candidate_rows.any?
+        .mb-3{data: {controller: "selection-toolbar options-filter"}}
+          = render "shared/selection_pages/toolbar",
+            form: form,
+            save_label: "Save Primary Outcomes",
+            can_manage: true,
+            search_placeholder: "Search outcomes...",
+            search_aria_label: "Filter outcomes",
+            large_save: true
+
+          .selection-page-columns{data: {options_filter_target: "list"}}
+            - @candidate_rows.each_with_index do |row, index|
+              - assignment = row[:assignment]
+              - if index.positive?
+                %hr.my-4.selection-page-full-width
+              %h6.fw-semibold.text-muted.mb-2.selection-page-full-width
+                = assignment.title
+                - if assignment.department
+                  %span.fw-normal
+                    · #{assignment.department.display_name}
+              - row[:outcomes].each do |outcome|
+                - checked = @selected_outcome_ids.include?(outcome.id)
+                - pill_label = outcome.description.truncate(48)
+                %label.card.filterable-option.text-decoration-none{for: "outcome_#{outcome.id}", style: "cursor: pointer;"}
+                  .card-body.py-3
+                    .d-flex.align-items-start
+                      .form-check.me-2.mt-1
+                        = check_box_tag "assignment_outcome_ids[]",
+                          outcome.id,
+                          checked,
+                          class: "form-check-input",
+                          id: "outcome_#{outcome.id}",
+                          data: {selection_toolbar_label: pill_label}
+                      .flex-grow-1
+                        .fw-semibold= outcome.description
+                        %small.text-muted.text-capitalize= outcome.outcome_type
+      - else
+        .alert.alert-light.mb-0
+          %p.mb-2
+            %i.bi.bi-info-circle.me-2
+            This team has no assignment outcomes to choose from yet.
+          %p.mb-0
+            - if @team.team_assignment_needs.any?
+              Add outcomes to the team's needed assignments, then return here to pick primary ones.
+            - else
+              = link_to "Identify team assignments", manage_assignment_needs_organization_team_path(@organization, @team), class: "alert-link"
+              first, then pick primary outcomes from those assignments' outcomes.
+
+      .d-flex.gap-2.mt-3
+        - if @candidate_rows.any?
+          = render "shared/selection_pages/save_button", form: form, label: "Save Primary Outcomes", can_manage: true, large: true
+        = link_to "Cancel", organization_team_path(@organization, @team), class: "btn btn-outline-secondary btn-lg"

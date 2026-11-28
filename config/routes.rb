@@ -1144,6 +1144,8 @@ Rails.application.routes.draw do
         patch :update_members
         get :manage_assignment_needs
         patch :update_assignment_needs
+        get :manage_primary_outcomes
+        patch :update_primary_outcomes
       end
       resources :assignment_needs, only: [], module: :teams do
         member do

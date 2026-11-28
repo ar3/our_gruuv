@@ -2198,6 +2198,16 @@ body:has(.vertical-nav.open) .floating-toggle {
     column-count: 3;
   }
 
+  &--two {
+    @media (min-width: 576px) {
+      column-count: 2;
+    }
+
+    @media (min-width: 992px) {
+      column-count: 2;
+    }
+  }
+
   > * {
     break-inside: avoid;
     page-break-inside: avoid;

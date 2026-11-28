@@ -28,6 +28,28 @@ RSpec.describe "Team assignment needs", type: :request do
       expect(response.body).to include("What assignments does this team need?")
       expect(response.body).to include("Incident Commander")
       expect(response.body).to include("Docs Maintainer")
+      expect(response.body).to include("selection-page-columns--two")
+      expect(response.body).to include("btn-check")
+      expect(response.body).to include("Nice-to-have")
+      expect(response.body).to include("Required")
+      expect(response.body).to include("bi-x-lg")
+    end
+
+    it "sorts assignments by department then title (company-wide first)" do
+      dept_b = create(:department, company: organization, name: "Beta Ops")
+      dept_a = create(:department, company: organization, name: "Alpha Eng")
+      create(:assignment, company: organization, title: "Zebra Task", department: dept_a)
+      create(:assignment, company: organization, title: "Alpha Task", department: dept_b)
+      create(:assignment, company: organization, title: "Company Wide B", department: nil)
+      create(:assignment, company: organization, title: "Company Wide A", department: nil)
+
+      get manage_assignment_needs_organization_team_path(organization, team)
+
+      expect(response).to have_http_status(:success)
+      body = response.body
+      expect(body.index("Company Wide A")).to be < body.index("Company Wide B")
+      expect(body.index("Company Wide B")).to be < body.index("Zebra Task")
+      expect(body.index("Zebra Task")).to be < body.index("Alpha Task")
     end
   end
 
@@ -58,6 +80,23 @@ RSpec.describe "Team assignment needs", type: :request do
       }
 
       expect(team.team_assignment_needs.pluck(:assignment_id)).to eq([assignment_nice.id])
+    end
+
+    it "drops primary outcomes for assignments that are no longer needed" do
+      need = create(:team_assignment_need, team: team, assignment: assignment_required)
+      outcome = create(:assignment_outcome, assignment: assignment_required)
+      create(:team_primary_outcome, team: team, assignment_outcome: outcome)
+
+      patch update_assignment_needs_organization_team_path(organization, team), params: {
+        need_types: {
+          assignment_required.id.to_s => "",
+          assignment_nice.id.to_s => "required"
+        }
+      }
+
+      expect(team.team_assignment_needs.pluck(:assignment_id)).to eq([assignment_nice.id])
+      expect(team.team_primary_outcomes).to be_empty
+      expect { need.reload }.to raise_error(ActiveRecord::RecordNotFound)
     end
   end
 
